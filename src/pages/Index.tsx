@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { TaskInput } from "@/components/TaskInput";
 import { TaskList, Task } from "@/components/TaskList";
 import { ClientList, Client } from "@/components/ClientList";
+import { ClientForm } from "@/components/ClientForm";
 import { analyzeTask } from "@/lib/task-analyzer";
 import { toast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -56,6 +57,18 @@ const Index = () => {
     }
   };
 
+  const handleAddClient = (clientData: Omit<Client, "id">) => {
+    const newClient: Client = {
+      id: crypto.randomUUID(),
+      ...clientData,
+    };
+    setClients((prev) => [newClient, ...prev]);
+    toast({
+      title: "Cliente agregado",
+      description: "El cliente ha sido agregado exitosamente.",
+    });
+  };
+
   const handleDeleteTask = (id: string) => {
     setTasks((prev) => prev.filter((task) => task.id !== id));
     toast({
@@ -92,7 +105,8 @@ const Index = () => {
           <TaskInput onAddTask={handleAddTask} />
           <TaskList tasks={tasks} onDeleteTask={handleDeleteTask} />
         </TabsContent>
-        <TabsContent value="clients">
+        <TabsContent value="clients" className="space-y-4">
+          <ClientForm onAddClient={handleAddClient} />
           <ClientList clients={clients} onDeleteClient={handleDeleteClient} />
         </TabsContent>
       </Tabs>
