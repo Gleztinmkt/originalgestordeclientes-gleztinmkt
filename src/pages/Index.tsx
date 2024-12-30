@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
 import { TaskInput } from "@/components/TaskInput";
 import { TaskList, Task } from "@/components/TaskList";
+import { ClientList, Client } from "@/components/ClientList";
 import { analyzeTask } from "@/lib/task-analyzer";
 import { toast } from "@/hooks/use-toast";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Index = () => {
   const [tasks, setTasks] = useState<Task[]>(() => {
@@ -10,9 +12,18 @@ const Index = () => {
     return savedTasks ? JSON.parse(savedTasks) : [];
   });
 
+  const [clients, setClients] = useState<Client[]>(() => {
+    const savedClients = localStorage.getItem("clients");
+    return savedClients ? JSON.parse(savedClients) : [];
+  });
+
   useEffect(() => {
     localStorage.setItem("tasks", JSON.stringify(tasks));
   }, [tasks]);
+
+  useEffect(() => {
+    localStorage.setItem("clients", JSON.stringify(clients));
+  }, [clients]);
 
   const handleAddTask = (content: string) => {
     const analysis = analyzeTask(content);
@@ -24,7 +35,6 @@ const Index = () => {
 
     setTasks((prev) => [newTask, ...prev]);
 
-    // Mostrar sugerencias basadas en el tipo de tarea
     if (analysis.type === "meeting" && analysis.date) {
       toast({
         title: "¿Agregar al calendario?",
@@ -32,7 +42,6 @@ const Index = () => {
         action: (
           <button
             onClick={() => {
-              // Aquí iría la lógica para agregar al calendario
               toast({
                 title: "Recordatorio agregado",
                 description: "La reunión ha sido agregada a tu calendario.",
@@ -41,25 +50,6 @@ const Index = () => {
             className="bg-primary text-primary-foreground px-3 py-1 rounded-md text-sm font-medium"
           >
             Agregar
-          </button>
-        ),
-      });
-    } else if (analysis.type === "call") {
-      toast({
-        title: "Contacto detectado",
-        description: "¿Quieres agregar este contacto a tu agenda?",
-        action: (
-          <button
-            onClick={() => {
-              // Aquí iría la lógica para agregar contactos
-              toast({
-                title: "Contacto guardado",
-                description: "El contacto ha sido agregado a tu agenda.",
-              });
-            }}
-            className="bg-primary text-primary-foreground px-3 py-1 rounded-md text-sm font-medium"
-          >
-            Guardar
           </button>
         ),
       });
@@ -74,6 +64,14 @@ const Index = () => {
     });
   };
 
+  const handleDeleteClient = (id: string) => {
+    setClients((prev) => prev.filter((client) => client.id !== id));
+    toast({
+      title: "Cliente eliminado",
+      description: "El cliente ha sido eliminado exitosamente.",
+    });
+  };
+
   return (
     <div className="min-h-screen p-8 space-y-8">
       <div className="text-center space-y-4 mb-12">
@@ -81,16 +79,23 @@ const Index = () => {
           Asistente Personal
         </h1>
         <p className="text-muted-foreground max-w-md mx-auto">
-          Organiza tus tareas de forma inteligente. Usa el micrófono o escribe
-          para agregar nuevas tareas.
+          Organiza tus tareas y gestiona tus clientes de forma inteligente.
         </p>
       </div>
 
-      <TaskInput onAddTask={handleAddTask} />
-
-      <div className="mt-8">
-        <TaskList tasks={tasks} onDeleteTask={handleDeleteTask} />
-      </div>
+      <Tabs defaultValue="tasks" className="w-full max-w-2xl mx-auto">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="tasks">Tareas</TabsTrigger>
+          <TabsTrigger value="clients">Clientes</TabsTrigger>
+        </TabsList>
+        <TabsContent value="tasks" className="space-y-4">
+          <TaskInput onAddTask={handleAddTask} />
+          <TaskList tasks={tasks} onDeleteTask={handleDeleteTask} />
+        </TabsContent>
+        <TabsContent value="clients">
+          <ClientList clients={clients} onDeleteClient={handleDeleteClient} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
