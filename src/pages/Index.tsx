@@ -88,24 +88,28 @@ const Index = () => {
   return (
     <div className="min-h-screen p-8 space-y-8">
       <div className="text-center space-y-4 mb-12">
-        <h1 className="text-4xl font-bold font-heading bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+        <h1 className="text-4xl font-bold font-heading text-gray-900">
           Asistente Personal
         </h1>
-        <p className="text-muted-foreground max-w-md mx-auto">
+        <p className="text-gray-600 max-w-md mx-auto">
           Organiza tus tareas y gestiona tus clientes de forma inteligente.
         </p>
       </div>
 
       <Tabs defaultValue="tasks" className="w-full max-w-2xl mx-auto">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="tasks">Tareas</TabsTrigger>
-          <TabsTrigger value="clients">Clientes</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2 rounded-2xl p-1 bg-white/70 backdrop-blur-sm">
+          <TabsTrigger value="tasks" className="rounded-xl data-[state=active]:bg-black data-[state=active]:text-white">
+            Tareas
+          </TabsTrigger>
+          <TabsTrigger value="clients" className="rounded-xl data-[state=active]:bg-black data-[state=active]:text-white">
+            Clientes
+          </TabsTrigger>
         </TabsList>
-        <TabsContent value="tasks" className="space-y-4">
+        <TabsContent value="tasks" className="space-y-4 mt-6">
           <TaskInput onAddTask={handleAddTask} />
           <TaskList tasks={tasks} onDeleteTask={handleDeleteTask} />
         </TabsContent>
-        <TabsContent value="clients" className="space-y-4">
+        <TabsContent value="clients" className="space-y-4 mt-6">
           <ClientForm onAddClient={handleAddClient} />
           <ClientList clients={clients} onDeleteClient={handleDeleteClient} />
         </TabsContent>

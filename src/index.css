@@ -6,35 +6,26 @@
 
 @layer base {
   :root {
-    --background: 210 40% 98%;
+    --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
-
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
-
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-
     --primary: 221.2 83.2% 53.3%;
     --primary-foreground: 210 40% 98%;
-
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
-
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
-
-    --accent: 142.1 76.2% 36.3%;
-    --accent-foreground: 355.7 100% 97.3%;
-
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
-
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     --ring: 221.2 83.2% 53.3%;
-
-    --radius: 0.75rem;
+    --radius: 1rem;
   }
 }
 
@@ -43,33 +34,12 @@
     @apply border-border;
   }
   body {
-    @apply bg-gradient-to-br from-gray-50 to-gray-100 text-foreground min-h-screen;
+    @apply bg-gradient-to-br from-blue-50 to-purple-50 text-foreground min-h-screen;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
 
-.task-enter {
-  opacity: 0;
-  transform: translateY(20px);
-}
-
-.task-enter-active {
-  opacity: 1;
-  transform: translateY(0);
-  transition: opacity 300ms, transform 300ms;
-}
-
-.task-exit {
-  opacity: 1;
-}
-
-.task-exit-active {
-  opacity: 0;
-  transform: translateY(-20px);
-  transition: opacity 300ms, transform 300ms;
-}
-
-/* Animaciones y transiciones suaves */
+/* Animaciones suaves */
 .animate-fade-in {
   animation: fadeIn 0.5s ease-out;
 }
@@ -87,14 +57,14 @@
 
 /* Estilos modernos para inputs y botones */
 input, textarea {
-  @apply transition-all duration-200;
+  @apply bg-white/70 backdrop-blur-sm border border-gray-100 rounded-xl shadow-sm transition-all duration-200;
 }
 
 button {
-  @apply transition-all duration-200;
+  @apply rounded-xl transition-all duration-200;
 }
 
-/* Glassmorphism para cards */
+/* Glassmorphism moderno */
 .glass-card {
-  @apply bg-white/90 backdrop-blur-sm border border-white/20 shadow-lg;
+  @apply bg-white/60 backdrop-blur-md border border-white/20 shadow-lg rounded-2xl;
 }

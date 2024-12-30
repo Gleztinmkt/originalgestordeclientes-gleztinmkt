@@ -56,15 +56,15 @@ export const ClientForm = ({ onAddClient }: ClientFormProps) => {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transition-all duration-300">
-          <UserPlus className="mr-2 h-4 w-4" />
+        <Button className="w-full bg-black hover:bg-gray-900 text-white rounded-2xl py-6 shadow-lg hover:shadow-xl transition-all duration-300">
+          <UserPlus className="mr-2 h-5 w-5" />
           Agregar Cliente
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px] bg-white/95 backdrop-blur-sm border border-gray-200 shadow-xl">
+      <DialogContent className="sm:max-w-[425px] glass-card border-0">
         <DialogHeader>
           <DialogTitle className="text-2xl font-heading font-semibold text-gray-800">
-            Agregar Nuevo Cliente
+            Nuevo Cliente
           </DialogTitle>
         </DialogHeader>
         <Form {...form}>
@@ -74,12 +74,12 @@ export const ClientForm = ({ onAddClient }: ClientFormProps) => {
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-gray-700">Nombre del Cliente</FormLabel>
+                  <FormLabel className="text-gray-700">Nombre</FormLabel>
                   <FormControl>
                     <Input 
                       placeholder="Nombre completo" 
                       {...field}
-                      className="border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
+                      className="rounded-xl bg-white/70 backdrop-blur-sm border-gray-100"
                     />
                   </FormControl>
                   <FormMessage />
@@ -91,12 +91,12 @@ export const ClientForm = ({ onAddClient }: ClientFormProps) => {
               name="package"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-gray-700">Paquete Publicitario</FormLabel>
+                  <FormLabel className="text-gray-700">Paquete</FormLabel>
                   <FormControl>
                     <Input 
                       placeholder="Ej: Paquete Básico" 
                       {...field}
-                      className="border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
+                      className="rounded-xl bg-white/70 backdrop-blur-sm border-gray-100"
                     />
                   </FormControl>
                   <FormMessage />
@@ -108,12 +108,12 @@ export const ClientForm = ({ onAddClient }: ClientFormProps) => {
               name="nextPayment"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-gray-700">Próxima Fecha de Pago</FormLabel>
+                  <FormLabel className="text-gray-700">Próximo Pago</FormLabel>
                   <FormControl>
                     <Input 
                       type="date" 
                       {...field}
-                      className="border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
+                      className="rounded-xl bg-white/70 backdrop-blur-sm border-gray-100"
                     />
                   </FormControl>
                   <FormMessage />
@@ -128,9 +128,9 @@ export const ClientForm = ({ onAddClient }: ClientFormProps) => {
                   <FormLabel className="text-gray-700">Información de Marketing</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Detalles de la estrategia de marketing..."
+                      placeholder="Detalles de la estrategia..."
                       {...field}
-                      className="border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 min-h-[100px]"
+                      className="rounded-xl bg-white/70 backdrop-blur-sm border-gray-100 min-h-[100px]"
                     />
                   </FormControl>
                   <FormMessage />
@@ -139,7 +139,7 @@ export const ClientForm = ({ onAddClient }: ClientFormProps) => {
             />
             <Button 
               type="submit" 
-              className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transition-all duration-300"
+              className="w-full bg-black hover:bg-gray-900 text-white rounded-2xl py-6 shadow-lg hover:shadow-xl transition-all duration-300"
             >
               Guardar Cliente
             </Button>
