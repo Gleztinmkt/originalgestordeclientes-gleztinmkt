@@ -29,18 +29,15 @@ const formSchema = z.object({
   marketingInfo: z.string(),
 });
 
+type FormValues = z.infer<typeof formSchema>;
+
 interface ClientFormProps {
-  onAddClient: (client: {
-    name: string;
-    package: string;
-    nextPayment: string;
-    marketingInfo: string;
-  }) => void;
+  onAddClient: (client: FormValues) => void;
 }
 
 export const ClientForm = ({ onAddClient }: ClientFormProps) => {
   const [open, setOpen] = useState(false);
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
@@ -50,10 +47,13 @@ export const ClientForm = ({ onAddClient }: ClientFormProps) => {
     },
   });
 
-  const onSubmit = (values: z.infer<typeof formSchema>) => {
-    onAddClient(values);
-    form.reset();
-    setOpen(false);
+  const onSubmit = (values: FormValues) => {
+    // Ensure all required fields are present before submitting
+    if (values.name && values.package && values.nextPayment) {
+      onAddClient(values);
+      form.reset();
+      setOpen(false);
+    }
   };
 
   return (
