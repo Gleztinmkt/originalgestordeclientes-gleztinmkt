@@ -7,13 +7,7 @@ import { analyzeTask } from "@/lib/task-analyzer";
 import { toast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/lib/supabase";
-
-// Define database types to match Supabase schema
-interface DatabaseClient extends Omit<Client, 'packages'> {
-  packages: string; // JSON string in database
-}
-
-interface DatabaseTask extends Task {}
+import { DatabaseClient, DatabaseTask, convertDatabaseClient, convertClientForDatabase } from "@/lib/database-types";
 
 const Index = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -30,11 +24,7 @@ const Index = () => {
         
         if (clientsError) throw clientsError;
         if (clientsData) {
-          // Convert database format to application format
-          const formattedClients: Client[] = clientsData.map((client: DatabaseClient) => ({
-            ...client,
-            packages: JSON.parse(client.packages || '[]'),
-          }));
+          const formattedClients = (clientsData as DatabaseClient[]).map(convertDatabaseClient);
           setClients(formattedClients);
         }
 
@@ -45,7 +35,7 @@ const Index = () => {
         
         if (tasksError) throw tasksError;
         if (tasksData) {
-          setTasks(tasksData as Task[]);
+          setTasks(tasksData as DatabaseTask[]);
         }
 
       } catch (error) {
@@ -73,12 +63,7 @@ const Index = () => {
     try {
       const { error } = await supabase
         .from('tasks')
-        .insert([{
-          id: newTask.id,
-          content: newTask.content,
-          type: newTask.type,
-          clientId: newTask.clientId,
-        }]);
+        .insert([newTask as DatabaseTask]);
       
       if (error) throw error;
 
@@ -120,16 +105,7 @@ const Index = () => {
     try {
       const { error } = await supabase
         .from('clients')
-        .insert([{
-          id: newClient.id,
-          name: newClient.name,
-          phone: newClient.phone,
-          paymentDay: newClient.paymentDay,
-          marketingInfo: newClient.marketingInfo,
-          instagram: newClient.instagram,
-          facebook: newClient.facebook,
-          packages: JSON.stringify(newClient.packages),
-        }]);
+        .insert([convertClientForDatabase(newClient)]);
       
       if (error) throw error;
 
@@ -230,10 +206,7 @@ const Index = () => {
 
       const { error } = await supabase
         .from('clients')
-        .update({
-          ...updatedClient,
-          packages: JSON.stringify(updatedClient.packages),
-        })
+        .update(convertClientForDatabase(updatedClient))
         .eq('id', clientId);
       
       if (error) throw error;
