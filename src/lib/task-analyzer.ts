@@ -1,6 +1,7 @@
 interface AnalyzedTask {
   type: "reminder" | "call" | "meeting" | "task";
   date?: string;
+  clientId?: string;
 }
 
 export const analyzeTask = (content: string): AnalyzedTask => {
