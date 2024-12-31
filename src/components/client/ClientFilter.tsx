@@ -17,7 +17,7 @@ export const ClientFilter = ({ onFilterChange }: ClientFilterProps) => {
         <SelectValue placeholder="Filtrar por día de pago" />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="">Todos los días</SelectItem>
+        <SelectItem value="all">Todos los días</SelectItem>
         {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
           <SelectItem key={day} value={day.toString()}>
             Día {day}

@@ -36,11 +36,11 @@ interface ClientListProps {
 }
 
 export const ClientList = ({ clients, onDeleteClient, onUpdatePackage }: ClientListProps) => {
-  const [selectedPaymentDay, setSelectedPaymentDay] = useState<string>("");
+  const [selectedPaymentDay, setSelectedPaymentDay] = useState<string>("all");
 
-  const filteredClients = selectedPaymentDay
-    ? clients.filter(client => client.paymentDay === parseInt(selectedPaymentDay))
-    : clients;
+  const filteredClients = selectedPaymentDay === "all"
+    ? clients
+    : clients.filter(client => client.paymentDay === parseInt(selectedPaymentDay));
 
   return (
     <div className="space-y-6">
@@ -48,7 +48,7 @@ export const ClientList = ({ clients, onDeleteClient, onUpdatePackage }: ClientL
         <ClientFilter onFilterChange={setSelectedPaymentDay} />
         <BulkMessageButton 
           clients={clients}
-          selectedPaymentDay={selectedPaymentDay ? parseInt(selectedPaymentDay) : undefined}
+          selectedPaymentDay={selectedPaymentDay !== "all" ? parseInt(selectedPaymentDay) : undefined}
         />
       </div>
 
