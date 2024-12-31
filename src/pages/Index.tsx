@@ -48,7 +48,7 @@ const Index = () => {
           <TaskInput onAddTask={addTask} />
           <TaskList 
             tasks={tasks} 
-            onDeleteClient={deleteTask}
+            onDeleteTask={deleteTask}
             clients={clients}
           />
         </TabsContent>
