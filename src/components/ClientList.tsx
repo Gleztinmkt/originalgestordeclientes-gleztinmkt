@@ -15,17 +15,18 @@ import { ClientFilter } from "./client/ClientFilter";
 export interface Client {
   id: string;
   name: string;
-  package: string;
-  nextPayment: string;
-  marketingInfo: string;
   phone: string;
   paymentDay: number;
+  marketingInfo: string;
+  instagram?: string;
+  facebook?: string;
   packages: Array<{
     id: string;
     name: string;
     totalPublications: number;
     usedPublications: number;
     month: string;
+    paid: boolean;
   }>;
 }
 

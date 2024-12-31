@@ -32,6 +32,7 @@ const Index = () => {
       id: crypto.randomUUID(),
       content,
       ...analysis,
+      clientId: analysis.clientId || null,
     };
 
     setTasks((prev) => [newTask, ...prev]);
@@ -61,17 +62,18 @@ const Index = () => {
     const newClient: Client = {
       id: crypto.randomUUID(),
       name: clientData.name,
-      package: clientData.package || "basic",
-      nextPayment: clientData.nextPayment,
-      marketingInfo: clientData.marketingInfo,
       phone: clientData.phone,
       paymentDay: parseInt(clientData.nextPayment),
+      marketingInfo: clientData.marketingInfo,
+      instagram: clientData.instagram || "",
+      facebook: clientData.facebook || "",
       packages: [{
         id: crypto.randomUUID(),
         name: "Paquete Inicial",
         totalPublications: parseInt(clientData.publications),
         usedPublications: 0,
-        month: clientData.packageMonth
+        month: clientData.packageMonth,
+        paid: false
       }]
     };
     setClients((prev) => [newClient, ...prev]);
@@ -91,6 +93,8 @@ const Index = () => {
 
   const handleDeleteClient = (id: string) => {
     setClients((prev) => prev.filter((client) => client.id !== id));
+    // Also delete associated tasks
+    setTasks((prev) => prev.filter((task) => task.clientId !== id));
     toast({
       title: "Cliente eliminado",
       description: "El cliente ha sido eliminado exitosamente.",
@@ -121,32 +125,36 @@ const Index = () => {
     <div className="min-h-screen p-8 space-y-8">
       <div className="text-center space-y-4 mb-12">
         <h1 className="text-4xl font-bold font-heading text-gray-900">
-          Asistente Personal
+          Gestor de clientes Gleztin Marketing Digital
         </h1>
         <p className="text-gray-600 max-w-md mx-auto">
-          Organiza tus tareas y gestiona tus clientes de forma inteligente.
+          Gestiona tus clientes y tareas de forma eficiente
         </p>
       </div>
 
-      <Tabs defaultValue="tasks" className="w-full max-w-2xl mx-auto">
+      <Tabs defaultValue="clients" className="w-full max-w-2xl mx-auto">
         <TabsList className="grid w-full grid-cols-2 rounded-2xl p-1 bg-white/70 backdrop-blur-sm">
-          <TabsTrigger value="tasks" className="rounded-xl data-[state=active]:bg-black data-[state=active]:text-white">
-            Tareas
-          </TabsTrigger>
           <TabsTrigger value="clients" className="rounded-xl data-[state=active]:bg-black data-[state=active]:text-white">
             Clientes
           </TabsTrigger>
+          <TabsTrigger value="tasks" className="rounded-xl data-[state=active]:bg-black data-[state=active]:text-white">
+            Tareas
+          </TabsTrigger>
         </TabsList>
-        <TabsContent value="tasks" className="space-y-4 mt-6">
-          <TaskInput onAddTask={handleAddTask} />
-          <TaskList tasks={tasks} onDeleteTask={handleDeleteTask} />
-        </TabsContent>
         <TabsContent value="clients" className="space-y-4 mt-6">
           <ClientForm onAddClient={handleAddClient} />
           <ClientList 
             clients={clients} 
             onDeleteClient={handleDeleteClient}
             onUpdatePackage={handleUpdatePackage}
+          />
+        </TabsContent>
+        <TabsContent value="tasks" className="space-y-4 mt-6">
+          <TaskInput onAddTask={handleAddTask} />
+          <TaskList 
+            tasks={tasks} 
+            onDeleteTask={handleDeleteTask}
+            clients={clients}
           />
         </TabsContent>
       </Tabs>
