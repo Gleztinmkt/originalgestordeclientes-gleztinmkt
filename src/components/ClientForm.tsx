@@ -24,8 +24,12 @@ import { Textarea } from "./ui/textarea";
 
 const formSchema = z.object({
   name: z.string().min(2, "El nombre debe tener al menos 2 caracteres"),
-  package: z.string().min(1, "Selecciona un paquete"),
+  phone: z.string().min(10, "Ingrese un número de teléfono válido"),
+  publications: z.string().min(1, "Ingrese el número de publicaciones"),
   nextPayment: z.string().min(1, "Selecciona una fecha de pago"),
+  packageMonth: z.string().min(1, "Selecciona el mes del paquete"),
+  instagram: z.string().optional(),
+  facebook: z.string().optional(),
   marketingInfo: z.string(),
 });
 
@@ -41,8 +45,12 @@ export const ClientForm = ({ onAddClient }: ClientFormProps) => {
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
-      package: "",
+      phone: "",
+      publications: "",
       nextPayment: "",
+      packageMonth: "",
+      instagram: "",
+      facebook: "",
       marketingInfo: "",
     },
   });
@@ -88,13 +96,31 @@ export const ClientForm = ({ onAddClient }: ClientFormProps) => {
             />
             <FormField
               control={form.control}
-              name="package"
+              name="phone"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-gray-700">Paquete</FormLabel>
+                  <FormLabel className="text-gray-700">Teléfono</FormLabel>
                   <FormControl>
                     <Input 
-                      placeholder="Ej: Paquete Básico" 
+                      placeholder="Ej: +5491112345678" 
+                      {...field}
+                      className="rounded-xl bg-white/70 backdrop-blur-sm border-gray-100"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="publications"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-gray-700">Número de Publicaciones</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="number" 
+                      placeholder="Ej: 8" 
                       {...field}
                       className="rounded-xl bg-white/70 backdrop-blur-sm border-gray-100"
                     />
@@ -108,10 +134,63 @@ export const ClientForm = ({ onAddClient }: ClientFormProps) => {
               name="nextPayment"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-gray-700">Próximo Pago</FormLabel>
+                  <FormLabel className="text-gray-700">Día de Pago (1-31)</FormLabel>
                   <FormControl>
                     <Input 
-                      type="date" 
+                      type="number"
+                      min="1"
+                      max="31"
+                      {...field}
+                      className="rounded-xl bg-white/70 backdrop-blur-sm border-gray-100"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="packageMonth"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-gray-700">Mes del Paquete</FormLabel>
+                  <FormControl>
+                    <Input 
+                      placeholder="Ej: Enero" 
+                      {...field}
+                      className="rounded-xl bg-white/70 backdrop-blur-sm border-gray-100"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="instagram"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-gray-700">Instagram (opcional)</FormLabel>
+                  <FormControl>
+                    <Input 
+                      placeholder="@usuario" 
+                      {...field}
+                      className="rounded-xl bg-white/70 backdrop-blur-sm border-gray-100"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="facebook"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-gray-700">Facebook (opcional)</FormLabel>
+                  <FormControl>
+                    <Input 
+                      placeholder="URL de perfil" 
                       {...field}
                       className="rounded-xl bg-white/70 backdrop-blur-sm border-gray-100"
                     />
@@ -125,10 +204,10 @@ export const ClientForm = ({ onAddClient }: ClientFormProps) => {
               name="marketingInfo"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-gray-700">Información de Marketing</FormLabel>
+                  <FormLabel className="text-gray-700">Información Adicional</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Detalles de la estrategia..."
+                      placeholder="Detalles, notas y otra información relevante..."
                       {...field}
                       className="rounded-xl bg-white/70 backdrop-blur-sm border-gray-100 min-h-[100px]"
                     />
