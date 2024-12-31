@@ -19,7 +19,7 @@ export const PaymentReminder = ({ clientName, paymentDay, phone }: PaymentRemind
       return;
     }
 
-    const message = `Buenos días ${clientName}, este es un recordatorio de pago para el día ${paymentDay} del mes. Gracias por su atención.`;
+    const message = `Buenos días, este es un mensaje automático.\n\nLes recordamos la fecha de pago del día ${paymentDay} de cada mes.\n\nMuchas gracias.\n\nEn caso de tener alguna duda o no poder abonarlo dentro de la fecha establecida por favor contáctarnos.\n\nSi los valores no fueron enviados por favor pedirlos.`;
     const whatsappUrl = `https://wa.me/${phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
   };
