@@ -1,237 +1,20 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { TaskInput } from "@/components/TaskInput";
-import { TaskList, Task } from "@/components/TaskList";
-import { ClientList, Client } from "@/components/ClientList";
+import { TaskList } from "@/components/TaskList";
+import { ClientList } from "@/components/ClientList";
 import { ClientForm } from "@/components/ClientForm";
-import { analyzeTask } from "@/lib/task-analyzer";
-import { toast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { supabase } from "@/lib/supabase";
-import { 
-  convertDatabaseClient, 
-  convertClientForDatabase, 
-  convertDatabaseTask,
-  convertTaskForDatabase
-} from "@/lib/database-types";
+import { useTaskManager } from "@/features/tasks/useTaskManager";
+import { useClientManager } from "@/features/clients/useClientManager";
 
 const Index = () => {
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [clients, setClients] = useState<Client[]>([]);
+  const { tasks, loadTasks, addTask, deleteTask } = useTaskManager();
+  const { clients, loadClients, addClient, deleteClient, updatePackage } = useClientManager();
 
-  // Cargar datos iniciales de Supabase
   useEffect(() => {
-    const loadInitialData = async () => {
-      try {
-        // Cargar clientes
-        const { data: clientsData, error: clientsError } = await supabase
-          .from('clients')
-          .select('*');
-        
-        if (clientsError) throw clientsError;
-        if (clientsData) {
-          const formattedClients = clientsData.map((client: Record<string, unknown>) => 
-            convertDatabaseClient(client)
-          );
-          setClients(formattedClients);
-        }
-
-        // Cargar tareas
-        const { data: tasksData, error: tasksError } = await supabase
-          .from('tasks')
-          .select('*');
-        
-        if (tasksError) throw tasksError;
-        if (tasksData) {
-          const formattedTasks = tasksData.map((task: Record<string, unknown>) => 
-            convertDatabaseTask(task)
-          );
-          setTasks(formattedTasks);
-        }
-
-      } catch (error) {
-        console.error('Error loading data:', error);
-        toast({
-          title: "Error",
-          description: "No se pudieron cargar los datos. Por favor, intenta de nuevo.",
-          variant: "destructive",
-        });
-      }
-    };
-
-    loadInitialData();
+    loadClients();
+    loadTasks();
   }, []);
-
-  const handleAddTask = async (content: string) => {
-    const analysis = analyzeTask(content);
-    const newTask: Task = {
-      id: crypto.randomUUID(),
-      content,
-      ...analysis,
-      clientId: analysis.clientId || null,
-    };
-
-    try {
-      const { error } = await supabase
-        .from('tasks')
-        .insert([convertTaskForDatabase(newTask)]);
-      
-      if (error) throw error;
-
-      setTasks((prev) => [newTask, ...prev]);
-      toast({
-        title: "Tarea agregada",
-        description: "La tarea se ha guardado en la nube.",
-      });
-
-    } catch (error) {
-      console.error('Error adding task:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo guardar la tarea. Por favor, intenta de nuevo.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleAddClient = async (clientData: any) => {
-    const newClient: Client = {
-      id: crypto.randomUUID(),
-      name: clientData.name,
-      phone: clientData.phone,
-      paymentDay: parseInt(clientData.nextPayment),
-      marketingInfo: clientData.marketingInfo,
-      instagram: clientData.instagram || "",
-      facebook: clientData.facebook || "",
-      packages: [{
-        id: crypto.randomUUID(),
-        name: "Paquete Inicial",
-        totalPublications: parseInt(clientData.publications),
-        usedPublications: 0,
-        month: clientData.packageMonth,
-        paid: false
-      }]
-    };
-
-    try {
-      const { error } = await supabase
-        .from('clients')
-        .insert([convertClientForDatabase(newClient)]);
-      
-      if (error) throw error;
-
-      setClients((prev) => [newClient, ...prev]);
-      toast({
-        title: "Cliente agregado",
-        description: "El cliente se ha guardado en la nube.",
-      });
-
-    } catch (error) {
-      console.error('Error adding client:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo guardar el cliente. Por favor, intenta de nuevo.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleDeleteTask = async (id: string) => {
-    try {
-      const { error } = await supabase
-        .from('tasks')
-        .delete()
-        .eq('id', id);
-      
-      if (error) throw error;
-
-      setTasks((prev) => prev.filter((task) => task.id !== id));
-      toast({
-        title: "Tarea eliminada",
-        description: "La tarea ha sido eliminada de la nube.",
-      });
-
-    } catch (error) {
-      console.error('Error deleting task:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo eliminar la tarea. Por favor, intenta de nuevo.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleDeleteClient = async (id: string) => {
-    try {
-      // Eliminar el cliente
-      const { error: clientError } = await supabase
-        .from('clients')
-        .delete()
-        .eq('id', id);
-      
-      if (clientError) throw clientError;
-
-      // Eliminar tareas asociadas
-      const { error: tasksError } = await supabase
-        .from('tasks')
-        .delete()
-        .eq('clientId', id);
-      
-      if (tasksError) throw tasksError;
-
-      setClients((prev) => prev.filter((client) => client.id !== id));
-      setTasks((prev) => prev.filter((task) => task.clientId !== id));
-      
-      toast({
-        title: "Cliente eliminado",
-        description: "El cliente y sus tareas asociadas han sido eliminados de la nube.",
-      });
-
-    } catch (error) {
-      console.error('Error deleting client:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo eliminar el cliente. Por favor, intenta de nuevo.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleUpdatePackage = async (clientId: string, packageId: string, usedPublications: number) => {
-    try {
-      const client = clients.find(c => c.id === clientId);
-      if (!client) return;
-
-      const updatedClient = {
-        ...client,
-        packages: client.packages.map(pkg => {
-          if (pkg.id === packageId) {
-            return {
-              ...pkg,
-              usedPublications
-            };
-          }
-          return pkg;
-        })
-      };
-
-      const { error } = await supabase
-        .from('clients')
-        .update(convertClientForDatabase(updatedClient))
-        .eq('id', clientId);
-      
-      if (error) throw error;
-
-      setClients(prev => prev.map(c => c.id === clientId ? updatedClient : c));
-
-    } catch (error) {
-      console.error('Error updating package:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo actualizar el paquete. Por favor, intenta de nuevo.",
-        variant: "destructive",
-      });
-    }
-  };
 
   return (
     <div className="min-h-screen p-8 space-y-8">
@@ -254,18 +37,18 @@ const Index = () => {
           </TabsTrigger>
         </TabsList>
         <TabsContent value="clients" className="space-y-4 mt-6">
-          <ClientForm onAddClient={handleAddClient} />
+          <ClientForm onAddClient={addClient} />
           <ClientList 
             clients={clients} 
-            onDeleteClient={handleDeleteClient}
-            onUpdatePackage={handleUpdatePackage}
+            onDeleteClient={deleteClient}
+            onUpdatePackage={updatePackage}
           />
         </TabsContent>
         <TabsContent value="tasks" className="space-y-4 mt-6">
-          <TaskInput onAddTask={handleAddTask} />
+          <TaskInput onAddTask={addTask} />
           <TaskList 
             tasks={tasks} 
-            onDeleteTask={handleDeleteTask}
+            onDeleteClient={deleteTask}
             clients={clients}
           />
         </TabsContent>
