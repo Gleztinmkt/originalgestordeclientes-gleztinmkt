@@ -49,3 +49,11 @@ export const convertDatabaseTask = (task: Record<string, unknown>): Task => ({
   date: task.date as string | undefined,
   clientId: task.clientId as string | null | undefined,
 });
+
+export const convertTaskForDatabase = (task: Task): Record<string, unknown> => ({
+  id: task.id,
+  content: task.content,
+  type: task.type,
+  date: task.date,
+  clientId: task.clientId,
+});

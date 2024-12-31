@@ -10,7 +10,8 @@ import { supabase } from "@/lib/supabase";
 import { 
   convertDatabaseClient, 
   convertClientForDatabase, 
-  convertDatabaseTask 
+  convertDatabaseTask,
+  convertTaskForDatabase
 } from "@/lib/database-types";
 
 const Index = () => {
@@ -72,7 +73,7 @@ const Index = () => {
     try {
       const { error } = await supabase
         .from('tasks')
-        .insert([newTask as Record<string, unknown>]);
+        .insert([convertTaskForDatabase(newTask)]);
       
       if (error) throw error;
 
