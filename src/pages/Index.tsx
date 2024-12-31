@@ -7,7 +7,11 @@ import { analyzeTask } from "@/lib/task-analyzer";
 import { toast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/lib/supabase";
-import { DatabaseClient, DatabaseTask, convertDatabaseClient, convertClientForDatabase } from "@/lib/database-types";
+import { 
+  convertDatabaseClient, 
+  convertClientForDatabase, 
+  convertDatabaseTask 
+} from "@/lib/database-types";
 
 const Index = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -24,7 +28,9 @@ const Index = () => {
         
         if (clientsError) throw clientsError;
         if (clientsData) {
-          const formattedClients = (clientsData as DatabaseClient[]).map(convertDatabaseClient);
+          const formattedClients = clientsData.map((client: Record<string, unknown>) => 
+            convertDatabaseClient(client)
+          );
           setClients(formattedClients);
         }
 
@@ -35,7 +41,10 @@ const Index = () => {
         
         if (tasksError) throw tasksError;
         if (tasksData) {
-          setTasks(tasksData as DatabaseTask[]);
+          const formattedTasks = tasksData.map((task: Record<string, unknown>) => 
+            convertDatabaseTask(task)
+          );
+          setTasks(formattedTasks);
         }
 
       } catch (error) {
@@ -63,7 +72,7 @@ const Index = () => {
     try {
       const { error } = await supabase
         .from('tasks')
-        .insert([newTask as DatabaseTask]);
+        .insert([newTask as Record<string, unknown>]);
       
       if (error) throw error;
 
