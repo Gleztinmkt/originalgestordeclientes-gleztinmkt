@@ -57,10 +57,22 @@ const Index = () => {
     }
   };
 
-  const handleAddClient = (clientData: Omit<Client, "id">) => {
+  const handleAddClient = (clientData: any) => {
     const newClient: Client = {
       id: crypto.randomUUID(),
-      ...clientData,
+      name: clientData.name,
+      package: clientData.package || "basic",
+      nextPayment: clientData.nextPayment,
+      marketingInfo: clientData.marketingInfo,
+      phone: clientData.phone,
+      paymentDay: parseInt(clientData.nextPayment),
+      packages: [{
+        id: crypto.randomUUID(),
+        name: "Paquete Inicial",
+        totalPublications: parseInt(clientData.publications),
+        usedPublications: 0,
+        month: clientData.packageMonth
+      }]
     };
     setClients((prev) => [newClient, ...prev]);
     toast({
@@ -83,6 +95,26 @@ const Index = () => {
       title: "Cliente eliminado",
       description: "El cliente ha sido eliminado exitosamente.",
     });
+  };
+
+  const handleUpdatePackage = (clientId: string, packageId: string, usedPublications: number) => {
+    setClients(prev => prev.map(client => {
+      if (client.id === clientId) {
+        return {
+          ...client,
+          packages: client.packages.map(pkg => {
+            if (pkg.id === packageId) {
+              return {
+                ...pkg,
+                usedPublications
+              };
+            }
+            return pkg;
+          })
+        };
+      }
+      return client;
+    }));
   };
 
   return (
@@ -111,7 +143,11 @@ const Index = () => {
         </TabsContent>
         <TabsContent value="clients" className="space-y-4 mt-6">
           <ClientForm onAddClient={handleAddClient} />
-          <ClientList clients={clients} onDeleteClient={handleDeleteClient} />
+          <ClientList 
+            clients={clients} 
+            onDeleteClient={handleDeleteClient}
+            onUpdatePackage={handleUpdatePackage}
+          />
         </TabsContent>
       </Tabs>
     </div>
