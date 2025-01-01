@@ -2,6 +2,16 @@ import { Client } from "@/components/ClientList";
 import { Task } from "@/components/TaskList";
 import { Json } from "@/integrations/supabase/types";
 
+// Define the package type to match our client interface
+interface ClientPackage {
+  id: string;
+  name: string;
+  totalPublications: number;
+  usedPublications: number;
+  month: string;
+  paid: boolean;
+}
+
 export interface DatabaseClient {
   id: string;
   name: string;
@@ -10,7 +20,7 @@ export interface DatabaseClient {
   marketing_info: string | null;
   instagram: string | null;
   facebook: string | null;
-  packages: Json;
+  packages: ClientPackage[];
   created_at?: string;
 }
 
@@ -42,7 +52,7 @@ export const convertClientForDatabase = (client: Client): DatabaseClient => ({
   marketing_info: client.marketingInfo || null,
   instagram: client.instagram || null,
   facebook: client.facebook || null,
-  packages: client.packages as Json,
+  packages: client.packages,
 });
 
 export const convertDatabaseTask = (task: DatabaseTask): Task => ({
