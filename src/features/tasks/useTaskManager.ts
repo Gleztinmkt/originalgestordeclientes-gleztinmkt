@@ -7,18 +7,20 @@ import { analyzeTask } from "@/lib/task-analyzer";
 
 export const useTaskManager = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   const loadTasks = async () => {
     try {
+      setIsLoading(true);
       const { data: tasksData, error: tasksError } = await supabase
         .from('tasks')
-        .select('*');
+        .select('*')
+        .order('created_at', { ascending: false });
       
       if (tasksError) throw tasksError;
+
       if (tasksData) {
-        const formattedTasks = tasksData.map((task: Record<string, unknown>) => 
-          convertDatabaseTask(task)
-        );
+        const formattedTasks = tasksData.map(task => convertDatabaseTask(task));
         setTasks(formattedTasks);
       }
     } catch (error) {
@@ -28,31 +30,32 @@ export const useTaskManager = () => {
         description: "No se pudieron cargar las tareas. Por favor, intenta de nuevo.",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const addTask = async (content: string) => {
-    const analysis = analyzeTask(content);
-    const newTask: Task = {
-      id: crypto.randomUUID(),
-      content,
-      ...analysis,
-      clientId: analysis.clientId || null,
-    };
-
     try {
+      const analysis = analyzeTask(content);
+      const newTask: Task = {
+        id: crypto.randomUUID(),
+        content,
+        ...analysis,
+        clientId: analysis.clientId || null,
+      };
+
       const { error } = await supabase
         .from('tasks')
         .insert([convertTaskForDatabase(newTask)]);
       
       if (error) throw error;
 
-      setTasks((prev) => [newTask, ...prev]);
+      setTasks(prev => [newTask, ...prev]);
       toast({
         title: "Tarea agregada",
-        description: "La tarea se ha guardado en la nube.",
+        description: "La tarea se ha guardado correctamente.",
       });
-
     } catch (error) {
       console.error('Error adding task:', error);
       toast({
@@ -72,12 +75,11 @@ export const useTaskManager = () => {
       
       if (error) throw error;
 
-      setTasks((prev) => prev.filter((task) => task.id !== id));
+      setTasks(prev => prev.filter(task => task.id !== id));
       toast({
         title: "Tarea eliminada",
-        description: "La tarea ha sido eliminada de la nube.",
+        description: "La tarea ha sido eliminada correctamente.",
       });
-
     } catch (error) {
       console.error('Error deleting task:', error);
       toast({
@@ -90,6 +92,7 @@ export const useTaskManager = () => {
 
   return {
     tasks,
+    isLoading,
     loadTasks,
     addTask,
     deleteTask

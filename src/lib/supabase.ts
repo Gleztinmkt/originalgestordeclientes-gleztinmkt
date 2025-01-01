@@ -1,29 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
-import { toast } from '@/hooks/use-toast';
+import { Database } from '@/integrations/supabase/types';
 
-let supabase: ReturnType<typeof createClient>;
+const SUPABASE_URL = "https://rnwlqsnvswuecmqhsfww.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJud2xxc252c3d1ZWNtcWhzZnd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU2MjIzMzMsImV4cCI6MjA1MTE5ODMzM30.0BphzHhxCemowSATSx9zpU84abBGiDp-_yLv1EA-QC4";
 
-try {
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-  const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-  if (!supabaseUrl || !supabaseKey) {
-    console.error('Missing Supabase environment variables');
-    toast({
-      title: "Error de configuración",
-      description: "Por favor, asegúrate de que Supabase esté correctamente conectado en el menú superior derecho.",
-      variant: "destructive",
-    });
-    
-    // Provide dummy values to prevent runtime crashes
-    supabase = createClient('https://placeholder-url.supabase.co', 'placeholder-key');
-  } else {
-    supabase = createClient(supabaseUrl, supabaseKey);
-  }
-} catch (error) {
-  console.error('Error initializing Supabase client:', error);
-  // Provide dummy values to prevent runtime crashes
-  supabase = createClient('https://placeholder-url.supabase.co', 'placeholder-key');
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+  throw new Error('Missing Supabase environment variables');
 }
 
-export { supabase };
+export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY);

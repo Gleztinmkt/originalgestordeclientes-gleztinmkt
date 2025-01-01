@@ -6,18 +6,20 @@ import { convertClientForDatabase, convertDatabaseClient } from "@/lib/database-
 
 export const useClientManager = () => {
   const [clients, setClients] = useState<Client[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   const loadClients = async () => {
     try {
+      setIsLoading(true);
       const { data: clientsData, error: clientsError } = await supabase
         .from('clients')
-        .select('*');
+        .select('*')
+        .order('created_at', { ascending: false });
       
       if (clientsError) throw clientsError;
+
       if (clientsData) {
-        const formattedClients = clientsData.map((client: Record<string, unknown>) => 
-          convertDatabaseClient(client)
-        );
+        const formattedClients = clientsData.map(client => convertDatabaseClient(client));
         setClients(formattedClients);
       }
     } catch (error) {
@@ -27,41 +29,42 @@ export const useClientManager = () => {
         description: "No se pudieron cargar los clientes. Por favor, intenta de nuevo.",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const addClient = async (clientData: any) => {
-    const newClient: Client = {
-      id: crypto.randomUUID(),
-      name: clientData.name,
-      phone: clientData.phone,
-      paymentDay: parseInt(clientData.nextPayment),
-      marketingInfo: clientData.marketingInfo,
-      instagram: clientData.instagram || "",
-      facebook: clientData.facebook || "",
-      packages: [{
-        id: crypto.randomUUID(),
-        name: "Paquete Inicial",
-        totalPublications: parseInt(clientData.publications),
-        usedPublications: 0,
-        month: clientData.packageMonth,
-        paid: false
-      }]
-    };
-
     try {
+      const newClient: Client = {
+        id: crypto.randomUUID(),
+        name: clientData.name,
+        phone: clientData.phone,
+        paymentDay: parseInt(clientData.nextPayment),
+        marketingInfo: clientData.marketingInfo,
+        instagram: clientData.instagram || "",
+        facebook: clientData.facebook || "",
+        packages: [{
+          id: crypto.randomUUID(),
+          name: "Paquete Inicial",
+          totalPublications: parseInt(clientData.publications),
+          usedPublications: 0,
+          month: clientData.packageMonth,
+          paid: false
+        }]
+      };
+
       const { error } = await supabase
         .from('clients')
         .insert([convertClientForDatabase(newClient)]);
       
       if (error) throw error;
 
-      setClients((prev) => [newClient, ...prev]);
+      setClients(prev => [newClient, ...prev]);
       toast({
         title: "Cliente agregado",
-        description: "El cliente se ha guardado en la nube.",
+        description: "El cliente se ha guardado correctamente.",
       });
-
     } catch (error) {
       console.error('Error adding client:', error);
       toast({
@@ -74,27 +77,18 @@ export const useClientManager = () => {
 
   const deleteClient = async (id: string) => {
     try {
-      const { error: clientError } = await supabase
+      const { error } = await supabase
         .from('clients')
         .delete()
         .eq('id', id);
       
-      if (clientError) throw clientError;
+      if (error) throw error;
 
-      const { error: tasksError } = await supabase
-        .from('tasks')
-        .delete()
-        .eq('clientId', id);
-      
-      if (tasksError) throw tasksError;
-
-      setClients((prev) => prev.filter((client) => client.id !== id));
-      
+      setClients(prev => prev.filter(client => client.id !== id));
       toast({
         title: "Cliente eliminado",
-        description: "El cliente y sus tareas asociadas han sido eliminados de la nube.",
+        description: "El cliente ha sido eliminado correctamente.",
       });
-
     } catch (error) {
       console.error('Error deleting client:', error);
       toast({
@@ -131,7 +125,6 @@ export const useClientManager = () => {
       if (error) throw error;
 
       setClients(prev => prev.map(c => c.id === clientId ? updatedClient : c));
-
     } catch (error) {
       console.error('Error updating package:', error);
       toast({
@@ -144,6 +137,7 @@ export const useClientManager = () => {
 
   return {
     clients,
+    isLoading,
     loadClients,
     addClient,
     deleteClient,
