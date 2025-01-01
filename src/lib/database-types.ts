@@ -2,15 +2,6 @@ import { Client } from "@/components/ClientList";
 import { Task } from "@/components/TaskList";
 import { Json } from "@/integrations/supabase/types";
 
-export interface ClientPackage {
-  id: string;
-  name: string;
-  totalPublications: number;
-  usedPublications: number;
-  month: string;
-  paid: boolean;
-}
-
 export interface DatabaseClient {
   id: string;
   name: string;
@@ -64,8 +55,8 @@ export const convertClientForDatabase = (client: Client): DatabaseClient => ({
 export const convertDatabaseTask = (task: DatabaseTask): Task => ({
   id: task.id,
   content: task.content,
-  type: task.type as Task['type'],
-  date: task.date ? new Date(task.date) : null,
+  type: (task.type as Task['type']) || 'task',
+  date: task.date,
   clientId: task.client_id,
 });
 
@@ -73,6 +64,6 @@ export const convertTaskForDatabase = (task: Task): DatabaseTask => ({
   id: task.id,
   content: task.content,
   type: task.type || null,
-  date: task.date instanceof Date ? task.date.toISOString() : null,
+  date: task.date || null,
   client_id: task.clientId || null,
 });
