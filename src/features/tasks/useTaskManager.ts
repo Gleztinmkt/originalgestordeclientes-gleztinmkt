@@ -45,9 +45,10 @@ export const useTaskManager = () => {
         clientId: analysis.clientId || null,
       };
 
+      const dbTask = convertTaskForDatabase(newTask);
       const { error } = await supabase
         .from('tasks')
-        .insert([convertTaskForDatabase(newTask)]);
+        .insert(dbTask);
       
       if (error) throw error;
 

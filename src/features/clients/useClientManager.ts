@@ -54,9 +54,10 @@ export const useClientManager = () => {
         }]
       };
 
+      const dbClient = convertClientForDatabase(newClient);
       const { error } = await supabase
         .from('clients')
-        .insert([convertClientForDatabase(newClient)]);
+        .insert(dbClient);
       
       if (error) throw error;
 
@@ -117,9 +118,10 @@ export const useClientManager = () => {
         })
       };
 
+      const dbClient = convertClientForDatabase(updatedClient);
       const { error } = await supabase
         .from('clients')
-        .update(convertClientForDatabase(updatedClient))
+        .update(dbClient)
         .eq('id', clientId);
       
       if (error) throw error;
