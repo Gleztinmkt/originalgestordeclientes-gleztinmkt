@@ -19,7 +19,9 @@ export const useClientManager = () => {
       if (clientsError) throw clientsError;
 
       if (clientsData) {
-        const formattedClients = clientsData.map(client => convertDatabaseClient(client as DatabaseClient));
+        const formattedClients = clientsData.map(client => 
+          convertDatabaseClient(client as DatabaseClient)
+        );
         setClients(formattedClients);
       }
     } catch (error) {
@@ -57,7 +59,10 @@ export const useClientManager = () => {
       const dbClient = convertClientForDatabase(newClient);
       const { error } = await supabase
         .from('clients')
-        .insert(dbClient);
+        .insert({
+          ...dbClient,
+          packages: JSON.stringify(dbClient.packages)
+        });
       
       if (error) throw error;
 
@@ -121,7 +126,10 @@ export const useClientManager = () => {
       const dbClient = convertClientForDatabase(updatedClient);
       const { error } = await supabase
         .from('clients')
-        .update(dbClient)
+        .update({
+          ...dbClient,
+          packages: JSON.stringify(dbClient.packages)
+        })
         .eq('id', clientId);
       
       if (error) throw error;

@@ -2,8 +2,7 @@ import { Client } from "@/components/ClientList";
 import { Task } from "@/components/TaskList";
 import { Json } from "@/integrations/supabase/types";
 
-// Define the package type to match our client interface
-interface ClientPackage {
+export interface ClientPackage {
   id: string;
   name: string;
   totalPublications: number;
@@ -20,7 +19,7 @@ export interface DatabaseClient {
   marketing_info: string | null;
   instagram: string | null;
   facebook: string | null;
-  packages: ClientPackage[];
+  packages: Json;
   created_at?: string;
 }
 
@@ -41,7 +40,14 @@ export const convertDatabaseClient = (client: DatabaseClient): Client => ({
   marketingInfo: client.marketing_info || "",
   instagram: client.instagram || "",
   facebook: client.facebook || "",
-  packages: Array.isArray(client.packages) ? client.packages : [],
+  packages: (client.packages as any[] || []).map(pkg => ({
+    id: pkg.id || crypto.randomUUID(),
+    name: pkg.name || "",
+    totalPublications: pkg.totalPublications || 0,
+    usedPublications: pkg.usedPublications || 0,
+    month: pkg.month || "",
+    paid: pkg.paid || false
+  })),
 });
 
 export const convertClientForDatabase = (client: Client): DatabaseClient => ({
@@ -52,7 +58,7 @@ export const convertClientForDatabase = (client: Client): DatabaseClient => ({
   marketing_info: client.marketingInfo || null,
   instagram: client.instagram || null,
   facebook: client.facebook || null,
-  packages: client.packages,
+  packages: client.packages as Json,
 });
 
 export const convertDatabaseTask = (task: DatabaseTask): Task => ({
@@ -67,6 +73,6 @@ export const convertTaskForDatabase = (task: Task): DatabaseTask => ({
   id: task.id,
   content: task.content,
   type: task.type || null,
-  date: task.date || null,
+  date: task.date?.toISOString() || null,
   client_id: task.clientId || null,
 });
