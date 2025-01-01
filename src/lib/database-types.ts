@@ -73,6 +73,6 @@ export const convertTaskForDatabase = (task: Task): DatabaseTask => ({
   id: task.id,
   content: task.content,
   type: task.type || null,
-  date: task.date?.toISOString() || null,
+  date: task.date instanceof Date ? task.date.toISOString() : null,
   client_id: task.clientId || null,
 });
