@@ -1,59 +1,62 @@
 import { Client } from "@/components/ClientList";
 import { Task } from "@/components/TaskList";
+import { Json } from "@/integrations/supabase/types";
 
-export interface DatabaseClient extends Record<string, unknown> {
+export interface DatabaseClient {
   id: string;
   name: string;
-  phone: string;
-  paymentDay: number;
-  marketingInfo: string;
-  instagram?: string;
-  facebook?: string;
-  packages: string; // JSON string in database
+  phone: string | null;
+  payment_day: number | null;
+  marketing_info: string | null;
+  instagram: string | null;
+  facebook: string | null;
+  packages: Json;
+  created_at?: string;
 }
 
-export interface DatabaseTask extends Record<string, unknown> {
+export interface DatabaseTask {
   id: string;
   content: string;
-  type: "reminder" | "call" | "meeting" | "task";
-  date?: string;
-  clientId?: string | null;
+  type: string | null;
+  date: string | null;
+  client_id: string | null;
+  created_at?: string;
 }
 
-export const convertDatabaseClient = (client: Record<string, unknown>): Client => ({
-  id: client.id as string,
-  name: client.name as string,
-  phone: client.phone as string,
-  paymentDay: client.paymentDay as number,
-  marketingInfo: client.marketingInfo as string,
-  instagram: client.instagram as string | undefined,
-  facebook: client.facebook as string | undefined,
-  packages: JSON.parse((client.packages as string) || '[]'),
-});
-
-export const convertClientForDatabase = (client: Client): Record<string, unknown> => ({
+export const convertDatabaseClient = (client: DatabaseClient): Client => ({
   id: client.id,
   name: client.name,
-  phone: client.phone,
-  paymentDay: client.paymentDay,
-  marketingInfo: client.marketingInfo,
-  instagram: client.instagram,
-  facebook: client.facebook,
-  packages: JSON.stringify(client.packages),
+  phone: client.phone || "",
+  paymentDay: client.payment_day || 1,
+  marketingInfo: client.marketing_info || "",
+  instagram: client.instagram || "",
+  facebook: client.facebook || "",
+  packages: Array.isArray(client.packages) ? client.packages : [],
 });
 
-export const convertDatabaseTask = (task: Record<string, unknown>): Task => ({
-  id: task.id as string,
-  content: task.content as string,
-  type: task.type as Task['type'],
-  date: task.date as string | undefined,
-  clientId: task.clientId as string | null | undefined,
+export const convertClientForDatabase = (client: Client): DatabaseClient => ({
+  id: client.id,
+  name: client.name,
+  phone: client.phone || null,
+  payment_day: client.paymentDay || null,
+  marketing_info: client.marketingInfo || null,
+  instagram: client.instagram || null,
+  facebook: client.facebook || null,
+  packages: client.packages as Json,
 });
 
-export const convertTaskForDatabase = (task: Task): Record<string, unknown> => ({
+export const convertDatabaseTask = (task: DatabaseTask): Task => ({
   id: task.id,
   content: task.content,
-  type: task.type,
-  date: task.date,
-  clientId: task.clientId,
+  type: task.type as Task['type'],
+  date: task.date || undefined,
+  clientId: task.client_id,
+});
+
+export const convertTaskForDatabase = (task: Task): DatabaseTask => ({
+  id: task.id,
+  content: task.content,
+  type: task.type || null,
+  date: task.date || null,
+  client_id: task.clientId || null,
 });

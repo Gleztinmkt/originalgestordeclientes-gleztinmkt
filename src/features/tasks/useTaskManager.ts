@@ -2,7 +2,7 @@ import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { Task } from "@/components/TaskList";
 import { toast } from "@/hooks/use-toast";
-import { convertTaskForDatabase, convertDatabaseTask } from "@/lib/database-types";
+import { convertTaskForDatabase, convertDatabaseTask, DatabaseTask } from "@/lib/database-types";
 import { analyzeTask } from "@/lib/task-analyzer";
 
 export const useTaskManager = () => {
@@ -20,7 +20,7 @@ export const useTaskManager = () => {
       if (tasksError) throw tasksError;
 
       if (tasksData) {
-        const formattedTasks = tasksData.map(task => convertDatabaseTask(task));
+        const formattedTasks = tasksData.map(task => convertDatabaseTask(task as DatabaseTask));
         setTasks(formattedTasks);
       }
     } catch (error) {

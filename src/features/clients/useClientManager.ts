@@ -2,7 +2,7 @@ import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { Client } from "@/components/ClientList";
 import { toast } from "@/hooks/use-toast";
-import { convertClientForDatabase, convertDatabaseClient } from "@/lib/database-types";
+import { convertClientForDatabase, convertDatabaseClient, DatabaseClient } from "@/lib/database-types";
 
 export const useClientManager = () => {
   const [clients, setClients] = useState<Client[]>([]);
@@ -19,7 +19,7 @@ export const useClientManager = () => {
       if (clientsError) throw clientsError;
 
       if (clientsData) {
-        const formattedClients = clientsData.map(client => convertDatabaseClient(client));
+        const formattedClients = clientsData.map(client => convertDatabaseClient(client as DatabaseClient));
         setClients(formattedClients);
       }
     } catch (error) {
