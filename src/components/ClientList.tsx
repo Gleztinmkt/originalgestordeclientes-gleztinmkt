@@ -53,6 +53,22 @@ export const ClientList = ({
     ? clients
     : clients.filter(client => client.paymentDay === parseInt(selectedPaymentDay));
 
+  const handleUpdatePackagePaid = (clientId: string, packageId: string, paid: boolean) => {
+    const client = clients.find(c => c.id === clientId);
+    if (!client) return;
+
+    const updatedPackages = client.packages.map(pkg => 
+      pkg.id === packageId ? { ...pkg, paid } : pkg
+    );
+
+    onUpdateClient(clientId, { ...client, packages: updatedPackages });
+  };
+
+  const handleEditPackage = (clientId: string, packageId: string) => {
+    // This will be implemented when we add package editing functionality
+    console.log("Edit package", clientId, packageId);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -108,6 +124,8 @@ export const ClientList = ({
                   month={pkg.month}
                   paid={pkg.paid}
                   onUpdateUsed={(newCount) => onUpdatePackage(client.id, pkg.id, newCount)}
+                  onUpdatePaid={(paid) => handleUpdatePackagePaid(client.id, pkg.id, paid)}
+                  onEditPackage={() => handleEditPackage(client.id, pkg.id)}
                 />
               ))}
 
