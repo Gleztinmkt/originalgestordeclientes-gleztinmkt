@@ -14,6 +14,9 @@ import { ClientForm } from "./ClientForm";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
 
@@ -31,8 +34,9 @@ export const TaskInput = ({ onAddTask, clients }: TaskInputProps) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (input.trim()) {
-      onAddTask(input.trim(), selectedClient || undefined);
+      onAddTask(input.trim(), selectedClient);
       setInput("");
+      setSelectedClient("");
       toast({
         title: "Tarea agregada",
         description: "Tu tarea ha sido agregada exitosamente.",
@@ -42,11 +46,6 @@ export const TaskInput = ({ onAddTask, clients }: TaskInputProps) => {
 
   const handleAddClient = (clientData: any) => {
     setIsClientDialogOpen(false);
-    // The client will be added through the parent component's handler
-    toast({
-      title: "Cliente agregado",
-      description: "El cliente se ha agregado correctamente.",
-    });
   };
 
   const startListening = () => {
@@ -136,6 +135,12 @@ export const TaskInput = ({ onAddTask, clients }: TaskInputProps) => {
             </Button>
           </DialogTrigger>
           <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Agregar Nuevo Cliente</DialogTitle>
+              <DialogDescription>
+                Agrega un nuevo cliente para asignarle esta tarea
+              </DialogDescription>
+            </DialogHeader>
             <ClientForm onAddClient={handleAddClient} />
           </DialogContent>
         </Dialog>

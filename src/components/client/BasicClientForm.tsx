@@ -104,6 +104,7 @@ export const BasicClientForm = ({ onSubmit, defaultValues }: BasicClientFormProp
                   type="number"
                   min="1"
                   max="31"
+                  placeholder="Ej: 15"
                   {...field}
                   className="rounded-xl bg-white/70 backdrop-blur-sm border-gray-100"
                 />
@@ -133,7 +134,7 @@ export const BasicClientForm = ({ onSubmit, defaultValues }: BasicClientFormProp
           type="submit" 
           className="w-full bg-black hover:bg-gray-900 text-white rounded-2xl py-6 shadow-lg hover:shadow-xl transition-all duration-300"
         >
-          Guardar Cliente
+          {defaultValues ? 'Actualizar Cliente' : 'Guardar Cliente'}
         </button>
       </form>
     </Form>
