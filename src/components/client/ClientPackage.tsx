@@ -15,10 +15,10 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
-import { AddPackageForm } from "./AddPackageForm";
+import { AddPackageForm, PackageFormValues } from "./AddPackageForm";
 import { toast } from "@/hooks/use-toast";
+import { useState } from "react";
 
 interface ClientPackageProps {
   packageName: string;
@@ -28,7 +28,7 @@ interface ClientPackageProps {
   paid: boolean;
   onUpdateUsed: (newCount: number) => void;
   onUpdatePaid: (paid: boolean) => void;
-  onEditPackage: () => void;
+  onEditPackage: (values: PackageFormValues) => void;
   onDeletePackage?: () => void;
 }
 
@@ -43,6 +43,17 @@ export const ClientPackage = ({
   onEditPackage,
   onDeletePackage,
 }: ClientPackageProps) => {
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+
+  const handleEditSubmit = (values: PackageFormValues) => {
+    onEditPackage(values);
+    setIsEditDialogOpen(false);
+    toast({
+      title: "Paquete actualizado",
+      description: "El paquete ha sido actualizado correctamente.",
+    });
+  };
+
   return (
     <Card className="bg-white/60 backdrop-blur-sm">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -56,53 +67,36 @@ export const ClientPackage = ({
             <span className="text-sm text-gray-600">
               {paid ? "Pagado" : "Pendiente"}
             </span>
-            <Switch
-              checked={paid}
-              onCheckedChange={onUpdatePaid}
-            />
+            <Switch checked={paid} onCheckedChange={onUpdatePaid} />
           </div>
-          <Dialog>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setIsEditDialogOpen(true)}>
+                <Edit className="mr-2 h-4 w-4" />
+                Editar paquete
+              </DropdownMenuItem>
+              {onDeletePackage && (
+                <DropdownMenuItem
+                  className="text-red-600"
+                  onClick={() => {
+                    onDeletePackage();
+                    toast({
+                      title: "Paquete eliminado",
+                      description: "El paquete ha sido eliminado correctamente.",
+                    });
+                  }}
                 >
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DialogTrigger asChild>
-                  <DropdownMenuItem>
-                    <Edit className="mr-2 h-4 w-4" />
-                    Editar paquete
-                  </DropdownMenuItem>
-                </DialogTrigger>
-                {onDeletePackage && (
-                  <DropdownMenuItem 
-                    className="text-red-600"
-                    onClick={() => {
-                      onDeletePackage();
-                      toast({
-                        title: "Paquete eliminado",
-                        description: "El paquete ha sido eliminado correctamente.",
-                      });
-                    }}
-                  >
-                    <Trash className="mr-2 h-4 w-4" />
-                    Eliminar paquete
-                  </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Editar Paquete</DialogTitle>
-              </DialogHeader>
-              <AddPackageForm onSubmit={onEditPackage} />
-            </DialogContent>
-          </Dialog>
+                  <Trash className="mr-2 h-4 w-4" />
+                  Eliminar paquete
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </CardHeader>
       <CardContent>
@@ -112,6 +106,23 @@ export const ClientPackage = ({
           onUpdateUsed={onUpdateUsed}
         />
       </CardContent>
+
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Paquete</DialogTitle>
+          </DialogHeader>
+          <AddPackageForm
+            onSubmit={handleEditSubmit}
+            defaultValues={{
+              name: packageName,
+              totalPublications: totalPublications.toString(),
+              month: month,
+              paid: paid,
+            }}
+          />
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };

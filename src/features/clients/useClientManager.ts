@@ -16,7 +16,10 @@ export const useClientManager = () => {
         .select('*')
         .order('created_at', { ascending: false });
       
-      if (clientsError) throw clientsError;
+      if (clientsError) {
+        console.error('Error loading clients:', clientsError);
+        throw new Error(clientsError.message);
+      }
 
       if (clientsData) {
         const formattedClients = clientsData.map(client => 
@@ -186,9 +189,18 @@ export const useClientManager = () => {
       const client = clients.find(c => c.id === clientId);
       if (!client) return;
 
+      const newPackage = {
+        id: crypto.randomUUID(),
+        name: packageData.name,
+        totalPublications: parseInt(packageData.totalPublications),
+        usedPublications: 0,
+        month: packageData.month,
+        paid: packageData.paid
+      };
+
       const updatedClient = {
         ...client,
-        packages: [...client.packages, packageData]
+        packages: [...client.packages, newPackage]
       };
 
       const dbClient = convertClientForDatabase(updatedClient);

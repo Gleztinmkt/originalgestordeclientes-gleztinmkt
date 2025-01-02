@@ -24,12 +24,13 @@ export type PackageFormValues = z.infer<typeof packageFormSchema>;
 
 interface AddPackageFormProps {
   onSubmit: (values: PackageFormValues) => void;
+  defaultValues?: Partial<PackageFormValues>;
 }
 
-export const AddPackageForm = ({ onSubmit }: AddPackageFormProps) => {
+export const AddPackageForm = ({ onSubmit, defaultValues }: AddPackageFormProps) => {
   const form = useForm<PackageFormValues>({
     resolver: zodResolver(packageFormSchema),
-    defaultValues: {
+    defaultValues: defaultValues || {
       name: "",
       totalPublications: "",
       month: "",
@@ -116,7 +117,7 @@ export const AddPackageForm = ({ onSubmit }: AddPackageFormProps) => {
           type="submit" 
           className="w-full bg-black hover:bg-gray-900 text-white rounded-2xl py-6 shadow-lg hover:shadow-xl transition-all duration-300"
         >
-          Agregar Paquete
+          {defaultValues ? 'Actualizar Paquete' : 'Agregar Paquete'}
         </button>
       </form>
     </Form>
