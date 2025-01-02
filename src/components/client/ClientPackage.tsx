@@ -8,6 +8,7 @@ interface ClientPackageProps {
   totalPublications: number;
   usedPublications: number;
   month: string;
+  paid: boolean;
   onUpdateUsed: (newCount: number) => void;
 }
 
@@ -16,6 +17,7 @@ export const ClientPackage = ({
   totalPublications,
   usedPublications,
   month,
+  paid,
   onUpdateUsed,
 }: ClientPackageProps) => {
   return (
@@ -25,7 +27,12 @@ export const ClientPackage = ({
           <Package className="h-5 w-5" />
           {packageName}
         </CardTitle>
-        <Badge>{month}</Badge>
+        <div className="flex gap-2">
+          <Badge>{month}</Badge>
+          <Badge variant={paid ? "default" : "destructive"}>
+            {paid ? "Pagado" : "Pendiente"}
+          </Badge>
+        </div>
       </CardHeader>
       <CardContent>
         <PackageCounter

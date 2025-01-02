@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Clock, Package, CreditCard, Trash2 } from "lucide-react";
+import { Clock, Package, CreditCard, Trash2, Edit, Plus } from "lucide-react";
 import { Button } from "./ui/button";
 import {
   Card,
@@ -11,6 +11,8 @@ import { ClientPackage } from "./client/ClientPackage";
 import { PaymentReminder } from "./client/PaymentReminder";
 import { BulkMessageButton } from "./client/BulkMessageButton";
 import { ClientFilter } from "./client/ClientFilter";
+import { EditClientDialog } from "./client/EditClientDialog";
+import { AddPackageDialog } from "./client/AddPackageDialog";
 
 export interface Client {
   id: string;
@@ -33,10 +35,18 @@ export interface Client {
 interface ClientListProps {
   clients: Client[];
   onDeleteClient: (id: string) => void;
+  onUpdateClient: (id: string, data: any) => void;
   onUpdatePackage: (clientId: string, packageId: string, usedPublications: number) => void;
+  onAddPackage: (clientId: string, packageData: any) => void;
 }
 
-export const ClientList = ({ clients, onDeleteClient, onUpdatePackage }: ClientListProps) => {
+export const ClientList = ({ 
+  clients, 
+  onDeleteClient, 
+  onUpdateClient,
+  onUpdatePackage,
+  onAddPackage 
+}: ClientListProps) => {
   const [selectedPaymentDay, setSelectedPaymentDay] = useState<string>("all");
 
   const filteredClients = selectedPaymentDay === "all"
@@ -63,14 +73,24 @@ export const ClientList = ({ clients, onDeleteClient, onUpdatePackage }: ClientL
               <CardTitle className="text-xl font-heading font-semibold text-gray-800">
                 {client.name}
               </CardTitle>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => onDeleteClient(client.id)}
-                className="h-8 w-8 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors duration-200"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
+              <div className="flex gap-2">
+                <EditClientDialog 
+                  client={client}
+                  onUpdateClient={onUpdateClient}
+                />
+                <AddPackageDialog
+                  clientId={client.id}
+                  onAddPackage={onAddPackage}
+                />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => onDeleteClient(client.id)}
+                  className="h-8 w-8 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors duration-200"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
               <PaymentReminder
@@ -86,6 +106,7 @@ export const ClientList = ({ clients, onDeleteClient, onUpdatePackage }: ClientL
                   totalPublications={pkg.totalPublications}
                   usedPublications={pkg.usedPublications}
                   month={pkg.month}
+                  paid={pkg.paid}
                   onUpdateUsed={(newCount) => onUpdatePackage(client.id, pkg.id, newCount)}
                 />
               ))}

@@ -9,7 +9,15 @@ import { useClientManager } from "@/features/clients/useClientManager";
 
 const Index = () => {
   const { tasks, loadTasks, addTask, deleteTask } = useTaskManager();
-  const { clients, loadClients, addClient, deleteClient, updatePackage } = useClientManager();
+  const { 
+    clients, 
+    loadClients, 
+    addClient, 
+    deleteClient, 
+    updateClient,
+    updatePackage,
+    addPackage 
+  } = useClientManager();
 
   useEffect(() => {
     loadClients();
@@ -41,11 +49,16 @@ const Index = () => {
           <ClientList 
             clients={clients} 
             onDeleteClient={deleteClient}
+            onUpdateClient={updateClient}
             onUpdatePackage={updatePackage}
+            onAddPackage={addPackage}
           />
         </TabsContent>
         <TabsContent value="tasks" className="space-y-4 mt-6">
-          <TaskInput onAddTask={addTask} />
+          <TaskInput 
+            onAddTask={addTask}
+            clients={clients}
+          />
           <TaskList 
             tasks={tasks} 
             onDeleteTask={deleteTask}

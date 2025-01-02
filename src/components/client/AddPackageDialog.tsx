@@ -6,9 +6,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Package } from "lucide-react";
-import { AddPackageForm, PackageFormValues } from "./AddPackageForm";
-import { toast } from "@/hooks/use-toast";
+import { Plus } from "lucide-react";
+import { AddPackageForm } from "./AddPackageForm";
 
 interface AddPackageDialogProps {
   clientId: string;
@@ -16,29 +15,22 @@ interface AddPackageDialogProps {
 }
 
 export const AddPackageDialog = ({ clientId, onAddPackage }: AddPackageDialogProps) => {
-  const handleSubmit = (values: PackageFormValues) => {
-    const newPackage = {
+  const handleSubmit = (values: any) => {
+    onAddPackage(clientId, {
       id: crypto.randomUUID(),
       name: values.name,
       totalPublications: parseInt(values.totalPublications),
       usedPublications: 0,
       month: values.month,
       paid: values.paid,
-    };
-    
-    onAddPackage(clientId, newPackage);
-    toast({
-      title: "Paquete agregado",
-      description: "El nuevo paquete se ha agregado correctamente.",
     });
   };
 
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="ml-2">
-          <Package className="h-4 w-4 mr-2" />
-          Agregar Paquete
+        <Button variant="outline" size="icon">
+          <Plus className="h-4 w-4" />
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">

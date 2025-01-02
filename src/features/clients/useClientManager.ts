@@ -42,14 +42,14 @@ export const useClientManager = () => {
         id: crypto.randomUUID(),
         name: clientData.name,
         phone: clientData.phone,
-        paymentDay: parseInt(clientData.nextPayment),
-        marketingInfo: clientData.marketingInfo,
+        paymentDay: parseInt(clientData.nextPayment) || 1,
+        marketingInfo: clientData.marketingInfo || "",
         instagram: clientData.instagram || "",
         facebook: clientData.facebook || "",
         packages: [{
           id: crypto.randomUUID(),
           name: "Paquete Inicial",
-          totalPublications: parseInt(clientData.publications),
+          totalPublications: parseInt(clientData.publications) || 0,
           usedPublications: 0,
           month: clientData.packageMonth,
           paid: false
@@ -76,6 +76,42 @@ export const useClientManager = () => {
       toast({
         title: "Error",
         description: "No se pudo guardar el cliente. Por favor, intenta de nuevo.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const updateClient = async (id: string, data: any) => {
+    try {
+      const client = clients.find(c => c.id === id);
+      if (!client) return;
+
+      const updatedClient = {
+        ...client,
+        ...data
+      };
+
+      const dbClient = convertClientForDatabase(updatedClient);
+      const { error } = await supabase
+        .from('clients')
+        .update({
+          ...dbClient,
+          packages: JSON.stringify(dbClient.packages)
+        })
+        .eq('id', id);
+      
+      if (error) throw error;
+
+      setClients(prev => prev.map(c => c.id === id ? updatedClient : c));
+      toast({
+        title: "Cliente actualizado",
+        description: "La información del cliente se ha actualizado correctamente.",
+      });
+    } catch (error) {
+      console.error('Error updating client:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el cliente. Por favor, intenta de nuevo.",
         variant: "destructive",
       });
     }
@@ -145,12 +181,50 @@ export const useClientManager = () => {
     }
   };
 
+  const addPackage = async (clientId: string, packageData: any) => {
+    try {
+      const client = clients.find(c => c.id === clientId);
+      if (!client) return;
+
+      const updatedClient = {
+        ...client,
+        packages: [...client.packages, packageData]
+      };
+
+      const dbClient = convertClientForDatabase(updatedClient);
+      const { error } = await supabase
+        .from('clients')
+        .update({
+          ...dbClient,
+          packages: JSON.stringify(dbClient.packages)
+        })
+        .eq('id', clientId);
+      
+      if (error) throw error;
+
+      setClients(prev => prev.map(c => c.id === clientId ? updatedClient : c));
+      toast({
+        title: "Paquete agregado",
+        description: "El paquete se ha agregado correctamente.",
+      });
+    } catch (error) {
+      console.error('Error adding package:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo agregar el paquete. Por favor, intenta de nuevo.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return {
     clients,
     isLoading,
     loadClients,
     addClient,
+    updateClient,
     deleteClient,
-    updatePackage
+    updatePackage,
+    addPackage
   };
 };
