@@ -64,6 +64,14 @@ export const ClientList = ({
     onUpdateClient(clientId, { ...client, packages: updatedPackages });
   };
 
+  const handleDeletePackage = (clientId: string, packageId: string) => {
+    const client = clients.find(c => c.id === clientId);
+    if (!client) return;
+
+    const updatedPackages = client.packages.filter(pkg => pkg.id !== packageId);
+    onUpdateClient(clientId, { ...client, packages: updatedPackages });
+  };
+
   const handleEditPackage = (clientId: string, packageId: string) => {
     // This will be implemented when we add package editing functionality
     console.log("Edit package", clientId, packageId);
@@ -126,6 +134,7 @@ export const ClientList = ({
                   onUpdateUsed={(newCount) => onUpdatePackage(client.id, pkg.id, newCount)}
                   onUpdatePaid={(paid) => handleUpdatePackagePaid(client.id, pkg.id, paid)}
                   onEditPackage={() => handleEditPackage(client.id, pkg.id)}
+                  onDeletePackage={() => handleDeletePackage(client.id, pkg.id)}
                 />
               ))}
 

@@ -1,9 +1,24 @@
-import { Package, Edit } from "lucide-react";
+import { Package, Edit, MoreVertical, Trash } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PackageCounter } from "./PackageCounter";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { AddPackageForm } from "./AddPackageForm";
+import { toast } from "@/hooks/use-toast";
 
 interface ClientPackageProps {
   packageName: string;
@@ -14,6 +29,7 @@ interface ClientPackageProps {
   onUpdateUsed: (newCount: number) => void;
   onUpdatePaid: (paid: boolean) => void;
   onEditPackage: () => void;
+  onDeletePackage?: () => void;
 }
 
 export const ClientPackage = ({
@@ -25,6 +41,7 @@ export const ClientPackage = ({
   onUpdateUsed,
   onUpdatePaid,
   onEditPackage,
+  onDeletePackage,
 }: ClientPackageProps) => {
   return (
     <Card className="bg-white/60 backdrop-blur-sm">
@@ -44,14 +61,40 @@ export const ClientPackage = ({
               onCheckedChange={onUpdatePaid}
             />
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onEditPackage}
-            className="h-8 w-8"
-          >
-            <Edit className="h-4 w-4" />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+              >
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DialogTrigger asChild>
+                <DropdownMenuItem>
+                  <Edit className="mr-2 h-4 w-4" />
+                  Editar paquete
+                </DropdownMenuItem>
+              </DialogTrigger>
+              {onDeletePackage && (
+                <DropdownMenuItem 
+                  className="text-red-600"
+                  onClick={() => {
+                    onDeletePackage();
+                    toast({
+                      title: "Paquete eliminado",
+                      description: "El paquete ha sido eliminado correctamente.",
+                    });
+                  }}
+                >
+                  <Trash className="mr-2 h-4 w-4" />
+                  Eliminar paquete
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </CardHeader>
       <CardContent>
