@@ -61,40 +61,48 @@ export const ClientPackage = ({
               onCheckedChange={onUpdatePaid}
             />
           </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-              >
-                <MoreVertical className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DialogTrigger asChild>
-                <DropdownMenuItem>
-                  <Edit className="mr-2 h-4 w-4" />
-                  Editar paquete
-                </DropdownMenuItem>
-              </DialogTrigger>
-              {onDeletePackage && (
-                <DropdownMenuItem 
-                  className="text-red-600"
-                  onClick={() => {
-                    onDeletePackage();
-                    toast({
-                      title: "Paquete eliminado",
-                      description: "El paquete ha sido eliminado correctamente.",
-                    });
-                  }}
+          <Dialog>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
                 >
-                  <Trash className="mr-2 h-4 w-4" />
-                  Eliminar paquete
-                </DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DialogTrigger asChild>
+                  <DropdownMenuItem>
+                    <Edit className="mr-2 h-4 w-4" />
+                    Editar paquete
+                  </DropdownMenuItem>
+                </DialogTrigger>
+                {onDeletePackage && (
+                  <DropdownMenuItem 
+                    className="text-red-600"
+                    onClick={() => {
+                      onDeletePackage();
+                      toast({
+                        title: "Paquete eliminado",
+                        description: "El paquete ha sido eliminado correctamente.",
+                      });
+                    }}
+                  >
+                    <Trash className="mr-2 h-4 w-4" />
+                    Eliminar paquete
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Editar Paquete</DialogTitle>
+              </DialogHeader>
+              <AddPackageForm onAddPackage={onEditPackage} />
+            </DialogContent>
+          </Dialog>
         </div>
       </CardHeader>
       <CardContent>
