@@ -100,7 +100,7 @@ export const ClientPackage = ({
               <DialogHeader>
                 <DialogTitle>Editar Paquete</DialogTitle>
               </DialogHeader>
-              <AddPackageForm onAddPackage={onEditPackage} />
+              <AddPackageForm onSubmit={onEditPackage} />
             </DialogContent>
           </Dialog>
         </div>
