@@ -47,6 +47,8 @@ export const ClientPackage = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleEditSubmit = useCallback(async (values: PackageFormValues) => {
+    if (isSubmitting) return;
+    
     try {
       setIsSubmitting(true);
       await onEditPackage(values);
@@ -65,10 +67,13 @@ export const ClientPackage = ({
     } finally {
       setIsSubmitting(false);
     }
-  }, [onEditPackage]);
+  }, [onEditPackage, isSubmitting]);
 
   const handleUpdatePaid = useCallback(async (newPaidStatus: boolean) => {
+    if (isSubmitting) return;
+    
     try {
+      setIsSubmitting(true);
       await onUpdatePaid(newPaidStatus);
       toast({
         title: "Estado actualizado",
@@ -81,8 +86,10 @@ export const ClientPackage = ({
         description: "No se pudo actualizar el estado del pago.",
         variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
-  }, [onUpdatePaid]);
+  }, [onUpdatePaid, isSubmitting]);
 
   return (
     <Card className="bg-white/60 backdrop-blur-sm">

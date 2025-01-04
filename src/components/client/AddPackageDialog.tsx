@@ -8,6 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { AddPackageForm } from "./AddPackageForm";
+import { useState } from "react";
 
 interface AddPackageDialogProps {
   clientId: string;
@@ -15,19 +16,30 @@ interface AddPackageDialogProps {
 }
 
 export const AddPackageDialog = ({ clientId, onAddPackage }: AddPackageDialogProps) => {
-  const handleSubmit = (values: any) => {
-    onAddPackage(clientId, {
-      id: crypto.randomUUID(),
-      name: values.name,
-      totalPublications: parseInt(values.totalPublications),
-      usedPublications: 0,
-      month: values.month,
-      paid: values.paid,
-    });
+  const [isOpen, setIsOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (values: any) => {
+    try {
+      setIsSubmitting(true);
+      await onAddPackage(clientId, {
+        id: crypto.randomUUID(),
+        name: values.name,
+        totalPublications: parseInt(values.totalPublications),
+        usedPublications: 0,
+        month: values.month,
+        paid: values.paid,
+      });
+      setIsOpen(false);
+    } catch (error) {
+      console.error('Error adding package:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
-    <Dialog>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" size="icon">
           <Plus className="h-4 w-4" />
@@ -37,7 +49,10 @@ export const AddPackageDialog = ({ clientId, onAddPackage }: AddPackageDialogPro
         <DialogHeader>
           <DialogTitle>Agregar Nuevo Paquete</DialogTitle>
         </DialogHeader>
-        <AddPackageForm onSubmit={handleSubmit} />
+        <AddPackageForm 
+          onSubmit={handleSubmit} 
+          isSubmitting={isSubmitting}
+        />
       </DialogContent>
     </Dialog>
   );
