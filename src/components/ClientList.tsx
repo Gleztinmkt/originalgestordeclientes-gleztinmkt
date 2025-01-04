@@ -72,6 +72,23 @@ export const ClientList = ({
     onUpdateClient(clientId, { ...client, packages: updatedPackages });
   };
 
+  const handleEditPackage = (clientId: string, packageId: string, values: any) => {
+    const client = clients.find(c => c.id === clientId);
+    if (!client) return;
+
+    const updatedPackages = client.packages.map(pkg => 
+      pkg.id === packageId ? {
+        ...pkg,
+        name: values.name,
+        totalPublications: parseInt(values.totalPublications),
+        month: values.month,
+        paid: values.paid
+      } : pkg
+    );
+
+    onUpdateClient(clientId, { ...client, packages: updatedPackages });
+  };
+
   const handleDeletePackage = (clientId: string, packageId: string) => {
     const client = clients.find(c => c.id === clientId);
     if (!client) return;
@@ -140,6 +157,7 @@ export const ClientList = ({
                   paid={pkg.paid}
                   onUpdateUsed={(newCount) => onUpdatePackage(client.id, pkg.id, newCount)}
                   onUpdatePaid={(paid) => handleUpdatePackagePaid(client.id, pkg.id, paid)}
+                  onEditPackage={(values) => handleEditPackage(client.id, pkg.id, values)}
                   onDeletePackage={() => handleDeletePackage(client.id, pkg.id)}
                 />
               ))}

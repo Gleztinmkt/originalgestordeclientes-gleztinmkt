@@ -23,9 +23,10 @@ export type SocialFormValues = z.infer<typeof socialFormSchema>;
 interface SocialMediaFormProps {
   onSubmit: (values: SocialFormValues) => void;
   defaultValues?: Partial<SocialFormValues>;
+  isSubmitting?: boolean;
 }
 
-export const SocialMediaForm = ({ onSubmit, defaultValues }: SocialMediaFormProps) => {
+export const SocialMediaForm = ({ onSubmit, defaultValues, isSubmitting }: SocialMediaFormProps) => {
   const form = useForm<SocialFormValues>({
     resolver: zodResolver(socialFormSchema),
     defaultValues: defaultValues || {
@@ -49,6 +50,7 @@ export const SocialMediaForm = ({ onSubmit, defaultValues }: SocialMediaFormProp
                   placeholder="@usuario" 
                   {...field}
                   className="rounded-xl bg-white/70 backdrop-blur-sm border-gray-100"
+                  disabled={isSubmitting}
                 />
               </FormControl>
               <FormMessage />
@@ -66,6 +68,7 @@ export const SocialMediaForm = ({ onSubmit, defaultValues }: SocialMediaFormProp
                   placeholder="URL de perfil" 
                   {...field}
                   className="rounded-xl bg-white/70 backdrop-blur-sm border-gray-100"
+                  disabled={isSubmitting}
                 />
               </FormControl>
               <FormMessage />
@@ -83,6 +86,7 @@ export const SocialMediaForm = ({ onSubmit, defaultValues }: SocialMediaFormProp
                   placeholder="Detalles, notas y otra información relevante..."
                   {...field}
                   className="rounded-xl bg-white/70 backdrop-blur-sm border-gray-100 min-h-[100px]"
+                  disabled={isSubmitting}
                 />
               </FormControl>
               <FormMessage />
@@ -92,8 +96,9 @@ export const SocialMediaForm = ({ onSubmit, defaultValues }: SocialMediaFormProp
         <button 
           type="submit" 
           className="w-full bg-black hover:bg-gray-900 text-white rounded-2xl py-6 shadow-lg hover:shadow-xl transition-all duration-300"
+          disabled={isSubmitting}
         >
-          Guardar Información Adicional
+          {isSubmitting ? 'Guardando...' : 'Guardar Información Adicional'}
         </button>
       </form>
     </Form>
