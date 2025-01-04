@@ -1,8 +1,7 @@
 import { useState } from "react";
-import { supabase } from "@/lib/supabase";
 import { Client } from "@/components/ClientList";
 import { toast } from "@/hooks/use-toast";
-import { convertClientForDatabase, convertDatabaseClient, DatabaseClient } from "@/lib/database-types";
+import { fetchClients, createClient, updateClient, deleteClient } from "./clientApi";
 
 export const useClientManager = () => {
   const [clients, setClients] = useState<Client[]>([]);
@@ -11,22 +10,8 @@ export const useClientManager = () => {
   const loadClients = async () => {
     try {
       setIsLoading(true);
-      const { data: clientsData, error: clientsError } = await supabase
-        .from('clients')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (clientsError) {
-        console.error('Error loading clients:', clientsError);
-        throw new Error(clientsError.message);
-      }
-
-      if (clientsData) {
-        const formattedClients = clientsData.map(client => 
-          convertDatabaseClient(client as DatabaseClient)
-        );
-        setClients(formattedClients);
-      }
+      const loadedClients = await fetchClients();
+      setClients(loadedClients);
     } catch (error) {
       console.error('Error loading clients:', error);
       toast({
@@ -41,11 +26,10 @@ export const useClientManager = () => {
 
   const addClient = async (clientData: any) => {
     try {
-      const newClient: Client = {
-        id: crypto.randomUUID(),
+      const newClient = await createClient({
         name: clientData.name,
         phone: clientData.phone,
-        paymentDay: parseInt(clientData.nextPayment) || 1,
+        paymentDay: parseInt(clientData.nextPayment),
         marketingInfo: clientData.marketingInfo || "",
         instagram: clientData.instagram || "",
         facebook: clientData.facebook || "",
@@ -57,17 +41,7 @@ export const useClientManager = () => {
           month: clientData.packageMonth,
           paid: false
         }]
-      };
-
-      const dbClient = convertClientForDatabase(newClient);
-      const { error } = await supabase
-        .from('clients')
-        .insert({
-          ...dbClient,
-          packages: JSON.stringify(dbClient.packages)
-        });
-      
-      if (error) throw error;
+      });
 
       setClients(prev => [newClient, ...prev]);
       toast({
@@ -84,27 +58,9 @@ export const useClientManager = () => {
     }
   };
 
-  const updateClient = async (id: string, data: any) => {
+  const updateClientData = async (id: string, data: any) => {
     try {
-      const client = clients.find(c => c.id === id);
-      if (!client) return;
-
-      const updatedClient = {
-        ...client,
-        ...data
-      };
-
-      const dbClient = convertClientForDatabase(updatedClient);
-      const { error } = await supabase
-        .from('clients')
-        .update({
-          ...dbClient,
-          packages: JSON.stringify(dbClient.packages)
-        })
-        .eq('id', id);
-      
-      if (error) throw error;
-
+      const updatedClient = await updateClient(id, data);
       setClients(prev => prev.map(c => c.id === id ? updatedClient : c));
       toast({
         title: "Cliente actualizado",
@@ -120,15 +76,9 @@ export const useClientManager = () => {
     }
   };
 
-  const deleteClient = async (id: string) => {
+  const deleteClientData = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from('clients')
-        .delete()
-        .eq('id', id);
-      
-      if (error) throw error;
-
+      await deleteClient(id);
       setClients(prev => prev.filter(client => client.id !== id));
       toast({
         title: "Cliente eliminado",
@@ -149,31 +99,11 @@ export const useClientManager = () => {
       const client = clients.find(c => c.id === clientId);
       if (!client) return;
 
-      const updatedClient = {
-        ...client,
-        packages: client.packages.map(pkg => {
-          if (pkg.id === packageId) {
-            return {
-              ...pkg,
-              usedPublications
-            };
-          }
-          return pkg;
-        })
-      };
+      const updatedPackages = client.packages.map(pkg => 
+        pkg.id === packageId ? { ...pkg, usedPublications } : pkg
+      );
 
-      const dbClient = convertClientForDatabase(updatedClient);
-      const { error } = await supabase
-        .from('clients')
-        .update({
-          ...dbClient,
-          packages: JSON.stringify(dbClient.packages)
-        })
-        .eq('id', clientId);
-      
-      if (error) throw error;
-
-      setClients(prev => prev.map(c => c.id === clientId ? updatedClient : c));
+      await updateClientData(clientId, { ...client, packages: updatedPackages });
     } catch (error) {
       console.error('Error updating package:', error);
       toast({
@@ -198,27 +128,8 @@ export const useClientManager = () => {
         paid: packageData.paid
       };
 
-      const updatedClient = {
-        ...client,
-        packages: [...client.packages, newPackage]
-      };
-
-      const dbClient = convertClientForDatabase(updatedClient);
-      const { error } = await supabase
-        .from('clients')
-        .update({
-          ...dbClient,
-          packages: JSON.stringify(dbClient.packages)
-        })
-        .eq('id', clientId);
-      
-      if (error) throw error;
-
-      setClients(prev => prev.map(c => c.id === clientId ? updatedClient : c));
-      toast({
-        title: "Paquete agregado",
-        description: "El paquete se ha agregado correctamente.",
-      });
+      const updatedPackages = [...client.packages, newPackage];
+      await updateClientData(clientId, { ...client, packages: updatedPackages });
     } catch (error) {
       console.error('Error adding package:', error);
       toast({
@@ -234,8 +145,8 @@ export const useClientManager = () => {
     isLoading,
     loadClients,
     addClient,
-    updateClient,
-    deleteClient,
+    updateClient: updateClientData,
+    deleteClient: deleteClientData,
     updatePackage,
     addPackage
   };

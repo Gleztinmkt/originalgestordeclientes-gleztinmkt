@@ -11,6 +11,7 @@ import { BasicClientForm } from "./BasicClientForm";
 import { SocialMediaForm } from "./SocialMediaForm";
 import { toast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useState } from "react";
 
 interface EditClientDialogProps {
   client: {
@@ -26,12 +27,15 @@ interface EditClientDialogProps {
 }
 
 export const EditClientDialog = ({ client, onUpdateClient }: EditClientDialogProps) => {
+  const [open, setOpen] = useState(false);
+
   const handleBasicSubmit = (values: any) => {
     onUpdateClient(client.id, {
       name: values.name,
       phone: values.phone,
       paymentDay: parseInt(values.nextPayment),
     });
+    setOpen(false);
     toast({
       title: "Cliente actualizado",
       description: "La información básica del cliente se ha actualizado correctamente.",
@@ -40,6 +44,7 @@ export const EditClientDialog = ({ client, onUpdateClient }: EditClientDialogPro
 
   const handleSocialSubmit = (values: any) => {
     onUpdateClient(client.id, values);
+    setOpen(false);
     toast({
       title: "Cliente actualizado",
       description: "La información de redes sociales se ha actualizado correctamente.",
@@ -47,7 +52,7 @@ export const EditClientDialog = ({ client, onUpdateClient }: EditClientDialogPro
   };
 
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="ghost" size="icon">
           <Pencil className="h-4 w-4" />
