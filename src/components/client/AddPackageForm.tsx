@@ -28,7 +28,7 @@ const PACKAGE_TYPES = {
     name: "Paquete Premium",
     totalPublications: "16",
   }
-};
+} as const;
 
 const packageFormSchema = z.object({
   packageType: z.enum(["basico", "avanzado", "premium"]),
@@ -45,7 +45,9 @@ interface AddPackageFormProps {
 }
 
 export const AddPackageForm = ({ onSubmit, defaultValues, isSubmitting }: AddPackageFormProps) => {
-  const [selectedType, setSelectedType] = useState<keyof typeof PACKAGE_TYPES>("basico");
+  const [selectedType, setSelectedType] = useState<keyof typeof PACKAGE_TYPES>(
+    defaultValues?.packageType || "basico"
+  );
   
   const form = useForm<PackageFormValues>({
     resolver: zodResolver(packageFormSchema),

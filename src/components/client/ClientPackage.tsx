@@ -28,7 +28,7 @@ interface ClientPackageProps {
   paid: boolean;
   onUpdateUsed: (newCount: number) => void;
   onUpdatePaid: (paid: boolean) => void;
-  onEditPackage: (values: PackageFormValues) => void;
+  onEditPackage: (values: PackageFormValues & { name: string, totalPublications: string }) => void;
   onDeletePackage?: () => void;
 }
 
@@ -53,7 +53,7 @@ export const ClientPackage = ({
     return "basico"; // default fallback
   };
 
-  const handleEditSubmit = useCallback(async (values: PackageFormValues) => {
+  const handleEditSubmit = useCallback(async (values: PackageFormValues & { name: string, totalPublications: string }) => {
     if (isSubmitting) return;
     
     try {
