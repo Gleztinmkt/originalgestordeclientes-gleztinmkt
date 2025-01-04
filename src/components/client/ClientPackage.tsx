@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { AddPackageForm, PackageFormValues } from "./AddPackageForm";
 import { toast } from "@/hooks/use-toast";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 
 interface ClientPackageProps {
   packageName: string;
@@ -44,15 +44,45 @@ export const ClientPackage = ({
   onDeletePackage,
 }: ClientPackageProps) => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleEditSubmit = (values: PackageFormValues) => {
-    onEditPackage(values);
-    setIsEditDialogOpen(false);
-    toast({
-      title: "Paquete actualizado",
-      description: "El paquete ha sido actualizado correctamente.",
-    });
-  };
+  const handleEditSubmit = useCallback(async (values: PackageFormValues) => {
+    try {
+      setIsSubmitting(true);
+      await onEditPackage(values);
+      setIsEditDialogOpen(false);
+      toast({
+        title: "Paquete actualizado",
+        description: "El paquete ha sido actualizado correctamente.",
+      });
+    } catch (error) {
+      console.error('Error updating package:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el paquete. Por favor, intenta de nuevo.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [onEditPackage]);
+
+  const handleUpdatePaid = useCallback(async (newPaidStatus: boolean) => {
+    try {
+      await onUpdatePaid(newPaidStatus);
+      toast({
+        title: "Estado actualizado",
+        description: `El paquete ha sido marcado como ${newPaidStatus ? 'pagado' : 'pendiente'}.`,
+      });
+    } catch (error) {
+      console.error('Error updating paid status:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el estado del pago.",
+        variant: "destructive",
+      });
+    }
+  }, [onUpdatePaid]);
 
   return (
     <Card className="bg-white/60 backdrop-blur-sm">
@@ -67,7 +97,10 @@ export const ClientPackage = ({
             <span className="text-sm text-gray-600">
               {paid ? "Pagado" : "Pendiente"}
             </span>
-            <Switch checked={paid} onCheckedChange={onUpdatePaid} />
+            <Switch 
+              checked={paid} 
+              onCheckedChange={handleUpdatePaid}
+            />
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -76,7 +109,10 @@ export const ClientPackage = ({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setIsEditDialogOpen(true)}>
+              <DropdownMenuItem 
+                onClick={() => setIsEditDialogOpen(true)}
+                disabled={isSubmitting}
+              >
                 <Edit className="mr-2 h-4 w-4" />
                 Editar paquete
               </DropdownMenuItem>
@@ -90,6 +126,7 @@ export const ClientPackage = ({
                       description: "El paquete ha sido eliminado correctamente.",
                     });
                   }}
+                  disabled={isSubmitting}
                 >
                   <Trash className="mr-2 h-4 w-4" />
                   Eliminar paquete
@@ -120,6 +157,7 @@ export const ClientPackage = ({
               month: month,
               paid: paid,
             }}
+            isSubmitting={isSubmitting}
           />
         </DialogContent>
       </Dialog>

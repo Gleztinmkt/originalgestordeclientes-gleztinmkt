@@ -25,9 +25,10 @@ export type PackageFormValues = z.infer<typeof packageFormSchema>;
 interface AddPackageFormProps {
   onSubmit: (values: PackageFormValues) => void;
   defaultValues?: Partial<PackageFormValues>;
+  isSubmitting?: boolean;
 }
 
-export const AddPackageForm = ({ onSubmit, defaultValues }: AddPackageFormProps) => {
+export const AddPackageForm = ({ onSubmit, defaultValues, isSubmitting }: AddPackageFormProps) => {
   const form = useForm<PackageFormValues>({
     resolver: zodResolver(packageFormSchema),
     defaultValues: defaultValues || {
@@ -52,6 +53,7 @@ export const AddPackageForm = ({ onSubmit, defaultValues }: AddPackageFormProps)
                   placeholder="Ej: Paquete Básico" 
                   {...field}
                   className="rounded-xl bg-white/70 backdrop-blur-sm border-gray-100"
+                  disabled={isSubmitting}
                 />
               </FormControl>
               <FormMessage />
@@ -70,6 +72,7 @@ export const AddPackageForm = ({ onSubmit, defaultValues }: AddPackageFormProps)
                   placeholder="Ej: 8" 
                   {...field}
                   className="rounded-xl bg-white/70 backdrop-blur-sm border-gray-100"
+                  disabled={isSubmitting}
                 />
               </FormControl>
               <FormMessage />
@@ -87,6 +90,7 @@ export const AddPackageForm = ({ onSubmit, defaultValues }: AddPackageFormProps)
                   placeholder="Ej: Enero" 
                   {...field}
                   className="rounded-xl bg-white/70 backdrop-blur-sm border-gray-100"
+                  disabled={isSubmitting}
                 />
               </FormControl>
               <FormMessage />
@@ -108,6 +112,7 @@ export const AddPackageForm = ({ onSubmit, defaultValues }: AddPackageFormProps)
                 <Switch
                   checked={field.value}
                   onCheckedChange={field.onChange}
+                  disabled={isSubmitting}
                 />
               </FormControl>
             </FormItem>
@@ -115,9 +120,10 @@ export const AddPackageForm = ({ onSubmit, defaultValues }: AddPackageFormProps)
         />
         <button 
           type="submit" 
-          className="w-full bg-black hover:bg-gray-900 text-white rounded-2xl py-6 shadow-lg hover:shadow-xl transition-all duration-300"
+          className="w-full bg-black hover:bg-gray-900 text-white rounded-2xl py-6 shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={isSubmitting}
         >
-          {defaultValues ? 'Actualizar Paquete' : 'Agregar Paquete'}
+          {isSubmitting ? 'Guardando...' : defaultValues ? 'Actualizar Paquete' : 'Agregar Paquete'}
         </button>
       </form>
     </Form>
