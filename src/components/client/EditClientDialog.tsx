@@ -11,7 +11,9 @@ import { BasicClientForm } from "./BasicClientForm";
 import { SocialMediaForm } from "./SocialMediaForm";
 import { toast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useState } from "react";
+import { useState, useCallback } from "react";
+import { Task } from "@/components/TaskList";
+import { TaskInput } from "@/components/TaskInput";
 
 interface EditClientDialogProps {
   client: {
@@ -28,39 +30,64 @@ interface EditClientDialogProps {
 
 export const EditClientDialog = ({ client, onUpdateClient }: EditClientDialogProps) => {
   const [open, setOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleBasicSubmit = (values: any) => {
-    onUpdateClient(client.id, {
-      name: values.name,
-      phone: values.phone,
-      paymentDay: parseInt(values.nextPayment),
-    });
-    setOpen(false);
-    toast({
-      title: "Cliente actualizado",
-      description: "La información básica del cliente se ha actualizado correctamente.",
-    });
-  };
+  const handleBasicSubmit = useCallback(async (values: any) => {
+    try {
+      setIsSubmitting(true);
+      await onUpdateClient(client.id, {
+        name: values.name,
+        phone: values.phone,
+        paymentDay: parseInt(values.nextPayment),
+      });
+      setOpen(false);
+      toast({
+        title: "Cliente actualizado",
+        description: "La información básica del cliente se ha actualizado correctamente.",
+      });
+    } catch (error) {
+      console.error('Error updating client:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el cliente. Por favor, intenta de nuevo.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [client.id, onUpdateClient]);
 
-  const handleSocialSubmit = (values: any) => {
-    onUpdateClient(client.id, values);
-    setOpen(false);
-    toast({
-      title: "Cliente actualizado",
-      description: "La información de redes sociales se ha actualizado correctamente.",
-    });
-  };
+  const handleSocialSubmit = useCallback(async (values: any) => {
+    try {
+      setIsSubmitting(true);
+      await onUpdateClient(client.id, values);
+      setOpen(false);
+      toast({
+        title: "Cliente actualizado",
+        description: "La información de redes sociales se ha actualizado correctamente.",
+      });
+    } catch (error) {
+      console.error('Error updating client:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el cliente. Por favor, intenta de nuevo.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [client.id, onUpdateClient]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="icon">
+        <Button variant="ghost" size="icon" className="h-8 w-8">
           <Pencil className="h-4 w-4" />
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Editar Cliente</DialogTitle>
+          <DialogTitle>Editar Cliente: {client.name}</DialogTitle>
         </DialogHeader>
         <Tabs defaultValue="basic" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
@@ -75,6 +102,7 @@ export const EditClientDialog = ({ client, onUpdateClient }: EditClientDialogPro
                 phone: client.phone,
                 nextPayment: client.paymentDay.toString(),
               }}
+              isSubmitting={isSubmitting}
             />
           </TabsContent>
           <TabsContent value="social">
@@ -85,6 +113,7 @@ export const EditClientDialog = ({ client, onUpdateClient }: EditClientDialogPro
                 facebook: client.facebook,
                 marketingInfo: client.marketingInfo || "",
               }}
+              isSubmitting={isSubmitting}
             />
           </TabsContent>
         </Tabs>

@@ -52,6 +52,9 @@ const Index = () => {
             onUpdateClient={updateClient}
             onUpdatePackage={updatePackage}
             onAddPackage={addPackage}
+            tasks={tasks}
+            onAddTask={addTask}
+            onDeleteTask={deleteTask}
           />
         </TabsContent>
         <TabsContent value="tasks" className="space-y-4 mt-6">

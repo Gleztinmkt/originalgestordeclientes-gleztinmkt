@@ -13,6 +13,8 @@ import { BulkMessageButton } from "./client/BulkMessageButton";
 import { ClientFilter } from "./client/ClientFilter";
 import { EditClientDialog } from "./client/EditClientDialog";
 import { AddPackageDialog } from "./client/AddPackageDialog";
+import { TaskInput } from "./TaskInput";
+import { TaskList, Task } from "./TaskList";
 
 export interface Client {
   id: string;
@@ -38,6 +40,9 @@ interface ClientListProps {
   onUpdateClient: (id: string, data: any) => void;
   onUpdatePackage: (clientId: string, packageId: string, usedPublications: number) => void;
   onAddPackage: (clientId: string, packageData: any) => void;
+  tasks: Task[];
+  onAddTask: (content: string, clientId?: string) => void;
+  onDeleteTask: (id: string) => void;
 }
 
 export const ClientList = ({ 
@@ -45,7 +50,10 @@ export const ClientList = ({
   onDeleteClient, 
   onUpdateClient,
   onUpdatePackage,
-  onAddPackage 
+  onAddPackage,
+  tasks,
+  onAddTask,
+  onDeleteTask
 }: ClientListProps) => {
   const [selectedPaymentDay, setSelectedPaymentDay] = useState<string>("all");
 
@@ -72,9 +80,8 @@ export const ClientList = ({
     onUpdateClient(clientId, { ...client, packages: updatedPackages });
   };
 
-  const handleEditPackage = (clientId: string, packageId: string) => {
-    // This will be implemented when we add package editing functionality
-    console.log("Edit package", clientId, packageId);
+  const getClientTasks = (clientId: string) => {
+    return tasks.filter(task => task.clientId === clientId);
   };
 
   return (
@@ -133,10 +140,22 @@ export const ClientList = ({
                   paid={pkg.paid}
                   onUpdateUsed={(newCount) => onUpdatePackage(client.id, pkg.id, newCount)}
                   onUpdatePaid={(paid) => handleUpdatePackagePaid(client.id, pkg.id, paid)}
-                  onEditPackage={() => handleEditPackage(client.id, pkg.id)}
                   onDeletePackage={() => handleDeletePackage(client.id, pkg.id)}
                 />
               ))}
+
+              <div className="mt-6 space-y-4">
+                <h3 className="text-lg font-semibold text-gray-700">Tareas Pendientes</h3>
+                <TaskInput 
+                  onAddTask={(content) => onAddTask(content, client.id)}
+                  clients={[{ id: client.id, name: client.name }]}
+                />
+                <TaskList
+                  tasks={getClientTasks(client.id)}
+                  onDeleteTask={onDeleteTask}
+                  clients={[{ id: client.id, name: client.name }]}
+                />
+              </div>
 
               <p className="text-sm text-gray-600 leading-relaxed mt-4">
                 {client.marketingInfo}

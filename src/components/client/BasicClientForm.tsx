@@ -10,6 +10,8 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 
 const basicFormSchema = z.object({
   name: z.string().min(2, "El nombre debe tener al menos 2 caracteres"),
@@ -24,9 +26,10 @@ export type BasicFormValues = z.infer<typeof basicFormSchema>;
 interface BasicClientFormProps {
   onSubmit: (values: BasicFormValues) => void;
   defaultValues?: Partial<BasicFormValues>;
+  isSubmitting?: boolean;
 }
 
-export const BasicClientForm = ({ onSubmit, defaultValues }: BasicClientFormProps) => {
+export const BasicClientForm = ({ onSubmit, defaultValues, isSubmitting }: BasicClientFormProps) => {
   const form = useForm<BasicFormValues>({
     resolver: zodResolver(basicFormSchema),
     defaultValues: defaultValues || {
@@ -52,6 +55,7 @@ export const BasicClientForm = ({ onSubmit, defaultValues }: BasicClientFormProp
                   placeholder="Nombre completo" 
                   {...field}
                   className="rounded-xl bg-white/70 backdrop-blur-sm border-gray-100"
+                  disabled={isSubmitting}
                 />
               </FormControl>
               <FormMessage />
@@ -69,6 +73,7 @@ export const BasicClientForm = ({ onSubmit, defaultValues }: BasicClientFormProp
                   placeholder="Ej: +5491112345678" 
                   {...field}
                   className="rounded-xl bg-white/70 backdrop-blur-sm border-gray-100"
+                  disabled={isSubmitting}
                 />
               </FormControl>
               <FormMessage />
@@ -87,6 +92,7 @@ export const BasicClientForm = ({ onSubmit, defaultValues }: BasicClientFormProp
                   placeholder="Ej: 8" 
                   {...field}
                   className="rounded-xl bg-white/70 backdrop-blur-sm border-gray-100"
+                  disabled={isSubmitting}
                 />
               </FormControl>
               <FormMessage />
@@ -107,6 +113,7 @@ export const BasicClientForm = ({ onSubmit, defaultValues }: BasicClientFormProp
                   placeholder="Ej: 15"
                   {...field}
                   className="rounded-xl bg-white/70 backdrop-blur-sm border-gray-100"
+                  disabled={isSubmitting}
                 />
               </FormControl>
               <FormMessage />
@@ -124,18 +131,27 @@ export const BasicClientForm = ({ onSubmit, defaultValues }: BasicClientFormProp
                   placeholder="Ej: Enero" 
                   {...field}
                   className="rounded-xl bg-white/70 backdrop-blur-sm border-gray-100"
+                  disabled={isSubmitting}
                 />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-        <button 
+        <Button 
           type="submit" 
           className="w-full bg-black hover:bg-gray-900 text-white rounded-2xl py-6 shadow-lg hover:shadow-xl transition-all duration-300"
+          disabled={isSubmitting}
         >
-          {defaultValues ? 'Actualizar Cliente' : 'Guardar Cliente'}
-        </button>
+          {isSubmitting ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Guardando...
+            </>
+          ) : (
+            defaultValues ? 'Actualizar Cliente' : 'Guardar Cliente'
+          )}
+        </Button>
       </form>
     </Form>
   );
