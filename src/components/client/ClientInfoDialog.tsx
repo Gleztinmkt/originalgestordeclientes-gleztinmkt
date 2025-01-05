@@ -100,7 +100,7 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
               </Button>
               {info.meetings.map((meeting, index) => (
                 <div key={index} className="space-y-2 border p-4 rounded-lg">
-                  <input
+                  <Input
                     type="date"
                     value={meeting.date}
                     onChange={(e) => {
@@ -108,7 +108,7 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
                       newMeetings[index].date = e.target.value;
                       setInfo(prev => ({ ...prev, meetings: newMeetings }));
                     }}
-                    className="w-full p-2 border rounded"
+                    className="w-full"
                   />
                   <Textarea
                     placeholder="Notas de la reunión..."
@@ -129,7 +129,7 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
               <div className="flex items-center gap-2">
                 <Input
                   type="number"
-                  placeholder="Cantidad de redes sociales"
+                  placeholder="Cantidad"
                   value={info.socialNetworks.count}
                   onChange={(e) => setInfo(prev => ({
                     ...prev,
