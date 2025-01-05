@@ -17,6 +17,20 @@ import { TaskInput } from "./TaskInput";
 import { TaskList, Task } from "./TaskList";
 import { ClientInfoDialog } from "./client/ClientInfoDialog";
 
+export interface SocialNetwork {
+  platform: string;
+  username: string;
+}
+
+export interface ClientInfo {
+  generalInfo: string;
+  meetings: Array<{
+    date: string;
+    notes: string;
+  }>;
+  socialNetworks: SocialNetwork[];
+}
+
 export interface Client {
   id: string;
   name: string;
@@ -33,17 +47,7 @@ export interface Client {
     month: string;
     paid: boolean;
   }>;
-  clientInfo?: {
-    generalInfo: string;
-    meetings: Array<{
-      date: string;
-      notes: string;
-    }>;
-    socialNetworks: {
-      count: number;
-      details: string;
-    };
-  };
+  clientInfo?: ClientInfo;
 }
 
 interface ClientListProps {

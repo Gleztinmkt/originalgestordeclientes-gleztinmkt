@@ -38,14 +38,14 @@ export const EditClientDialog = ({ client, onUpdateClient }: EditClientDialogPro
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleBasicSubmit = useCallback(async (values: any) => {
+  const handleBasicSubmit = useCallback(async (values: BasicFormValues) => {
     try {
       setIsSubmitting(true);
       await onUpdateClient(client.id, {
-        ...client, // Keep all existing data
+        ...client,
         name: values.name,
         phone: values.phone,
-        paymentDay: parseInt(values.nextPayment),
+        paymentDay: values.nextPayment, // nextPayment is already a number from zod transform
       });
       setOpen(false);
       toast({

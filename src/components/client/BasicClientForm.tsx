@@ -25,7 +25,11 @@ export type BasicFormValues = z.infer<typeof basicFormSchema>;
 
 interface BasicClientFormProps {
   onSubmit: (values: BasicFormValues) => void;
-  defaultValues?: Partial<BasicFormValues>;
+  defaultValues?: {
+    name?: string;
+    phone?: string;
+    nextPayment?: number;
+  };
   isSubmitting?: boolean;
 }
 
@@ -35,7 +39,7 @@ export const BasicClientForm = ({ onSubmit, defaultValues, isSubmitting }: Basic
     defaultValues: {
       name: defaultValues?.name || "",
       phone: defaultValues?.phone || "",
-      nextPayment: defaultValues?.nextPayment ? defaultValues.nextPayment.toString() : "",
+      nextPayment: defaultValues?.nextPayment ? String(defaultValues.nextPayment) : "",
     },
   });
 
