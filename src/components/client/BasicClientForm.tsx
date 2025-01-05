@@ -17,10 +17,8 @@ const basicFormSchema = z.object({
   name: z.string().min(2, "El nombre debe tener al menos 2 caracteres"),
   phone: z.string().min(10, "Ingrese un número de teléfono válido"),
   nextPayment: z.string()
-    .refine(val => {
-      const num = parseInt(val);
-      return num >= 1 && num <= 31;
-    }, "Ingrese un día válido entre 1 y 31"),
+    .transform((val) => parseInt(val))
+    .refine(val => val >= 1 && val <= 31, "Ingrese un día válido entre 1 y 31"),
 });
 
 export type BasicFormValues = z.infer<typeof basicFormSchema>;

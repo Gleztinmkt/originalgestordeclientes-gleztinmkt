@@ -9,6 +9,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTaskManager } from "@/features/tasks/useTaskManager";
 import { useClientManager } from "@/features/clients/useClientManager";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const Index = () => {
   const { tasks, loadTasks, addTask, deleteTask } = useTaskManager();
@@ -24,6 +25,7 @@ const Index = () => {
 
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     loadClients();
@@ -43,20 +45,22 @@ const Index = () => {
 
   return (
     <ThemeProvider>
-      <div className="min-h-screen p-8 space-y-8 dark:bg-gray-900 dark:text-white transition-colors duration-200">
-        <ThemeToggle />
+      <div className="min-h-screen p-4 md:p-8 space-y-6 md:space-y-8 dark:bg-gray-900 dark:text-white transition-colors duration-200">
+        <div className="flex justify-end">
+          <ThemeToggle />
+        </div>
         
-        <div className="text-center space-y-4 mb-12">
-          <h1 className="text-4xl font-bold font-heading text-gray-900 dark:text-white">
+        <div className="text-center space-y-4 mb-8 md:mb-12">
+          <h1 className="text-2xl md:text-4xl font-bold font-heading text-gray-900 dark:text-white">
             Gestor de clientes Gleztin Marketing Digital
           </h1>
-          <p className="text-gray-600 dark:text-gray-400 max-w-md mx-auto">
+          <p className="text-sm md:text-base text-gray-600 dark:text-gray-400 max-w-md mx-auto">
             Gestiona tus clientes y tareas de forma eficiente
           </p>
         </div>
 
         <Tabs defaultValue="clients" className="w-full max-w-2xl mx-auto">
-          <TabsList className="grid w-full grid-cols-2 rounded-2xl p-1 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm">
+          <TabsList className={`grid w-full grid-cols-2 rounded-2xl p-1 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm ${isMobile ? 'sticky top-2 z-10' : ''}`}>
             <TabsTrigger value="clients" className="rounded-xl data-[state=active]:bg-black data-[state=active]:text-white dark:data-[state=active]:bg-white dark:data-[state=active]:text-black">
               Clientes
             </TabsTrigger>

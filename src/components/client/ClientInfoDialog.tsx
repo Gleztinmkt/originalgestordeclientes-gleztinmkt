@@ -18,6 +18,11 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 
+interface SocialNetwork {
+  platform: 'instagram' | 'facebook' | 'linkedin' | 'tiktok' | 'twitter' | 'youtube';
+  username: string;
+}
+
 interface Meeting {
   date: string;
   notes: string;
@@ -26,10 +31,7 @@ interface Meeting {
 interface ClientInfo {
   generalInfo: string;
   meetings: Meeting[];
-  socialNetworks: {
-    count: number;
-    details: string;
-  };
+  socialNetworks: SocialNetwork[];
 }
 
 interface ClientInfoDialogProps {
@@ -38,14 +40,20 @@ interface ClientInfoDialogProps {
   onUpdateInfo: (clientId: string, info: ClientInfo) => void;
 }
 
+const SOCIAL_PLATFORMS = [
+  { id: 'instagram', label: 'Instagram' },
+  { id: 'facebook', label: 'Facebook' },
+  { id: 'linkedin', label: 'LinkedIn' },
+  { id: 'tiktok', label: 'TikTok' },
+  { id: 'twitter', label: 'Twitter' },
+  { id: 'youtube', label: 'YouTube' },
+] as const;
+
 export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientInfoDialogProps) => {
   const [info, setInfo] = useState<ClientInfo>(clientInfo || {
     generalInfo: "",
     meetings: [],
-    socialNetworks: {
-      count: 0,
-      details: "",
-    },
+    socialNetworks: [],
   });
 
   const handleSave = () => {
@@ -63,6 +71,13 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
     }));
   };
 
+  const addSocialNetwork = () => {
+    setInfo(prev => ({
+      ...prev,
+      socialNetworks: [...prev.socialNetworks, { platform: 'instagram', username: '' }],
+    }));
+  };
+
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -71,7 +86,7 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
           Info
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[600px] w-[95vw] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Información del Cliente</DialogTitle>
         </DialogHeader>
@@ -126,38 +141,42 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
 
           <TabsContent value="social">
             <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <Input
-                  type="number"
-                  placeholder="Cantidad"
-                  value={info.socialNetworks.count}
-                  onChange={(e) => setInfo(prev => ({
-                    ...prev,
-                    socialNetworks: {
-                      ...prev.socialNetworks,
-                      count: parseInt(e.target.value) || 0,
-                    },
-                  }))}
-                  className="w-32"
-                />
-                <span>redes sociales</span>
-              </div>
-              <Textarea
-                placeholder="Detalles de las redes sociales..."
-                value={info.socialNetworks.details}
-                onChange={(e) => setInfo(prev => ({
-                  ...prev,
-                  socialNetworks: {
-                    ...prev.socialNetworks,
-                    details: e.target.value,
-                  },
-                }))}
-                className="min-h-[150px]"
-              />
+              <Button onClick={addSocialNetwork} variant="outline" size="sm">
+                Agregar Red Social
+              </Button>
+              {info.socialNetworks.map((network, index) => (
+                <div key={index} className="space-y-2 border p-4 rounded-lg">
+                  <select
+                    value={network.platform}
+                    onChange={(e) => {
+                      const newNetworks = [...info.socialNetworks];
+                      newNetworks[index].platform = e.target.value as SocialNetwork['platform'];
+                      setInfo(prev => ({ ...prev, socialNetworks: newNetworks }));
+                    }}
+                    className="w-full p-2 border rounded-md bg-background"
+                  >
+                    {SOCIAL_PLATFORMS.map(platform => (
+                      <option key={platform.id} value={platform.id}>
+                        {platform.label}
+                      </option>
+                    ))}
+                  </select>
+                  <Input
+                    placeholder="Nombre de usuario o URL"
+                    value={network.username}
+                    onChange={(e) => {
+                      const newNetworks = [...info.socialNetworks];
+                      newNetworks[index].username = e.target.value;
+                      setInfo(prev => ({ ...prev, socialNetworks: newNetworks }));
+                    }}
+                    className="w-full"
+                  />
+                </div>
+              ))}
             </div>
           </TabsContent>
         </Tabs>
-        <Button onClick={handleSave} className="mt-4">
+        <Button onClick={handleSave} className="mt-4 w-full">
           Guardar Cambios
         </Button>
       </DialogContent>
