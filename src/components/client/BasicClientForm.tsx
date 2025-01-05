@@ -16,9 +16,9 @@ import { Loader2 } from "lucide-react";
 const basicFormSchema = z.object({
   name: z.string().min(2, "El nombre debe tener al menos 2 caracteres"),
   phone: z.string().min(10, "Ingrese un número de teléfono válido"),
-  nextPayment: z.string()
-    .transform((val) => parseInt(val))
-    .refine(val => val >= 1 && val <= 31, "Ingrese un día válido entre 1 y 31"),
+  nextPayment: z.coerce.number()
+    .min(1, "Ingrese un día válido entre 1 y 31")
+    .max(31, "Ingrese un día válido entre 1 y 31"),
 });
 
 export type BasicFormValues = z.infer<typeof basicFormSchema>;
@@ -39,7 +39,7 @@ export const BasicClientForm = ({ onSubmit, defaultValues, isSubmitting }: Basic
     defaultValues: {
       name: defaultValues?.name || "",
       phone: defaultValues?.phone || "",
-      nextPayment: defaultValues?.nextPayment ? String(defaultValues.nextPayment) : "",
+      nextPayment: defaultValues?.nextPayment || undefined,
     },
   });
 
