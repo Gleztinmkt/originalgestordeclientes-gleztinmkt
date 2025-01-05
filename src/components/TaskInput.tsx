@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Mic, Send, Plus } from "lucide-react";
+import { Mic, Send } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { toast } from "@/hooks/use-toast";
@@ -10,42 +10,30 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ClientForm } from "./ClientForm";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 
 interface TaskInputProps {
-  onAddTask: (task: string, clientId?: string) => void;
+  onAddTask: (task: string, clientId?: string, type?: string) => void;
   clients: Array<{ id: string; name: string }>;
 }
 
 export const TaskInput = ({ onAddTask, clients }: TaskInputProps) => {
   const [input, setInput] = useState("");
   const [selectedClient, setSelectedClient] = useState<string>("");
+  const [selectedType, setSelectedType] = useState<string>("otros");
   const [isListening, setIsListening] = useState(false);
-  const [isClientDialogOpen, setIsClientDialogOpen] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (input.trim()) {
-      onAddTask(input.trim(), selectedClient);
+      onAddTask(input.trim(), selectedClient, selectedType);
       setInput("");
       setSelectedClient("");
+      setSelectedType("otros");
       toast({
         title: "Tarea agregada",
         description: "Tu tarea ha sido agregada exitosamente.",
       });
     }
-  };
-
-  const handleAddClient = (clientData: any) => {
-    setIsClientDialogOpen(false);
   };
 
   const startListening = () => {
@@ -114,7 +102,7 @@ export const TaskInput = ({ onAddTask, clients }: TaskInputProps) => {
         </Button>
       </div>
       
-      <div className="flex gap-2 items-center">
+      <div className="flex gap-2">
         <Select value={selectedClient} onValueChange={setSelectedClient}>
           <SelectTrigger className="flex-1">
             <SelectValue placeholder="Seleccionar cliente" />
@@ -127,23 +115,18 @@ export const TaskInput = ({ onAddTask, clients }: TaskInputProps) => {
             ))}
           </SelectContent>
         </Select>
-        
-        <Dialog open={isClientDialogOpen} onOpenChange={setIsClientDialogOpen}>
-          <DialogTrigger asChild>
-            <Button variant="outline" size="icon">
-              <Plus className="h-4 w-4" />
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Agregar Nuevo Cliente</DialogTitle>
-              <DialogDescription>
-                Agrega un nuevo cliente para asignarle esta tarea
-              </DialogDescription>
-            </DialogHeader>
-            <ClientForm onAddClient={handleAddClient} />
-          </DialogContent>
-        </Dialog>
+
+        <Select value={selectedType} onValueChange={setSelectedType}>
+          <SelectTrigger className="flex-1">
+            <SelectValue placeholder="Tipo de tarea" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="campaña">Campaña</SelectItem>
+            <SelectItem value="publicaciones">Publicaciones</SelectItem>
+            <SelectItem value="correcciones">Correcciones</SelectItem>
+            <SelectItem value="otros">Otros</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
     </form>
   );

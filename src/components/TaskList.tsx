@@ -3,7 +3,6 @@ import { Button } from "./ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "./ui/card";
@@ -12,7 +11,7 @@ import { Badge } from "./ui/badge";
 export interface Task {
   id: string;
   content: string;
-  type: "reminder" | "call" | "meeting" | "task";
+  type: "campaña" | "publicaciones" | "correcciones" | "otros";
   date?: string;
   clientId?: string | null;
 }
@@ -29,11 +28,11 @@ interface TaskListProps {
 export const TaskList = ({ tasks, onDeleteTask, clients }: TaskListProps) => {
   const getTaskIcon = (type: Task["type"]) => {
     switch (type) {
-      case "reminder":
+      case "campaña":
         return <Clock className="h-4 w-4" />;
-      case "call":
+      case "publicaciones":
         return <Check className="h-4 w-4" />;
-      case "meeting":
+      case "correcciones":
         return <Clock className="h-4 w-4" />;
       default:
         return <Check className="h-4 w-4" />;
@@ -42,11 +41,11 @@ export const TaskList = ({ tasks, onDeleteTask, clients }: TaskListProps) => {
 
   const getTaskColor = (type: Task["type"]) => {
     switch (type) {
-      case "reminder":
+      case "campaña":
         return "bg-yellow-100 text-yellow-800";
-      case "call":
+      case "publicaciones":
         return "bg-blue-100 text-blue-800";
-      case "meeting":
+      case "correcciones":
         return "bg-purple-100 text-purple-800";
       default:
         return "bg-green-100 text-green-800";

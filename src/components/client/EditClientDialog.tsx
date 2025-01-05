@@ -42,10 +42,10 @@ export const EditClientDialog = ({ client, onUpdateClient }: EditClientDialogPro
     try {
       setIsSubmitting(true);
       await onUpdateClient(client.id, {
+        ...client, // Keep all existing data
         name: values.name,
         phone: values.phone,
         paymentDay: parseInt(values.nextPayment),
-        packages: client.packages // Preserve existing packages
       });
       setOpen(false);
       toast({
@@ -62,14 +62,16 @@ export const EditClientDialog = ({ client, onUpdateClient }: EditClientDialogPro
     } finally {
       setIsSubmitting(false);
     }
-  }, [client.id, client.packages, onUpdateClient]);
+  }, [client, onUpdateClient]);
 
   const handleSocialSubmit = useCallback(async (values: any) => {
     try {
       setIsSubmitting(true);
       await onUpdateClient(client.id, {
-        ...values,
-        packages: client.packages // Preserve existing packages
+        ...client, // Keep all existing data
+        instagram: values.instagram,
+        facebook: values.facebook,
+        marketingInfo: values.marketingInfo,
       });
       setOpen(false);
       toast({
@@ -86,7 +88,7 @@ export const EditClientDialog = ({ client, onUpdateClient }: EditClientDialogPro
     } finally {
       setIsSubmitting(false);
     }
-  }, [client.id, client.packages, onUpdateClient]);
+  }, [client, onUpdateClient]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

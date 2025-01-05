@@ -35,14 +35,13 @@ export const useTaskManager = () => {
     }
   };
 
-  const addTask = async (content: string) => {
+  const addTask = async (content: string, clientId?: string, type: string = 'otros') => {
     try {
-      const analysis = analyzeTask(content);
       const newTask: Task = {
         id: crypto.randomUUID(),
         content,
-        ...analysis,
-        clientId: analysis.clientId || null,
+        type: type as Task['type'],
+        clientId: clientId || null,
       };
 
       const dbTask = convertTaskForDatabase(newTask);
