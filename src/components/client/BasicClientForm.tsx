@@ -95,6 +95,7 @@ export const BasicClientForm = ({ onSubmit, defaultValues, isSubmitting }: Basic
                   max="31"
                   placeholder="Ej: 15"
                   {...field}
+                  onChange={(e) => field.onChange(e.target.valueAsNumber)}
                   className="rounded-xl bg-white/70 backdrop-blur-sm border-gray-100"
                   disabled={isSubmitting}
                 />
