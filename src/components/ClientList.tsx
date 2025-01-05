@@ -15,6 +15,7 @@ import { EditClientDialog } from "./client/EditClientDialog";
 import { AddPackageDialog } from "./client/AddPackageDialog";
 import { TaskInput } from "./TaskInput";
 import { TaskList, Task } from "./TaskList";
+import { ClientInfoDialog } from "./client/ClientInfoDialog";
 
 export interface Client {
   id: string;
@@ -32,6 +33,17 @@ export interface Client {
     month: string;
     paid: boolean;
   }>;
+  clientInfo?: {
+    generalInfo: string;
+    meetings: Array<{
+      date: string;
+      notes: string;
+    }>;
+    socialNetworks: {
+      count: number;
+      details: string;
+    };
+  };
 }
 
 interface ClientListProps {
@@ -101,6 +113,13 @@ export const ClientList = ({
     return tasks.filter(task => task.clientId === clientId);
   };
 
+  const handleUpdateClientInfo = (clientId: string, info: any) => {
+    const client = clients.find(c => c.id === clientId);
+    if (!client) return;
+
+    onUpdateClient(clientId, { ...client, clientInfo: info });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -122,6 +141,11 @@ export const ClientList = ({
                 {client.name}
               </CardTitle>
               <div className="flex gap-2">
+                <ClientInfoDialog
+                  clientId={client.id}
+                  clientInfo={client.clientInfo}
+                  onUpdateInfo={handleUpdateClientInfo}
+                />
                 <EditClientDialog 
                   client={client}
                   onUpdateClient={onUpdateClient}

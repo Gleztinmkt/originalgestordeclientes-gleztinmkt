@@ -16,7 +16,11 @@ import { Loader2 } from "lucide-react";
 const basicFormSchema = z.object({
   name: z.string().min(2, "El nombre debe tener al menos 2 caracteres"),
   phone: z.string().min(10, "Ingrese un número de teléfono válido"),
-  nextPayment: z.string().min(1, "Selecciona una fecha de pago"),
+  nextPayment: z.string()
+    .refine(val => {
+      const num = parseInt(val);
+      return num >= 1 && num <= 31;
+    }, "Ingrese un día válido entre 1 y 31"),
 });
 
 export type BasicFormValues = z.infer<typeof basicFormSchema>;
@@ -30,10 +34,10 @@ interface BasicClientFormProps {
 export const BasicClientForm = ({ onSubmit, defaultValues, isSubmitting }: BasicClientFormProps) => {
   const form = useForm<BasicFormValues>({
     resolver: zodResolver(basicFormSchema),
-    defaultValues: defaultValues || {
-      name: "",
-      phone: "",
-      nextPayment: "",
+    defaultValues: {
+      name: defaultValues?.name || "",
+      phone: defaultValues?.phone || "",
+      nextPayment: defaultValues?.nextPayment ? defaultValues.nextPayment.toString() : "",
     },
   });
 
