@@ -17,7 +17,7 @@ export interface DatabaseClient {
 export interface DatabaseTask {
   id: string;
   content: string;
-  type: string | null;
+  type: "campaña" | "publicaciones" | "correcciones" | "otros" | null;
   date: string | null;
   client_id: string | null;
   created_at?: string;
@@ -55,7 +55,7 @@ export const convertClientForDatabase = (client: Client): DatabaseClient => ({
 export const convertDatabaseTask = (task: DatabaseTask): Task => ({
   id: task.id,
   content: task.content,
-  type: (task.type as Task['type']) || 'task',
+  type: task.type || "otros",
   date: task.date,
   clientId: task.client_id,
 });
@@ -63,7 +63,7 @@ export const convertDatabaseTask = (task: DatabaseTask): Task => ({
 export const convertTaskForDatabase = (task: Task): DatabaseTask => ({
   id: task.id,
   content: task.content,
-  type: task.type || null,
+  type: task.type,
   date: task.date || null,
   client_id: task.clientId || null,
 });
