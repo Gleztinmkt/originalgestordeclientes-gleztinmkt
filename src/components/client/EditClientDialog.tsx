@@ -12,8 +12,6 @@ import { SocialMediaForm } from "./SocialMediaForm";
 import { toast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState, useCallback } from "react";
-import { Task } from "@/components/TaskList";
-import { TaskInput } from "@/components/TaskInput";
 
 interface EditClientDialogProps {
   client: {
@@ -24,6 +22,14 @@ interface EditClientDialogProps {
     instagram?: string;
     facebook?: string;
     marketingInfo?: string;
+    packages: Array<{
+      id: string;
+      name: string;
+      totalPublications: number;
+      usedPublications: number;
+      month: string;
+      paid: boolean;
+    }>;
   };
   onUpdateClient: (id: string, data: any) => void;
 }
@@ -39,6 +45,7 @@ export const EditClientDialog = ({ client, onUpdateClient }: EditClientDialogPro
         name: values.name,
         phone: values.phone,
         paymentDay: parseInt(values.nextPayment),
+        packages: client.packages // Preserve existing packages
       });
       setOpen(false);
       toast({
@@ -55,12 +62,15 @@ export const EditClientDialog = ({ client, onUpdateClient }: EditClientDialogPro
     } finally {
       setIsSubmitting(false);
     }
-  }, [client.id, onUpdateClient]);
+  }, [client.id, client.packages, onUpdateClient]);
 
   const handleSocialSubmit = useCallback(async (values: any) => {
     try {
       setIsSubmitting(true);
-      await onUpdateClient(client.id, values);
+      await onUpdateClient(client.id, {
+        ...values,
+        packages: client.packages // Preserve existing packages
+      });
       setOpen(false);
       toast({
         title: "Cliente actualizado",
@@ -76,7 +86,7 @@ export const EditClientDialog = ({ client, onUpdateClient }: EditClientDialogPro
     } finally {
       setIsSubmitting(false);
     }
-  }, [client.id, onUpdateClient]);
+  }, [client.id, client.packages, onUpdateClient]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

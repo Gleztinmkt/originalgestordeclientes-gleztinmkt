@@ -26,21 +26,14 @@ export const ClientForm = ({ onAddClient }: ClientFormProps) => {
       marketingInfo: "",
       instagram: "",
       facebook: "",
-      packages: [{
-        id: crypto.randomUUID(),
-        name: "Paquete Inicial",
-        totalPublications: parseInt(values.publications),
-        usedPublications: 0,
-        month: values.packageMonth,
-        paid: false
-      }]
+      packages: []
     };
     
     onAddClient(newClient);
     setOpen(false);
     toast({
       title: "Cliente agregado",
-      description: "El cliente se ha agregado correctamente. Puedes agregar más información desde su perfil.",
+      description: "El cliente se ha agregado correctamente. Puedes agregar paquetes desde su perfil.",
     });
   };
 

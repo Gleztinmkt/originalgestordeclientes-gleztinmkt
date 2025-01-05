@@ -16,9 +16,7 @@ import { Loader2 } from "lucide-react";
 const basicFormSchema = z.object({
   name: z.string().min(2, "El nombre debe tener al menos 2 caracteres"),
   phone: z.string().min(10, "Ingrese un número de teléfono válido"),
-  publications: z.string().min(1, "Ingrese el número de publicaciones"),
   nextPayment: z.string().min(1, "Selecciona una fecha de pago"),
-  packageMonth: z.string().min(1, "Selecciona el mes del paquete"),
 });
 
 export type BasicFormValues = z.infer<typeof basicFormSchema>;
@@ -35,9 +33,7 @@ export const BasicClientForm = ({ onSubmit, defaultValues, isSubmitting }: Basic
     defaultValues: defaultValues || {
       name: "",
       phone: "",
-      publications: "",
       nextPayment: "",
-      packageMonth: "",
     },
   });
 
@@ -82,25 +78,6 @@ export const BasicClientForm = ({ onSubmit, defaultValues, isSubmitting }: Basic
         />
         <FormField
           control={form.control}
-          name="publications"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="text-gray-700">Número de Publicaciones</FormLabel>
-              <FormControl>
-                <Input 
-                  type="number" 
-                  placeholder="Ej: 8" 
-                  {...field}
-                  className="rounded-xl bg-white/70 backdrop-blur-sm border-gray-100"
-                  disabled={isSubmitting}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
           name="nextPayment"
           render={({ field }) => (
             <FormItem>
@@ -111,24 +88,6 @@ export const BasicClientForm = ({ onSubmit, defaultValues, isSubmitting }: Basic
                   min="1"
                   max="31"
                   placeholder="Ej: 15"
-                  {...field}
-                  className="rounded-xl bg-white/70 backdrop-blur-sm border-gray-100"
-                  disabled={isSubmitting}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="packageMonth"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="text-gray-700">Mes del Paquete</FormLabel>
-              <FormControl>
-                <Input 
-                  placeholder="Ej: Enero" 
                   {...field}
                   className="rounded-xl bg-white/70 backdrop-blur-sm border-gray-100"
                   disabled={isSubmitting}
