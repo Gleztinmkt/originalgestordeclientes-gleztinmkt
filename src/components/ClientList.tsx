@@ -17,8 +17,10 @@ import { TaskInput } from "./TaskInput";
 import { TaskList, Task } from "./TaskList";
 import { ClientInfoDialog } from "./client/ClientInfoDialog";
 
+export type SocialPlatform = "instagram" | "facebook" | "linkedin" | "tiktok" | "twitter" | "youtube";
+
 export interface SocialNetwork {
-  platform: string;
+  platform: SocialPlatform;
   username: string;
 }
 

@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Pencil } from "lucide-react";
-import { BasicClientForm } from "./BasicClientForm";
+import { BasicClientForm, BasicFormValues } from "./BasicClientForm";
 import { SocialMediaForm } from "./SocialMediaForm";
 import { toast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -68,7 +68,7 @@ export const EditClientDialog = ({ client, onUpdateClient }: EditClientDialogPro
     try {
       setIsSubmitting(true);
       await onUpdateClient(client.id, {
-        ...client, // Keep all existing data
+        ...client,
         instagram: values.instagram,
         facebook: values.facebook,
         marketingInfo: values.marketingInfo,
@@ -112,7 +112,7 @@ export const EditClientDialog = ({ client, onUpdateClient }: EditClientDialogPro
               defaultValues={{
                 name: client.name,
                 phone: client.phone,
-                nextPayment: client.paymentDay.toString(),
+                nextPayment: client.paymentDay,
               }}
               isSubmitting={isSubmitting}
             />
