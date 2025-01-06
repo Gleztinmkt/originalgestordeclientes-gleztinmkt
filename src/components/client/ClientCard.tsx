@@ -25,11 +25,11 @@ interface ClientCardProps {
 
 const getRandomPastelGradient = () => {
   const gradients = [
-    'linear-gradient(135deg, #fdfcfb 0%, #e2d1c3 100%)',
     'linear-gradient(109.6deg, rgba(223,234,247,1) 11.2%, rgba(244,248,252,1) 91.1%)',
-    'linear-gradient(to top, #accbee 0%, #e7f0fd 100%)',
     'linear-gradient(to top, #e6e9f0 0%, #eef1f5 100%)',
-    'linear-gradient(184.1deg, rgba(249,255,182,1) 44.7%, rgba(226,255,172,1) 67.2%)',
+    'linear-gradient(to top, #accbee 0%, #e7f0fd 100%)',
+    'linear-gradient(90deg, hsla(186, 33%, 94%, 1) 0%, hsla(216, 41%, 79%, 1) 100%)',
+    'linear-gradient(90deg, hsla(46, 73%, 75%, 1) 0%, hsla(176, 73%, 88%, 1) 100%)',
   ];
   return gradients[Math.floor(Math.random() * gradients.length)];
 };
