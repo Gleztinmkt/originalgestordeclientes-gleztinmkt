@@ -51,12 +51,12 @@ export const BasicClientForm = ({ onSubmit, defaultValues, isSubmitting }: Basic
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-gray-700">Nombre</FormLabel>
+              <FormLabel className="text-gray-700 dark:text-gray-300">Nombre</FormLabel>
               <FormControl>
                 <Input 
                   placeholder="Nombre completo" 
                   {...field}
-                  className="rounded-xl bg-white/70 backdrop-blur-sm border-gray-100"
+                  className="rounded-xl bg-white/70 backdrop-blur-sm border-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
                   disabled={isSubmitting}
                 />
               </FormControl>
@@ -69,12 +69,12 @@ export const BasicClientForm = ({ onSubmit, defaultValues, isSubmitting }: Basic
           name="phone"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-gray-700">Teléfono</FormLabel>
+              <FormLabel className="text-gray-700 dark:text-gray-300">Teléfono</FormLabel>
               <FormControl>
                 <Input 
                   placeholder="Ej: +5491112345678" 
                   {...field}
-                  className="rounded-xl bg-white/70 backdrop-blur-sm border-gray-100"
+                  className="rounded-xl bg-white/70 backdrop-blur-sm border-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
                   disabled={isSubmitting}
                 />
               </FormControl>
@@ -87,7 +87,7 @@ export const BasicClientForm = ({ onSubmit, defaultValues, isSubmitting }: Basic
           name="nextPayment"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-gray-700">Día de Pago (1-31)</FormLabel>
+              <FormLabel className="text-gray-700 dark:text-gray-300">Día de Pago (1-31)</FormLabel>
               <FormControl>
                 <Input 
                   type="number"
@@ -96,7 +96,7 @@ export const BasicClientForm = ({ onSubmit, defaultValues, isSubmitting }: Basic
                   placeholder="Ej: 15"
                   {...field}
                   onChange={(e) => field.onChange(e.target.valueAsNumber)}
-                  className="rounded-xl bg-white/70 backdrop-blur-sm border-gray-100"
+                  className="rounded-xl bg-white/70 backdrop-blur-sm border-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
                   disabled={isSubmitting}
                 />
               </FormControl>
@@ -106,7 +106,7 @@ export const BasicClientForm = ({ onSubmit, defaultValues, isSubmitting }: Basic
         />
         <Button 
           type="submit" 
-          className="w-full bg-black hover:bg-gray-900 text-white rounded-2xl py-6 shadow-lg hover:shadow-xl transition-all duration-300"
+          className="w-full bg-black hover:bg-gray-900 text-white rounded-2xl py-6 shadow-lg hover:shadow-xl transition-all duration-300 dark:bg-gray-800 dark:hover:bg-gray-700"
           disabled={isSubmitting}
         >
           {isSubmitting ? (

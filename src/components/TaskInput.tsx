@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Mic, Send } from "lucide-react";
+import { Mic, Send, Calendar, Bell } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { toast } from "@/hooks/use-toast";
@@ -10,9 +10,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
+import { Calendar as CalendarComponent } from "./ui/calendar";
+import { format } from "date-fns";
+import { Switch } from "./ui/switch";
+import { Label } from "./ui/label";
 
 interface TaskInputProps {
-  onAddTask: (task: string, clientId?: string, type?: string) => void;
+  onAddTask: (task: string, clientId?: string, type?: string, executionDate?: Date, reminderDate?: Date, reminderFrequency?: string) => void;
   clients: Array<{ id: string; name: string }>;
 }
 
@@ -21,14 +26,28 @@ export const TaskInput = ({ onAddTask, clients }: TaskInputProps) => {
   const [selectedClient, setSelectedClient] = useState<string>("");
   const [selectedType, setSelectedType] = useState<string>("otros");
   const [isListening, setIsListening] = useState(false);
+  const [executionDate, setExecutionDate] = useState<Date>();
+  const [reminderDate, setReminderDate] = useState<Date>();
+  const [enableReminder, setEnableReminder] = useState(false);
+  const [reminderFrequency, setReminderFrequency] = useState<string>("once");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (input.trim()) {
-      onAddTask(input.trim(), selectedClient, selectedType);
+      onAddTask(
+        input.trim(), 
+        selectedClient, 
+        selectedType, 
+        executionDate,
+        enableReminder ? reminderDate : undefined,
+        enableReminder ? reminderFrequency : undefined
+      );
       setInput("");
       setSelectedClient("");
       setSelectedType("otros");
+      setExecutionDate(undefined);
+      setReminderDate(undefined);
+      setEnableReminder(false);
       toast({
         title: "Tarea agregada",
         description: "Tu tarea ha sido agregada exitosamente.",
@@ -84,30 +103,30 @@ export const TaskInput = ({ onAddTask, clients }: TaskInputProps) => {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Agregar una nueva tarea..."
-          className="flex-1"
+          className="flex-1 dark:bg-gray-800 dark:text-white"
         />
         <Button
           type="button"
           variant="outline"
           size="icon"
           onClick={startListening}
-          className={`transition-colors ${
+          className={`transition-colors dark:bg-gray-800 dark:text-white ${
             isListening ? "bg-accent text-accent-foreground" : ""
           }`}
         >
           <Mic className="h-4 w-4" />
         </Button>
-        <Button type="submit" size="icon">
+        <Button type="submit" size="icon" className="dark:bg-gray-700">
           <Send className="h-4 w-4" />
         </Button>
       </div>
       
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <Select value={selectedClient} onValueChange={setSelectedClient}>
-          <SelectTrigger className="flex-1">
+          <SelectTrigger className="flex-1 min-w-[200px] dark:bg-gray-800 dark:text-white">
             <SelectValue placeholder="Seleccionar cliente" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="dark:bg-gray-800">
             {clients.map((client) => (
               <SelectItem key={client.id} value={client.id}>
                 {client.name}
@@ -117,16 +136,75 @@ export const TaskInput = ({ onAddTask, clients }: TaskInputProps) => {
         </Select>
 
         <Select value={selectedType} onValueChange={setSelectedType}>
-          <SelectTrigger className="flex-1">
+          <SelectTrigger className="flex-1 min-w-[200px] dark:bg-gray-800 dark:text-white">
             <SelectValue placeholder="Tipo de tarea" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="dark:bg-gray-800">
             <SelectItem value="campaña">Campaña</SelectItem>
             <SelectItem value="publicaciones">Publicaciones</SelectItem>
             <SelectItem value="correcciones">Correcciones</SelectItem>
             <SelectItem value="otros">Otros</SelectItem>
           </SelectContent>
         </Select>
+
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" className="min-w-[200px] dark:bg-gray-800 dark:text-white">
+              <Calendar className="mr-2 h-4 w-4" />
+              {executionDate ? format(executionDate, "PPP") : "Fecha de ejecución"}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0 dark:bg-gray-800">
+            <CalendarComponent
+              mode="single"
+              selected={executionDate}
+              onSelect={setExecutionDate}
+              initialFocus
+            />
+          </PopoverContent>
+        </Popover>
+
+        <div className="flex items-center space-x-2 min-w-[200px]">
+          <Switch
+            id="reminder"
+            checked={enableReminder}
+            onCheckedChange={setEnableReminder}
+          />
+          <Label htmlFor="reminder" className="dark:text-white">Recordatorio</Label>
+        </div>
+
+        {enableReminder && (
+          <>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="min-w-[200px] dark:bg-gray-800 dark:text-white">
+                  <Bell className="mr-2 h-4 w-4" />
+                  {reminderDate ? format(reminderDate, "PPP") : "Fecha recordatorio"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0 dark:bg-gray-800">
+                <CalendarComponent
+                  mode="single"
+                  selected={reminderDate}
+                  onSelect={setReminderDate}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+
+            <Select value={reminderFrequency} onValueChange={setReminderFrequency}>
+              <SelectTrigger className="min-w-[200px] dark:bg-gray-800 dark:text-white">
+                <SelectValue placeholder="Frecuencia" />
+              </SelectTrigger>
+              <SelectContent className="dark:bg-gray-800">
+                <SelectItem value="once">Una vez</SelectItem>
+                <SelectItem value="daily">Diario</SelectItem>
+                <SelectItem value="weekly">Semanal</SelectItem>
+                <SelectItem value="monthly">Mensual</SelectItem>
+              </SelectContent>
+            </Select>
+          </>
+        )}
       </div>
     </form>
   );
