@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { Database } from "@/integrations/supabase/types";
 
 interface PublicationCalendarDialogProps {
   clientId: string;
@@ -29,13 +30,7 @@ interface PublicationCalendarDialogProps {
 
 type PublicationType = "reel" | "carousel" | "image";
 
-interface PublicationData {
-  client_id: string;
-  name: string;
-  type: PublicationType;
-  date: string;
-  description: string | null;
-}
+type Publication = Database["public"]["Tables"]["publications"]["Insert"];
 
 export const PublicationCalendarDialog = ({ clientId, clientName }: PublicationCalendarDialogProps) => {
   const [date, setDate] = useState<Date>();
@@ -55,7 +50,7 @@ export const PublicationCalendarDialog = ({ clientId, clientName }: PublicationC
       return;
     }
 
-    const publicationData: PublicationData = {
+    const publicationData: Publication = {
       client_id: clientId,
       name,
       type,
