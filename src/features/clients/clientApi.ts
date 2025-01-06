@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase";
-import { Client } from "@/components/ClientList";
+import { Client } from "@/components/types/client";
 import { formatClientForDatabase, formatDatabaseClient } from "@/lib/database-utils";
 
 export const fetchClients = async () => {

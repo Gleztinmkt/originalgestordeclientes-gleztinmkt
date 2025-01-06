@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Client } from "@/components/ClientList";
+import { Client } from "@/components/types/client";
 import { toast } from "@/hooks/use-toast";
 import { fetchClients, createClient, updateClient, deleteClient } from "./clientApi";
 

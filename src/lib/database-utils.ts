@@ -1,4 +1,4 @@
-import { Client } from "@/components/ClientList";
+import { Client } from "@/components/types/client";
 
 export const parsePackages = (packagesData: any) => {
   if (!packagesData) return [];

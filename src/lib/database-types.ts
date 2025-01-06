@@ -1,4 +1,4 @@
-import { Client } from "@/components/ClientList";
+import { Client } from "@/components/types/client";
 import { Task } from "@/components/TaskList";
 import { Json } from "@/integrations/supabase/types";
 
