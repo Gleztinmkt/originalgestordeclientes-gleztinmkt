@@ -49,15 +49,13 @@ export const PublicationCalendarDialog = ({ clientId, clientName }: PublicationC
     try {
       const { error } = await supabase
         .from('publications')
-        .insert([
-          {
-            client_id: clientId,
-            name,
-            type,
-            date,
-            description
-          }
-        ]);
+        .insert({
+          client_id: clientId,
+          name,
+          type,
+          date: date.toISOString(),
+          description
+        });
 
       if (error) throw error;
 
