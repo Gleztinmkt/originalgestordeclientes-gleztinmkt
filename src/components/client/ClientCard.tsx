@@ -58,7 +58,7 @@ export const ClientCard = ({
     onUpdateClient(client.id, { ...client, packages: updatedPackages });
   };
 
-  const handleUpdateClientInfo = (_: string, info: ClientInfo) => {
+  const handleUpdateClientInfo = (_clientId: string, info: ClientInfo) => {
     onUpdateClient(client.id, { ...client, clientInfo: info });
   };
 
