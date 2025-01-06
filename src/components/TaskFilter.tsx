@@ -17,10 +17,10 @@ export const TaskFilter = ({ clients, onFilterChange }: TaskFilterProps) => {
       <Select
         onValueChange={(value) => onFilterChange(value === "all" ? null : value, null)}
       >
-        <SelectTrigger className="w-[200px]">
+        <SelectTrigger className="w-[200px] dark:bg-gray-800 dark:text-white dark:border-gray-700">
           <SelectValue placeholder="Filtrar por categoría" />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent className="dark:bg-gray-800">
           <SelectItem value="all">Todas las categorías</SelectItem>
           <SelectItem value="campaña">Campaña</SelectItem>
           <SelectItem value="publicaciones">Publicaciones</SelectItem>
@@ -32,10 +32,10 @@ export const TaskFilter = ({ clients, onFilterChange }: TaskFilterProps) => {
       <Select
         onValueChange={(value) => onFilterChange(null, value === "all" ? null : value)}
       >
-        <SelectTrigger className="w-[200px]">
+        <SelectTrigger className="w-[200px] dark:bg-gray-800 dark:text-white dark:border-gray-700">
           <SelectValue placeholder="Filtrar por cliente" />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent className="dark:bg-gray-800">
           <SelectItem value="all">Todos los clientes</SelectItem>
           {clients.map((client) => (
             <SelectItem key={client.id} value={client.id}>

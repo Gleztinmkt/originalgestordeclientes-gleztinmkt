@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from "date-fns";
+import { toast } from "@/hooks/use-toast";
 
 interface NotificationAction {
   label: string;
@@ -42,17 +43,60 @@ export const NotificationCenter = ({
 }: NotificationCenterProps) => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>("default");
 
   useEffect(() => {
     setUnreadCount(notifications.length);
+    checkNotificationPermission();
   }, [notifications]);
 
-  useEffect(() => {
-    // Request notification permission
+  const checkNotificationPermission = async () => {
     if ("Notification" in window) {
-      Notification.requestPermission();
+      const permission = await Notification.requestPermission();
+      setNotificationPermission(permission);
     }
-  }, []);
+  };
+
+  const requestNotificationPermission = async () => {
+    try {
+      const permission = await Notification.requestPermission();
+      setNotificationPermission(permission);
+      if (permission === "granted") {
+        toast({
+          title: "Notificaciones activadas",
+          description: "Recibirás notificaciones del sistema cuando haya actualizaciones importantes.",
+        });
+      }
+    } catch (error) {
+      console.error('Error requesting notification permission:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo activar las notificaciones. Por favor, inténtalo de nuevo.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const sendSystemNotification = (notification: Notification) => {
+    if (notificationPermission === "granted") {
+      const systemNotification = new Notification(notification.title, {
+        body: notification.message,
+        icon: "/favicon.ico",
+      });
+
+      systemNotification.onclick = () => {
+        window.focus();
+        setIsOpen(true);
+      };
+    }
+  };
+
+  useEffect(() => {
+    if (notifications.length > 0 && notificationPermission === "granted") {
+      const latestNotification = notifications[notifications.length - 1];
+      sendSystemNotification(latestNotification);
+    }
+  }, [notifications, notificationPermission]);
 
   const handleDismiss = (id: string) => {
     onDismiss(id);
@@ -93,6 +137,15 @@ export const NotificationCenter = ({
       <SheetContent className="w-[400px] sm:w-[540px] dark:bg-gray-900 dark:text-white">
         <SheetHeader>
           <SheetTitle className="text-xl font-bold dark:text-white">Notificaciones</SheetTitle>
+          {notificationPermission !== "granted" && (
+            <Button 
+              onClick={requestNotificationPermission}
+              variant="outline"
+              className="mt-2"
+            >
+              Activar notificaciones del sistema
+            </Button>
+          )}
         </SheetHeader>
         <ScrollArea className="h-[calc(100vh-100px)] mt-4">
           <div className="space-y-4">

@@ -119,13 +119,13 @@ export const TaskList = ({ tasks, onDeleteTask, onCompleteTask, clients }: TaskL
                   {task.executionDate && (
                     <Badge variant="outline" className="ml-2 dark:border-gray-600 dark:text-gray-300">
                       <Clock className="mr-1 h-3 w-3" />
-                      {format(new Date(task.executionDate), "dd/MM/yyyy")}
+                      Ejecución: {format(new Date(task.executionDate), "dd/MM/yyyy")}
                     </Badge>
                   )}
                   {task.reminderDate && (
                     <Badge variant="outline" className="ml-2 dark:border-gray-600 dark:text-gray-300">
                       <Bell className="mr-1 h-3 w-3" />
-                      {format(new Date(task.reminderDate), "dd/MM/yyyy")}
+                      Recordatorio: {format(new Date(task.reminderDate), "dd/MM/yyyy")}
                       {task.reminderFrequency && ` (${task.reminderFrequency})`}
                     </Badge>
                   )}

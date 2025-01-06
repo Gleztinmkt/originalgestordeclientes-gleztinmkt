@@ -45,6 +45,47 @@ export type Database = {
         }
         Relationships: []
       }
+      publications: {
+        Row: {
+          client_id: string | null
+          created_at: string
+          date: string
+          description: string | null
+          google_calendar_event_id: string | null
+          id: string
+          name: string
+          type: string
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string
+          date: string
+          description?: string | null
+          google_calendar_event_id?: string | null
+          id?: string
+          name: string
+          type: string
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string
+          date?: string
+          description?: string | null
+          google_calendar_event_id?: string | null
+          id?: string
+          name?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "publications_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tasks: {
         Row: {
           client_id: string | null

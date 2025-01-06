@@ -9,6 +9,7 @@ import { ClientInfoDialog } from "./ClientInfoDialog";
 import { EditClientDialog } from "./EditClientDialog";
 import { AddPackageDialog } from "./AddPackageDialog";
 import { Client, ClientInfo } from "../types/client";
+import { PublicationCalendarDialog } from "./PublicationCalendarDialog";
 
 interface ClientCardProps {
   client: Client;
@@ -21,6 +22,17 @@ interface ClientCardProps {
   onDeleteTask: (id: string) => void;
   onCompleteTask: (id: string) => void;
 }
+
+const getRandomPastelGradient = () => {
+  const gradients = [
+    'linear-gradient(135deg, #fdfcfb 0%, #e2d1c3 100%)',
+    'linear-gradient(109.6deg, rgba(223,234,247,1) 11.2%, rgba(244,248,252,1) 91.1%)',
+    'linear-gradient(to top, #accbee 0%, #e7f0fd 100%)',
+    'linear-gradient(to top, #e6e9f0 0%, #eef1f5 100%)',
+    'linear-gradient(184.1deg, rgba(249,255,182,1) 44.7%, rgba(226,255,172,1) 67.2%)',
+  ];
+  return gradients[Math.floor(Math.random() * gradients.length)];
+};
 
 export const ClientCard = ({
   client,
@@ -67,7 +79,7 @@ export const ClientCard = ({
   };
 
   return (
-    <Card className="glass-card hover:shadow-lg transition-all duration-300">
+    <Card className="glass-card hover:shadow-lg transition-all duration-300" style={{ background: getRandomPastelGradient() }}>
       <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
         <CardTitle className="text-xl font-heading font-semibold text-gray-800">
           {client.name}
@@ -77,6 +89,10 @@ export const ClientCard = ({
             clientId={client.id}
             clientInfo={client.clientInfo}
             onUpdateInfo={handleUpdateClientInfo}
+          />
+          <PublicationCalendarDialog 
+            clientId={client.id}
+            clientName={client.name}
           />
           <EditClientDialog 
             client={client}
