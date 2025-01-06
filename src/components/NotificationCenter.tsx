@@ -12,16 +12,19 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from "date-fns";
 
+interface NotificationAction {
+  label: string;
+  onClick: () => void;
+  type?: 'message' | 'complete';
+}
+
 interface Notification {
   id: string;
   title: string;
   message: string;
   type: 'payment' | 'task' | 'reminder';
   date: Date;
-  actions?: {
-    label: string;
-    onClick: () => void;
-  }[];
+  actions?: NotificationAction[];
 }
 
 interface NotificationCenterProps {

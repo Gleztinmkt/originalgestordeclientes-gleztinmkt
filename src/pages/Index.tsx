@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTaskManager } from "@/features/tasks/useTaskManager";
 import { useClientManager } from "@/features/clients/useClientManager";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { toast } from "@/hooks/use-toast";
 
 const Index = () => {
   const { tasks, loadTasks, addTask, deleteTask } = useTaskManager();
@@ -35,6 +36,23 @@ const Index = () => {
   const handleFilterChange = (type: string | null, clientId: string | null) => {
     setSelectedType(type);
     setSelectedClientId(clientId);
+  };
+
+  const handleCompleteTask = async (id: string) => {
+    try {
+      await deleteTask(id);
+      toast({
+        title: "Tarea completada",
+        description: "La tarea ha sido marcada como completada.",
+      });
+    } catch (error) {
+      console.error('Error completing task:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo completar la tarea. Por favor, intenta de nuevo.",
+        variant: "destructive",
+      });
+    }
   };
 
   const filteredTasks = tasks.filter(task => {
@@ -79,6 +97,7 @@ const Index = () => {
               tasks={tasks}
               onAddTask={addTask}
               onDeleteTask={deleteTask}
+              onCompleteTask={handleCompleteTask}
             />
           </TabsContent>
           <TabsContent value="tasks" className="space-y-4 mt-6">
@@ -93,6 +112,7 @@ const Index = () => {
             <TaskList 
               tasks={filteredTasks}
               onDeleteTask={deleteTask}
+              onCompleteTask={handleCompleteTask}
               clients={clients}
             />
           </TabsContent>
