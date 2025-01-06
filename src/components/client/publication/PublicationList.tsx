@@ -5,10 +5,28 @@ import { es } from "date-fns/locale";
 
 interface PublicationListProps {
   publications: Publication[];
+  packageId?: string;
 }
 
-export const PublicationList = ({ publications }: PublicationListProps) => {
-  if (publications.length === 0) {
+const getTypeIcon = (type: string) => {
+  switch (type) {
+    case 'reel':
+      return 'r';
+    case 'carousel':
+      return 'c';
+    case 'image':
+      return 'i';
+    default:
+      return '';
+  }
+};
+
+export const PublicationList = ({ publications, packageId }: PublicationListProps) => {
+  const filteredPublications = packageId 
+    ? publications.filter(pub => pub.packageId === packageId)
+    : publications;
+
+  if (filteredPublications.length === 0) {
     return (
       <div className="text-center text-gray-500 dark:text-gray-400 py-4">
         No hay publicaciones programadas
@@ -19,7 +37,7 @@ export const PublicationList = ({ publications }: PublicationListProps) => {
   return (
     <ScrollArea className="h-[200px] rounded-md border p-4">
       <div className="space-y-4">
-        {publications.map((pub) => (
+        {filteredPublications.map((pub) => (
           <div
             key={pub.id}
             className="flex items-start space-x-4 p-3 rounded-lg bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm"
@@ -31,7 +49,7 @@ export const PublicationList = ({ publications }: PublicationListProps) => {
               </p>
               <div className="flex items-center space-x-2">
                 <span className="text-xs px-2 py-1 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100">
-                  {pub.type}
+                  {getTypeIcon(pub.type)}
                 </span>
               </div>
               {pub.description && (

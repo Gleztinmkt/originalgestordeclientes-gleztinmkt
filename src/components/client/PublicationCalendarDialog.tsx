@@ -12,20 +12,25 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { PublicationForm } from "./publication/PublicationForm";
 import { PublicationList } from "./publication/PublicationList";
-import { Publication } from "./publication/types";
+import { Publication, PublicationFormValues } from "./publication/types";
 import { useQuery } from "@tanstack/react-query";
 
 interface PublicationCalendarDialogProps {
   clientId: string;
   clientName: string;
+  packageId?: string;
 }
 
-export const PublicationCalendarDialog = ({ clientId, clientName }: PublicationCalendarDialogProps) => {
+export const PublicationCalendarDialog = ({ 
+  clientId, 
+  clientName,
+  packageId 
+}: PublicationCalendarDialogProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { data: publications = [], refetch } = useQuery({
-    queryKey: ['publications', clientId],
+    queryKey: ['publications', clientId, packageId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('publications')
@@ -38,12 +43,7 @@ export const PublicationCalendarDialog = ({ clientId, clientName }: PublicationC
     },
   });
 
-  const handleSubmit = async (values: {
-    name: string;
-    type: Publication["type"];
-    date: Date;
-    description: string;
-  }) => {
+  const handleSubmit = async (values: PublicationFormValues) => {
     if (!values.date || !values.name) {
       toast({
         title: "Error",
@@ -53,12 +53,16 @@ export const PublicationCalendarDialog = ({ clientId, clientName }: PublicationC
       return;
     }
 
-    const publicationData: Omit<Publication, 'id' | 'created_at'> = {
+    const typeShorthand = values.type === 'reel' ? 'r' : values.type === 'carousel' ? 'c' : 'i';
+    const eventTitle = `${clientName} - ${typeShorthand} - ${values.name}`;
+
+    const publicationData = {
       client_id: clientId,
       name: values.name,
       type: values.type,
       date: values.date.toISOString(),
       description: values.description || null,
+      packageId: packageId || null
     };
 
     try {
@@ -105,8 +109,12 @@ export const PublicationCalendarDialog = ({ clientId, clientName }: PublicationC
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-6">
-          <PublicationList publications={publications} />
-          <PublicationForm onSubmit={handleSubmit} isSubmitting={isSubmitting} />
+          <PublicationList publications={publications} packageId={packageId} />
+          <PublicationForm 
+            onSubmit={handleSubmit} 
+            isSubmitting={isSubmitting}
+            packageId={packageId}
+          />
         </div>
       </DialogContent>
     </Dialog>

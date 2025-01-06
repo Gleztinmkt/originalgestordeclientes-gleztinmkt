@@ -3,6 +3,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -10,20 +11,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
 import { PublicationType } from "./types";
 
 interface PublicationFormProps {
   onSubmit: (values: {
     name: string;
     type: PublicationType;
-    date: Date | undefined;
+    date: Date;
     description: string;
   }) => void;
   isSubmitting?: boolean;
+  packageId?: string;
 }
 
-export const PublicationForm = ({ onSubmit, isSubmitting }: PublicationFormProps) => {
+export const PublicationForm = ({ onSubmit, isSubmitting, packageId }: PublicationFormProps) => {
   const [name, setName] = useState("");
   const [type, setType] = useState<PublicationType>("image");
   const [date, setDate] = useState<Date>();
@@ -33,6 +34,10 @@ export const PublicationForm = ({ onSubmit, isSubmitting }: PublicationFormProps
     e.preventDefault();
     if (!date || !name) return;
     onSubmit({ name, type, date, description });
+    setName("");
+    setType("image");
+    setDate(undefined);
+    setDescription("");
   };
 
   return (
@@ -63,12 +68,14 @@ export const PublicationForm = ({ onSubmit, isSubmitting }: PublicationFormProps
 
       <div className="space-y-2">
         <Label>Fecha de publicación</Label>
-        <Calendar
-          mode="single"
-          selected={date}
-          onSelect={setDate}
-          className="rounded-md border dark:bg-gray-800 dark:text-white"
-        />
+        <div className="border rounded-lg p-2 max-h-[300px] overflow-y-auto">
+          <Calendar
+            mode="single"
+            selected={date}
+            onSelect={setDate}
+            className="rounded-md border dark:bg-gray-800 dark:text-white"
+          />
+        </div>
       </div>
 
       <div className="space-y-2">
