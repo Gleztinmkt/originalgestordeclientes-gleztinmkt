@@ -19,7 +19,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { format } from "date-fns";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -28,10 +27,20 @@ interface PublicationCalendarDialogProps {
   clientName: string;
 }
 
+type PublicationType = "reel" | "carousel" | "image";
+
+interface PublicationData {
+  client_id: string;
+  name: string;
+  type: PublicationType;
+  date: string;
+  description: string | null;
+}
+
 export const PublicationCalendarDialog = ({ clientId, clientName }: PublicationCalendarDialogProps) => {
   const [date, setDate] = useState<Date>();
   const [name, setName] = useState("");
-  const [type, setType] = useState<"reel" | "carousel" | "image">("image");
+  const [type, setType] = useState<PublicationType>("image");
   const [description, setDescription] = useState("");
   const [isOpen, setIsOpen] = useState(false);
 
@@ -46,16 +55,18 @@ export const PublicationCalendarDialog = ({ clientId, clientName }: PublicationC
       return;
     }
 
+    const publicationData: PublicationData = {
+      client_id: clientId,
+      name,
+      type,
+      date: date.toISOString(),
+      description: description || null
+    };
+
     try {
       const { error } = await supabase
         .from('publications')
-        .insert({
-          client_id: clientId,
-          name,
-          type,
-          date: date.toISOString(),
-          description
-        });
+        .insert(publicationData);
 
       if (error) throw error;
 
@@ -109,7 +120,7 @@ export const PublicationCalendarDialog = ({ clientId, clientName }: PublicationC
 
           <div className="space-y-2">
             <Label>Tipo de publicación</Label>
-            <Select value={type} onValueChange={(value: "reel" | "carousel" | "image") => setType(value)}>
+            <Select value={type} onValueChange={(value: PublicationType) => setType(value)}>
               <SelectTrigger className="dark:bg-gray-800 dark:text-white">
                 <SelectValue placeholder="Seleccionar tipo" />
               </SelectTrigger>
