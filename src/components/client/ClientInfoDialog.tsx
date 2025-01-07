@@ -8,8 +8,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { ClientInfoForm } from "./ClientInfoForm";
 import { ClientInfo } from "../types/client";
+import { ClientInfoForm } from "./ClientInfoForm";
 
 interface ClientInfoDialogProps {
   clientId: string;
