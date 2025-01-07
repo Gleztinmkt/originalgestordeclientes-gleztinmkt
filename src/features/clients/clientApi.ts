@@ -6,6 +6,7 @@ export const fetchClients = async () => {
   const { data: clientsData, error } = await supabase
     .from('clients')
     .select('*')
+    .is('deleted_at', null)
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -50,7 +51,7 @@ export const updateClient = async (id: string, clientData: Partial<Client>) => {
 export const deleteClient = async (id: string) => {
   const { error } = await supabase
     .from('clients')
-    .delete()
+    .update({ deleted_at: new Date().toISOString() })
     .eq('id', id);
 
   if (error) {

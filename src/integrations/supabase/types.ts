@@ -12,6 +12,7 @@ export type Database = {
       clients: {
         Row: {
           created_at: string
+          deleted_at: string | null
           facebook: string | null
           id: string
           instagram: string | null
@@ -23,6 +24,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          deleted_at?: string | null
           facebook?: string | null
           id?: string
           instagram?: string | null
@@ -34,6 +36,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          deleted_at?: string | null
           facebook?: string | null
           id?: string
           instagram?: string | null
@@ -50,6 +53,7 @@ export type Database = {
           client_id: string | null
           created_at: string
           date: string
+          deleted_at: string | null
           description: string | null
           google_calendar_event_id: string | null
           id: string
@@ -60,6 +64,7 @@ export type Database = {
           client_id?: string | null
           created_at?: string
           date: string
+          deleted_at?: string | null
           description?: string | null
           google_calendar_event_id?: string | null
           id?: string
@@ -70,6 +75,7 @@ export type Database = {
           client_id?: string | null
           created_at?: string
           date?: string
+          deleted_at?: string | null
           description?: string | null
           google_calendar_event_id?: string | null
           id?: string
@@ -92,6 +98,7 @@ export type Database = {
           content: string
           created_at: string
           date: string | null
+          deleted_at: string | null
           execution_date: string | null
           id: string
           reminder_date: string | null
@@ -103,6 +110,7 @@ export type Database = {
           content: string
           created_at?: string
           date?: string | null
+          deleted_at?: string | null
           execution_date?: string | null
           id?: string
           reminder_date?: string | null
@@ -114,6 +122,7 @@ export type Database = {
           content?: string
           created_at?: string
           date?: string | null
+          deleted_at?: string | null
           execution_date?: string | null
           id?: string
           reminder_date?: string | null
@@ -132,7 +141,15 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      deleted_items: {
+        Row: {
+          content: string | null
+          deleted_at: string | null
+          id: string | null
+          type: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       [_ in never]: never

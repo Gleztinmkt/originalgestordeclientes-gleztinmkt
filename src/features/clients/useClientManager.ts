@@ -33,14 +33,7 @@ export const useClientManager = () => {
         marketingInfo: clientData.marketingInfo || "",
         instagram: clientData.instagram || "",
         facebook: clientData.facebook || "",
-        packages: [{
-          id: crypto.randomUUID(),
-          name: "Paquete Inicial",
-          totalPublications: parseInt(clientData.publications) || 0,
-          usedPublications: 0,
-          month: clientData.packageMonth,
-          paid: false
-        }]
+        packages: [] // Remove default package creation
       });
 
       setClients(prev => [newClient, ...prev]);
@@ -53,6 +46,24 @@ export const useClientManager = () => {
       toast({
         title: "Error",
         description: "No se pudo guardar el cliente. Por favor, intenta de nuevo.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const deleteClientData = async (id: string) => {
+    try {
+      await deleteClient(id);
+      setClients(prev => prev.filter(client => client.id !== id));
+      toast({
+        title: "Cliente eliminado",
+        description: "El cliente ha sido movido a la papelera.",
+      });
+    } catch (error) {
+      console.error('Error deleting client:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar el cliente. Por favor, intenta de nuevo.",
         variant: "destructive",
       });
     }
@@ -71,24 +82,6 @@ export const useClientManager = () => {
       toast({
         title: "Error",
         description: "No se pudo actualizar el cliente. Por favor, intenta de nuevo.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const deleteClientData = async (id: string) => {
-    try {
-      await deleteClient(id);
-      setClients(prev => prev.filter(client => client.id !== id));
-      toast({
-        title: "Cliente eliminado",
-        description: "El cliente ha sido eliminado correctamente.",
-      });
-    } catch (error) {
-      console.error('Error deleting client:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo eliminar el cliente. Por favor, intenta de nuevo.",
         variant: "destructive",
       });
     }

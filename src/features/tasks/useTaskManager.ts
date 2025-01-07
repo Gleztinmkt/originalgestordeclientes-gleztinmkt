@@ -3,7 +3,6 @@ import { supabase } from "@/lib/supabase";
 import { Task } from "@/components/TaskList";
 import { toast } from "@/hooks/use-toast";
 import { convertTaskForDatabase, convertDatabaseTask, DatabaseTask } from "@/lib/database-types";
-import { analyzeTask } from "@/lib/task-analyzer";
 
 export const useTaskManager = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -15,6 +14,7 @@ export const useTaskManager = () => {
       const { data: tasksData, error: tasksError } = await supabase
         .from('tasks')
         .select('*')
+        .is('deleted_at', null)
         .order('created_at', { ascending: false });
       
       if (tasksError) throw tasksError;
@@ -70,7 +70,7 @@ export const useTaskManager = () => {
     try {
       const { error } = await supabase
         .from('tasks')
-        .delete()
+        .update({ deleted_at: new Date().toISOString() })
         .eq('id', id);
       
       if (error) throw error;
@@ -78,7 +78,7 @@ export const useTaskManager = () => {
       setTasks(prev => prev.filter(task => task.id !== id));
       toast({
         title: "Tarea eliminada",
-        description: "La tarea ha sido eliminada correctamente.",
+        description: "La tarea ha sido movida a la papelera.",
       });
     } catch (error) {
       console.error('Error deleting task:', error);
