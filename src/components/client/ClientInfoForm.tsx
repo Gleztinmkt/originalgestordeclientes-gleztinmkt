@@ -35,7 +35,7 @@ export const ClientInfoForm = ({
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      generalInfo: defaultValues.generalInfo || "",
+      generalInfo: defaultValues.generalInfo,
     },
   });
 
