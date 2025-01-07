@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Calendar as CalendarIcon, Trash2 } from "lucide-react"; // Add Trash2 here
-import { format } from "date-fns"; // Add this import
+import { Calendar as CalendarIcon, Trash2 } from "lucide-react";
+import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -167,4 +167,3 @@ export const PublicationCalendarDialog = ({
     </Dialog>
   );
 };
-
