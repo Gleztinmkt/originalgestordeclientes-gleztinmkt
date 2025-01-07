@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Trash2 } from "lucide-react";
+import { FileText } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -41,10 +41,10 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
           size="icon"
           className="h-8 w-8 text-gray-400 hover:text-yellow-500 hover:bg-yellow-50 rounded-xl transition-colors duration-200"
         >
-          <Trash2 className="h-4 w-4" />
+          <FileText className="h-4 w-4" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle>Información del Cliente</DialogTitle>
         </DialogHeader>
