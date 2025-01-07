@@ -131,6 +131,9 @@ export const ClientCard = ({
             onUpdatePaid={(paid) => handleUpdatePackagePaid(pkg.id, paid)}
             onEditPackage={(values) => handleEditPackage(pkg.id, values)}
             onDeletePackage={() => handleDeletePackage(pkg.id)}
+            clientId={client.id}
+            clientName={client.name}
+            packageId={pkg.id}
           />
         ))}
 
