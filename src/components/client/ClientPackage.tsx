@@ -19,6 +19,7 @@ import {
 import { AddPackageForm, PackageFormValues } from "./AddPackageForm";
 import { toast } from "@/hooks/use-toast";
 import { useState, useCallback } from "react";
+import { PublicationCalendarDialog } from "./PublicationCalendarDialog";
 
 interface ClientPackageProps {
   packageName: string;
@@ -30,6 +31,9 @@ interface ClientPackageProps {
   onUpdatePaid: (paid: boolean) => void;
   onEditPackage: (values: PackageFormValues & { name: string, totalPublications: string }) => void;
   onDeletePackage?: () => void;
+  clientId: string;
+  clientName: string;
+  packageId: string;
 }
 
 export const ClientPackage = ({
@@ -42,6 +46,9 @@ export const ClientPackage = ({
   onUpdatePaid,
   onEditPackage,
   onDeletePackage,
+  clientId,
+  clientName,
+  packageId,
 }: ClientPackageProps) => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -76,28 +83,6 @@ export const ClientPackage = ({
     }
   }, [onEditPackage, isSubmitting]);
 
-  const handleUpdatePaid = useCallback(async (newPaidStatus: boolean) => {
-    if (isSubmitting) return;
-    
-    try {
-      setIsSubmitting(true);
-      await onUpdatePaid(newPaidStatus);
-      toast({
-        title: "Estado actualizado",
-        description: `El paquete ha sido marcado como ${newPaidStatus ? 'pagado' : 'pendiente'}.`,
-      });
-    } catch (error) {
-      console.error('Error updating paid status:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo actualizar el estado del pago.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, [onUpdatePaid, isSubmitting]);
-
   return (
     <Card className="bg-white/60 backdrop-blur-sm">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -113,7 +98,7 @@ export const ClientPackage = ({
             </span>
             <Switch 
               checked={paid} 
-              onCheckedChange={handleUpdatePaid}
+              onCheckedChange={onUpdatePaid}
               disabled={isSubmitting}
             />
           </div>
@@ -156,6 +141,11 @@ export const ClientPackage = ({
           total={totalPublications}
           used={usedPublications}
           onUpdateUsed={onUpdateUsed}
+        />
+        <PublicationCalendarDialog 
+          clientId={clientId}
+          clientName={clientName}
+          packageId={packageId}
         />
       </CardContent>
 

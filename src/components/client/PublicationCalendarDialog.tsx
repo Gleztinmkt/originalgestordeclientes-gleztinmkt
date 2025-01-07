@@ -33,12 +33,18 @@ export const PublicationCalendarDialog = ({
   const { data: publications = [], refetch } = useQuery({
     queryKey: ['publications', clientId, packageId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const query = supabase
         .from('publications')
         .select('*')
         .eq('client_id', clientId)
         .is('deleted_at', null)
         .order('date', { ascending: true });
+
+      if (packageId) {
+        query.eq('package_id', packageId);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       return data as Publication[];
@@ -88,7 +94,7 @@ export const PublicationCalendarDialog = ({
       type: values.type,
       date: values.date.toISOString(),
       description: values.description || null,
-      packageId: packageId || null
+      package_id: packageId || null
     };
 
     try {

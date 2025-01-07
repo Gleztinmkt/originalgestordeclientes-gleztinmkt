@@ -58,6 +58,7 @@ export type Database = {
           google_calendar_event_id: string | null
           id: string
           name: string
+          package_id: string | null
           type: string
         }
         Insert: {
@@ -69,6 +70,7 @@ export type Database = {
           google_calendar_event_id?: string | null
           id?: string
           name: string
+          package_id?: string | null
           type: string
         }
         Update: {
@@ -80,6 +82,7 @@ export type Database = {
           google_calendar_event_id?: string | null
           id?: string
           name?: string
+          package_id?: string | null
           type?: string
         }
         Relationships: [
