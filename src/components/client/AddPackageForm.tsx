@@ -27,13 +27,18 @@ const PACKAGE_TYPES = {
   premium: {
     name: "Paquete Premium",
     totalPublications: "16",
+  },
+  personalizado: {
+    name: "Paquete Personalizado",
+    totalPublications: "",
   }
 } as const;
 
 const packageFormSchema = z.object({
-  packageType: z.enum(["basico", "avanzado", "premium"]),
+  packageType: z.enum(["basico", "avanzado", "premium", "personalizado"]),
   month: z.string().min(1, "Selecciona el mes del paquete"),
   paid: z.boolean().default(false),
+  customPublications: z.string().optional(),
 });
 
 export type PackageFormValues = z.infer<typeof packageFormSchema>;
@@ -51,19 +56,26 @@ export const AddPackageForm = ({ onSubmit, defaultValues, isSubmitting }: AddPac
   
   const form = useForm<PackageFormValues>({
     resolver: zodResolver(packageFormSchema),
-    defaultValues: defaultValues || {
-      packageType: "basico",
-      month: "",
-      paid: false,
+    defaultValues: {
+      packageType: defaultValues?.packageType || "basico",
+      month: defaultValues?.month || "",
+      paid: defaultValues?.paid || false,
+      customPublications: defaultValues?.customPublications || "",
     },
   });
 
   const handleSubmit = (values: PackageFormValues) => {
     const packageInfo = PACKAGE_TYPES[values.packageType];
+    const totalPublications = values.packageType === "personalizado" 
+      ? values.customPublications || "0"
+      : packageInfo.totalPublications;
+      
     onSubmit({
       ...values,
-      name: packageInfo.name,
-      totalPublications: packageInfo.totalPublications,
+      name: values.packageType === "personalizado" 
+        ? `Paquete Personalizado (${totalPublications} publicaciones)`
+        : packageInfo.name,
+      totalPublications,
     });
   };
 
@@ -76,7 +88,7 @@ export const AddPackageForm = ({ onSubmit, defaultValues, isSubmitting }: AddPac
           render={({ field }) => (
             <FormItem>
               <FormLabel className="text-gray-700">Tipo de Paquete</FormLabel>
-              <div className="flex gap-2">
+              <div className="grid grid-cols-2 gap-2">
                 <Button
                   type="button"
                   variant={field.value === "basico" ? "default" : "outline"}
@@ -84,7 +96,7 @@ export const AddPackageForm = ({ onSubmit, defaultValues, isSubmitting }: AddPac
                     field.onChange("basico");
                     setSelectedType("basico");
                   }}
-                  className="flex-1"
+                  className="w-full"
                   disabled={isSubmitting}
                 >
                   Básico
@@ -96,7 +108,7 @@ export const AddPackageForm = ({ onSubmit, defaultValues, isSubmitting }: AddPac
                     field.onChange("avanzado");
                     setSelectedType("avanzado");
                   }}
-                  className="flex-1"
+                  className="w-full"
                   disabled={isSubmitting}
                 >
                   Avanzado
@@ -108,19 +120,55 @@ export const AddPackageForm = ({ onSubmit, defaultValues, isSubmitting }: AddPac
                     field.onChange("premium");
                     setSelectedType("premium");
                   }}
-                  className="flex-1"
+                  className="w-full"
                   disabled={isSubmitting}
                 >
                   Premium
                 </Button>
+                <Button
+                  type="button"
+                  variant={field.value === "personalizado" ? "default" : "outline"}
+                  onClick={() => {
+                    field.onChange("personalizado");
+                    setSelectedType("personalizado");
+                  }}
+                  className="w-full"
+                  disabled={isSubmitting}
+                >
+                  Personalizado
+                </Button>
               </div>
-              <FormDescription>
-                {PACKAGE_TYPES[selectedType].totalPublications} publicaciones por mes
-              </FormDescription>
+              {selectedType !== "personalizado" && (
+                <FormDescription>
+                  {PACKAGE_TYPES[selectedType].totalPublications} publicaciones por mes
+                </FormDescription>
+              )}
               <FormMessage />
             </FormItem>
           )}
         />
+
+        {selectedType === "personalizado" && (
+          <FormField
+            control={form.control}
+            name="customPublications"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-gray-700">Número de Publicaciones</FormLabel>
+                <FormControl>
+                  <Input 
+                    type="number"
+                    placeholder="Ej: 20" 
+                    {...field}
+                    className="rounded-xl bg-white/70 backdrop-blur-sm border-gray-100"
+                    disabled={isSubmitting}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
         
         <FormField
           control={form.control}

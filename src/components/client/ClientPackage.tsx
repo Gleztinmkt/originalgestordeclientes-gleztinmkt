@@ -53,10 +53,11 @@ export const ClientPackage = ({
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const getPackageType = (name: string): "basico" | "avanzado" | "premium" => {
+  const getPackageType = (name: string): "basico" | "avanzado" | "premium" | "personalizado" => {
     if (name.toLowerCase().includes("básico")) return "basico";
     if (name.toLowerCase().includes("avanzado")) return "avanzado";
     if (name.toLowerCase().includes("premium")) return "premium";
+    if (name.toLowerCase().includes("personalizado")) return "personalizado";
     return "basico"; // default fallback
   };
 
