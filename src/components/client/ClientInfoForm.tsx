@@ -25,21 +25,25 @@ interface ClientInfoFormProps {
 
 export const ClientInfoForm = ({
   onSubmit,
-  defaultValues,
+  defaultValues = {
+    generalInfo: "",
+    meetings: [],
+    socialNetworks: []
+  },
   isSubmitting = false,
 }: ClientInfoFormProps) => {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      generalInfo: defaultValues?.generalInfo || "",
+      generalInfo: defaultValues.generalInfo || "",
     },
   });
 
   const handleSubmit = (values: z.infer<typeof formSchema>) => {
     const clientInfo: ClientInfo = {
       generalInfo: values.generalInfo || "",
-      meetings: defaultValues?.meetings || [],
-      socialNetworks: defaultValues?.socialNetworks || [],
+      meetings: defaultValues.meetings,
+      socialNetworks: defaultValues.socialNetworks,
     };
     onSubmit(clientInfo);
   };
