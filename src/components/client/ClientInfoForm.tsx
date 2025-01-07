@@ -36,11 +36,12 @@ export const ClientInfoForm = ({
   });
 
   const handleSubmit = (values: z.infer<typeof formSchema>) => {
-    onSubmit({
+    const clientInfo: ClientInfo = {
       generalInfo: values.generalInfo || "",
       meetings: defaultValues?.meetings || [],
       socialNetworks: defaultValues?.socialNetworks || []
-    });
+    };
+    onSubmit(clientInfo);
   };
 
   return (
