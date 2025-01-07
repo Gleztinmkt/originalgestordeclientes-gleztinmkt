@@ -39,7 +39,7 @@ export const ClientInfoForm = ({
     const clientInfo: ClientInfo = {
       generalInfo: values.generalInfo || "",
       meetings: defaultValues?.meetings || [],
-      socialNetworks: defaultValues?.socialNetworks || []
+      socialNetworks: defaultValues?.socialNetworks || [],
     };
     onSubmit(clientInfo);
   };
