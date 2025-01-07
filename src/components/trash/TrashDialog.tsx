@@ -37,8 +37,12 @@ export const TrashDialog = () => {
 
   const handleRestore = async (item: DeletedItem) => {
     try {
+      const tableName = item.type === 'client' ? 'clients' : 
+                       item.type === 'task' ? 'tasks' : 
+                       'publications';
+                       
       const { error } = await supabase
-        .from(item.type + 's')
+        .from(tableName)
         .update({ deleted_at: null })
         .eq('id', item.id);
 
