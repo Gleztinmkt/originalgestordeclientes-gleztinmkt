@@ -22,7 +22,7 @@ export const ClientForm = ({ onAddClient }: ClientFormProps) => {
     const newClient = {
       name: values.name,
       phone: values.phone,
-      paymentDay: values.nextPayment, // nextPayment is already a number from zod transform
+      paymentDay: values.nextPayment,
       marketingInfo: "",
       instagram: "",
       facebook: "",

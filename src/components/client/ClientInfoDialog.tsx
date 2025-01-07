@@ -71,6 +71,13 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
     }));
   };
 
+  const deleteMeeting = (index: number) => {
+    setInfo(prev => ({
+      ...prev,
+      meetings: prev.meetings.filter((_, i) => i !== index),
+    }));
+  };
+
   const addSocialNetwork = () => {
     setInfo(prev => ({
       ...prev,
@@ -114,7 +121,15 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
                 Agregar Reunión
               </Button>
               {info.meetings.map((meeting, index) => (
-                <div key={index} className="space-y-2 border p-4 rounded-lg">
+                <div key={index} className="space-y-2 border p-4 rounded-lg relative">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute top-2 right-2 text-red-500 hover:text-red-700"
+                    onClick={() => deleteMeeting(index)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                   <Input
                     type="date"
                     value={meeting.date}

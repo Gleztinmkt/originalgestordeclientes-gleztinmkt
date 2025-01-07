@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { Trash2, RotateCcw } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -6,9 +8,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Trash2, RotateCcw } from "lucide-react";
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 
@@ -56,8 +56,18 @@ export const TrashDialog = () => {
 
       if (error) throw error;
       await refetch();
+      
+      toast({
+        title: "Elemento restaurado",
+        description: "El elemento ha sido restaurado exitosamente.",
+      });
     } catch (error) {
       console.error('Error restoring item:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo restaurar el elemento. Por favor, intenta de nuevo.",
+        variant: "destructive",
+      });
     }
   };
 
