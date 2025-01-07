@@ -15,14 +15,6 @@ import { ClientInfo } from "../types/client";
 
 const formSchema = z.object({
   generalInfo: z.string().optional(),
-  meetings: z.array(z.object({
-    date: z.string(),
-    notes: z.string()
-  })).default([]),
-  socialNetworks: z.array(z.object({
-    platform: z.enum(["instagram", "facebook", "linkedin", "tiktok", "twitter", "youtube"]),
-    username: z.string()
-  })).default([])
 });
 
 interface ClientInfoFormProps {
@@ -36,18 +28,22 @@ export const ClientInfoForm = ({
   defaultValues,
   isSubmitting = false,
 }: ClientInfoFormProps) => {
-  const form = useForm<ClientInfo>({
+  const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: defaultValues || {
-      generalInfo: "",
-      meetings: [],
-      socialNetworks: []
-    }
+    defaultValues: {
+      generalInfo: defaultValues?.generalInfo || "",
+    },
   });
+
+  const handleSubmit = (values: z.infer<typeof formSchema>) => {
+    onSubmit({
+      generalInfo: values.generalInfo || "",
+    });
+  };
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
         <FormField
           control={form.control}
           name="generalInfo"
@@ -56,7 +52,8 @@ export const ClientInfoForm = ({
               <FormLabel>Información General</FormLabel>
               <FormControl>
                 <Textarea
-                  placeholder="Ingresa información general del cliente..."
+                  placeholder="Ingrese información general del cliente..."
+                  className="min-h-[100px]"
                   {...field}
                 />
               </FormControl>
@@ -65,7 +62,7 @@ export const ClientInfoForm = ({
           )}
         />
 
-        <Button type="submit" disabled={isSubmitting}>
+        <Button type="submit" className="w-full" disabled={isSubmitting}>
           {isSubmitting ? "Guardando..." : "Guardar"}
         </Button>
       </form>
