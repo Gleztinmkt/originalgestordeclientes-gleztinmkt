@@ -12,8 +12,10 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 
+type TableNames = "clients" | "tasks" | "publications";
+
 interface DeletedItem {
-  type: 'client' | 'task' | 'publication';
+  type: "client" | "task" | "publication";
   id: string;
   content: string;
   deleted_at: string;
@@ -37,10 +39,16 @@ export const TrashDialog = () => {
 
   const handleRestore = async (item: DeletedItem) => {
     try {
-      const tableName = item.type === 'client' ? 'clients' : 
-                       item.type === 'task' ? 'tasks' : 
-                       'publications';
-                       
+      const getTableName = (type: DeletedItem["type"]): TableNames => {
+        switch (type) {
+          case "client": return "clients";
+          case "task": return "tasks";
+          case "publication": return "publications";
+        }
+      };
+
+      const tableName = getTableName(item.type);
+      
       const { error } = await supabase
         .from(tableName)
         .update({ deleted_at: null })
