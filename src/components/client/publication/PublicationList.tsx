@@ -21,10 +21,13 @@ const getTypeIcon = (type: string) => {
   }
 };
 
-export const PublicationList = ({ publications, packageId }: PublicationListProps) => {
+export const PublicationList = ({ publications = [], packageId }: PublicationListProps) => {
+  // Ensure publications is always an array
+  const safePublications = Array.isArray(publications) ? publications : [];
+  
   const filteredPublications = packageId 
-    ? publications.filter(pub => pub.packageId === packageId)
-    : publications;
+    ? safePublications.filter(pub => pub.package_id === packageId)
+    : safePublications;
 
   if (filteredPublications.length === 0) {
     return (
