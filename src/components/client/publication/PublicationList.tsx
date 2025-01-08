@@ -32,11 +32,22 @@ export const PublicationList = ({
 
         if (error) throw error;
         
-        // Type cast the data to ensure type is a valid PublicationType
-        const typedPublications: Publication[] = (data || []).map(pub => ({
-          ...pub,
-          type: pub.type as PublicationType // This ensures type is one of "reel", "carousel", or "image"
-        }));
+        // Validate and type cast the data to ensure type is a valid PublicationType
+        const typedPublications: Publication[] = (data || []).map(pub => {
+          const pubType = pub.type as string;
+          // Ensure the type is one of the valid PublicationType values
+          if (!['reel', 'carousel', 'image'].includes(pubType)) {
+            console.warn(`Invalid publication type: ${pubType}, defaulting to 'image'`);
+            return {
+              ...pub,
+              type: 'image' as PublicationType
+            };
+          }
+          return {
+            ...pub,
+            type: pubType as PublicationType
+          };
+        });
 
         setPublications(typedPublications);
       } catch (error) {
