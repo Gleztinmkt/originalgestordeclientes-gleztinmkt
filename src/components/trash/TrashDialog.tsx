@@ -42,12 +42,6 @@ export const TrashDialog = () => {
     },
   });
 
-  const filteredItems = deletedItems.filter(item => {
-    const matchesSearch = item.content.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType = selectedType === "all" || item.type === selectedType;
-    return matchesSearch && matchesType;
-  });
-
   const handleRestore = async (item: DeletedItem) => {
     try {
       const getTableName = (type: DeletedItem["type"]): TableNames => {
@@ -81,6 +75,56 @@ export const TrashDialog = () => {
       });
     }
   };
+
+  const handlePermanentDelete = async (item: DeletedItem) => {
+    try {
+      const getTableName = (type: DeletedItem["type"]): TableNames => {
+        switch (type) {
+          case "client": return "clients";
+          case "task": return "tasks";
+          case "publication": return "publications";
+        }
+      };
+
+      const tableName = getTableName(item.type);
+      
+      // Delete from the original table
+      const { error: deleteError } = await supabase
+        .from(tableName)
+        .delete()
+        .eq('id', item.id);
+
+      if (deleteError) throw deleteError;
+
+      // Delete from deleted_items
+      const { error: removeError } = await supabase
+        .from('deleted_items')
+        .delete()
+        .eq('id', item.id);
+
+      if (removeError) throw removeError;
+
+      await refetch();
+      
+      toast({
+        title: "Elemento eliminado permanentemente",
+        description: "El elemento ha sido eliminado de forma permanente.",
+      });
+    } catch (error) {
+      console.error('Error deleting item permanently:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar el elemento. Por favor, intenta de nuevo.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const filteredItems = deletedItems.filter(item => {
+    const matchesSearch = item.content.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesType = selectedType === "all" || item.type === selectedType;
+    return matchesSearch && matchesType;
+  });
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -140,14 +184,24 @@ export const TrashDialog = () => {
                           Eliminado el {format(new Date(item.deleted_at), "dd/MM/yyyy HH:mm")}
                         </p>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleRestore(item)}
-                        className="ml-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-                      >
-                        <RotateCcw className="h-4 w-4" />
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleRestore(item)}
+                          className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                        >
+                          <RotateCcw className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handlePermanentDelete(item)}
+                          className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   ))
                 )}
@@ -175,14 +229,24 @@ export const TrashDialog = () => {
                               Eliminado el {format(new Date(item.deleted_at), "dd/MM/yyyy HH:mm")}
                             </p>
                           </div>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleRestore(item)}
-                            className="ml-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-                          >
-                            <RotateCcw className="h-4 w-4" />
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleRestore(item)}
+                              className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                            >
+                              <RotateCcw className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handlePermanentDelete(item)}
+                              className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
                       ))
                   )}

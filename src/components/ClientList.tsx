@@ -4,6 +4,9 @@ import { ClientFilter } from "./client/ClientFilter";
 import { ClientCard } from "./client/ClientCard";
 import { Task } from "./TaskList";
 import { Client } from "./types/client";
+import { Input } from "./ui/input";
+import { Button } from "./ui/button";
+import { Grid3x3, List, Search } from "lucide-react";
 
 interface ClientListProps {
   clients: Client[];
@@ -31,22 +34,62 @@ export const ClientList = ({
   onUpdateTask
 }: ClientListProps) => {
   const [selectedPaymentDay, setSelectedPaymentDay] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [viewMode, setViewMode] = useState<"list" | "grid">("list");
 
-  const filteredClients = selectedPaymentDay === "all"
-    ? clients
-    : clients.filter(client => client.paymentDay === parseInt(selectedPaymentDay));
+  const filteredClients = clients
+    .filter(client => selectedPaymentDay === "all" || client.paymentDay === parseInt(selectedPaymentDay))
+    .filter(client => 
+      client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      client.phone?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      client.marketingInfo?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <ClientFilter onFilterChange={setSelectedPaymentDay} />
-        <BulkMessageButton 
-          clients={clients}
-          selectedPaymentDay={selectedPaymentDay !== "all" ? parseInt(selectedPaymentDay) : undefined}
-        />
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-1 gap-2 items-center">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar clientes..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-8"
+            />
+          </div>
+          <ClientFilter onFilterChange={setSelectedPaymentDay} />
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center bg-secondary rounded-lg p-1">
+            <Button
+              variant={viewMode === "list" ? "secondary" : "ghost"}
+              size="sm"
+              onClick={() => setViewMode("list")}
+              className="h-8 w-8 p-0"
+            >
+              <List className="h-4 w-4" />
+            </Button>
+            <Button
+              variant={viewMode === "grid" ? "secondary" : "ghost"}
+              size="sm"
+              onClick={() => setViewMode("grid")}
+              className="h-8 w-8 p-0"
+            >
+              <Grid3x3 className="h-4 w-4" />
+            </Button>
+          </div>
+          <BulkMessageButton 
+            clients={clients}
+            selectedPaymentDay={selectedPaymentDay !== "all" ? parseInt(selectedPaymentDay) : undefined}
+          />
+        </div>
       </div>
 
-      <div className="space-y-6">
+      <div className={viewMode === "grid" 
+        ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" 
+        : "space-y-6"
+      }>
         {filteredClients.map((client) => (
           <ClientCard
             key={client.id}
@@ -60,6 +103,7 @@ export const ClientList = ({
             onDeleteTask={onDeleteTask}
             onCompleteTask={onCompleteTask}
             onUpdateTask={onUpdateTask}
+            viewMode={viewMode}
           />
         ))}
       </div>

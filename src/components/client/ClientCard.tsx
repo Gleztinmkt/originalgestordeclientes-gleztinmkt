@@ -22,6 +22,7 @@ interface ClientCardProps {
   onDeleteTask: (id: string) => void;
   onCompleteTask: (id: string) => void;
   onUpdateTask: (id: string, task: Partial<Task>) => void;
+  viewMode: "list" | "grid";
 }
 
 const getRandomPastelGradient = () => {
@@ -45,7 +46,8 @@ export const ClientCard = ({
   onAddTask,
   onDeleteTask,
   onCompleteTask,
-  onUpdateTask
+  onUpdateTask,
+  viewMode
 }: ClientCardProps) => {
   const handleUpdatePackagePaid = (packageId: string, paid: boolean) => {
     const updatedPackages = client.packages.map(pkg => 
@@ -79,6 +81,54 @@ export const ClientCard = ({
   const getClientTasks = () => {
     return tasks.filter(task => task.clientId === client.id);
   };
+
+  if (viewMode === "grid") {
+    return (
+      <Card className="glass-card hover:shadow-lg transition-all duration-300 h-full" style={{ background: getRandomPastelGradient() }}>
+        <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
+          <CardTitle className="text-lg font-heading font-semibold text-gray-800 truncate">
+            {client.name}
+          </CardTitle>
+          <div className="flex gap-1">
+            <ClientInfoDialog
+              clientId={client.id}
+              clientInfo={client.clientInfo}
+              onUpdateInfo={handleUpdateClientInfo}
+            />
+            <EditClientDialog 
+              client={client}
+              onUpdateClient={onUpdateClient}
+            />
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => onDeleteClient(client.id)}
+              className="h-7 w-7 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors duration-200"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <PaymentReminder
+            clientName={client.name}
+            paymentDay={client.paymentDay}
+            phone={client.phone}
+          />
+          <div className="flex flex-wrap gap-1">
+            <PublicationCalendarDialog 
+              clientId={client.id}
+              clientName={client.name}
+            />
+            <AddPackageDialog
+              clientId={client.id}
+              onAddPackage={onAddPackage}
+            />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="glass-card hover:shadow-lg transition-all duration-300" style={{ background: getRandomPastelGradient() }}>
