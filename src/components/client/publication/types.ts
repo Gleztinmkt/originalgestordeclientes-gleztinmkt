@@ -10,6 +10,7 @@ export interface Publication {
   description: string | null;
   google_calendar_event_id?: string | null;
   created_at?: string;
+  is_published?: boolean;
 }
 
 export interface PublicationFormValues {
@@ -17,4 +18,10 @@ export interface PublicationFormValues {
   type: PublicationType;
   date: Date;
   description: string;
+}
+
+export interface PublicationCalendarDialogProps {
+  clientId: string;
+  clientName: string;
+  packageId?: string;
 }

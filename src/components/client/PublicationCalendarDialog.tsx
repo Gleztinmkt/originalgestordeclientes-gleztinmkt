@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { Calendar as CalendarIcon, Trash2 } from "lucide-react";
-import { format } from "date-fns";
+import { Calendar as CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -12,8 +11,9 @@ import {
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { PublicationForm } from "./publication/PublicationForm";
-import { PublicationList } from "./publication/PublicationList";
-import { Publication, PublicationFormValues } from "./publication/types";
+import { PublicationItem } from "./publication/PublicationItem";
+import { PublicationDescription } from "./publication/PublicationDescription";
+import { Publication, PublicationFormValues, PublicationCalendarDialogProps } from "./publication/types";
 import { useQuery } from "@tanstack/react-query";
 
 export const PublicationCalendarDialog = ({ 
@@ -89,7 +89,8 @@ export const PublicationCalendarDialog = ({
       type: values.type,
       date: values.date.toISOString(),
       description: values.description || null,
-      package_id: packageId || null
+      package_id: packageId || null,
+      is_published: false
     };
 
     try {
@@ -162,52 +163,18 @@ export const PublicationCalendarDialog = ({
         <div className="space-y-6">
           <div className="space-y-4">
             {publications.map((publication) => (
-              <div 
-                key={publication.id} 
-                className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm"
-                onClick={() => setSelectedPublication(publication)}
-              >
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={publication.is_published}
-                      onChange={(e) => {
-                        e.stopPropagation();
-                        handleTogglePublished(publication.id, e.target.checked);
-                      }}
-                      className="h-4 w-4 rounded border-gray-300"
-                    />
-                    <p className="font-medium dark:text-white">
-                      {publication.name}
-                    </p>
-                  </div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {format(new Date(publication.date), "dd/MM/yyyy")} • {publication.type}
-                  </p>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDelete(publication.id);
-                  }}
-                  className="text-red-500 hover:text-red-700"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
+              <PublicationItem
+                key={publication.id}
+                publication={publication}
+                onDelete={handleDelete}
+                onTogglePublished={handleTogglePublished}
+                onSelect={setSelectedPublication}
+              />
             ))}
           </div>
           
           {selectedPublication && (
-            <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-              <h4 className="font-medium mb-2">Descripción</h4>
-              <p className="text-sm text-gray-600 dark:text-gray-300">
-                {selectedPublication.description || "Sin descripción"}
-              </p>
-            </div>
+            <PublicationDescription publication={selectedPublication} />
           )}
 
           <PublicationForm 

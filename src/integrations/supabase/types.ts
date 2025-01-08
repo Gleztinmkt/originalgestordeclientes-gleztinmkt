@@ -60,6 +60,7 @@ export type Database = {
           description: string | null
           google_calendar_event_id: string | null
           id: string
+          is_published: boolean | null
           name: string
           package_id: string | null
           type: string
@@ -72,6 +73,7 @@ export type Database = {
           description?: string | null
           google_calendar_event_id?: string | null
           id?: string
+          is_published?: boolean | null
           name: string
           package_id?: string | null
           type: string
@@ -84,6 +86,7 @@ export type Database = {
           description?: string | null
           google_calendar_event_id?: string | null
           id?: string
+          is_published?: boolean | null
           name?: string
           package_id?: string | null
           type?: string
