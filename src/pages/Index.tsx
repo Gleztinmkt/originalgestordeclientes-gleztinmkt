@@ -12,9 +12,10 @@ import { useTaskManager } from "@/features/tasks/useTaskManager";
 import { useClientManager } from "@/features/clients/useClientManager";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "@/hooks/use-toast";
+import { Task } from "@/components/TaskList";
 
 const Index = () => {
-  const { tasks, loadTasks, addTask, deleteTask } = useTaskManager();
+  const { tasks, loadTasks, addTask, deleteTask, updateTask } = useTaskManager();
   const { 
     clients, 
     loadClients, 
@@ -51,6 +52,23 @@ const Index = () => {
       toast({
         title: "Error",
         description: "No se pudo completar la tarea. Por favor, intenta de nuevo.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleUpdateTask = async (id: string, updates: Partial<Task>) => {
+    try {
+      await updateTask(id, updates);
+      toast({
+        title: "Tarea actualizada",
+        description: "La tarea ha sido actualizada exitosamente.",
+      });
+    } catch (error) {
+      console.error('Error updating task:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar la tarea. Por favor, intenta de nuevo.",
         variant: "destructive",
       });
     }
@@ -115,6 +133,7 @@ const Index = () => {
               tasks={filteredTasks}
               onDeleteTask={deleteTask}
               onCompleteTask={handleCompleteTask}
+              onUpdateTask={handleUpdateTask}
               clients={clients}
             />
           </TabsContent>

@@ -24,9 +24,11 @@ interface TaskEditDialogProps {
   clients: Array<{ id: string; name: string }>;
 }
 
+type TaskType = "campaña" | "publicaciones" | "correcciones" | "otros";
+
 export const TaskEditDialog = ({ task, onClose, onSave, clients }: TaskEditDialogProps) => {
   const [content, setContent] = useState(task.content);
-  const [type, setType] = useState(task.type);
+  const [type, setType] = useState<TaskType>(task.type as TaskType);
   const [clientId, setClientId] = useState(task.clientId || "");
   const [executionDate, setExecutionDate] = useState<Date | undefined>(
     task.executionDate ? new Date(task.executionDate) : undefined
@@ -66,7 +68,7 @@ export const TaskEditDialog = ({ task, onClose, onSave, clients }: TaskEditDialo
           
           <div className="grid gap-2">
             <Label>Tipo</Label>
-            <Select value={type} onValueChange={setType}>
+            <Select value={type} onValueChange={(value: TaskType) => setType(value)}>
               <SelectTrigger>
                 <SelectValue placeholder="Seleccionar tipo" />
               </SelectTrigger>
