@@ -1,5 +1,7 @@
 import { Task } from "../TaskList";
 import { Client } from "../types/client";
+import { Button } from "../ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 
 interface ClientCardProps {
   client: Client;
@@ -27,25 +29,64 @@ export const ClientCard = ({
   onUpdateTask
 }: ClientCardProps) => {
   return (
-    <div className="border p-4 rounded-md shadow-md">
-      <h2 className="text-lg font-bold">{client.name}</h2>
-      <p>Phone: {client.phone}</p>
-      <p>Payment Day: {client.paymentDay}</p>
-      <div className="mt-4">
-        <button onClick={() => onUpdateClient(client.id, client)}>Update</button>
-        <button onClick={() => onDeleteClient(client.id)}>Delete</button>
-      </div>
-      {/* Render tasks related to this client */}
-      <div className="mt-4">
-        {tasks.filter(task => task.clientId === client.id).map(task => (
-          <div key={task.id} className="border-b py-2">
-            <span>{task.content}</span>
-            <button onClick={() => onCompleteTask(task.id)}>Complete</button>
-            <button onClick={() => onDeleteTask(task.id)}>Delete</button>
-            <button onClick={() => onUpdateTask(task.id, { content: task.content })}>Edit</button>
-          </div>
-        ))}
-      </div>
-    </div>
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle>{client.name}</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="space-y-2">
+          <p className="text-sm text-muted-foreground">Phone: {client.phone}</p>
+          <p className="text-sm text-muted-foreground">Payment Day: {client.paymentDay}</p>
+        </div>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            onClick={() => onUpdateClient(client.id, client)}
+          >
+            Update
+          </Button>
+          <Button 
+            variant="destructive" 
+            onClick={() => onDeleteClient(client.id)}
+          >
+            Delete
+          </Button>
+        </div>
+        {/* Client Tasks */}
+        <div className="space-y-2">
+          <h3 className="font-medium">Tasks</h3>
+          {tasks
+            .filter(task => task.clientId === client.id)
+            .map(task => (
+              <div key={task.id} className="flex items-center justify-between p-2 border rounded">
+                <span>{task.content}</span>
+                <div className="flex gap-2">
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => onCompleteTask(task.id)}
+                  >
+                    Complete
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => onUpdateTask(task.id, { content: task.content })}
+                  >
+                    Edit
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="destructive"
+                    onClick={() => onDeleteTask(task.id)}
+                  >
+                    Delete
+                  </Button>
+                </div>
+              </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
   );
 };

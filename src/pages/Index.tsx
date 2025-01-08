@@ -118,6 +118,7 @@ const Index = () => {
               onAddTask={addTask}
               onDeleteTask={deleteTask}
               onCompleteTask={handleCompleteTask}
+              onUpdateTask={handleUpdateTask}
             />
           </TabsContent>
           <TabsContent value="tasks" className="space-y-4 mt-6">
