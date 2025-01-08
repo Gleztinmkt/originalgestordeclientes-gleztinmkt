@@ -1,27 +1,18 @@
-export type PublicationType = "reel" | "carousel" | "image";
+export type PublicationType = "instagram" | "facebook" | "tiktok" | "other";
 
 export interface Publication {
   id: string;
-  client_id: string;
-  packageId?: string;
+  client_id?: string;
   name: string;
   type: PublicationType;
   date: string;
-  description: string | null;
-  google_calendar_event_id?: string | null;
-  created_at?: string;
+  description?: string;
+  google_calendar_event_id?: string;
+  package_id?: string;
   is_published?: boolean;
-}
-
-export interface PublicationFormValues {
-  name: string;
-  type: PublicationType;
-  date: Date;
-  description: string;
 }
 
 export interface PublicationCalendarDialogProps {
   clientId: string;
   clientName: string;
-  packageId?: string;
 }

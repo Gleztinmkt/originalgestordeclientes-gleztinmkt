@@ -1,137 +1,38 @@
 import { useState } from "react";
-import { Calendar as CalendarIcon } from "lucide-react";
+import { Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { toast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { PublicationForm } from "./publication/PublicationForm";
-import { PublicationItem } from "./publication/PublicationItem";
+import { PublicationList } from "./publication/PublicationList";
 import { PublicationDescription } from "./publication/PublicationDescription";
-import { Publication, PublicationFormValues, PublicationCalendarDialogProps } from "./publication/types";
-import { useQuery } from "@tanstack/react-query";
+import { Publication, PublicationCalendarDialogProps } from "./publication/types";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 export const PublicationCalendarDialog = ({ 
-  clientId, 
-  clientName,
-  packageId 
+  clientId,
+  clientName 
 }: PublicationCalendarDialogProps) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedPublication, setSelectedPublication] = useState<Publication | null>(null);
 
-  const { data: publications = [], refetch } = useQuery({
-    queryKey: ['publications', clientId, packageId],
-    queryFn: async () => {
-      const query = supabase
-        .from('publications')
-        .select('*')
-        .eq('client_id', clientId)
-        .is('deleted_at', null)
-        .order('date', { ascending: true });
-
-      if (packageId) {
-        query.eq('package_id', packageId);
-      }
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-      return data as Publication[];
-    },
-  });
-
-  const handleDelete = async (publicationId: string) => {
-    try {
-      const { error } = await supabase
-        .from('publications')
-        .update({ deleted_at: new Date().toISOString() })
-        .eq('id', publicationId);
-
-      if (error) throw error;
-      await refetch();
-      
-      toast({
-        title: "Publicación eliminada",
-        description: "La publicación ha sido movida a la papelera.",
-      });
-    } catch (error) {
-      console.error('Error deleting publication:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo eliminar la publicación. Por favor, intenta de nuevo.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleSubmit = async (values: PublicationFormValues) => {
-    if (!values.date || !values.name) {
-      toast({
-        title: "Error",
-        description: "Por favor completa los campos requeridos.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const typeShorthand = values.type === 'reel' ? 'r' : values.type === 'carousel' ? 'c' : 'i';
-    const eventTitle = `${clientName} - ${typeShorthand} - ${values.name}`;
-
-    const publicationData = {
-      client_id: clientId,
-      name: values.name,
-      type: values.type,
-      date: values.date.toISOString(),
-      description: values.description || null,
-      package_id: packageId || null,
-      is_published: false
-    };
-
-    try {
-      setIsSubmitting(true);
-      const { error } = await supabase
-        .from('publications')
-        .insert(publicationData);
-
-      if (error) throw error;
-
-      toast({
-        title: "Publicación agregada",
-        description: "La publicación se ha agregado correctamente.",
-      });
-
-      await refetch();
-    } catch (error) {
-      console.error('Error adding publication:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo agregar la publicación. Por favor, intenta de nuevo.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleTogglePublished = async (publicationId: string, isPublished: boolean) => {
+  const handleTogglePublished = async (id: string, isPublished: boolean) => {
     try {
       const { error } = await supabase
         .from('publications')
         .update({ is_published: isPublished })
-        .eq('id', publicationId);
+        .eq('id', id);
 
       if (error) throw error;
-      await refetch();
-      
+
       toast({
-        title: isPublished ? "Publicación marcada como subida" : "Publicación marcada como pendiente",
-        description: "El estado de la publicación ha sido actualizado.",
+        title: "Publicación actualizada",
+        description: `La publicación ha sido marcada como ${isPublished ? 'publicada' : 'pendiente'}.`,
       });
     } catch (error) {
       console.error('Error updating publication:', error);
@@ -144,46 +45,31 @@ export const PublicationCalendarDialog = ({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-colors duration-200"
-        >
-          <CalendarIcon className="h-4 w-4" />
+    <Sheet>
+      <SheetTrigger asChild>
+        <Button variant="ghost" size="icon">
+          <Calendar className="h-5 w-5" />
         </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px] max-h-[80vh] overflow-y-auto dark:bg-gray-900">
-        <DialogHeader>
-          <DialogTitle className="text-xl font-bold dark:text-white">
+      </SheetTrigger>
+      <SheetContent className="w-[400px] sm:w-[540px] dark:bg-gray-900 dark:text-white">
+        <SheetHeader>
+          <SheetTitle className="text-xl font-bold dark:text-white">
             Calendario de publicaciones - {clientName}
-          </DialogTitle>
-        </DialogHeader>
-        <div className="space-y-6">
-          <div className="space-y-4">
-            {publications.map((publication) => (
-              <PublicationItem
-                key={publication.id}
-                publication={publication}
-                onDelete={handleDelete}
-                onTogglePublished={handleTogglePublished}
-                onSelect={setSelectedPublication}
-              />
-            ))}
-          </div>
-          
-          {selectedPublication && (
-            <PublicationDescription publication={selectedPublication} />
-          )}
-
-          <PublicationForm 
-            onSubmit={handleSubmit} 
-            isSubmitting={isSubmitting}
-            packageId={packageId}
+          </SheetTitle>
+        </SheetHeader>
+        <div className="mt-4 space-y-4">
+          <PublicationForm clientId={clientId} />
+          <PublicationList 
+            clientId={clientId} 
+            onSelect={setSelectedPublication}
+            onTogglePublished={handleTogglePublished}
           />
         </div>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+      <PublicationDescription 
+        publication={selectedPublication}
+        onClose={() => setSelectedPublication(null)}
+      />
+    </Sheet>
   );
 };
