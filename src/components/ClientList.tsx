@@ -15,7 +15,6 @@ interface ClientListProps {
   onAddTask: (content: string, clientId?: string) => void;
   onDeleteTask: (id: string) => void;
   onCompleteTask: (id: string) => void;
-  onUpdateTask: (id: string, updates: Partial<Task>) => void;
 }
 
 export const ClientList = ({ 
@@ -27,8 +26,7 @@ export const ClientList = ({
   tasks,
   onAddTask,
   onDeleteTask,
-  onCompleteTask,
-  onUpdateTask
+  onCompleteTask
 }: ClientListProps) => {
   const [selectedPaymentDay, setSelectedPaymentDay] = useState<string>("all");
 
@@ -59,7 +57,6 @@ export const ClientList = ({
             onAddTask={onAddTask}
             onDeleteTask={onDeleteTask}
             onCompleteTask={onCompleteTask}
-            onUpdateTask={onUpdateTask}
           />
         ))}
       </div>
