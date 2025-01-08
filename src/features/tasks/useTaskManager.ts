@@ -35,13 +35,17 @@ export const useTaskManager = () => {
     }
   };
 
-  const addTask = async (content: string, clientId?: string, type: string = 'otros') => {
+  const addTask = async (content: string, clientId?: string, type: string = 'otros', executionDate?: Date, reminderDate?: Date, reminderFrequency?: string) => {
     try {
       const newTask: Task = {
         id: crypto.randomUUID(),
         content,
         type: type as Task['type'],
         clientId: clientId || null,
+        executionDate,
+        reminderDate,
+        reminderFrequency,
+        completed: false,
       };
 
       const dbTask = convertTaskForDatabase(newTask);
@@ -61,6 +65,33 @@ export const useTaskManager = () => {
       toast({
         title: "Error",
         description: "No se pudo guardar la tarea. Por favor, intenta de nuevo.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const updateTask = async (id: string, updates: Partial<Task>) => {
+    try {
+      const { error } = await supabase
+        .from('tasks')
+        .update(convertTaskForDatabase(updates as Task))
+        .eq('id', id);
+      
+      if (error) throw error;
+
+      setTasks(prev => prev.map(task => 
+        task.id === id ? { ...task, ...updates } : task
+      ));
+
+      toast({
+        title: "Tarea actualizada",
+        description: "La tarea se ha actualizado correctamente.",
+      });
+    } catch (error) {
+      console.error('Error updating task:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar la tarea. Por favor, intenta de nuevo.",
         variant: "destructive",
       });
     }
@@ -90,11 +121,43 @@ export const useTaskManager = () => {
     }
   };
 
+  const completeTask = async (id: string) => {
+    try {
+      const task = tasks.find(t => t.id === id);
+      if (!task) return;
+
+      const { error } = await supabase
+        .from('tasks')
+        .update({ completed: !task.completed })
+        .eq('id', id);
+      
+      if (error) throw error;
+
+      setTasks(prev => prev.map(task => 
+        task.id === id ? { ...task, completed: !task.completed } : task
+      ));
+
+      toast({
+        title: task.completed ? "Tarea pendiente" : "Tarea completada",
+        description: task.completed ? "La tarea ha sido marcada como pendiente." : "La tarea ha sido marcada como completada.",
+      });
+    } catch (error) {
+      console.error('Error completing task:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el estado de la tarea. Por favor, intenta de nuevo.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return {
     tasks,
     isLoading,
     loadTasks,
     addTask,
-    deleteTask
+    updateTask,
+    deleteTask,
+    completeTask
   };
 };

@@ -21,6 +21,7 @@ export type Database = {
           packages: Json | null
           payment_day: number | null
           phone: string | null
+          search_text: unknown | null
         }
         Insert: {
           created_at?: string
@@ -33,6 +34,7 @@ export type Database = {
           packages?: Json | null
           payment_day?: number | null
           phone?: string | null
+          search_text?: unknown | null
         }
         Update: {
           created_at?: string
@@ -45,6 +47,7 @@ export type Database = {
           packages?: Json | null
           payment_day?: number | null
           phone?: string | null
+          search_text?: unknown | null
         }
         Relationships: []
       }
@@ -98,6 +101,7 @@ export type Database = {
       tasks: {
         Row: {
           client_id: string | null
+          completed: boolean | null
           content: string
           created_at: string
           date: string | null
@@ -110,6 +114,7 @@ export type Database = {
         }
         Insert: {
           client_id?: string | null
+          completed?: boolean | null
           content: string
           created_at?: string
           date?: string | null
@@ -122,6 +127,7 @@ export type Database = {
         }
         Update: {
           client_id?: string | null
+          completed?: boolean | null
           content?: string
           created_at?: string
           date?: string | null
