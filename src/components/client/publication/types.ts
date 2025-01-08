@@ -3,7 +3,7 @@ export type PublicationType = "reel" | "carousel" | "image";
 export interface Publication {
   id: string;
   client_id: string;
-  packageId?: string;
+  package_id?: string | null;  // Changed from packageId to package_id to match DB schema
   name: string;
   type: PublicationType;
   date: string;
