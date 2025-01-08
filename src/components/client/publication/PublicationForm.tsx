@@ -11,14 +11,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { PublicationType, PublicationFormProps } from "./types";
+import { PublicationType } from "./types";
 
-export const PublicationForm = ({ 
-  onSubmit, 
-  isSubmitting, 
-  clientId,
-  packageId 
-}: PublicationFormProps) => {
+interface PublicationFormProps {
+  onSubmit: (values: {
+    name: string;
+    type: PublicationType;
+    date: Date;
+    description: string;
+  }) => void;
+  isSubmitting?: boolean;
+  packageId?: string;
+}
+
+export const PublicationForm = ({ onSubmit, isSubmitting, packageId }: PublicationFormProps) => {
   const [name, setName] = useState("");
   const [type, setType] = useState<PublicationType>("image");
   const [date, setDate] = useState<Date>();
@@ -27,14 +33,7 @@ export const PublicationForm = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!date || !name) return;
-    onSubmit?.({
-      name,
-      type,
-      date: date.toISOString(),
-      description,
-      client_id: clientId,
-      package_id: packageId
-    });
+    onSubmit({ name, type, date, description });
     setName("");
     setType("image");
     setDate(undefined);
