@@ -16,12 +16,6 @@ import { PublicationList } from "./publication/PublicationList";
 import { Publication, PublicationFormValues } from "./publication/types";
 import { useQuery } from "@tanstack/react-query";
 
-interface PublicationCalendarDialogProps {
-  clientId: string;
-  clientName: string;
-  packageId?: string;
-}
-
 export const PublicationCalendarDialog = ({ 
   clientId, 
   clientName,
@@ -29,6 +23,7 @@ export const PublicationCalendarDialog = ({
 }: PublicationCalendarDialogProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedPublication, setSelectedPublication] = useState<Publication | null>(null);
 
   const { data: publications = [], refetch } = useQuery({
     queryKey: ['publications', clientId, packageId],
@@ -123,6 +118,30 @@ export const PublicationCalendarDialog = ({
     }
   };
 
+  const handleTogglePublished = async (publicationId: string, isPublished: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('publications')
+        .update({ is_published: isPublished })
+        .eq('id', publicationId);
+
+      if (error) throw error;
+      await refetch();
+      
+      toast({
+        title: isPublished ? "Publicación marcada como subida" : "Publicación marcada como pendiente",
+        description: "El estado de la publicación ha sido actualizado.",
+      });
+    } catch (error) {
+      console.error('Error updating publication:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el estado de la publicación.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
@@ -143,11 +162,26 @@ export const PublicationCalendarDialog = ({
         <div className="space-y-6">
           <div className="space-y-4">
             {publications.map((publication) => (
-              <div key={publication.id} className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+              <div 
+                key={publication.id} 
+                className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm"
+                onClick={() => setSelectedPublication(publication)}
+              >
                 <div className="flex-1">
-                  <p className="font-medium dark:text-white">
-                    {publication.name}
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={publication.is_published}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        handleTogglePublished(publication.id, e.target.checked);
+                      }}
+                      className="h-4 w-4 rounded border-gray-300"
+                    />
+                    <p className="font-medium dark:text-white">
+                      {publication.name}
+                    </p>
+                  </div>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
                     {format(new Date(publication.date), "dd/MM/yyyy")} • {publication.type}
                   </p>
@@ -155,7 +189,10 @@ export const PublicationCalendarDialog = ({
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => handleDelete(publication.id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDelete(publication.id);
+                  }}
                   className="text-red-500 hover:text-red-700"
                 >
                   <Trash2 className="h-4 w-4" />
@@ -163,6 +200,16 @@ export const PublicationCalendarDialog = ({
               </div>
             ))}
           </div>
+          
+          {selectedPublication && (
+            <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+              <h4 className="font-medium mb-2">Descripción</h4>
+              <p className="text-sm text-gray-600 dark:text-gray-300">
+                {selectedPublication.description || "Sin descripción"}
+              </p>
+            </div>
+          )}
+
           <PublicationForm 
             onSubmit={handleSubmit} 
             isSubmitting={isSubmitting}

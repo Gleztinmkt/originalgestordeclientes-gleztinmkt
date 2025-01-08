@@ -7,6 +7,7 @@ import { TaskFilter } from "@/components/TaskFilter";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { TrashDialog } from "@/components/trash/TrashDialog";
+import { NotificationCenter } from "@/components/NotificationCenter";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTaskManager } from "@/features/tasks/useTaskManager";
 import { useClientManager } from "@/features/clients/useClientManager";
@@ -65,9 +66,23 @@ const Index = () => {
   return (
     <ThemeProvider>
       <div className="min-h-screen p-4 md:p-8 space-y-6 md:space-y-8 dark:bg-gray-900 dark:text-white transition-colors duration-200">
-        <div className="flex justify-end gap-2">
-          <TrashDialog />
-          <ThemeToggle />
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <TrashDialog />
+            <img 
+              src="https://imgur.com/YvEDrAv" 
+              alt="Gleztin Marketing Digital" 
+              className="h-8 w-8 object-contain"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <NotificationCenter 
+              notifications={[]} 
+              onDismiss={() => {}}
+              onSendPaymentReminders={() => {}}
+            />
+            <ThemeToggle />
+          </div>
         </div>
         
         <div className="text-center space-y-4 mb-8 md:mb-12">

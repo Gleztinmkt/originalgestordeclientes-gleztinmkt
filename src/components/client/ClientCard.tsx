@@ -10,6 +10,7 @@ import { EditClientDialog } from "./EditClientDialog";
 import { AddPackageDialog } from "./AddPackageDialog";
 import { Client, ClientInfo } from "../types/client";
 import { PublicationCalendarDialog } from "./PublicationCalendarDialog";
+import { useState } from "react";
 
 interface ClientCardProps {
   client: Client;
@@ -25,15 +26,8 @@ interface ClientCardProps {
   viewMode: "list" | "grid";
 }
 
-const getRandomPastelGradient = () => {
-  const gradients = [
-    'linear-gradient(to top, #e6e9f0 0%, #eef1f5 100%)',
-    'linear-gradient(to top, #accbee 0%, #e7f0fd 100%)',
-    'linear-gradient(90deg, hsla(186, 33%, 94%, 1) 0%, hsla(216, 41%, 79%, 1) 100%)',
-    'linear-gradient(109.6deg, rgba(223,234,247,1) 11.2%, rgba(244,248,252,1) 91.1%)',
-    'linear-gradient(to right, #ee9ca7, #ffdde1)'
-  ];
-  return gradients[Math.floor(Math.random() * gradients.length)];
+const getSubtleGradient = () => {
+  return 'linear-gradient(to top, #f8f9fa 0%, #ffffff 100%)';
 };
 
 export const ClientCard = ({
@@ -49,6 +43,8 @@ export const ClientCard = ({
   onUpdateTask,
   viewMode
 }: ClientCardProps) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+
   const handleUpdatePackagePaid = (packageId: string, paid: boolean) => {
     const updatedPackages = client.packages.map(pkg => 
       pkg.id === packageId ? { ...pkg, paid } : pkg
@@ -82,56 +78,27 @@ export const ClientCard = ({
     return tasks.filter(task => task.clientId === client.id);
   };
 
-  if (viewMode === "grid") {
+  if (viewMode === "grid" && !isExpanded) {
     return (
-      <Card className="glass-card hover:shadow-lg transition-all duration-300 h-full" style={{ background: getRandomPastelGradient() }}>
-        <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
+      <Card 
+        className="glass-card hover:shadow-lg transition-all duration-300 cursor-pointer h-full" 
+        style={{ background: getSubtleGradient() }}
+        onClick={() => setIsExpanded(true)}
+      >
+        <CardHeader className="pb-2">
           <CardTitle className="text-lg font-heading font-semibold text-gray-800 truncate">
             {client.name}
           </CardTitle>
-          <div className="flex gap-1">
-            <ClientInfoDialog
-              clientId={client.id}
-              clientInfo={client.clientInfo}
-              onUpdateInfo={handleUpdateClientInfo}
-            />
-            <EditClientDialog 
-              client={client}
-              onUpdateClient={onUpdateClient}
-            />
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => onDeleteClient(client.id)}
-              className="h-7 w-7 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors duration-200"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
         </CardHeader>
-        <CardContent className="space-y-2">
-          <PaymentReminder
-            clientName={client.name}
-            paymentDay={client.paymentDay}
-            phone={client.phone}
-          />
-          <div className="flex flex-wrap gap-1">
-            <PublicationCalendarDialog 
-              clientId={client.id}
-              clientName={client.name}
-            />
-            <AddPackageDialog
-              clientId={client.id}
-              onAddPackage={onAddPackage}
-            />
-          </div>
-        </CardContent>
       </Card>
     );
   }
 
   return (
-    <Card className="glass-card hover:shadow-lg transition-all duration-300" style={{ background: getRandomPastelGradient() }}>
+    <Card 
+      className="glass-card hover:shadow-lg transition-all duration-300" 
+      style={{ background: getSubtleGradient() }}
+    >
       <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
         <CardTitle className="text-xl font-heading font-semibold text-gray-800">
           {client.name}
@@ -154,14 +121,19 @@ export const ClientCard = ({
             clientId={client.id}
             onAddPackage={onAddPackage}
           />
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => onDeleteClient(client.id)}
-            className="h-8 w-8 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors duration-200"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
+          {viewMode === "grid" && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsExpanded(false);
+              }}
+              className="h-8 w-8 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-xl transition-colors duration-200"
+            >
+              ×
+            </Button>
+          )}
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
