@@ -11,13 +11,20 @@ import {
 import { PublicationForm } from "./publication/PublicationForm";
 import { PublicationList } from "./publication/PublicationList";
 import { PublicationDescription } from "./publication/PublicationDescription";
-import { Publication, PublicationCalendarDialogProps } from "./publication/types";
+import { Publication } from "./publication/types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
+interface PublicationCalendarDialogProps {
+  clientId: string;
+  clientName: string;
+  packageId?: string;
+}
+
 export const PublicationCalendarDialog = ({ 
   clientId,
-  clientName 
+  clientName,
+  packageId
 }: PublicationCalendarDialogProps) => {
   const [selectedPublication, setSelectedPublication] = useState<Publication | null>(null);
 
@@ -58,9 +65,13 @@ export const PublicationCalendarDialog = ({
           </SheetTitle>
         </SheetHeader>
         <div className="mt-4 space-y-4">
-          <PublicationForm clientId={clientId} />
+          <PublicationForm 
+            clientId={clientId}
+            packageId={packageId}
+          />
           <PublicationList 
-            clientId={clientId} 
+            clientId={clientId}
+            packageId={packageId}
             onSelect={setSelectedPublication}
             onTogglePublished={handleTogglePublished}
           />

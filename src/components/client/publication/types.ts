@@ -20,14 +20,14 @@ export interface PublicationCalendarDialogProps {
 
 export interface PublicationFormProps {
   clientId: string;
+  packageId?: string;
   onSubmit?: (values: Omit<Publication, 'id'>) => void;
   isSubmitting?: boolean;
-  packageId?: string;
 }
 
 export interface PublicationListProps {
   clientId: string;
+  packageId?: string;
   onSelect: (publication: Publication) => void;
   onTogglePublished: (id: string, isPublished: boolean) => Promise<void>;
-  packageId?: string;
 }
