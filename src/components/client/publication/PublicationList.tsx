@@ -34,19 +34,19 @@ export const PublicationList = ({
         
         // Validate and type cast the data to ensure type is a valid PublicationType
         const typedPublications: Publication[] = (data || []).map(pub => {
-          const pubType = pub.type as string;
-          // Ensure the type is one of the valid PublicationType values
-          if (!['reel', 'carousel', 'image'].includes(pubType)) {
-            console.warn(`Invalid publication type: ${pubType}, defaulting to 'image'`);
-            return {
-              ...pub,
-              type: 'image' as PublicationType
-            };
-          }
-          return {
-            ...pub,
-            type: pubType as PublicationType
+          // Extract only the fields we need for the Publication type
+          const publication: Publication = {
+            id: pub.id,
+            client_id: pub.client_id || undefined,
+            name: pub.name,
+            type: validatePublicationType(pub.type),
+            date: pub.date,
+            description: pub.description || undefined,
+            google_calendar_event_id: pub.google_calendar_event_id || undefined,
+            package_id: pub.package_id || undefined,
+            is_published: pub.is_published || false
           };
+          return publication;
         });
 
         setPublications(typedPublications);
@@ -59,6 +59,15 @@ export const PublicationList = ({
 
     fetchPublications();
   }, [clientId, packageId]);
+
+  // Helper function to validate PublicationType
+  const validatePublicationType = (type: string): PublicationType => {
+    if (['reel', 'carousel', 'image'].includes(type)) {
+      return type as PublicationType;
+    }
+    console.warn(`Invalid publication type: ${type}, defaulting to 'image'`);
+    return 'image';
+  };
 
   if (isLoading) {
     return (
