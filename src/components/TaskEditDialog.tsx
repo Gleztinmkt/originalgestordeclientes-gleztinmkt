@@ -27,7 +27,7 @@ interface TaskEditDialogProps {
 export const TaskEditDialog = ({ task, onClose, onSave, clients }: TaskEditDialogProps) => {
   const [content, setContent] = useState(task.content);
   const [type, setType] = useState(task.type);
-  const [clientId, setClientId] = useState(task.clientId || "");
+  const [clientId, setClientId] = useState(task.clientId || "none");
   const [executionDate, setExecutionDate] = useState<Date | undefined>(
     task.executionDate ? new Date(task.executionDate) : undefined
   );
@@ -41,7 +41,7 @@ export const TaskEditDialog = ({ task, onClose, onSave, clients }: TaskEditDialo
     onSave({
       content,
       type,
-      clientId: clientId || null,
+      clientId: clientId === "none" ? null : clientId,
       executionDate,
       reminderDate: enableReminder ? reminderDate : undefined,
       reminderFrequency: enableReminder ? reminderFrequency : undefined,
@@ -86,7 +86,7 @@ export const TaskEditDialog = ({ task, onClose, onSave, clients }: TaskEditDialo
                 <SelectValue placeholder="Seleccionar cliente" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Sin cliente</SelectItem>
+                <SelectItem value="none">Sin cliente</SelectItem>
                 {clients.map((client) => (
                   <SelectItem key={client.id} value={client.id}>
                     {client.name}
