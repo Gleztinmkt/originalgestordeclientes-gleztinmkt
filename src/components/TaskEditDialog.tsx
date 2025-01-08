@@ -26,7 +26,7 @@ interface TaskEditDialogProps {
 
 export const TaskEditDialog = ({ task, onClose, onSave, clients }: TaskEditDialogProps) => {
   const [content, setContent] = useState(task.content);
-  const [type, setType] = useState(task.type);
+  const [type, setType] = useState<Task["type"]>(task.type);
   const [clientId, setClientId] = useState(task.clientId || "none");
   const [executionDate, setExecutionDate] = useState<Date | undefined>(
     task.executionDate ? new Date(task.executionDate) : undefined
@@ -66,7 +66,7 @@ export const TaskEditDialog = ({ task, onClose, onSave, clients }: TaskEditDialo
           
           <div className="grid gap-2">
             <Label>Tipo</Label>
-            <Select value={type} onValueChange={setType}>
+            <Select value={type} onValueChange={(value: Task["type"]) => setType(value)}>
               <SelectTrigger>
                 <SelectValue placeholder="Seleccionar tipo" />
               </SelectTrigger>
@@ -173,6 +173,7 @@ export const TaskEditDialog = ({ task, onClose, onSave, clients }: TaskEditDialo
               </div>
             </>
           )}
+
         </div>
 
         <div className="flex justify-end space-x-2">

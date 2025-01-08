@@ -14,7 +14,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "@/hooks/use-toast";
 
 const Index = () => {
-  const { tasks, loadTasks, addTask, deleteTask } = useTaskManager();
+  const { tasks, loadTasks, addTask, deleteTask, updateTask } = useTaskManager();
   const { 
     clients, 
     loadClients, 
@@ -100,6 +100,7 @@ const Index = () => {
               onAddTask={addTask}
               onDeleteTask={deleteTask}
               onCompleteTask={handleCompleteTask}
+              onUpdateTask={updateTask}
             />
           </TabsContent>
           <TabsContent value="tasks" className="space-y-4 mt-6">
@@ -115,6 +116,7 @@ const Index = () => {
               tasks={filteredTasks}
               onDeleteTask={deleteTask}
               onCompleteTask={handleCompleteTask}
+              onUpdateTask={updateTask}
               clients={clients}
             />
           </TabsContent>

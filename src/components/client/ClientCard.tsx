@@ -21,6 +21,7 @@ interface ClientCardProps {
   onAddTask: (content: string, clientId?: string) => void;
   onDeleteTask: (id: string) => void;
   onCompleteTask: (id: string) => void;
+  onUpdateTask: (id: string, task: Partial<Task>) => void;
 }
 
 const getRandomPastelGradient = () => {
@@ -43,7 +44,8 @@ export const ClientCard = ({
   tasks,
   onAddTask,
   onDeleteTask,
-  onCompleteTask
+  onCompleteTask,
+  onUpdateTask
 }: ClientCardProps) => {
   const handleUpdatePackagePaid = (packageId: string, paid: boolean) => {
     const updatedPackages = client.packages.map(pkg => 
@@ -147,6 +149,7 @@ export const ClientCard = ({
             tasks={getClientTasks()}
             onDeleteTask={onDeleteTask}
             onCompleteTask={onCompleteTask}
+            onUpdateTask={onUpdateTask}
             clients={[{ id: client.id, name: client.name }]}
           />
         </div>
