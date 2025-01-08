@@ -14,7 +14,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "@/hooks/use-toast";
 
 const Index = () => {
-  const { tasks, loadTasks, addTask, deleteTask, updateTask } = useTaskManager();
+  const { tasks, loadTasks, addTask, deleteTask, updateTask, completeTask } = useTaskManager();
   const { 
     clients, 
     loadClients, 
@@ -41,16 +41,16 @@ const Index = () => {
 
   const handleCompleteTask = async (id: string) => {
     try {
-      await deleteTask(id);
+      await completeTask(id);
       toast({
-        title: "Tarea completada",
-        description: "La tarea ha sido marcada como completada.",
+        title: "Tarea actualizada",
+        description: "El estado de la tarea ha sido actualizado.",
       });
     } catch (error) {
       console.error('Error completing task:', error);
       toast({
         title: "Error",
-        description: "No se pudo completar la tarea. Por favor, intenta de nuevo.",
+        description: "No se pudo actualizar la tarea. Por favor, intenta de nuevo.",
         variant: "destructive",
       });
     }
