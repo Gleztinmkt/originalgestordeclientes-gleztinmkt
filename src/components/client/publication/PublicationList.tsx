@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Publication } from "./types";
+import { Publication, PublicationType } from "./types";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { PublicationListProps } from "./types";
@@ -31,7 +31,14 @@ export const PublicationList = ({
         const { data, error } = await query;
 
         if (error) throw error;
-        setPublications(data || []);
+        
+        // Type cast the data to ensure type is a valid PublicationType
+        const typedPublications: Publication[] = (data || []).map(pub => ({
+          ...pub,
+          type: pub.type as PublicationType // This ensures type is one of "reel", "carousel", or "image"
+        }));
+
+        setPublications(typedPublications);
       } catch (error) {
         console.error('Error fetching publications:', error);
       } finally {
