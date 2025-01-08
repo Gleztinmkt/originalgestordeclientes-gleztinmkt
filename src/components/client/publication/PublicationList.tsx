@@ -2,28 +2,16 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Publication } from "./types";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { PublicationListProps } from "./types";
 
-interface PublicationListProps {
-  publications: Publication[];
-  packageId?: string;
-}
-
-const getTypeIcon = (type: string) => {
-  switch (type) {
-    case 'reel':
-      return 'r';
-    case 'carousel':
-      return 'c';
-    case 'image':
-      return 'i';
-    default:
-      return '';
-  }
-};
-
-export const PublicationList = ({ publications, packageId }: PublicationListProps) => {
+export const PublicationList = ({ 
+  clientId, 
+  onSelect, 
+  onTogglePublished,
+  packageId 
+}: PublicationListProps) => {
   const filteredPublications = packageId 
-    ? publications.filter(pub => pub.packageId === packageId)
+    ? publications.filter(pub => pub.package_id === packageId)
     : publications;
 
   if (filteredPublications.length === 0) {
@@ -41,6 +29,7 @@ export const PublicationList = ({ publications, packageId }: PublicationListProp
           <div
             key={pub.id}
             className="flex items-start space-x-4 p-3 rounded-lg bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm"
+            onClick={() => onSelect(pub)}
           >
             <div className="flex-1 space-y-1">
               <h4 className="font-medium">{pub.name}</h4>
@@ -49,8 +38,17 @@ export const PublicationList = ({ publications, packageId }: PublicationListProp
               </p>
               <div className="flex items-center space-x-2">
                 <span className="text-xs px-2 py-1 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100">
-                  {getTypeIcon(pub.type)}
+                  {pub.type}
                 </span>
+                <input
+                  type="checkbox"
+                  checked={pub.is_published}
+                  onChange={(e) => {
+                    e.stopPropagation();
+                    onTogglePublished(pub.id, e.target.checked);
+                  }}
+                  className="ml-2"
+                />
               </div>
               {pub.description && (
                 <p className="text-sm text-gray-600 dark:text-gray-300">

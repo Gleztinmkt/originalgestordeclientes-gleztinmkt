@@ -1,4 +1,4 @@
-export type PublicationType = "instagram" | "facebook" | "tiktok" | "other";
+export type PublicationType = "reel" | "carousel" | "image";
 
 export interface Publication {
   id: string;
@@ -15,4 +15,19 @@ export interface Publication {
 export interface PublicationCalendarDialogProps {
   clientId: string;
   clientName: string;
+  packageId?: string;
+}
+
+export interface PublicationFormProps {
+  clientId: string;
+  onSubmit?: (values: Omit<Publication, 'id'>) => void;
+  isSubmitting?: boolean;
+  packageId?: string;
+}
+
+export interface PublicationListProps {
+  clientId: string;
+  onSelect: (publication: Publication) => void;
+  onTogglePublished: (id: string, isPublished: boolean) => Promise<void>;
+  packageId?: string;
 }
