@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,23 +13,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { PublicationForm } from "./PublicationForm";
 import { PublicationItem } from "./PublicationItem";
 import { PublicationDescription } from "./PublicationDescription";
+import { GoogleCalendarIntegration } from "./GoogleCalendarIntegration";
 import { Publication, PublicationFormValues, PublicationCalendarDialogProps } from "./types";
 import { useQuery } from "@tanstack/react-query";
-import { useGoogleLogin } from '@react-oauth/google';
 import { 
   createGoogleCalendarEvent, 
   deleteGoogleCalendarEvent,
-  getUserCalendars,
-  saveUserCalendarPreference,
-  getUserCalendarPreference 
 } from "@/utils/googleCalendar";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 export const PublicationCalendarDialog = ({ 
   clientId, 
@@ -39,38 +29,8 @@ export const PublicationCalendarDialog = ({
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedPublication, setSelectedPublication] = useState<Publication | null>(null);
-  const [calendars, setCalendars] = useState<any[]>([]);
   const [selectedCalendarId, setSelectedCalendarId] = useState<string>("");
   const [accessToken, setAccessToken] = useState<string>("");
-
-  const login = useGoogleLogin({
-    onSuccess: async (tokenResponse) => {
-      setAccessToken(tokenResponse.access_token);
-      try {
-        const calendars = await getUserCalendars(tokenResponse.access_token);
-        setCalendars(calendars);
-        
-        // Get user's preferred calendar
-        const userId = (await supabase.auth.getUser()).data.user?.id;
-        if (userId) {
-          const preferredCalendarId = await getUserCalendarPreference(userId);
-          if (preferredCalendarId) {
-            setSelectedCalendarId(preferredCalendarId);
-          } else if (calendars.length > 0) {
-            setSelectedCalendarId(calendars[0].id);
-          }
-        }
-      } catch (error) {
-        console.error("Error fetching calendars:", error);
-        toast({
-          title: "Error",
-          description: "No se pudieron cargar tus calendarios.",
-          variant: "destructive",
-        });
-      }
-    },
-    scope: "https://www.googleapis.com/auth/calendar",
-  });
 
   const { data: publications = [], refetch } = useQuery({
     queryKey: ['publications', clientId, packageId],
@@ -150,7 +110,6 @@ export const PublicationCalendarDialog = ({
     try {
       setIsSubmitting(true);
 
-      // Create Google Calendar event
       const endDate = new Date(values.date);
       endDate.setHours(endDate.getHours() + 1);
 
@@ -225,12 +184,9 @@ export const PublicationCalendarDialog = ({
     }
   };
 
-  const handleCalendarChange = async (calendarId: string) => {
+  const handleCalendarSelect = (calendarId: string, token: string) => {
     setSelectedCalendarId(calendarId);
-    const userId = (await supabase.auth.getUser()).data.user?.id;
-    if (userId) {
-      await saveUserCalendarPreference(userId, calendarId);
-    }
+    setAccessToken(token);
   };
 
   return (
@@ -251,24 +207,7 @@ export const PublicationCalendarDialog = ({
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-6">
-          {!accessToken ? (
-            <Button onClick={() => login()} className="w-full">
-              Conectar con Google Calendar
-            </Button>
-          ) : (
-            <Select value={selectedCalendarId} onValueChange={handleCalendarChange}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecciona un calendario" />
-              </SelectTrigger>
-              <SelectContent>
-                {calendars.map((calendar) => (
-                  <SelectItem key={calendar.id} value={calendar.id}>
-                    {calendar.summary}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
+          <GoogleCalendarIntegration onCalendarSelect={handleCalendarSelect} />
 
           <div className="space-y-4">
             {publications.map((publication) => (
