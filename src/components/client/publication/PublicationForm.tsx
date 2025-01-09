@@ -11,12 +11,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { PublicationType } from "./types";
 
 interface PublicationFormProps {
   onSubmit: (values: {
     name: string;
-    type: PublicationType;
+    type: 'reel' | 'carousel' | 'image';
     date: Date;
     description: string;
   }) => void;
@@ -26,7 +25,7 @@ interface PublicationFormProps {
 
 export const PublicationForm = ({ onSubmit, isSubmitting, packageId }: PublicationFormProps) => {
   const [name, setName] = useState("");
-  const [type, setType] = useState<PublicationType>("image");
+  const [type, setType] = useState<'reel' | 'carousel' | 'image'>("image");
   const [date, setDate] = useState<Date>();
   const [description, setDescription] = useState("");
 
@@ -54,7 +53,7 @@ export const PublicationForm = ({ onSubmit, isSubmitting, packageId }: Publicati
 
       <div className="space-y-2">
         <Label>Tipo de publicación</Label>
-        <Select value={type} onValueChange={(value: PublicationType) => setType(value)}>
+        <Select value={type} onValueChange={(value: 'reel' | 'carousel' | 'image') => setType(value)}>
           <SelectTrigger className="dark:bg-gray-800 dark:text-white">
             <SelectValue placeholder="Seleccionar tipo" />
           </SelectTrigger>
