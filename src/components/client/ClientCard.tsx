@@ -17,6 +17,7 @@ import {
 import { ClientCardProps } from "./types/clientCard";
 import { ClientCardHeader } from "./ClientCardHeader";
 import { ClientCardContent } from "./ClientCardContent";
+import { ClientInfo } from "@/components/types/client";
 
 export const ClientCard = ({
   client,
@@ -35,7 +36,7 @@ export const ClientCard = ({
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
 
-  const handleUpdateClientInfo = (clientId: string, info: any) => {
+  const handleUpdateClientInfo = (clientId: string, info: ClientInfo) => {
     onUpdateClient(clientId, { clientInfo: info });
   };
 
