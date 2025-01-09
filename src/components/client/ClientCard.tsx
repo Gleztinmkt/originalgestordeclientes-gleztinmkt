@@ -11,6 +11,7 @@ import { EditClientDialog } from "./EditClientDialog";
 import { AddPackageDialog } from "./AddPackageDialog";
 import { Client, ClientInfo } from "../types/client";
 import { PublicationCalendarDialog } from "./PublicationCalendarDialog";
+import { ClientCardProps } from "./types/clientCard";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -53,6 +54,33 @@ export const ClientCard = ({
   const [isExpanded, setIsExpanded] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
+
+  const handleUpdateClientInfo = (clientId: string, info: ClientInfo) => {
+    onUpdateClient(clientId, { clientInfo: info });
+  };
+
+  const handleUpdatePackagePaid = (packageId: string, paid: boolean) => {
+    const updatedPackages = client.packages.map(pkg =>
+      pkg.id === packageId ? { ...pkg, paid } : pkg
+    );
+    onUpdateClient(client.id, { ...client, packages: updatedPackages });
+  };
+
+  const handleEditPackage = (packageId: string, values: any) => {
+    const updatedPackages = client.packages.map(pkg =>
+      pkg.id === packageId ? { ...pkg, ...values } : pkg
+    );
+    onUpdateClient(client.id, { ...client, packages: updatedPackages });
+  };
+
+  const handleDeletePackage = (packageId: string) => {
+    const updatedPackages = client.packages.filter(pkg => pkg.id !== packageId);
+    onUpdateClient(client.id, { ...client, packages: updatedPackages });
+  };
+
+  const getClientTasks = () => {
+    return tasks.filter(task => task.clientId === client.id);
+  };
 
   const handleDelete = () => {
     setShowDeleteDialog(true);
