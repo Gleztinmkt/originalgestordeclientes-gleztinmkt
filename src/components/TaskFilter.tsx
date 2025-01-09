@@ -17,14 +17,16 @@ export const TaskFilter = ({ clients, onFilterChange }: TaskFilterProps) => {
       <Select
         onValueChange={(value) => onFilterChange(value === "all" ? null : value, null)}
       >
-        <SelectTrigger className="w-[200px] dark:bg-gray-800 dark:text-white dark:border-gray-700">
+        <SelectTrigger className="w-[200px] bg-background text-foreground border-input hover:bg-accent hover:text-accent-foreground">
           <SelectValue placeholder="Filtrar por categoría" />
         </SelectTrigger>
-        <SelectContent className="dark:bg-gray-800">
+        <SelectContent>
           <SelectItem value="all">Todas las categorías</SelectItem>
           <SelectItem value="campaña">Campaña</SelectItem>
           <SelectItem value="publicaciones">Publicaciones</SelectItem>
           <SelectItem value="correcciones">Correcciones</SelectItem>
+          <SelectItem value="calendarios">Calendarios</SelectItem>
+          <SelectItem value="cobros">Cobros</SelectItem>
           <SelectItem value="otros">Otros</SelectItem>
         </SelectContent>
       </Select>
@@ -32,10 +34,10 @@ export const TaskFilter = ({ clients, onFilterChange }: TaskFilterProps) => {
       <Select
         onValueChange={(value) => onFilterChange(null, value === "all" ? null : value)}
       >
-        <SelectTrigger className="w-[200px] dark:bg-gray-800 dark:text-white dark:border-gray-700">
+        <SelectTrigger className="w-[200px] bg-background text-foreground border-input hover:bg-accent hover:text-accent-foreground">
           <SelectValue placeholder="Filtrar por cliente" />
         </SelectTrigger>
-        <SelectContent className="dark:bg-gray-800">
+        <SelectContent>
           <SelectItem value="all">Todos los clientes</SelectItem>
           {clients.map((client) => (
             <SelectItem key={client.id} value={client.id}>

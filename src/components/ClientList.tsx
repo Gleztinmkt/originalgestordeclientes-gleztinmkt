@@ -61,9 +61,9 @@ export const ClientList = ({
           <ClientFilter onFilterChange={setSelectedPaymentDay} />
         </div>
         <div className="flex items-center gap-2">
-          <div className="flex items-center bg-secondary rounded-lg p-1">
+          <div className="flex items-center bg-background border border-input rounded-lg p-1">
             <Button
-              variant={viewMode === "list" ? "secondary" : "ghost"}
+              variant={viewMode === "list" ? "default" : "ghost"}
               size="sm"
               onClick={() => setViewMode("list")}
               className="h-8 w-8 p-0"
@@ -71,7 +71,7 @@ export const ClientList = ({
               <List className="h-4 w-4" />
             </Button>
             <Button
-              variant={viewMode === "grid" ? "secondary" : "ghost"}
+              variant={viewMode === "grid" ? "default" : "ghost"}
               size="sm"
               onClick={() => setViewMode("grid")}
               className="h-8 w-8 p-0"

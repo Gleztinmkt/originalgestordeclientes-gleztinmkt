@@ -46,6 +46,19 @@ interface ClientPackageProps {
   packageId: string;
 }
 
+const getPackageColor = () => {
+  const colors = [
+    'bg-[#F2FCE2] dark:bg-[#F2FCE2]/10', // Soft Green
+    'bg-[#FEF7CD] dark:bg-[#FEF7CD]/10', // Soft Yellow
+    'bg-[#FEC6A1] dark:bg-[#FEC6A1]/10', // Soft Orange
+    'bg-[#E5DEFF] dark:bg-[#E5DEFF]/10', // Soft Purple
+    'bg-[#FFDEE2] dark:bg-[#FFDEE2]/10', // Soft Pink
+    'bg-[#FDE1D3] dark:bg-[#FDE1D3]/10', // Soft Peach
+    'bg-[#D3E4FD] dark:bg-[#D3E4FD]/10', // Soft Blue
+  ];
+  return colors[Math.floor(Math.random() * colors.length)];
+};
+
 export const ClientPackage = ({
   packageName,
   totalPublications,
@@ -96,7 +109,7 @@ export const ClientPackage = ({
   }, [onEditPackage, isSubmitting]);
 
   return (
-    <Card className="bg-white/60 backdrop-blur-sm dark:bg-gray-800/60 dark:border-gray-700">
+    <Card className={`${getPackageColor()} backdrop-blur-sm dark:border-gray-700`}>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-lg font-heading flex items-center gap-2">
           <Package className="h-5 w-5" />
