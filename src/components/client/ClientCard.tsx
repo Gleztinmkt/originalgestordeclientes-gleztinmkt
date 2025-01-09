@@ -11,7 +11,6 @@ import { EditClientDialog } from "./EditClientDialog";
 import { AddPackageDialog } from "./AddPackageDialog";
 import { Client, ClientInfo } from "../types/client";
 import { PublicationCalendarDialog } from "./PublicationCalendarDialog";
-import { ClientCardProps } from "./types/clientCard";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,14 +28,19 @@ import {
 import { toast } from "@/hooks/use-toast";
 import html2canvas from "html2canvas";
 
-const getSubtleGradient = () => {
-  const gradients = [
-    'linear-gradient(to right, #accbee 0%, #e7f0fd 100%)',
-    'linear-gradient(to top, #e6e9f0 0%, #eef1f5 100%)',
-    'linear-gradient(109.6deg, rgba(223,234,247,1) 11.2%, rgba(244,248,252,1) 91.1%)',
-  ];
-  return gradients[Math.floor(Math.random() * gradients.length)];
-};
+interface ClientCardProps {
+  client: Client;
+  onDeleteClient: (id: string) => void;
+  onUpdateClient: (id: string, data: any) => void;
+  onUpdatePackage: (clientId: string, packageId: string, usedPublications: number) => void;
+  onAddPackage: (clientId: string, packageData: any) => void;
+  tasks: Task[];
+  onAddTask: (content: string, clientId?: string) => void;
+  onDeleteTask: (id: string) => void;
+  onCompleteTask: (id: string) => void;
+  onUpdateTask: (id: string, task: Partial<Task>) => void;
+  viewMode: "list" | "grid";
+}
 
 export const ClientCard = ({
   client,
@@ -127,7 +131,6 @@ export const ClientCard = ({
       const canvas = await html2canvas(element);
       const imageData = canvas.toDataURL('image/png');
 
-      // Create a temporary link to download the image
       const tempLink = document.createElement('a');
       tempLink.href = imageData;
       tempLink.download = `reporte-${client.name}.png`;
