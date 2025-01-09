@@ -5,7 +5,7 @@ import { Trash2, X, MessageSquare, FileText } from "lucide-react";
 import { ClientPackage } from "./ClientPackage";
 import { PaymentReminder } from "./PaymentReminder";
 import { TaskInput } from "../TaskInput";
-import { TaskList, Task } from "../TaskList";
+import { TaskList } from "../TaskList";
 import { ClientInfoDialog } from "./ClientInfoDialog";
 import { EditClientDialog } from "./EditClientDialog";
 import { AddPackageDialog } from "./AddPackageDialog";
