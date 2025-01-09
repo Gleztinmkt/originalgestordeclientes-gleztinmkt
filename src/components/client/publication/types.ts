@@ -3,12 +3,13 @@ export type PublicationType = "reel" | "carousel" | "image";
 export interface Publication {
   id: string;
   client_id: string;
-  package_id?: string | null;  // Changed from packageId to package_id to match DB schema
+  package_id?: string | null;
   name: string;
   type: PublicationType;
   date: string;
   description: string | null;
   google_calendar_event_id?: string | null;
+  google_calendar_id?: string | null;
   created_at?: string;
   is_published?: boolean;
 }
