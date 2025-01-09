@@ -180,7 +180,7 @@ export const ClientCard = ({
           <Button
             variant="ghost"
             size="icon"
-            onClick={handleDelete}
+            onClick={() => setShowDeleteDialog(true)}
             className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
           >
             <Trash2 className="h-4 w-4" />
@@ -306,7 +306,13 @@ export const ClientCard = ({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-red-500 hover:bg-red-600">
+            <AlertDialogAction onClick={() => {
+              onDeleteClient(client.id);
+              setShowDeleteDialog(false);
+              if (viewMode === "grid") {
+                setIsExpanded(false);
+              }
+            }} className="bg-red-500 hover:bg-red-600">
               Eliminar
             </AlertDialogAction>
           </AlertDialogFooter>
