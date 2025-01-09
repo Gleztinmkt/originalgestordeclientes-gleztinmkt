@@ -1,17 +1,12 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Trash2, X, FileText } from "lucide-react";
-import { ClientPackage } from "./ClientPackage";
+import { Card, CardContent } from "@/components/ui/card";
 import { PaymentReminder } from "./PaymentReminder";
 import { TaskInput } from "../TaskInput";
-import { TaskList, Task } from "../TaskList";
-import { ClientInfoDialog } from "./ClientInfoDialog";
-import { EditClientDialog } from "./EditClientDialog";
-import { AddPackageDialog } from "./AddPackageDialog";
+import { TaskList } from "../TaskList";
 import { Client, ClientInfo } from "../types/client";
-import { PublicationCalendarDialog } from "./PublicationCalendarDialog";
 import { getSubtleGradient } from "./utils/gradients";
+import { ClientCardHeader } from "./card/CardHeader";
+import { PackageSection } from "./card/PackageSection";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,8 +21,7 @@ import {
   Dialog,
   DialogContent,
 } from "@/components/ui/dialog";
-import { toast } from "@/hooks/use-toast";
-import html2canvas from "html2canvas";
+import { Task } from "../TaskList";
 
 interface ClientCardProps {
   client: Client;
@@ -99,111 +93,18 @@ export const ClientCard = ({
     }
   };
 
-  const sendPackageCompletionMessage = (packageName: string, month: string) => {
-    if (!client.phone) {
-      toast({
-        title: "Error",
-        description: "Este cliente no tiene número de teléfono registrado",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const message = `¡Hola! Te informamos que tu paquete "${packageName}" del mes de ${month} ha sido completado. Para continuar con nuestros servicios, te invitamos a realizar el pago del próximo paquete. ¡Gracias por confiar en nosotros!`;
-    const whatsappUrl = `https://wa.me/${client.phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
-    window.open(whatsappUrl, '_blank');
-  };
-
-  const sendPackageReport = async () => {
-    if (!client.phone) {
-      toast({
-        title: "Error",
-        description: "Este cliente no tiene número de teléfono registrado",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsCapturing(true);
-    try {
-      const element = document.getElementById(`client-packages-${client.id}`);
-      if (!element) return;
-
-      const canvas = await html2canvas(element);
-      const imageData = canvas.toDataURL('image/png');
-
-      const tempLink = document.createElement('a');
-      tempLink.href = imageData;
-      tempLink.download = `reporte-${client.name}.png`;
-      tempLink.click();
-
-      const message = `¡Hola! Aquí te enviamos el reporte actual de tus paquetes de publicaciones.`;
-      const whatsappUrl = `https://wa.me/${client.phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
-      window.open(whatsappUrl, '_blank');
-
-      toast({
-        title: "Reporte generado",
-        description: "El reporte ha sido generado y descargado. Ahora puedes enviarlo por WhatsApp.",
-      });
-    } catch (error) {
-      console.error('Error generating report:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo generar el reporte. Por favor, intenta de nuevo.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsCapturing(false);
-    }
-  };
-
   const content = (
     <>
-      <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-        <CardTitle className="text-xl font-heading font-semibold text-gray-800 dark:text-white">
-          {client.name}
-        </CardTitle>
-        <div className="flex gap-2">
-          <ClientInfoDialog
-            clientId={client.id}
-            clientInfo={client.clientInfo}
-            onUpdateInfo={handleUpdateClientInfo}
-          />
-          <PublicationCalendarDialog 
-            clientId={client.id}
-            clientName={client.name}
-          />
-          <EditClientDialog 
-            client={client}
-            onUpdateClient={onUpdateClient}
-          />
-          <AddPackageDialog
-            clientId={client.id}
-            onAddPackage={onAddPackage}
-          />
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleDelete}
-            className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-          {viewMode === "grid" && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsExpanded(false);
-              }}
-              className="h-8 w-8 text-gray-400 hover:text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl transition-colors duration-200"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          )}
-        </div>
-      </CardHeader>
+      <ClientCardHeader
+        client={client}
+        viewMode={viewMode}
+        onUpdateClientInfo={handleUpdateClientInfo}
+        onDeleteClient={handleDelete}
+        onUpdateClient={onUpdateClient}
+        onAddPackage={onAddPackage}
+        isExpanded={isExpanded}
+        onClose={() => setIsExpanded(false)}
+      />
       <CardContent className="space-y-4">
         <PaymentReminder
           clientName={client.name}
@@ -211,41 +112,16 @@ export const ClientCard = ({
           phone={client.phone}
         />
 
-        <div id={`client-packages-${client.id}`} className="space-y-4">
-          {client.packages.map((pkg) => (
-            <ClientPackage
-              key={pkg.id}
-              packageName={pkg.name}
-              totalPublications={pkg.totalPublications}
-              usedPublications={pkg.usedPublications}
-              month={pkg.month}
-              paid={pkg.paid}
-              onUpdateUsed={(newCount) => {
-                onUpdatePackage(client.id, pkg.id, newCount);
-                if (newCount === pkg.totalPublications) {
-                  sendPackageCompletionMessage(pkg.name, pkg.month);
-                }
-              }}
-              onUpdatePaid={(paid) => handleUpdatePackagePaid(pkg.id, paid)}
-              onEditPackage={(values) => handleEditPackage(pkg.id, values)}
-              onDeletePackage={() => handleDeletePackage(pkg.id)}
-              clientId={client.id}
-              clientName={client.name}
-              packageId={pkg.id}
-            />
-          ))}
-        </div>
-
-        {client.packages.length > 0 && (
-          <Button
-            onClick={sendPackageReport}
-            disabled={isCapturing}
-            className="w-full gap-2 bg-green-600 hover:bg-green-700 text-white"
-          >
-            <FileText className="h-4 w-4" />
-            {isCapturing ? "Generando reporte..." : "Enviar reporte de paquetes"}
-          </Button>
-        )}
+        <PackageSection
+          client={client}
+          isCapturing={isCapturing}
+          onUpdatePackage={onUpdatePackage}
+          onUpdatePaid={handleUpdatePackagePaid}
+          onEditPackage={handleEditPackage}
+          onDeletePackage={handleDeletePackage}
+          onCaptureStart={() => setIsCapturing(true)}
+          onCaptureEnd={() => setIsCapturing(false)}
+        />
 
         <div className="mt-6 space-y-4">
           <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-200">Tareas Pendientes</h3>
@@ -278,11 +154,11 @@ export const ClientCard = ({
             style={{ background: getSubtleGradient() }}
             onClick={() => setIsExpanded(true)}
           >
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg font-heading font-semibold text-gray-800 dark:text-white truncate">
+            <CardContent className="p-4">
+              <h3 className="text-lg font-heading font-semibold text-gray-800 dark:text-white truncate">
                 {client.name}
-              </CardTitle>
-            </CardHeader>
+              </h3>
+            </CardContent>
           </Card>
 
           <Dialog open={isExpanded} onOpenChange={setIsExpanded}>
