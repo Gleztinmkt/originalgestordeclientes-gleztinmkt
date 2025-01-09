@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,7 +15,6 @@ import { PublicationItem } from "./PublicationItem";
 import { PublicationDescription } from "./PublicationDescription";
 import { Publication, PublicationFormValues, PublicationCalendarDialogProps } from "./types";
 import { useQuery } from "@tanstack/react-query";
-import { useGoogleLogin } from '@react-oauth/google';
 
 export const PublicationCalendarDialog = ({ 
   clientId, 
@@ -25,36 +24,6 @@ export const PublicationCalendarDialog = ({
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedPublication, setSelectedPublication] = useState<Publication | null>(null);
-  const [isCalendarConnected, setIsCalendarConnected] = useState(false);
-
-  const login = useGoogleLogin({
-    onSuccess: async (tokenResponse) => {
-      try {
-        const { error } = await supabase
-          .from('user_calendar_preferences')
-          .upsert({ 
-            user_id: 'default', // Replace with actual user ID when auth is implemented
-            selected_calendar_id: tokenResponse.access_token 
-          });
-
-        if (error) throw error;
-
-        setIsCalendarConnected(true);
-        toast({
-          title: "Calendario conectado",
-          description: "Tu calendario de Google ha sido conectado exitosamente.",
-        });
-      } catch (error) {
-        console.error('Error connecting calendar:', error);
-        toast({
-          title: "Error",
-          description: "No se pudo conectar el calendario. Por favor, intenta de nuevo.",
-          variant: "destructive",
-        });
-      }
-    },
-    scope: 'https://www.googleapis.com/auth/calendar',
-  });
 
   const { data: publications = [], refetch } = useQuery({
     queryKey: ['publications', clientId, packageId],
@@ -111,7 +80,7 @@ export const PublicationCalendarDialog = ({
       return;
     }
 
-    const typeShorthand = values.type === 'reel' ? 'R' : values.type === 'carousel' ? 'C' : 'I';
+    const typeShorthand = values.type === 'reel' ? 'r' : values.type === 'carousel' ? 'c' : 'i';
     const eventTitle = `${clientName} - ${typeShorthand} - ${values.name}`;
 
     const publicationData = {
@@ -150,11 +119,35 @@ export const PublicationCalendarDialog = ({
     }
   };
 
+  const handleTogglePublished = async (publicationId: string, isPublished: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('publications')
+        .update({ is_published: isPublished })
+        .eq('id', publicationId);
+
+      if (error) throw error;
+      await refetch();
+      
+      toast({
+        title: isPublished ? "Publicación marcada como subida" : "Publicación marcada como pendiente",
+        description: "El estado de la publicación ha sido actualizado.",
+      });
+    } catch (error) {
+      console.error('Error updating publication:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el estado de la publicación.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button
-          variant="outline"
+          variant="ghost"
           size="icon"
           className="h-8 w-8 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-colors duration-200"
         >
@@ -163,14 +156,8 @@ export const PublicationCalendarDialog = ({
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px] max-h-[80vh] overflow-y-auto dark:bg-gray-900">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold dark:text-white flex items-center justify-between">
-            <span>Calendario de publicaciones - {clientName}</span>
-            {!isCalendarConnected && (
-              <Button onClick={() => login()} variant="outline" size="sm">
-                <CalendarIcon className="h-4 w-4 mr-2" />
-                Conectar Google Calendar
-              </Button>
-            )}
+          <DialogTitle className="text-xl font-bold dark:text-white">
+            Calendario de publicaciones - {clientName}
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-6">
@@ -180,6 +167,7 @@ export const PublicationCalendarDialog = ({
                 key={publication.id}
                 publication={publication}
                 onDelete={handleDelete}
+                onTogglePublished={handleTogglePublished}
                 onSelect={setSelectedPublication}
               />
             ))}
