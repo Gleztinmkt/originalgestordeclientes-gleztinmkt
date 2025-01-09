@@ -20,6 +20,16 @@ import { AddPackageForm, PackageFormValues } from "./AddPackageForm";
 import { toast } from "@/hooks/use-toast";
 import { useState, useCallback } from "react";
 import { PublicationCalendarDialog } from "./PublicationCalendarDialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface ClientPackageProps {
   packageName: string;
@@ -51,6 +61,7 @@ export const ClientPackage = ({
   packageId,
 }: ClientPackageProps) => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const getPackageType = (name: string): "basico" | "avanzado" | "premium" | "personalizado" => {
@@ -85,7 +96,7 @@ export const ClientPackage = ({
   }, [onEditPackage, isSubmitting]);
 
   return (
-    <Card className="bg-white/60 backdrop-blur-sm">
+    <Card className="bg-white/60 backdrop-blur-sm dark:bg-gray-800/60 dark:border-gray-700">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-lg font-heading flex items-center gap-2">
           <Package className="h-5 w-5" />
@@ -120,13 +131,7 @@ export const ClientPackage = ({
               {onDeletePackage && (
                 <DropdownMenuItem
                   className="text-red-600"
-                  onClick={() => {
-                    onDeletePackage();
-                    toast({
-                      title: "Paquete eliminado",
-                      description: "El paquete ha sido eliminado correctamente.",
-                    });
-                  }}
+                  onClick={() => setIsDeleteDialogOpen(true)}
                   disabled={isSubmitting}
                 >
                   <Trash className="mr-2 h-4 w-4" />
@@ -166,6 +171,29 @@ export const ClientPackage = ({
           />
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. El paquete será eliminado permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => {
+                onDeletePackage?.();
+                setIsDeleteDialogOpen(false);
+              }} 
+              className="bg-red-500 hover:bg-red-600"
+            >
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 };

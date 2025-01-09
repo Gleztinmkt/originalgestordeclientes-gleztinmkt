@@ -69,18 +69,18 @@ const Index = () => {
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-2">
             <TrashDialog />
-            <img 
-              src="https://imgur.com/YvEDrAv" 
-              alt="Gleztin Marketing Digital" 
-              className="h-8 w-8 object-contain"
-            />
-          </div>
-          <div className="flex items-center gap-2">
             <NotificationCenter 
               notifications={[]} 
               onDismiss={() => {}}
               onSendPaymentReminders={() => {}}
             />
+            <img 
+              src="https://i.imgur.com/YvEDrAv.png" 
+              alt="Gleztin Marketing Digital" 
+              className="h-8 w-8 object-contain"
+            />
+          </div>
+          <div className="flex items-center gap-2">
             <ThemeToggle />
           </div>
         </div>
