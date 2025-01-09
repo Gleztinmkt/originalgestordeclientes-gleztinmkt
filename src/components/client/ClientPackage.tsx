@@ -1,4 +1,4 @@
-import { Package, Edit, MoreVertical, Trash } from "lucide-react";
+import { Package, Edit, MoreVertical, Trash, Send, Calendar } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PackageCounter } from "./PackageCounter";
 import { Badge } from "@/components/ui/badge";
@@ -46,19 +46,6 @@ interface ClientPackageProps {
   packageId: string;
 }
 
-const getPackageColor = () => {
-  const colors = [
-    'bg-[#F2FCE2] dark:bg-[#F2FCE2]/10', // Soft Green
-    'bg-[#FEF7CD] dark:bg-[#FEF7CD]/10', // Soft Yellow
-    'bg-[#FEC6A1] dark:bg-[#FEC6A1]/10', // Soft Orange
-    'bg-[#E5DEFF] dark:bg-[#E5DEFF]/10', // Soft Purple
-    'bg-[#FFDEE2] dark:bg-[#FFDEE2]/10', // Soft Pink
-    'bg-[#FDE1D3] dark:bg-[#FDE1D3]/10', // Soft Peach
-    'bg-[#D3E4FD] dark:bg-[#D3E4FD]/10', // Soft Blue
-  ];
-  return colors[Math.floor(Math.random() * colors.length)];
-};
-
 export const ClientPackage = ({
   packageName,
   totalPublications,
@@ -77,12 +64,10 @@ export const ClientPackage = ({
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const getPackageType = (name: string): "basico" | "avanzado" | "premium" | "personalizado" => {
-    if (name.toLowerCase().includes("básico")) return "basico";
-    if (name.toLowerCase().includes("avanzado")) return "avanzado";
-    if (name.toLowerCase().includes("premium")) return "premium";
-    if (name.toLowerCase().includes("personalizado")) return "personalizado";
-    return "basico"; // default fallback
+  const handleSendCompletionMessage = () => {
+    const message = `¡Hola! Te informamos que tu paquete "${packageName}" del mes de ${month} ha sido completado. Para continuar con nuestros servicios, te invitamos a realizar el pago del próximo paquete. ¡Gracias por confiar en nosotros!`;
+    const whatsappUrl = `https://wa.me/${clientId}?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
   };
 
   const handleEditSubmit = useCallback(async (values: PackageFormValues & { name: string, totalPublications: string }) => {
@@ -109,7 +94,7 @@ export const ClientPackage = ({
   }, [onEditPackage, isSubmitting]);
 
   return (
-    <Card className={`${getPackageColor()} backdrop-blur-sm dark:border-gray-700`}>
+    <Card className="bg-white dark:bg-gray-800 border dark:border-gray-700">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-lg font-heading flex items-center gap-2">
           <Package className="h-5 w-5" />
@@ -161,11 +146,23 @@ export const ClientPackage = ({
           used={usedPublications}
           onUpdateUsed={onUpdateUsed}
         />
-        <PublicationCalendarDialog 
-          clientId={clientId}
-          clientName={clientName}
-          packageId={packageId}
-        />
+        <div className="flex gap-2 mt-4">
+          {usedPublications === totalPublications && (
+            <Button 
+              onClick={handleSendCompletionMessage}
+              className="w-full gap-2"
+              variant="outline"
+            >
+              <Send className="h-4 w-4" />
+              Enviar mensaje de completado
+            </Button>
+          )}
+          <PublicationCalendarDialog 
+            clientId={clientId}
+            clientName={clientName}
+            packageId={packageId}
+          />
+        </div>
       </CardContent>
 
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
@@ -176,7 +173,7 @@ export const ClientPackage = ({
           <AddPackageForm
             onSubmit={handleEditSubmit}
             defaultValues={{
-              packageType: getPackageType(packageName),
+              packageType: "basico",
               month: month,
               paid: paid,
             }}

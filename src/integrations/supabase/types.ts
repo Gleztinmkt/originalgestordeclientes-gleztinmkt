@@ -59,6 +59,7 @@ export type Database = {
           deleted_at: string | null
           description: string | null
           google_calendar_event_id: string | null
+          google_calendar_id: string | null
           id: string
           is_published: boolean | null
           name: string
@@ -72,6 +73,7 @@ export type Database = {
           deleted_at?: string | null
           description?: string | null
           google_calendar_event_id?: string | null
+          google_calendar_id?: string | null
           id?: string
           is_published?: boolean | null
           name: string
@@ -85,6 +87,7 @@ export type Database = {
           deleted_at?: string | null
           description?: string | null
           google_calendar_event_id?: string | null
+          google_calendar_id?: string | null
           id?: string
           is_published?: boolean | null
           name?: string
@@ -150,6 +153,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_calendar_preferences: {
+        Row: {
+          created_at: string
+          id: string
+          selected_calendar_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          selected_calendar_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          selected_calendar_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
     }
     Views: {
