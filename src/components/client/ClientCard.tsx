@@ -18,15 +18,6 @@ import { ClientCardProps } from "./types/clientCard";
 import { ClientCardHeader } from "./ClientCardHeader";
 import { ClientCardContent } from "./ClientCardContent";
 
-const getSubtleGradient = () => {
-  const gradients = [
-    'linear-gradient(to right, #accbee 0%, #e7f0fd 100%)',
-    'linear-gradient(to top, #e6e9f0 0%, #eef1f5 100%)',
-    'linear-gradient(109.6deg, rgba(223,234,247,1) 11.2%, rgba(244,248,252,1) 91.1%)',
-  ];
-  return gradients[Math.floor(Math.random() * gradients.length)];
-};
-
 export const ClientCard = ({
   client,
   onDeleteClient,
@@ -65,6 +56,19 @@ export const ClientCard = ({
   const handleDeletePackage = (packageId: string) => {
     const updatedPackages = client.packages.filter(pkg => pkg.id !== packageId);
     onUpdateClient(client.id, { ...client, packages: updatedPackages });
+  };
+
+  const getClientTasks = () => {
+    return tasks.filter(task => task.clientId === client.id);
+  };
+
+  const getSubtleGradient = () => {
+    const gradients = [
+      'linear-gradient(to right, #accbee 0%, #e7f0fd 100%)',
+      'linear-gradient(to top, #e6e9f0 0%, #eef1f5 100%)',
+      'linear-gradient(109.6deg, rgba(223,234,247,1) 11.2%, rgba(244,248,252,1) 91.1%)',
+    ];
+    return gradients[Math.floor(Math.random() * gradients.length)];
   };
 
   const content = (
