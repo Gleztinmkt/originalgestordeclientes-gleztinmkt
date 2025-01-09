@@ -25,7 +25,7 @@ interface PublicationFormProps {
 
 export const PublicationForm = ({ onSubmit, isSubmitting, packageId }: PublicationFormProps) => {
   const [name, setName] = useState("");
-  const [type, setType] = useState<'reel' | 'carousel' | 'image'>("image");
+  const [type, setType] = useState<'reel' | 'carousel' | 'image'>('image');
   const [date, setDate] = useState<Date>();
   const [description, setDescription] = useState("");
 
