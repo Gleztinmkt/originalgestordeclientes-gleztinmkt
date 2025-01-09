@@ -1,24 +1,23 @@
-export type PublicationType = "reel" | "carousel" | "image";
-
 export interface Publication {
   id: string;
   client_id: string;
-  package_id?: string | null;
   name: string;
-  type: PublicationType;
+  type: 'reel' | 'carousel' | 'image';
   date: string;
-  description: string | null;
+  description?: string | null;
+  package_id?: string | null;
+  is_published?: boolean;
   google_calendar_event_id?: string | null;
   google_calendar_id?: string | null;
-  created_at?: string;
-  is_published?: boolean;
+  created_at: string;
+  deleted_at?: string | null;
 }
 
 export interface PublicationFormValues {
   name: string;
-  type: PublicationType;
+  type: 'reel' | 'carousel' | 'image';
   date: Date;
-  description: string;
+  description?: string;
 }
 
 export interface PublicationCalendarDialogProps {
