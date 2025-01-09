@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Trash2, X, MessageSquare, FileText } from "lucide-react";
+import { Trash2, X, FileText } from "lucide-react";
 import { ClientPackage } from "./ClientPackage";
 import { PaymentReminder } from "./PaymentReminder";
 import { TaskInput } from "../TaskInput";
@@ -11,6 +11,7 @@ import { EditClientDialog } from "./EditClientDialog";
 import { AddPackageDialog } from "./AddPackageDialog";
 import { Client, ClientInfo } from "../types/client";
 import { PublicationCalendarDialog } from "./PublicationCalendarDialog";
+import { getSubtleGradient } from "./utils/gradients";
 import {
   AlertDialog,
   AlertDialogAction,
