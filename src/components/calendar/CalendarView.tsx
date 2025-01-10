@@ -35,6 +35,7 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
   const [selectedDesigner, setSelectedDesigner] = useState<string | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
   const [view, setView] = useState<"month" | "week">("month");
+  const [isDragging, setIsDragging] = useState(false);
 
   const { data: publications = [], refetch } = useQuery({
     queryKey: ['publications', selectedClient],
@@ -75,7 +76,13 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
     },
   });
 
+  const handleDragStart = () => {
+    setIsDragging(true);
+  };
+
   const handleDragEnd = async (result: any) => {
+    setIsDragging(false);
+    
     if (!result.destination) return;
 
     const publication = publications.find(p => p.id === result.draggableId);
@@ -207,7 +214,7 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
           </div>
         </div>
 
-        <DragDropContext onDragEnd={handleDragEnd}>
+        <DragDropContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
           <Droppable droppableId="publications">
             {(provided) => (
               <div 
@@ -248,41 +255,42 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
                             key={publication.id}
                             draggableId={publication.id}
                             index={pubIndex}
+                            isDragDisabled={isDragging}
                           >
                             {(provided) => (
-                              <ContextMenu>
-                                <ContextMenuTrigger>
-                                  <div
-                                    ref={provided.innerRef}
-                                    {...provided.draggableProps}
-                                    {...provided.dragHandleProps}
-                                    className={`mb-1 p-1 rounded text-sm ${getStatusColor(publication)}`}
-                                  >
+                              <div
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                                {...provided.dragHandleProps}
+                                className={`mb-1 p-1 rounded text-sm ${getStatusColor(publication)}`}
+                              >
+                                <ContextMenu>
+                                  <ContextMenuTrigger>
                                     <div className="flex items-center gap-1">
                                       {getStatusIcon(publication)}
                                       <span className="truncate">
                                         {clients.find(c => c.id === publication.client_id)?.name} - {publication.name}
                                       </span>
                                     </div>
-                                  </div>
-                                </ContextMenuTrigger>
-                                <ContextMenuContent>
-                                  <ContextMenuItem>Editar publicación</ContextMenuItem>
-                                  <ContextMenuItem>Asignar diseñador</ContextMenuItem>
-                                  <ContextMenuItem>Marcar como grabado</ContextMenuItem>
-                                  <ContextMenuItem>Marcar como editado</ContextMenuItem>
-                                  <ContextMenuItem>Marcar como aprobado</ContextMenuItem>
-                                  <ContextMenuItem>Marcar como publicado</ContextMenuItem>
-                                </ContextMenuContent>
-                              </ContextMenu>
+                                  </ContextMenuTrigger>
+                                  <ContextMenuContent>
+                                    <ContextMenuItem>Editar publicación</ContextMenuItem>
+                                    <ContextMenuItem>Asignar diseñador</ContextMenuItem>
+                                    <ContextMenuItem>Marcar como grabado</ContextMenuItem>
+                                    <ContextMenuItem>Marcar como editado</ContextMenuItem>
+                                    <ContextMenuItem>Marcar como aprobado</ContextMenuItem>
+                                    <ContextMenuItem>Marcar como publicado</ContextMenuItem>
+                                  </ContextMenuContent>
+                                </ContextMenu>
+                              </div>
                             )}
                           </Draggable>
                         ))}
+                        {provided.placeholder}
                       </ScrollArea>
                     </div>
                   );
                 })}
-                {provided.placeholder}
               </div>
             )}
           </Droppable>
