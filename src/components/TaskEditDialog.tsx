@@ -27,7 +27,7 @@ interface TaskEditDialogProps {
 export const TaskEditDialog = ({ task, onClose, onSave, clients }: TaskEditDialogProps) => {
   const [content, setContent] = useState(task.content);
   const [type, setType] = useState<Task["type"]>(task.type);
-  const [clientId, setClientId] = useState(task.clientId || "none");
+  const [clientId, setClientId] = useState(task.clientId || "unassigned");
   const [executionDate, setExecutionDate] = useState<Date | undefined>(
     task.executionDate ? new Date(task.executionDate) : undefined
   );
@@ -41,7 +41,7 @@ export const TaskEditDialog = ({ task, onClose, onSave, clients }: TaskEditDialo
     onSave({
       content,
       type,
-      clientId: clientId === "none" ? null : clientId,
+      clientId: clientId === "unassigned" ? null : clientId,
       executionDate,
       reminderDate: enableReminder ? reminderDate : undefined,
       reminderFrequency: enableReminder ? reminderFrequency : undefined,
@@ -86,7 +86,7 @@ export const TaskEditDialog = ({ task, onClose, onSave, clients }: TaskEditDialo
                 <SelectValue placeholder="Seleccionar cliente" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">Sin cliente</SelectItem>
+                <SelectItem value="unassigned">Sin cliente</SelectItem>
                 {clients.map((client) => (
                   <SelectItem key={client.id} value={client.id}>
                     {client.name}
@@ -173,7 +173,6 @@ export const TaskEditDialog = ({ task, onClose, onSave, clients }: TaskEditDialo
               </div>
             </>
           )}
-
         </div>
 
         <div className="flex justify-end space-x-2">
