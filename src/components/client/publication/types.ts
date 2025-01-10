@@ -11,6 +11,14 @@ export interface Publication {
   google_calendar_id?: string | null;
   created_at: string;
   deleted_at?: string | null;
+  status?: string;
+  designer?: string | null;
+  needs_recording?: boolean;
+  needs_editing?: boolean;
+  in_editing?: boolean;
+  in_review?: boolean;
+  approved?: boolean;
+  reference_materials?: any[];
 }
 
 export interface PublicationFormValues {

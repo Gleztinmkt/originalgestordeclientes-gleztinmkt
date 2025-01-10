@@ -51,47 +51,89 @@ export type Database = {
         }
         Relationships: []
       }
+      designers: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       publications: {
         Row: {
+          approved: boolean | null
           client_id: string | null
           created_at: string
           date: string
           deleted_at: string | null
           description: string | null
+          designer: string | null
           google_calendar_event_id: string | null
           google_calendar_id: string | null
           id: string
+          in_editing: boolean | null
+          in_review: boolean | null
           is_published: boolean | null
           name: string
+          needs_editing: boolean | null
+          needs_recording: boolean | null
           package_id: string | null
+          reference_materials: Json | null
+          status: string | null
           type: string
         }
         Insert: {
+          approved?: boolean | null
           client_id?: string | null
           created_at?: string
           date: string
           deleted_at?: string | null
           description?: string | null
+          designer?: string | null
           google_calendar_event_id?: string | null
           google_calendar_id?: string | null
           id?: string
+          in_editing?: boolean | null
+          in_review?: boolean | null
           is_published?: boolean | null
           name: string
+          needs_editing?: boolean | null
+          needs_recording?: boolean | null
           package_id?: string | null
+          reference_materials?: Json | null
+          status?: string | null
           type: string
         }
         Update: {
+          approved?: boolean | null
           client_id?: string | null
           created_at?: string
           date?: string
           deleted_at?: string | null
           description?: string | null
+          designer?: string | null
           google_calendar_event_id?: string | null
           google_calendar_id?: string | null
           id?: string
+          in_editing?: boolean | null
+          in_review?: boolean | null
           is_published?: boolean | null
           name?: string
+          needs_editing?: boolean | null
+          needs_recording?: boolean | null
           package_id?: string | null
+          reference_materials?: Json | null
+          status?: string | null
           type?: string
         }
         Relationships: [

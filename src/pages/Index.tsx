@@ -13,6 +13,7 @@ import { useTaskManager } from "@/features/tasks/useTaskManager";
 import { useClientManager } from "@/features/clients/useClientManager";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "@/hooks/use-toast";
+import { CalendarView } from "@/components/calendar/CalendarView";
 
 const Index = () => {
   const { tasks, loadTasks, addTask, deleteTask, updateTask, completeTask } = useTaskManager();
@@ -94,13 +95,16 @@ const Index = () => {
           </p>
         </div>
 
-        <Tabs defaultValue="clients" className="w-full max-w-2xl mx-auto">
-          <TabsList className={`grid w-full grid-cols-2 rounded-2xl p-1 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm ${isMobile ? 'sticky top-2 z-10' : ''}`}>
+        <Tabs defaultValue="clients" className="w-full max-w-[1200px] mx-auto">
+          <TabsList className={`grid w-full grid-cols-3 rounded-2xl p-1 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm ${isMobile ? 'sticky top-2 z-10' : ''}`}>
             <TabsTrigger value="clients" className="rounded-xl data-[state=active]:bg-black data-[state=active]:text-white dark:data-[state=active]:bg-white dark:data-[state=active]:text-black">
               Clientes
             </TabsTrigger>
             <TabsTrigger value="tasks" className="rounded-xl data-[state=active]:bg-black data-[state=active]:text-white dark:data-[state=active]:bg-white dark:data-[state=active]:text-black">
               Tareas
+            </TabsTrigger>
+            <TabsTrigger value="calendar" className="rounded-xl data-[state=active]:bg-black data-[state=active]:text-white dark:data-[state=active]:bg-white dark:data-[state=active]:text-black">
+              Calendario
             </TabsTrigger>
           </TabsList>
           <TabsContent value="clients" className="space-y-4 mt-6">
@@ -134,6 +138,9 @@ const Index = () => {
               onUpdateTask={updateTask}
               clients={clients}
             />
+          </TabsContent>
+          <TabsContent value="calendar" className="mt-6">
+            <CalendarView clients={clients} />
           </TabsContent>
         </Tabs>
       </div>
