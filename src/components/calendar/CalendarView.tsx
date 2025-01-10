@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { Calendar } from "@/components/ui/calendar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Publication } from "../client/publication/types";
 import { Client } from "../types/client";
@@ -12,6 +11,8 @@ import { es } from "date-fns/locale";
 import { toast } from "@/hooks/use-toast";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { Button } from "../ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { InfoIcon } from "lucide-react";
 import { 
   Video, 
   Edit, 
@@ -20,13 +21,17 @@ import {
   AlertCircle,
   Clock,
   Plus,
-  Calendar as CalendarIcon
+  Calendar as CalendarIcon,
+  Cloud
 } from "lucide-react";
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuTrigger,
+  ContextMenuSub,
+  ContextMenuSubTrigger,
+  ContextMenuSubContent,
 } from "@/components/ui/context-menu";
 
 export const CalendarView = ({ clients }: { clients: Client[] }) => {
@@ -125,7 +130,8 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
         in_editing: false,
         in_review: false,
         approved: false,
-        is_published: false
+        is_published: false,
+        in_cloud: false
       };
 
       switch (status) {
@@ -146,6 +152,9 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
           break;
         case 'published':
           updates.is_published = true;
+          break;
+        case 'in_cloud':
+          updates.in_cloud = true;
           break;
       }
 
@@ -172,6 +181,31 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
     }
   };
 
+  const handleDesignerAssign = async (publicationId: string, designerName: string) => {
+    try {
+      const { error } = await supabase
+        .from('publications')
+        .update({ designer: designerName })
+        .eq('id', publicationId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Diseñador asignado",
+        description: "El diseñador ha sido asignado correctamente.",
+      });
+
+      refetch();
+    } catch (error) {
+      console.error('Error assigning designer:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo asignar el diseñador.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const filteredPublications = publications.filter(pub => {
     if (selectedType && pub.type !== selectedType) return false;
     if (selectedPackage && pub.package_id !== selectedPackage) return false;
@@ -184,6 +218,7 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
         case 'in_review': return pub.in_review;
         case 'approved': return pub.approved;
         case 'published': return pub.is_published;
+        case 'in_cloud': return pub.in_cloud;
         default: return true;
       }
     }
@@ -214,6 +249,14 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
       />
 
       <div className="flex-1 p-4 space-y-4">
+        <Alert className="mb-4">
+          <InfoIcon className="h-4 w-4" />
+          <AlertDescription>
+            Información para diseñadores: Haz clic derecho sobre una publicación para cambiar su estado (en edición, en revisión, aprobado, en la nube).
+            Haz clic en la publicación para ver toda la información. Puedes filtrar tus publicaciones asignadas usando el filtro "Diseñadores".
+          </AlertDescription>
+        </Alert>
+
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-2">
             <Button
@@ -272,58 +315,83 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
                     <div
                       ref={provided.innerRef}
                       {...provided.droppableProps}
-                      className="min-h-[120px] border p-1"
+                      className="min-h-[100px] max-h-[150px] border p-1 overflow-y-auto"
                     >
                       <div className="text-right text-sm mb-1">
                         {format(date, 'd')}
                       </div>
                       <ScrollArea className="h-full">
-                        {dayPublications.map((publication, pubIndex) => (
-                          <Draggable
-                            key={publication.id}
-                            draggableId={publication.id}
-                            index={pubIndex}
-                            isDragDisabled={isDragging}
-                          >
-                            {(provided) => (
-                              <div
-                                ref={provided.innerRef}
-                                {...provided.draggableProps}
-                                {...provided.dragHandleProps}
-                              >
-                                <ContextMenu>
-                                  <ContextMenuTrigger>
-                                    <PublicationCard
-                                      publication={publication}
-                                      client={clients.find(c => c.id === publication.client_id)}
-                                      onUpdate={refetch}
-                                    />
-                                  </ContextMenuTrigger>
-                                  <ContextMenuContent>
-                                    <ContextMenuItem onClick={() => handleStatusChange(publication.id, 'needs_recording')}>
-                                      Marcar como "Falta grabar"
-                                    </ContextMenuItem>
-                                    <ContextMenuItem onClick={() => handleStatusChange(publication.id, 'needs_editing')}>
-                                      Marcar como "Falta editar"
-                                    </ContextMenuItem>
-                                    <ContextMenuItem onClick={() => handleStatusChange(publication.id, 'in_editing')}>
-                                      Marcar como "En edición"
-                                    </ContextMenuItem>
-                                    <ContextMenuItem onClick={() => handleStatusChange(publication.id, 'in_review')}>
-                                      Marcar como "En revisión"
-                                    </ContextMenuItem>
-                                    <ContextMenuItem onClick={() => handleStatusChange(publication.id, 'approved')}>
-                                      Marcar como "Aprobado"
-                                    </ContextMenuItem>
-                                    <ContextMenuItem onClick={() => handleStatusChange(publication.id, 'published')}>
-                                      Marcar como "Publicado"
-                                    </ContextMenuItem>
-                                  </ContextMenuContent>
-                                </ContextMenu>
-                              </div>
-                            )}
-                          </Draggable>
-                        ))}
+                        {dayPublications.map((publication, pubIndex) => {
+                          const client = clients.find(c => c.id === publication.client_id);
+                          const typeShorthand = publication.type === 'reel' ? 'R' : publication.type === 'carousel' ? 'C' : 'I';
+                          const displayTitle = `${client?.name || ''} - ${typeShorthand} - ${publication.name}`;
+
+                          return (
+                            <Draggable
+                              key={publication.id}
+                              draggableId={publication.id}
+                              index={pubIndex}
+                              isDragDisabled={isDragging}
+                            >
+                              {(provided) => (
+                                <div
+                                  ref={provided.innerRef}
+                                  {...provided.draggableProps}
+                                  {...provided.dragHandleProps}
+                                >
+                                  <ContextMenu>
+                                    <ContextMenuTrigger>
+                                      <PublicationCard
+                                        publication={publication}
+                                        client={client}
+                                        onUpdate={refetch}
+                                        displayTitle={displayTitle}
+                                      />
+                                    </ContextMenuTrigger>
+                                    <ContextMenuContent>
+                                      <ContextMenuItem onClick={() => handleStatusChange(publication.id, 'needs_recording')}>
+                                        Marcar como "Falta grabar"
+                                      </ContextMenuItem>
+                                      <ContextMenuItem onClick={() => handleStatusChange(publication.id, 'needs_editing')}>
+                                        Marcar como "Falta editar"
+                                      </ContextMenuItem>
+                                      <ContextMenuItem onClick={() => handleStatusChange(publication.id, 'in_editing')}>
+                                        Marcar como "En edición"
+                                      </ContextMenuItem>
+                                      <ContextMenuItem onClick={() => handleStatusChange(publication.id, 'in_review')}>
+                                        Marcar como "En revisión"
+                                      </ContextMenuItem>
+                                      <ContextMenuItem onClick={() => handleStatusChange(publication.id, 'approved')}>
+                                        Marcar como "Aprobado"
+                                      </ContextMenuItem>
+                                      <ContextMenuItem onClick={() => handleStatusChange(publication.id, 'published')}>
+                                        Marcar como "Publicado"
+                                      </ContextMenuItem>
+                                      <ContextMenuItem onClick={() => handleStatusChange(publication.id, 'in_cloud')}>
+                                        Marcar como "En la nube"
+                                      </ContextMenuItem>
+                                      <ContextMenuSub>
+                                        <ContextMenuSubTrigger>
+                                          Asignar diseñador
+                                        </ContextMenuSubTrigger>
+                                        <ContextMenuSubContent>
+                                          {designers.map((designer) => (
+                                            <ContextMenuItem
+                                              key={designer.id}
+                                              onClick={() => handleDesignerAssign(publication.id, designer.name)}
+                                            >
+                                              {designer.name}
+                                            </ContextMenuItem>
+                                          ))}
+                                        </ContextMenuSubContent>
+                                      </ContextMenuSub>
+                                    </ContextMenuContent>
+                                  </ContextMenu>
+                                </div>
+                              )}
+                            </Draggable>
+                          );
+                        })}
                         {provided.placeholder}
                       </ScrollArea>
                     </div>

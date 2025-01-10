@@ -123,23 +123,23 @@ export const FilterPanel = ({
           </Select>
         </div>
 
-        <div className="space-y-2">
-          <Label className="text-sm font-medium">Estado</Label>
-          <Select value={selectedStatus || "all"} onValueChange={(value) => onStatusChange(value === "all" ? null : value)}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Todos los estados" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos los estados</SelectItem>
-              <SelectItem value="needs_recording">Falta grabar</SelectItem>
-              <SelectItem value="needs_editing">Falta editar</SelectItem>
-              <SelectItem value="in_editing">En edición</SelectItem>
-              <SelectItem value="in_review">En revisión</SelectItem>
-              <SelectItem value="approved">Aprobado</SelectItem>
-              <SelectItem value="published">Publicado</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+      <div className="space-y-2">
+        <Label className="text-sm font-medium">Estado</Label>
+        <Select value={selectedStatus || "all"} onValueChange={(value) => onStatusChange(value === "all" ? null : value)}>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Todos los estados" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos los estados</SelectItem>
+            <SelectItem value="needs_recording">Falta grabar</SelectItem>
+            <SelectItem value="needs_editing">Falta editar</SelectItem>
+            <SelectItem value="in_editing">En edición</SelectItem>
+            <SelectItem value="in_review">En revisión</SelectItem>
+            <SelectItem value="approved">Aprobado</SelectItem>
+            <SelectItem value="in_cloud">En la nube</SelectItem>
+            <SelectItem value="published">Publicado</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="space-y-2">
