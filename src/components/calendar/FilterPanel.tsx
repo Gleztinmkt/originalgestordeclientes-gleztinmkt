@@ -123,71 +123,72 @@ export const FilterPanel = ({
           </Select>
         </div>
 
-      <div className="space-y-2">
-        <Label className="text-sm font-medium">Estado</Label>
-        <Select value={selectedStatus || "all"} onValueChange={(value) => onStatusChange(value === "all" ? null : value)}>
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Todos los estados" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos los estados</SelectItem>
-            <SelectItem value="needs_recording">Falta grabar</SelectItem>
-            <SelectItem value="needs_editing">Falta editar</SelectItem>
-            <SelectItem value="in_editing">En edición</SelectItem>
-            <SelectItem value="in_review">En revisión</SelectItem>
-            <SelectItem value="approved">Aprobado</SelectItem>
-            <SelectItem value="in_cloud">En la nube</SelectItem>
-            <SelectItem value="published">Publicado</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+        <div className="space-y-2">
+          <Label className="text-sm font-medium">Estado</Label>
+          <Select value={selectedStatus || "all"} onValueChange={(value) => onStatusChange(value === "all" ? null : value)}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Todos los estados" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos los estados</SelectItem>
+              <SelectItem value="needs_recording">Falta grabar</SelectItem>
+              <SelectItem value="needs_editing">Falta editar</SelectItem>
+              <SelectItem value="in_editing">En edición</SelectItem>
+              <SelectItem value="in_review">En revisión</SelectItem>
+              <SelectItem value="approved">Aprobado</SelectItem>
+              <SelectItem value="in_cloud">En la nube</SelectItem>
+              <SelectItem value="published">Publicado</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
-      <div className="space-y-2">
-        <Label className="text-sm font-medium">Leyenda de estados</Label>
-        <ScrollArea className="h-[200px] w-full rounded-md border p-2">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Video className="h-4 w-4 text-orange-500" />
-              <span className="text-sm">Falta grabar</span>
+        <div className="space-y-2">
+          <Label className="text-sm font-medium">Leyenda de estados</Label>
+          <ScrollArea className="h-[200px] w-full rounded-md border p-2">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Video className="h-4 w-4 text-orange-500" />
+                <span className="text-sm">Falta grabar</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Edit className="h-4 w-4 text-blue-500" />
+                <span className="text-sm">Falta editar</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Clock className="h-4 w-4 text-purple-500" />
+                <span className="text-sm">En edición</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 text-yellow-500" />
+                <span className="text-sm">En revisión</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-green-500" />
+                <span className="text-sm">Aprobado</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Upload className="h-4 w-4 text-emerald-500" />
+                <span className="text-sm">Publicado</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <User className="h-4 w-4 text-gray-500" />
+                <span className="text-sm">Diseñador asignado</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Video className="h-4 w-4 text-gray-500" />
+                <span className="text-sm">Reel</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Image className="h-4 w-4 text-gray-500" />
+                <span className="text-sm">Imagen</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Grid className="h-4 w-4 text-gray-500" />
+                <span className="text-sm">Carrusel</span>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Edit className="h-4 w-4 text-blue-500" />
-              <span className="text-sm">Falta editar</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-purple-500" />
-              <span className="text-sm">En edición</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <AlertCircle className="h-4 w-4 text-yellow-500" />
-              <span className="text-sm">En revisión</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4 text-green-500" />
-              <span className="text-sm">Aprobado</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Upload className="h-4 w-4 text-emerald-500" />
-              <span className="text-sm">Publicado</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <User className="h-4 w-4 text-gray-500" />
-              <span className="text-sm">Diseñador asignado</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Video className="h-4 w-4 text-gray-500" />
-              <span className="text-sm">Reel</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Image className="h-4 w-4 text-gray-500" />
-              <span className="text-sm">Imagen</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Grid className="h-4 w-4 text-gray-500" />
-              <span className="text-sm">Carrusel</span>
-            </div>
-          </div>
-        </ScrollArea>
+          </ScrollArea>
+        </div>
       </div>
     </div>
   );
