@@ -27,15 +27,12 @@ export const FilterPanel = ({
     <div className="w-64 space-y-4 p-4 bg-white dark:bg-gray-800 rounded-lg shadow">
       <div className="space-y-2">
         <Label>Cliente</Label>
-        <Select 
-          value={selectedClient || "all"} 
-          onValueChange={(value) => onClientChange(value === "all" ? null : value)}
-        >
+        <Select value={selectedClient || ""} onValueChange={onClientChange}>
           <SelectTrigger>
             <SelectValue placeholder="Todos los clientes" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Todos los clientes</SelectItem>
+            <SelectItem value="">Todos los clientes</SelectItem>
             {clients.map((client) => (
               <SelectItem key={client.id} value={client.id}>
                 {client.name}
@@ -47,15 +44,12 @@ export const FilterPanel = ({
 
       <div className="space-y-2">
         <Label>Diseñador</Label>
-        <Select 
-          value={selectedDesigner || "all"} 
-          onValueChange={(value) => onDesignerChange(value === "all" ? null : value)}
-        >
+        <Select value={selectedDesigner || ""} onValueChange={onDesignerChange}>
           <SelectTrigger>
             <SelectValue placeholder="Todos los diseñadores" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Todos los diseñadores</SelectItem>
+            <SelectItem value="">Todos los diseñadores</SelectItem>
             {designers.map((designer) => (
               <SelectItem key={designer.id} value={designer.name}>
                 {designer.name}
@@ -67,15 +61,12 @@ export const FilterPanel = ({
 
       <div className="space-y-2">
         <Label>Estado</Label>
-        <Select 
-          value={selectedStatus || "all"} 
-          onValueChange={(value) => onStatusChange(value === "all" ? null : value)}
-        >
+        <Select value={selectedStatus || ""} onValueChange={onStatusChange}>
           <SelectTrigger>
             <SelectValue placeholder="Todos los estados" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Todos los estados</SelectItem>
+            <SelectItem value="">Todos los estados</SelectItem>
             <SelectItem value="needs_recording">Falta grabar</SelectItem>
             <SelectItem value="needs_editing">Falta editar</SelectItem>
             <SelectItem value="in_editing">En edición</SelectItem>
