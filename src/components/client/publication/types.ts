@@ -1,6 +1,6 @@
 export interface Publication {
   id: string;
-  client_id: string;
+  client_id: string | null;
   name: string;
   type: 'reel' | 'carousel' | 'image';
   date: string;
