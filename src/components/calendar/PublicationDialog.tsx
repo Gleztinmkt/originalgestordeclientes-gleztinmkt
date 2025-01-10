@@ -89,14 +89,14 @@ export const PublicationDialog = ({
             <div className="space-y-2">
               <Label>Diseñador</Label>
               <Select
-                value={formData.designer || ""}
-                onValueChange={(value) => setFormData({ ...formData, designer: value })}
+                value={formData.designer || "no_designer"}
+                onValueChange={(value) => setFormData({ ...formData, designer: value === "no_designer" ? null : value })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Seleccionar diseñador" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Sin diseñador</SelectItem>
+                  <SelectItem value="no_designer">Sin diseñador</SelectItem>
                   {designers.map((designer) => (
                     <SelectItem key={designer.id} value={designer.name}>
                       {designer.name}
