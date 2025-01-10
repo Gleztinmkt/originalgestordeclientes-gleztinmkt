@@ -105,6 +105,22 @@ export const PublicationDialog = ({
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-2">
+              <Label>Tipo de contenido</Label>
+              <Select
+                value={formData.type}
+                onValueChange={(value: 'reel' | 'carousel' | 'image') => setFormData({ ...formData, type: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="reel">Reel</SelectItem>
+                  <SelectItem value="carousel">Carrusel</SelectItem>
+                  <SelectItem value="image">Imagen</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <div className="space-y-2">

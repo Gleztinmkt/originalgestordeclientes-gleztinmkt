@@ -7,7 +7,8 @@ import { PublicationCard } from "./PublicationCard";
 import { FilterPanel } from "./FilterPanel";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { format, addDays } from "date-fns";
+import { format, addDays, startOfMonth, endOfMonth, eachDayOfInterval } from "date-fns";
+import { es } from "date-fns/locale";
 import { toast } from "@/hooks/use-toast";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { Button } from "../ui/button";
@@ -27,14 +28,14 @@ import {
   ContextMenuItem,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
-import { Badge } from "../ui/badge";
 
 export const CalendarView = ({ clients }: { clients: Client[] }) => {
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedClient, setSelectedClient] = useState<string | null>(null);
   const [selectedDesigner, setSelectedDesigner] = useState<string | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
-  const [view, setView] = useState<"month" | "week">("month");
+  const [selectedType, setSelectedType] = useState<string | null>(null);
+  const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
 
   const { data: publications = [], refetch } = useQuery({
@@ -60,7 +61,7 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
     },
   });
 
-  const { data: designers = [] } = useQuery({
+  const { data: designers = [], refetch: refetchDesigners } = useQuery({
     queryKey: ['designers'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -116,28 +117,64 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
     }
   };
 
-  const getStatusColor = (publication: Publication) => {
-    if (publication.is_published) return "bg-green-100";
-    if (publication.approved) return "bg-blue-100";
-    if (publication.in_review) return "bg-yellow-100";
-    if (publication.in_editing) return "bg-purple-100";
-    if (publication.needs_editing) return "bg-orange-100";
-    if (publication.needs_recording) return "bg-red-100";
-    return "bg-gray-100";
-  };
+  const handleStatusChange = async (publicationId: string, status: string) => {
+    try {
+      const updates: any = {
+        needs_recording: false,
+        needs_editing: false,
+        in_editing: false,
+        in_review: false,
+        approved: false,
+        is_published: false
+      };
 
-  const getStatusIcon = (publication: Publication) => {
-    if (publication.is_published) return <Upload className="h-4 w-4 text-green-600" />;
-    if (publication.approved) return <CheckCircle2 className="h-4 w-4 text-blue-600" />;
-    if (publication.in_review) return <AlertCircle className="h-4 w-4 text-yellow-600" />;
-    if (publication.in_editing) return <Edit className="h-4 w-4 text-purple-600" />;
-    if (publication.needs_editing) return <Edit className="h-4 w-4 text-orange-600" />;
-    if (publication.needs_recording) return <Video className="h-4 w-4 text-red-600" />;
-    return <Clock className="h-4 w-4 text-gray-600" />;
+      switch (status) {
+        case 'needs_recording':
+          updates.needs_recording = true;
+          break;
+        case 'needs_editing':
+          updates.needs_editing = true;
+          break;
+        case 'in_editing':
+          updates.in_editing = true;
+          break;
+        case 'in_review':
+          updates.in_review = true;
+          break;
+        case 'approved':
+          updates.approved = true;
+          break;
+        case 'published':
+          updates.is_published = true;
+          break;
+      }
+
+      const { error } = await supabase
+        .from('publications')
+        .update(updates)
+        .eq('id', publicationId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Estado actualizado",
+        description: "El estado de la publicación ha sido actualizado correctamente.",
+      });
+
+      refetch();
+    } catch (error) {
+      console.error('Error updating publication status:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el estado de la publicación.",
+        variant: "destructive",
+      });
+    }
   };
 
   const filteredPublications = publications.filter(pub => {
-    if (selectedDate && format(new Date(pub.date), 'yyyy-MM-dd') !== format(selectedDate, 'yyyy-MM-dd')) return false;
+    if (selectedType && pub.type !== selectedType) return false;
+    if (selectedPackage && pub.package_id !== selectedPackage) return false;
     if (selectedDesigner && pub.designer !== selectedDesigner) return false;
     if (selectedStatus) {
       switch (selectedStatus) {
@@ -153,6 +190,11 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
     return true;
   });
 
+  const daysInMonth = eachDayOfInterval({
+    start: startOfMonth(selectedDate),
+    end: endOfMonth(selectedDate)
+  });
+
   return (
     <div className="flex h-screen">
       <FilterPanel
@@ -161,9 +203,14 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
         selectedClient={selectedClient}
         selectedDesigner={selectedDesigner}
         selectedStatus={selectedStatus}
+        selectedType={selectedType}
+        selectedPackage={selectedPackage}
         onClientChange={setSelectedClient}
         onDesignerChange={setSelectedDesigner}
         onStatusChange={setSelectedStatus}
+        onTypeChange={setSelectedType}
+        onPackageChange={setSelectedPackage}
+        onDesignerAdded={refetchDesigners}
       />
 
       <div className="flex-1 p-4 space-y-4">
@@ -180,71 +227,52 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
               <Button
                 variant="outline"
                 size="icon"
-                onClick={() => setSelectedDate(d => d ? addDays(d, -1) : new Date())}
+                onClick={() => {
+                  const newDate = new Date(selectedDate);
+                  newDate.setMonth(newDate.getMonth() - 1);
+                  setSelectedDate(newDate);
+                }}
               >
                 &lt;
               </Button>
               <Button
                 variant="outline"
                 size="icon"
-                onClick={() => setSelectedDate(d => d ? addDays(d, 1) : new Date())}
+                onClick={() => {
+                  const newDate = new Date(selectedDate);
+                  newDate.setMonth(newDate.getMonth() + 1);
+                  setSelectedDate(newDate);
+                }}
               >
                 &gt;
               </Button>
             </div>
             <h2 className="text-xl font-semibold">
-              {selectedDate ? format(selectedDate, 'MMMM yyyy') : ''}
+              {format(selectedDate, 'MMMM yyyy', { locale: es })}
             </h2>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Button
-              variant={view === "month" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setView("month")}
-            >
-              Mes
-            </Button>
-            <Button
-              variant={view === "week" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setView("week")}
-            >
-              Semana
-            </Button>
           </div>
         </div>
 
         <DragDropContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-          <Droppable droppableId="publications">
-            {(provided) => (
-              <div 
-                className="grid grid-cols-7 gap-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4"
-                {...provided.droppableProps}
-                ref={provided.innerRef}
-              >
-                {/* Calendar header */}
-                {['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB'].map((day) => (
-                  <div key={day} className="p-2 text-center font-semibold text-sm">
-                    {day}
-                  </div>
-                ))}
+          <div className="grid grid-cols-7 gap-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4">
+            {['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB'].map((day) => (
+              <div key={day} className="p-2 text-center font-semibold text-sm">
+                {day}
+              </div>
+            ))}
 
-                {/* Calendar grid */}
-                {Array.from({ length: 35 }).map((_, index) => {
-                  const date = new Date(selectedDate || new Date());
-                  date.setDate(date.getDate() - date.getDay() + index);
-                  const dayPublications = filteredPublications.filter(
-                    pub => format(new Date(pub.date), 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd')
-                  );
+            {daysInMonth.map((date, index) => {
+              const dayPublications = filteredPublications.filter(
+                pub => format(new Date(pub.date), 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd')
+              );
 
-                  return (
+              return (
+                <Droppable key={format(date, 'yyyy-MM-dd')} droppableId={format(date, 'yyyy-MM-dd')}>
+                  {(provided) => (
                     <div
-                      key={index}
-                      className={`min-h-[120px] border p-1 ${
-                        format(date, 'MM') !== format(selectedDate || new Date(), 'MM')
-                          ? 'bg-gray-50'
-                          : 'bg-white'
-                      }`}
+                      ref={provided.innerRef}
+                      {...provided.droppableProps}
+                      className="min-h-[120px] border p-1"
                     >
                       <div className="text-right text-sm mb-1">
                         {format(date, 'd')}
@@ -262,24 +290,34 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
                                 ref={provided.innerRef}
                                 {...provided.draggableProps}
                                 {...provided.dragHandleProps}
-                                className={`mb-1 p-1 rounded text-sm ${getStatusColor(publication)}`}
                               >
                                 <ContextMenu>
                                   <ContextMenuTrigger>
-                                    <div className="flex items-center gap-1">
-                                      {getStatusIcon(publication)}
-                                      <span className="truncate">
-                                        {clients.find(c => c.id === publication.client_id)?.name} - {publication.name}
-                                      </span>
-                                    </div>
+                                    <PublicationCard
+                                      publication={publication}
+                                      client={clients.find(c => c.id === publication.client_id)}
+                                      onUpdate={refetch}
+                                    />
                                   </ContextMenuTrigger>
                                   <ContextMenuContent>
-                                    <ContextMenuItem>Editar publicación</ContextMenuItem>
-                                    <ContextMenuItem>Asignar diseñador</ContextMenuItem>
-                                    <ContextMenuItem>Marcar como grabado</ContextMenuItem>
-                                    <ContextMenuItem>Marcar como editado</ContextMenuItem>
-                                    <ContextMenuItem>Marcar como aprobado</ContextMenuItem>
-                                    <ContextMenuItem>Marcar como publicado</ContextMenuItem>
+                                    <ContextMenuItem onClick={() => handleStatusChange(publication.id, 'needs_recording')}>
+                                      Marcar como "Falta grabar"
+                                    </ContextMenuItem>
+                                    <ContextMenuItem onClick={() => handleStatusChange(publication.id, 'needs_editing')}>
+                                      Marcar como "Falta editar"
+                                    </ContextMenuItem>
+                                    <ContextMenuItem onClick={() => handleStatusChange(publication.id, 'in_editing')}>
+                                      Marcar como "En edición"
+                                    </ContextMenuItem>
+                                    <ContextMenuItem onClick={() => handleStatusChange(publication.id, 'in_review')}>
+                                      Marcar como "En revisión"
+                                    </ContextMenuItem>
+                                    <ContextMenuItem onClick={() => handleStatusChange(publication.id, 'approved')}>
+                                      Marcar como "Aprobado"
+                                    </ContextMenuItem>
+                                    <ContextMenuItem onClick={() => handleStatusChange(publication.id, 'published')}>
+                                      Marcar como "Publicado"
+                                    </ContextMenuItem>
                                   </ContextMenuContent>
                                 </ContextMenu>
                               </div>
@@ -289,11 +327,11 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
                         {provided.placeholder}
                       </ScrollArea>
                     </div>
-                  );
-                })}
-              </div>
-            )}
-          </Droppable>
+                  )}
+                </Droppable>
+              );
+            })}
+          </div>
         </DragDropContext>
       </div>
     </div>

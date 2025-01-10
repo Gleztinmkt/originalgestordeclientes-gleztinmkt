@@ -2,7 +2,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Client } from "../types/client";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Badge } from "@/components/ui/badge";
+import { DesignerDialog } from "./DesignerDialog";
 import { 
   Video, 
   Edit, 
@@ -11,7 +11,8 @@ import {
   User,
   AlertCircle,
   Clock,
-  Check
+  Image,
+  Grid
 } from "lucide-react";
 
 interface FilterPanelProps {
@@ -20,9 +21,14 @@ interface FilterPanelProps {
   selectedClient: string | null;
   selectedDesigner: string | null;
   selectedStatus: string | null;
+  selectedType: string | null;
+  selectedPackage: string | null;
   onClientChange: (value: string | null) => void;
   onDesignerChange: (value: string | null) => void;
   onStatusChange: (value: string | null) => void;
+  onTypeChange: (value: string | null) => void;
+  onPackageChange: (value: string | null) => void;
+  onDesignerAdded: () => void;
 }
 
 export const FilterPanel = ({
@@ -31,10 +37,18 @@ export const FilterPanel = ({
   selectedClient,
   selectedDesigner,
   selectedStatus,
+  selectedType,
+  selectedPackage,
   onClientChange,
   onDesignerChange,
   onStatusChange,
+  onTypeChange,
+  onPackageChange,
+  onDesignerAdded,
 }: FilterPanelProps) => {
+  const selectedClientData = clients.find(c => c.id === selectedClient);
+  const packages = selectedClientData?.packages || [];
+
   return (
     <div className="w-64 h-full space-y-6 p-4 bg-white dark:bg-gray-800 border-r dark:border-gray-700">
       <div className="space-y-4">
@@ -55,8 +69,30 @@ export const FilterPanel = ({
           </Select>
         </div>
 
+        {selectedClient && (
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Paquete</Label>
+            <Select value={selectedPackage || "all"} onValueChange={(value) => onPackageChange(value === "all" ? null : value)}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Todos los paquetes" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos los paquetes</SelectItem>
+                {packages.map((pkg: any) => (
+                  <SelectItem key={pkg.id} value={pkg.id}>
+                    {pkg.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
         <div className="space-y-2">
-          <Label className="text-sm font-medium">Diseñador</Label>
+          <div className="flex items-center justify-between">
+            <Label className="text-sm font-medium">Diseñador</Label>
+            <DesignerDialog onDesignerAdded={onDesignerAdded} />
+          </div>
           <Select value={selectedDesigner || "all"} onValueChange={(value) => onDesignerChange(value === "all" ? null : value)}>
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Todos los diseñadores" />
@@ -68,6 +104,21 @@ export const FilterPanel = ({
                   {designer.name}
                 </SelectItem>
               ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-sm font-medium">Tipo de contenido</Label>
+          <Select value={selectedType || "all"} onValueChange={(value) => onTypeChange(value === "all" ? null : value)}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Todos los tipos" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos los tipos</SelectItem>
+              <SelectItem value="reel">Reel</SelectItem>
+              <SelectItem value="image">Imagen</SelectItem>
+              <SelectItem value="carousel">Carrusel</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -122,6 +173,18 @@ export const FilterPanel = ({
             <div className="flex items-center gap-2">
               <User className="h-4 w-4 text-gray-500" />
               <span className="text-sm">Diseñador asignado</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Video className="h-4 w-4 text-gray-500" />
+              <span className="text-sm">Reel</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Image className="h-4 w-4 text-gray-500" />
+              <span className="text-sm">Imagen</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Grid className="h-4 w-4 text-gray-500" />
+              <span className="text-sm">Carrusel</span>
             </div>
           </div>
         </ScrollArea>
