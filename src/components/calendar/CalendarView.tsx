@@ -24,15 +24,24 @@ export const CalendarView = ({ clients }: CalendarViewProps) => {
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
 
   const { data: publications = [], refetch } = useQuery({
-    queryKey: ['publications'],
+    queryKey: ['publications', selectedClient],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('publications')
         .select('*')
         .is('deleted_at', null)
         .order('date', { ascending: true });
 
-      if (error) throw error;
+      if (selectedClient) {
+        query = query.eq('client_id', selectedClient);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error('Error fetching publications:', error);
+        return [];
+      }
       return data as Publication[];
     },
   });
@@ -45,14 +54,16 @@ export const CalendarView = ({ clients }: CalendarViewProps) => {
         .select('*')
         .order('name', { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching designers:', error);
+        return [];
+      }
       return data;
     },
   });
 
   const filteredPublications = publications.filter(pub => {
     if (selectedDate && format(new Date(pub.date), 'yyyy-MM-dd') !== format(selectedDate, 'yyyy-MM-dd')) return false;
-    if (selectedClient && pub.client_id !== selectedClient) return false;
     if (selectedDesigner && pub.designer !== selectedDesigner) return false;
     if (selectedStatus) {
       switch (selectedStatus) {
