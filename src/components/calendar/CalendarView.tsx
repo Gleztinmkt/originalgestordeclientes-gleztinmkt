@@ -130,8 +130,7 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
         in_editing: false,
         in_review: false,
         approved: false,
-        is_published: false,
-        in_cloud: false
+        is_published: false
       };
 
       switch (status) {
@@ -152,9 +151,6 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
           break;
         case 'published':
           updates.is_published = true;
-          break;
-        case 'in_cloud':
-          updates.in_cloud = true;
           break;
       }
 
@@ -218,7 +214,6 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
         case 'in_review': return pub.in_review;
         case 'approved': return pub.approved;
         case 'published': return pub.is_published;
-        case 'in_cloud': return pub.in_cloud;
         default: return true;
       }
     }
@@ -366,9 +361,6 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
                                       </ContextMenuItem>
                                       <ContextMenuItem onClick={() => handleStatusChange(publication.id, 'published')}>
                                         Marcar como "Publicado"
-                                      </ContextMenuItem>
-                                      <ContextMenuItem onClick={() => handleStatusChange(publication.id, 'in_cloud')}>
-                                        Marcar como "En la nube"
                                       </ContextMenuItem>
                                       <ContextMenuSub>
                                         <ContextMenuSubTrigger>
