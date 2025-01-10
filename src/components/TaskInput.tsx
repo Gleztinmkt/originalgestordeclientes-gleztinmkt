@@ -23,7 +23,7 @@ interface TaskInputProps {
 
 export const TaskInput = ({ onAddTask, clients }: TaskInputProps) => {
   const [input, setInput] = useState("");
-  const [selectedClient, setSelectedClient] = useState<string>("unassigned");
+  const [selectedClient, setSelectedClient] = useState<string>("no_client");
   const [selectedType, setSelectedType] = useState<string>("otros");
   const [isListening, setIsListening] = useState(false);
   const [executionDate, setExecutionDate] = useState<Date>();
@@ -36,14 +36,14 @@ export const TaskInput = ({ onAddTask, clients }: TaskInputProps) => {
     if (input.trim()) {
       onAddTask(
         input.trim(), 
-        selectedClient === "unassigned" ? undefined : selectedClient, 
+        selectedClient === "no_client" ? undefined : selectedClient, 
         selectedType, 
         executionDate,
         enableReminder ? reminderDate : undefined,
         enableReminder ? reminderFrequency : undefined
       );
       setInput("");
-      setSelectedClient("unassigned");
+      setSelectedClient("no_client");
       setSelectedType("otros");
       setExecutionDate(undefined);
       setReminderDate(undefined);
@@ -127,9 +127,9 @@ export const TaskInput = ({ onAddTask, clients }: TaskInputProps) => {
             <SelectValue placeholder="Seleccionar cliente" />
           </SelectTrigger>
           <SelectContent className="dark:bg-gray-800">
-            <SelectItem value="unassigned">Sin cliente</SelectItem>
+            <SelectItem value="no_client">Sin cliente</SelectItem>
             {clients.map((client) => (
-              <SelectItem key={client.id} value={client.id || "unassigned"}>
+              <SelectItem key={client.id} value={client.id || "no_client"}>
                 {client.name}
               </SelectItem>
             ))}
