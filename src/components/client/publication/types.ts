@@ -18,6 +18,7 @@ export interface Publication {
   in_editing?: boolean;
   in_review?: boolean;
   approved?: boolean;
+  in_cloud?: boolean;
   reference_materials?: any[];
 }
 
