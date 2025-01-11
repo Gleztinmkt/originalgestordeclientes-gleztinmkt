@@ -50,7 +50,8 @@ export const PublicationDialog = ({
   const handleSubmit = async () => {
     try {
       setIsSubmitting(true);
-      // Only include fields that exist in the publications table
+      
+      // Only include fields that exist in the publications table schema
       const updateData = {
         designer: formData.designer,
         type: formData.type,
