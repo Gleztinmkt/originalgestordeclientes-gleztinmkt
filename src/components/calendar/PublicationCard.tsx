@@ -4,16 +4,8 @@ import { Publication } from "../client/publication/types";
 import { Client } from "../types/client";
 import { PublicationDialog } from "./PublicationDialog";
 import { cn } from "@/lib/utils";
-import { 
-  Video, 
-  Edit, 
-  CheckCircle2, 
-  Upload, 
-  AlertCircle,
-  Clock,
-  User
-} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { User } from "lucide-react";
 
 interface PublicationCardProps {
   publication: Publication;
@@ -40,34 +32,22 @@ export const PublicationCard = ({
     return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100";
   };
 
-  const getStatusIcon = () => {
-    if (publication.is_published) return <CheckCircle2 className="h-3 w-3" />;
-    if (publication.approved) return <Upload className="h-3 w-3" />;
-    if (publication.in_review) return <AlertCircle className="h-3 w-3" />;
-    if (publication.in_editing) return <Edit className="h-3 w-3" />;
-    if (publication.needs_recording) return <Video className="h-3 w-3" />;
-    return <Clock className="h-3 w-3" />;
-  };
-
   return (
     <>
       <Card 
         className={cn(
-          "mb-1 hover:shadow-md transition-shadow cursor-pointer group",
+          "mb-1 hover:shadow-md transition-shadow cursor-pointer group p-2",
           getStatusColor()
         )}
         onClick={() => setShowDialog(true)}
       >
-        <CardContent className="p-2">
-          <div className="flex items-center justify-between gap-1">
-            <div className="flex items-center gap-1 min-w-0">
-              {getStatusIcon()}
-              <p className="text-xs font-medium truncate">
-                {displayTitle}
-              </p>
-            </div>
+        <CardContent className="p-0">
+          <div className="space-y-1">
+            <p className="text-xs font-medium line-clamp-2">
+              {client?.name} - {publication.type === 'reel' ? 'R' : publication.type === 'carousel' ? 'C' : 'I'} - {publication.name}
+            </p>
             {publication.designer && (
-              <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 whitespace-nowrap">
+              <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 whitespace-nowrap w-full">
                 <User className="h-2 w-2 mr-1" />
                 {publication.designer}
               </Badge>

@@ -8,6 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Calendar } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Publication } from "../client/publication/types";
@@ -15,6 +16,7 @@ import { Client } from "../types/client";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
+import { format } from "date-fns";
 
 interface PublicationDialogProps {
   open: boolean;
@@ -32,7 +34,10 @@ export const PublicationDialog = ({
   onUpdate,
 }: PublicationDialogProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formData, setFormData] = useState(publication);
+  const [formData, setFormData] = useState({
+    ...publication,
+    date: new Date(publication.date)
+  });
 
   const { data: designers = [] } = useQuery({
     queryKey: ['designers'],
@@ -51,7 +56,6 @@ export const PublicationDialog = ({
     try {
       setIsSubmitting(true);
       
-      // Only include fields that exist in the publications table schema
       const updateData = {
         designer: formData.designer,
         type: formData.type,
@@ -63,7 +67,7 @@ export const PublicationDialog = ({
         approved: formData.approved,
         is_published: formData.is_published,
         name: formData.name,
-        date: formData.date
+        date: formData.date.toISOString()
       };
 
       const { error } = await supabase
@@ -100,6 +104,16 @@ export const PublicationDialog = ({
         </DialogHeader>
 
         <div className="grid gap-4 py-4">
+          <div className="space-y-2">
+            <Label>Fecha de publicación</Label>
+            <Calendar
+              mode="single"
+              selected={formData.date}
+              onSelect={(date) => date && setFormData({ ...formData, date })}
+              className="rounded-md border"
+            />
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Diseñador</Label>

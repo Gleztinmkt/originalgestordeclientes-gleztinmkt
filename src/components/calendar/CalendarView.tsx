@@ -11,26 +11,8 @@ import { es } from "date-fns/locale";
 import { toast } from "@/hooks/use-toast";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { Button } from "../ui/button";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { InfoIcon } from "lucide-react";
-import { 
-  Video, 
-  Edit, 
-  CheckCircle2, 
-  Upload, 
-  AlertCircle,
-  Clock,
-  User
-} from "lucide-react";
-import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuTrigger,
-  ContextMenuSub,
-  ContextMenuSubTrigger,
-  ContextMenuSubContent,
-} from "@/components/ui/context-menu";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export const CalendarView = ({ clients }: { clients: Client[] }) => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -250,7 +232,15 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
         onTypeChange={setSelectedType}
         onPackageChange={setSelectedPackage}
         onDesignerAdded={refetchDesigners}
-      />
+      >
+        <div className="mt-4 p-4 bg-white dark:bg-gray-800 rounded-lg">
+          <h3 className="font-semibold mb-2">Información para diseñadores</h3>
+          <p className="text-sm text-gray-600 dark:text-gray-300">
+            Haz clic derecho sobre una publicación para cambiar su estado.
+            Haz clic en la publicación para ver toda la información.
+          </p>
+        </div>
+      </FilterPanel>
 
       <div className="flex-1 p-4 space-y-4">
         <div className="flex items-center justify-between mb-4">
