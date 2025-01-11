@@ -51,9 +51,21 @@ export const PublicationDialog = ({
   const handleSubmit = async () => {
     try {
       setIsSubmitting(true);
+      const updateData = {
+        designer: formData.designer,
+        type: formData.type,
+        description: formData.description,
+        needs_recording: formData.needs_recording,
+        needs_editing: formData.needs_editing,
+        in_editing: formData.in_editing,
+        in_review: formData.in_review,
+        approved: formData.approved,
+        is_published: formData.is_published
+      };
+
       const { error } = await supabase
         .from('publications')
-        .update(formData)
+        .update(updateData)
         .eq('id', publication.id);
 
       if (error) throw error;
