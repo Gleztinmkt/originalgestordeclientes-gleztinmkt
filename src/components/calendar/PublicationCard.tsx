@@ -10,8 +10,10 @@ import {
   CheckCircle2, 
   Upload, 
   AlertCircle,
-  Clock
+  Clock,
+  User
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 interface PublicationCardProps {
   publication: Publication;
@@ -39,12 +41,12 @@ export const PublicationCard = ({
   };
 
   const getStatusIcon = () => {
-    if (publication.is_published) return <CheckCircle2 className="h-4 w-4" />;
-    if (publication.approved) return <Upload className="h-4 w-4" />;
-    if (publication.in_review) return <AlertCircle className="h-4 w-4" />;
-    if (publication.in_editing) return <Edit className="h-4 w-4" />;
-    if (publication.needs_recording) return <Video className="h-4 w-4" />;
-    return <Clock className="h-4 w-4" />;
+    if (publication.is_published) return <CheckCircle2 className="h-3 w-3" />;
+    if (publication.approved) return <Upload className="h-3 w-3" />;
+    if (publication.in_review) return <AlertCircle className="h-3 w-3" />;
+    if (publication.in_editing) return <Edit className="h-3 w-3" />;
+    if (publication.needs_recording) return <Video className="h-3 w-3" />;
+    return <Clock className="h-3 w-3" />;
   };
 
   return (
@@ -57,17 +59,20 @@ export const PublicationCard = ({
         onClick={() => setShowDialog(true)}
       >
         <CardContent className="p-2">
-          <div className="flex items-center gap-2">
-            {getStatusIcon()}
-            <p className="text-sm font-medium truncate flex-1">
-              {displayTitle}
-            </p>
+          <div className="flex items-center justify-between gap-1">
+            <div className="flex items-center gap-1 min-w-0">
+              {getStatusIcon()}
+              <p className="text-xs font-medium truncate">
+                {displayTitle}
+              </p>
+            </div>
+            {publication.designer && (
+              <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 whitespace-nowrap">
+                <User className="h-2 w-2 mr-1" />
+                {publication.designer}
+              </Badge>
+            )}
           </div>
-          {publication.designer && (
-            <p className="text-xs opacity-75 truncate mt-1">
-              Diseñador: {publication.designer}
-            </p>
-          )}
         </CardContent>
       </Card>
 

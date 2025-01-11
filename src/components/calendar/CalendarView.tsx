@@ -19,7 +19,8 @@ import {
   CheckCircle2, 
   Upload, 
   AlertCircle,
-  Clock
+  Clock,
+  User
 } from "lucide-react";
 import {
   ContextMenu,
@@ -252,14 +253,6 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
       />
 
       <div className="flex-1 p-4 space-y-4">
-        <Alert className="mb-4">
-          <InfoIcon className="h-4 w-4" />
-          <AlertDescription>
-            Información para diseñadores: Haz clic derecho sobre una publicación para cambiar su estado.
-            Haz clic en la publicación para ver toda la información.
-          </AlertDescription>
-        </Alert>
-
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-2">
             <Button
@@ -325,12 +318,12 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
                     <div
                       ref={provided.innerRef}
                       {...provided.droppableProps}
-                      className={`min-h-[100px] border p-1 overflow-y-auto transition-all duration-200 ${isExpanded ? "max-h-[300px]" : "max-h-[150px]"}`}
+                      className="min-h-[120px] border rounded-lg p-1 relative bg-white/50 dark:bg-gray-800/50"
                     >
-                      <div className="text-right text-sm mb-1">
+                      <div className="text-right text-sm mb-1 px-1">
                         {format(date, 'd')}
                       </div>
-                      <ScrollArea className="h-full">
+                      <div className="space-y-1 max-h-[100px] overflow-hidden">
                         {visiblePublications.map((publication, pubIndex) => {
                           const client = clients.find(c => c.id === publication.client_id);
                           const typeShorthand = publication.type === 'reel' ? 'R' : publication.type === 'carousel' ? 'C' : 'I';
@@ -349,51 +342,12 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
                                   {...provided.draggableProps}
                                   {...provided.dragHandleProps}
                                 >
-                                  <ContextMenu>
-                                    <ContextMenuTrigger>
-                                      <PublicationCard
-                                        publication={publication}
-                                        client={client}
-                                        onUpdate={refetch}
-                                        displayTitle={displayTitle}
-                                      />
-                                    </ContextMenuTrigger>
-                                    <ContextMenuContent>
-                                      <ContextMenuItem onClick={() => handleStatusChange(publication.id, 'needs_recording')}>
-                                        Marcar como "Falta grabar"
-                                      </ContextMenuItem>
-                                      <ContextMenuItem onClick={() => handleStatusChange(publication.id, 'needs_editing')}>
-                                        Marcar como "Falta editar"
-                                      </ContextMenuItem>
-                                      <ContextMenuItem onClick={() => handleStatusChange(publication.id, 'in_editing')}>
-                                        Marcar como "En edición"
-                                      </ContextMenuItem>
-                                      <ContextMenuItem onClick={() => handleStatusChange(publication.id, 'in_review')}>
-                                        Marcar como "En revisión"
-                                      </ContextMenuItem>
-                                      <ContextMenuItem onClick={() => handleStatusChange(publication.id, 'approved')}>
-                                        Marcar como "Aprobado"
-                                      </ContextMenuItem>
-                                      <ContextMenuItem onClick={() => handleStatusChange(publication.id, 'published')}>
-                                        Marcar como "Publicado"
-                                      </ContextMenuItem>
-                                      <ContextMenuSub>
-                                        <ContextMenuSubTrigger>
-                                          Asignar diseñador
-                                        </ContextMenuSubTrigger>
-                                        <ContextMenuSubContent>
-                                          {designers.map((designer) => (
-                                            <ContextMenuItem
-                                              key={designer.id}
-                                              onClick={() => handleDesignerAssign(publication.id, designer.name)}
-                                            >
-                                              {designer.name}
-                                            </ContextMenuItem>
-                                          ))}
-                                        </ContextMenuSubContent>
-                                      </ContextMenuSub>
-                                    </ContextMenuContent>
-                                  </ContextMenu>
+                                  <PublicationCard
+                                    publication={publication}
+                                    client={client}
+                                    onUpdate={refetch}
+                                    displayTitle={displayTitle}
+                                  />
                                 </div>
                               )}
                             </Draggable>
@@ -404,13 +358,13 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="w-full mt-2 text-xs"
+                            className="w-full mt-1 text-xs h-6 py-0"
                             onClick={() => toggleDayExpansion(dateStr)}
                           >
                             {isExpanded ? 'Ver menos' : `Ver ${dayPublications.length - MAX_VISIBLE_PUBLICATIONS} más`}
                           </Button>
                         )}
-                      </ScrollArea>
+                      </div>
                     </div>
                   )}
                 </Droppable>
@@ -418,6 +372,16 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
             })}
           </div>
         </DragDropContext>
+
+        <div className="fixed bottom-4 right-4 space-y-2">
+          <Alert className="w-80">
+            <InfoIcon className="h-4 w-4" />
+            <AlertDescription>
+              Información para diseñadores: Haz clic derecho sobre una publicación para cambiar su estado.
+              Haz clic en la publicación para ver toda la información.
+            </AlertDescription>
+          </Alert>
+        </div>
       </div>
     </div>
   );

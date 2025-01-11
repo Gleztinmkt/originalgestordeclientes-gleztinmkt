@@ -62,7 +62,7 @@ export const BulkMessageButton = ({ clients, selectedPaymentDay }: BulkMessageBu
 
     filteredClients.forEach(client => {
       if (client.phone) {
-        const message = `Hola ${client.name}, les enviamos la actualización de valores que lo pueden encontrar en el siguiente link:\n\nhttps://gleztin.com.ar/index.php/valores-de-redes-sociales/\n\nContraseña: Gleztin`;
+        const message = `Hola ${client.name}, los valores actualizados los vas a encontrar en el siguiente link:\n\nhttps://gleztin.com.ar/index.php/valores-de-redes-sociales/\n\nContraseña: Gleztin`;
         const whatsappUrl = `https://wa.me/${client.phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
         window.open(whatsappUrl, '_blank');
       }
