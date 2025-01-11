@@ -29,11 +29,16 @@ const Index = () => {
 
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const isMobile = useIsMobile();
 
   useEffect(() => {
-    loadClients();
-    loadTasks();
+    const init = async () => {
+      await Promise.all([loadClients(), loadTasks()]);
+      // Simulate minimum loading time for better UX
+      setTimeout(() => setIsLoading(false), 1000);
+    };
+    init();
   }, []);
 
   const handleFilterChange = (type: string | null, clientId: string | null) => {
@@ -64,6 +69,14 @@ const Index = () => {
     return true;
   });
 
+  if (isLoading) {
+    return (
+      <div className="loading-screen">
+        <img src="https://i.imgur.com/YvEDrAv.png" alt="Gleztin Marketing Digital" />
+      </div>
+    );
+  }
+
   return (
     <ThemeProvider>
       <div className="min-h-screen p-4 md:p-8 space-y-6 md:space-y-8 dark:bg-gray-900 dark:text-white transition-colors duration-200">
@@ -87,7 +100,7 @@ const Index = () => {
         </div>
         
         <div className="text-center space-y-4 mb-8 md:mb-12">
-          <h1 className="text-2xl md:text-4xl font-bold font-heading text-gray-900 dark:text-white">
+          <h1 className="text-2xl md:text-4xl font-bold font-manrope text-gray-900 dark:text-white">
             Gestor de clientes Gleztin Marketing Digital
           </h1>
           <p className="text-sm md:text-base text-gray-600 dark:text-gray-400 max-w-md mx-auto">

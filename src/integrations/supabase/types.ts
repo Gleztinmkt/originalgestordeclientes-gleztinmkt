@@ -69,6 +69,67 @@ export type Database = {
         }
         Relationships: []
       }
+      notifications: {
+        Row: {
+          client_id: string | null
+          date: string
+          deleted_at: string | null
+          id: string
+          message: string
+          publication_id: string | null
+          read: boolean | null
+          task_id: string | null
+          title: string
+          type: string
+        }
+        Insert: {
+          client_id?: string | null
+          date?: string
+          deleted_at?: string | null
+          id?: string
+          message: string
+          publication_id?: string | null
+          read?: boolean | null
+          task_id?: string | null
+          title: string
+          type: string
+        }
+        Update: {
+          client_id?: string | null
+          date?: string
+          deleted_at?: string | null
+          id?: string
+          message?: string
+          publication_id?: string | null
+          read?: boolean | null
+          task_id?: string | null
+          title?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_publication_id_fkey"
+            columns: ["publication_id"]
+            isOneToOne: false
+            referencedRelation: "publications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       publications: {
         Row: {
           approved: boolean | null

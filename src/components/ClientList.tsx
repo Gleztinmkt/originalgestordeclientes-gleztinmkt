@@ -6,7 +6,7 @@ import { Task } from "./TaskList";
 import { Client } from "./types/client";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
-import { Grid3x3, List, Search } from "lucide-react";
+import { Grid3x3, List, Search, DollarSign } from "lucide-react";
 
 interface ClientListProps {
   clients: Client[];
@@ -36,8 +36,26 @@ export const ClientList = ({
   const [selectedPaymentDay, setSelectedPaymentDay] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
+  const [showPendingPayments, setShowPendingPayments] = useState(false);
+
+  const getSubtleGradient = (index: number) => {
+    const gradients = [
+      'bg-gradient-to-br from-blue-50 to-indigo-50',
+      'bg-gradient-to-br from-purple-50 to-pink-50',
+      'bg-gradient-to-br from-green-50 to-emerald-50',
+      'bg-gradient-to-br from-yellow-50 to-amber-50',
+      'bg-gradient-to-br from-red-50 to-orange-50'
+    ];
+    return gradients[index % gradients.length];
+  };
 
   const filteredClients = clients
+    .filter(client => {
+      if (showPendingPayments) {
+        return client.packages.some(pkg => !pkg.paid);
+      }
+      return true;
+    })
     .filter(client => selectedPaymentDay === "all" || client.paymentDay === parseInt(selectedPaymentDay))
     .filter(client => 
       client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -59,6 +77,14 @@ export const ClientList = ({
             />
           </div>
           <ClientFilter onFilterChange={setSelectedPaymentDay} />
+          <Button
+            variant={showPendingPayments ? "default" : "outline"}
+            onClick={() => setShowPendingPayments(!showPendingPayments)}
+            className="gap-2"
+          >
+            <DollarSign className="h-4 w-4" />
+            Pagos pendientes
+          </Button>
         </div>
         <div className="flex items-center gap-2">
           <div className="flex items-center bg-background border border-input rounded-lg p-1">
@@ -90,21 +116,22 @@ export const ClientList = ({
         ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" 
         : "space-y-6"
       }>
-        {filteredClients.map((client) => (
-          <ClientCard
-            key={client.id}
-            client={client}
-            onDeleteClient={onDeleteClient}
-            onUpdateClient={onUpdateClient}
-            onUpdatePackage={onUpdatePackage}
-            onAddPackage={onAddPackage}
-            tasks={tasks}
-            onAddTask={onAddTask}
-            onDeleteTask={onDeleteTask}
-            onCompleteTask={onCompleteTask}
-            onUpdateTask={onUpdateTask}
-            viewMode={viewMode}
-          />
+        {filteredClients.map((client, index) => (
+          <div key={client.id} className={getSubtleGradient(index)}>
+            <ClientCard
+              client={client}
+              onDeleteClient={onDeleteClient}
+              onUpdateClient={onUpdateClient}
+              onUpdatePackage={onUpdatePackage}
+              onAddPackage={onAddPackage}
+              tasks={tasks}
+              onAddTask={onAddTask}
+              onDeleteTask={onDeleteTask}
+              onCompleteTask={onCompleteTask}
+              onUpdateTask={onUpdateTask}
+              viewMode={viewMode}
+            />
+          </div>
         ))}
       </div>
     </div>
