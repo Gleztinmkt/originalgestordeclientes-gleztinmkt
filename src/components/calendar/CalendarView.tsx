@@ -337,6 +337,7 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
                                     client={client}
                                     onUpdate={refetch}
                                     displayTitle={displayTitle}
+                                    onStatusChange={handleStatusChange}
                                   />
                                 </div>
                               )}
