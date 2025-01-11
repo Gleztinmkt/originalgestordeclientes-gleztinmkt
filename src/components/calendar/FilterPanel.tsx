@@ -15,6 +15,7 @@ import {
   Grid
 } from "lucide-react";
 import { ReactNode } from "react";
+import { RefetchOptions } from "@tanstack/react-query";
 
 interface FilterPanelProps {
   clients: Client[];
@@ -29,7 +30,7 @@ interface FilterPanelProps {
   onStatusChange: (value: string | null) => void;
   onTypeChange: (value: string | null) => void;
   onPackageChange: (value: string | null) => void;
-  onDesignerAdded: () => void;
+  onDesignerAdded: (options?: RefetchOptions) => Promise<any>;
   children?: ReactNode;
 }
 
