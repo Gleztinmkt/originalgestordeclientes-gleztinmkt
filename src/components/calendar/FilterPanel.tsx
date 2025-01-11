@@ -30,7 +30,7 @@ interface FilterPanelProps {
   onStatusChange: (value: string | null) => void;
   onTypeChange: (value: string | null) => void;
   onPackageChange: (value: string | null) => void;
-  onDesignerAdded: (options?: RefetchOptions) => Promise<any>;
+  onDesignerAdded: (options?: RefetchOptions | undefined) => Promise<any>;
   children?: ReactNode;
 }
 
@@ -84,7 +84,7 @@ export const FilterPanel = ({
                 <SelectItem value="all">Todos los paquetes</SelectItem>
                 {packages.map((pkg: any) => (
                   <SelectItem key={pkg.id} value={pkg.id}>
-                    {pkg.name}
+                    {pkg.month}
                   </SelectItem>
                 ))}
               </SelectContent>
