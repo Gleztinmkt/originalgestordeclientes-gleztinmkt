@@ -14,8 +14,6 @@ import {
   Image,
   Grid
 } from "lucide-react";
-import { ReactNode } from "react";
-import { RefetchOptions } from "@tanstack/react-query";
 
 interface FilterPanelProps {
   clients: Client[];
@@ -30,8 +28,7 @@ interface FilterPanelProps {
   onStatusChange: (value: string | null) => void;
   onTypeChange: (value: string | null) => void;
   onPackageChange: (value: string | null) => void;
-  onDesignerAdded: (options?: RefetchOptions | undefined) => Promise<any>;
-  children?: ReactNode;
+  onDesignerAdded: () => void;
 }
 
 export const FilterPanel = ({
@@ -48,7 +45,6 @@ export const FilterPanel = ({
   onTypeChange,
   onPackageChange,
   onDesignerAdded,
-  children
 }: FilterPanelProps) => {
   const selectedClientData = clients.find(c => c.id === selectedClient);
   const packages = selectedClientData?.packages || [];
@@ -84,7 +80,7 @@ export const FilterPanel = ({
                 <SelectItem value="all">Todos los paquetes</SelectItem>
                 {packages.map((pkg: any) => (
                   <SelectItem key={pkg.id} value={pkg.id}>
-                    {pkg.month}
+                    {pkg.name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -193,8 +189,6 @@ export const FilterPanel = ({
             </div>
           </ScrollArea>
         </div>
-
-        {children}
       </div>
     </div>
   );

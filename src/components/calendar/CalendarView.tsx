@@ -11,8 +11,25 @@ import { es } from "date-fns/locale";
 import { toast } from "@/hooks/use-toast";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { Button } from "../ui/button";
-import { InfoIcon } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { InfoIcon } from "lucide-react";
+import { 
+  Video, 
+  Edit, 
+  CheckCircle2, 
+  Upload, 
+  AlertCircle,
+  Clock
+} from "lucide-react";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+  ContextMenuSub,
+  ContextMenuSubTrigger,
+  ContextMenuSubContent,
+} from "@/components/ui/context-menu";
 
 export const CalendarView = ({ clients }: { clients: Client[] }) => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -232,17 +249,17 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
         onTypeChange={setSelectedType}
         onPackageChange={setSelectedPackage}
         onDesignerAdded={refetchDesigners}
-      >
-        <div className="mt-4 p-4 bg-white dark:bg-gray-800 rounded-lg">
-          <h3 className="font-semibold mb-2">Información para diseñadores</h3>
-          <p className="text-sm text-gray-600 dark:text-gray-300">
-            Haz clic derecho sobre una publicación para cambiar su estado.
-            Haz clic en la publicación para ver toda la información.
-          </p>
-        </div>
-      </FilterPanel>
+      />
 
       <div className="flex-1 p-4 space-y-4">
+        <Alert className="mb-4">
+          <InfoIcon className="h-4 w-4" />
+          <AlertDescription>
+            Información para diseñadores: Haz clic derecho sobre una publicación para cambiar su estado.
+            Haz clic en la publicación para ver toda la información.
+          </AlertDescription>
+        </Alert>
+
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-2">
             <Button
@@ -308,12 +325,12 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
                     <div
                       ref={provided.innerRef}
                       {...provided.droppableProps}
-                      className="min-h-[120px] border rounded-lg p-1 relative bg-white/50 dark:bg-gray-800/50"
+                      className={`min-h-[100px] border p-1 overflow-y-auto transition-all duration-200 ${isExpanded ? "max-h-[300px]" : "max-h-[150px]"}`}
                     >
-                      <div className="text-right text-sm mb-1 px-1">
+                      <div className="text-right text-sm mb-1">
                         {format(date, 'd')}
                       </div>
-                      <div className="space-y-1 max-h-[100px] overflow-hidden">
+                      <ScrollArea className="h-full">
                         {visiblePublications.map((publication, pubIndex) => {
                           const client = clients.find(c => c.id === publication.client_id);
                           const typeShorthand = publication.type === 'reel' ? 'R' : publication.type === 'carousel' ? 'C' : 'I';
@@ -332,13 +349,51 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
                                   {...provided.draggableProps}
                                   {...provided.dragHandleProps}
                                 >
-                                  <PublicationCard
-                                    publication={publication}
-                                    client={client}
-                                    onUpdate={refetch}
-                                    displayTitle={displayTitle}
-                                    onStatusChange={handleStatusChange}
-                                  />
+                                  <ContextMenu>
+                                    <ContextMenuTrigger>
+                                      <PublicationCard
+                                        publication={publication}
+                                        client={client}
+                                        onUpdate={refetch}
+                                        displayTitle={displayTitle}
+                                      />
+                                    </ContextMenuTrigger>
+                                    <ContextMenuContent>
+                                      <ContextMenuItem onClick={() => handleStatusChange(publication.id, 'needs_recording')}>
+                                        Marcar como "Falta grabar"
+                                      </ContextMenuItem>
+                                      <ContextMenuItem onClick={() => handleStatusChange(publication.id, 'needs_editing')}>
+                                        Marcar como "Falta editar"
+                                      </ContextMenuItem>
+                                      <ContextMenuItem onClick={() => handleStatusChange(publication.id, 'in_editing')}>
+                                        Marcar como "En edición"
+                                      </ContextMenuItem>
+                                      <ContextMenuItem onClick={() => handleStatusChange(publication.id, 'in_review')}>
+                                        Marcar como "En revisión"
+                                      </ContextMenuItem>
+                                      <ContextMenuItem onClick={() => handleStatusChange(publication.id, 'approved')}>
+                                        Marcar como "Aprobado"
+                                      </ContextMenuItem>
+                                      <ContextMenuItem onClick={() => handleStatusChange(publication.id, 'published')}>
+                                        Marcar como "Publicado"
+                                      </ContextMenuItem>
+                                      <ContextMenuSub>
+                                        <ContextMenuSubTrigger>
+                                          Asignar diseñador
+                                        </ContextMenuSubTrigger>
+                                        <ContextMenuSubContent>
+                                          {designers.map((designer) => (
+                                            <ContextMenuItem
+                                              key={designer.id}
+                                              onClick={() => handleDesignerAssign(publication.id, designer.name)}
+                                            >
+                                              {designer.name}
+                                            </ContextMenuItem>
+                                          ))}
+                                        </ContextMenuSubContent>
+                                      </ContextMenuSub>
+                                    </ContextMenuContent>
+                                  </ContextMenu>
                                 </div>
                               )}
                             </Draggable>
@@ -349,13 +404,13 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="w-full mt-1 text-xs h-6 py-0"
+                            className="w-full mt-2 text-xs"
                             onClick={() => toggleDayExpansion(dateStr)}
                           >
                             {isExpanded ? 'Ver menos' : `Ver ${dayPublications.length - MAX_VISIBLE_PUBLICATIONS} más`}
                           </Button>
                         )}
-                      </div>
+                      </ScrollArea>
                     </div>
                   )}
                 </Droppable>
@@ -363,16 +418,6 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
             })}
           </div>
         </DragDropContext>
-
-        <div className="fixed bottom-4 right-4 space-y-2">
-          <Alert className="w-80">
-            <InfoIcon className="h-4 w-4" />
-            <AlertDescription>
-              Información para diseñadores: Haz clic derecho sobre una publicación para cambiar su estado.
-              Haz clic en la publicación para ver toda la información.
-            </AlertDescription>
-          </Alert>
-        </div>
       </div>
     </div>
   );
