@@ -7,7 +7,6 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
@@ -51,6 +50,7 @@ export const PublicationDialog = ({
   const handleSubmit = async () => {
     try {
       setIsSubmitting(true);
+      // Only include fields that exist in the publications table
       const updateData = {
         designer: formData.designer,
         type: formData.type,
@@ -60,7 +60,9 @@ export const PublicationDialog = ({
         in_editing: formData.in_editing,
         in_review: formData.in_review,
         approved: formData.approved,
-        is_published: formData.is_published
+        is_published: formData.is_published,
+        name: formData.name,
+        date: formData.date
       };
 
       const { error } = await supabase
