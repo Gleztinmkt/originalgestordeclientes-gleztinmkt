@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Publication } from "../client/publication/types";
 import { Client } from "../types/client";
@@ -19,10 +19,7 @@ import {
   CheckCircle2, 
   Upload, 
   AlertCircle,
-  Clock,
-  Plus,
-  Calendar as CalendarIcon,
-  Cloud
+  Clock
 } from "lucide-react";
 import {
   ContextMenu,
@@ -42,6 +39,8 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [expandedDays, setExpandedDays] = useState<{ [key: string]: boolean }>({});
+  const MAX_VISIBLE_PUBLICATIONS = 3;
 
   const { data: publications = [], refetch } = useQuery({
     queryKey: ['publications', selectedClient],
@@ -91,18 +90,20 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
     
     if (!result.destination) return;
 
-    const publication = publications.find(p => p.id === result.draggableId);
-    if (!publication) return;
+    const sourceDate = result.source.droppableId;
+    const destinationDate = result.destination.droppableId;
+    const publicationId = result.draggableId;
 
-    const newDate = new Date(publication.date);
-    const daysDiff = result.destination.index - result.source.index;
-    newDate.setDate(newDate.getDate() + daysDiff);
+    const publication = publications.find(p => p.id === publicationId);
+    if (!publication) return;
 
     try {
       const { error } = await supabase
         .from('publications')
-        .update({ date: newDate.toISOString() })
-        .eq('id', publication.id);
+        .update({ 
+          date: destinationDate 
+        })
+        .eq('id', publicationId);
 
       if (error) throw error;
 
@@ -225,6 +226,13 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
     end: endOfMonth(selectedDate)
   });
 
+  const toggleDayExpansion = (date: string) => {
+    setExpandedDays(prev => ({
+      ...prev,
+      [date]: !prev[date]
+    }));
+  };
+
   return (
     <div className="flex h-screen">
       <FilterPanel
@@ -247,8 +255,8 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
         <Alert className="mb-4">
           <InfoIcon className="h-4 w-4" />
           <AlertDescription>
-            Información para diseñadores: Haz clic derecho sobre una publicación para cambiar su estado (en edición, en revisión, aprobado, en la nube).
-            Haz clic en la publicación para ver toda la información. Puedes filtrar tus publicaciones asignadas usando el filtro "Diseñadores".
+            Información para diseñadores: Haz clic derecho sobre una publicación para cambiar su estado.
+            Haz clic en la publicación para ver toda la información.
           </AlertDescription>
         </Alert>
 
@@ -299,24 +307,31 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
               </div>
             ))}
 
-            {daysInMonth.map((date, index) => {
+            {daysInMonth.map((date) => {
+              const dateStr = format(date, 'yyyy-MM-dd');
               const dayPublications = filteredPublications.filter(
-                pub => format(new Date(pub.date), 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd')
+                pub => format(new Date(pub.date), 'yyyy-MM-dd') === dateStr
               );
 
+              const isExpanded = expandedDays[dateStr];
+              const visiblePublications = isExpanded 
+                ? dayPublications 
+                : dayPublications.slice(0, MAX_VISIBLE_PUBLICATIONS);
+              const hasMore = dayPublications.length > MAX_VISIBLE_PUBLICATIONS;
+
               return (
-                <Droppable key={format(date, 'yyyy-MM-dd')} droppableId={format(date, 'yyyy-MM-dd')}>
+                <Droppable key={dateStr} droppableId={dateStr}>
                   {(provided) => (
                     <div
                       ref={provided.innerRef}
                       {...provided.droppableProps}
-                      className="min-h-[100px] max-h-[150px] border p-1 overflow-y-auto"
+                      className={`min-h-[100px] border p-1 overflow-y-auto transition-all duration-200 ${isExpanded ? "max-h-[300px]" : "max-h-[150px]"}`}
                     >
                       <div className="text-right text-sm mb-1">
                         {format(date, 'd')}
                       </div>
                       <ScrollArea className="h-full">
-                        {dayPublications.map((publication, pubIndex) => {
+                        {visiblePublications.map((publication, pubIndex) => {
                           const client = clients.find(c => c.id === publication.client_id);
                           const typeShorthand = publication.type === 'reel' ? 'R' : publication.type === 'carousel' ? 'C' : 'I';
                           const displayTitle = `${client?.name || ''} - ${typeShorthand} - ${publication.name}`;
@@ -385,6 +400,16 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
                           );
                         })}
                         {provided.placeholder}
+                        {hasMore && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="w-full mt-2 text-xs"
+                            onClick={() => toggleDayExpansion(dateStr)}
+                          >
+                            {isExpanded ? 'Ver menos' : `Ver ${dayPublications.length - MAX_VISIBLE_PUBLICATIONS} más`}
+                          </Button>
+                        )}
                       </ScrollArea>
                     </div>
                   )}
