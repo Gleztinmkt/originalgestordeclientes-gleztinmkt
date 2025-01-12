@@ -16,7 +16,6 @@ import {
   Image,
   Grid
 } from "lucide-react";
-import { ReactNode } from "react";
 
 interface FilterPanelProps {
   clients: Client[];
@@ -32,7 +31,6 @@ interface FilterPanelProps {
   onTypeChange: (value: string | null) => void;
   onPackageChange: (value: string | null) => void;
   onDesignerAdded: () => void;
-  children?: ReactNode;
 }
 
 export const FilterPanel = ({
@@ -49,7 +47,6 @@ export const FilterPanel = ({
   onTypeChange,
   onPackageChange,
   onDesignerAdded,
-  children
 }: FilterPanelProps) => {
   const selectedClientData = clients.find(c => c.id === selectedClient);
   const packages = selectedClientData?.packages || [];
@@ -203,7 +200,6 @@ export const FilterPanel = ({
           </ScrollArea>
         </div>
       </div>
-      {children}
     </div>
   );
 };
