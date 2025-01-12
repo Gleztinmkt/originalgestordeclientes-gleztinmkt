@@ -91,7 +91,6 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
     
     if (!result.destination) return;
 
-    const sourceDate = result.source.droppableId;
     const destinationDate = result.destination.droppableId;
     const publicationId = result.draggableId;
 
@@ -102,7 +101,7 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
       const { error } = await supabase
         .from('publications')
         .update({ 
-          date: destinationDate 
+          date: new Date(destinationDate).toISOString()
         })
         .eq('id', publicationId);
 
@@ -119,86 +118,6 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
       toast({
         title: "Error",
         description: "No se pudo actualizar la fecha de la publicación.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleStatusChange = async (publicationId: string, status: string) => {
-    try {
-      const updates: any = {
-        needs_recording: false,
-        needs_editing: false,
-        in_editing: false,
-        in_review: false,
-        approved: false,
-        is_published: false
-      };
-
-      switch (status) {
-        case 'needs_recording':
-          updates.needs_recording = true;
-          break;
-        case 'needs_editing':
-          updates.needs_editing = true;
-          break;
-        case 'in_editing':
-          updates.in_editing = true;
-          break;
-        case 'in_review':
-          updates.in_review = true;
-          break;
-        case 'approved':
-          updates.approved = true;
-          break;
-        case 'published':
-          updates.is_published = true;
-          break;
-      }
-
-      const { error } = await supabase
-        .from('publications')
-        .update(updates)
-        .eq('id', publicationId);
-
-      if (error) throw error;
-
-      toast({
-        title: "Estado actualizado",
-        description: "El estado de la publicación ha sido actualizado correctamente.",
-      });
-
-      refetch();
-    } catch (error) {
-      console.error('Error updating publication status:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo actualizar el estado de la publicación.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleDesignerAssign = async (publicationId: string, designerName: string) => {
-    try {
-      const { error } = await supabase
-        .from('publications')
-        .update({ designer: designerName })
-        .eq('id', publicationId);
-
-      if (error) throw error;
-
-      toast({
-        title: "Diseñador asignado",
-        description: "El diseñador ha sido asignado correctamente.",
-      });
-
-      refetch();
-    } catch (error) {
-      console.error('Error assigning designer:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo asignar el diseñador.",
         variant: "destructive",
       });
     }
@@ -252,7 +171,7 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
         onDesignerAdded={refetchDesigners}
       />
 
-      <div className="flex-1 p-4 space-y-4">
+      <div className="flex-1 p-4 space-y-4 overflow-auto">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-2">
             <Button
@@ -323,7 +242,7 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
                       <div className="text-right text-sm mb-1 px-1">
                         {format(date, 'd')}
                       </div>
-                      <div className="space-y-1 max-h-[100px] overflow-hidden">
+                      <div className="space-y-1">
                         {visiblePublications.map((publication, pubIndex) => {
                           const client = clients.find(c => c.id === publication.client_id);
                           const typeShorthand = publication.type === 'reel' ? 'R' : publication.type === 'carousel' ? 'C' : 'I';
@@ -347,6 +266,7 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
                                     client={client}
                                     onUpdate={refetch}
                                     displayTitle={displayTitle}
+                                    designers={designers}
                                   />
                                 </div>
                               )}
@@ -372,16 +292,6 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
             })}
           </div>
         </DragDropContext>
-
-        <div className="fixed bottom-4 right-4 space-y-2">
-          <Alert className="w-80">
-            <InfoIcon className="h-4 w-4" />
-            <AlertDescription>
-              Información para diseñadores: Haz clic derecho sobre una publicación para cambiar su estado.
-              Haz clic en la publicación para ver toda la información.
-            </AlertDescription>
-          </Alert>
-        </div>
       </div>
     </div>
   );

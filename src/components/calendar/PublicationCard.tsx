@@ -14,19 +14,33 @@ import {
   User
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuSub,
+  ContextMenuSubContent,
+  ContextMenuSubTrigger,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 interface PublicationCardProps {
   publication: Publication;
   client?: Client;
   onUpdate: () => void;
   displayTitle: string;
+  designers?: any[];
 }
 
 export const PublicationCard = ({ 
   publication, 
   client, 
   onUpdate,
-  displayTitle 
+  displayTitle,
+  designers = []
 }: PublicationCardProps) => {
   const [showDialog, setShowDialog] = useState(false);
 
@@ -49,32 +63,145 @@ export const PublicationCard = ({
     return <Clock className="h-3 w-3" />;
   };
 
+  const handleStatusChange = async (status: string) => {
+    try {
+      const updates: any = {
+        needs_recording: false,
+        needs_editing: false,
+        in_editing: false,
+        in_review: false,
+        approved: false,
+        is_published: false
+      };
+
+      updates[status] = true;
+
+      const { error } = await supabase
+        .from('publications')
+        .update(updates)
+        .eq('id', publication.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Estado actualizado",
+        description: "El estado de la publicación ha sido actualizado correctamente.",
+      });
+
+      onUpdate();
+    } catch (error) {
+      console.error('Error updating publication status:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el estado de la publicación.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDesignerAssign = async (designerName: string) => {
+    try {
+      const { error } = await supabase
+        .from('publications')
+        .update({ designer: designerName })
+        .eq('id', publication.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Diseñador asignado",
+        description: "El diseñador ha sido asignado correctamente.",
+      });
+
+      onUpdate();
+    } catch (error) {
+      console.error('Error assigning designer:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo asignar el diseñador.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
-    <>
-      <Card 
-        className={cn(
-          "mb-1 hover:shadow-md transition-shadow cursor-pointer group",
-          getStatusColor()
-        )}
-        onClick={() => setShowDialog(true)}
-      >
-        <CardContent className="p-2">
-          <div className="flex items-center justify-between gap-1">
-            <div className="flex items-center gap-1 min-w-0">
-              {getStatusIcon()}
-              <p className="text-xs font-medium truncate">
-                {displayTitle}
-              </p>
+    <ContextMenu>
+      <ContextMenuTrigger>
+        <Card 
+          className={cn(
+            "mb-1 hover:shadow-md transition-shadow cursor-pointer group",
+            getStatusColor()
+          )}
+          onClick={() => setShowDialog(true)}
+        >
+          <CardContent className="p-2">
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center gap-1 min-w-0">
+                {getStatusIcon()}
+                <p className="text-xs font-medium truncate">
+                  {displayTitle}
+                </p>
+              </div>
+              {publication.designer && (
+                <div className="flex items-center gap-1">
+                  <User className="h-3 w-3" />
+                  <span className="text-xs truncate">{publication.designer}</span>
+                </div>
+              )}
             </div>
-            {publication.designer && (
-              <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 whitespace-nowrap">
-                <User className="h-2 w-2 mr-1" />
-                {publication.designer}
-              </Badge>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </ContextMenuTrigger>
+
+      <ContextMenuContent className="w-64">
+        <ContextMenuSub>
+          <ContextMenuSubTrigger>
+            <User className="mr-2 h-4 w-4" />
+            <span>Asignar diseñador</span>
+          </ContextMenuSubTrigger>
+          <ContextMenuSubContent className="w-48">
+            <ContextMenuItem onClick={() => handleDesignerAssign("")}>
+              Sin diseñador
+            </ContextMenuItem>
+            <ContextMenuSeparator />
+            {designers.map((designer) => (
+              <ContextMenuItem
+                key={designer.id}
+                onClick={() => handleDesignerAssign(designer.name)}
+              >
+                {designer.name}
+              </ContextMenuItem>
+            ))}
+          </ContextMenuSubContent>
+        </ContextMenuSub>
+
+        <ContextMenuSeparator />
+
+        <ContextMenuItem onClick={() => handleStatusChange("needs_recording")}>
+          <Video className="mr-2 h-4 w-4" />
+          <span>Falta grabar</span>
+        </ContextMenuItem>
+        <ContextMenuItem onClick={() => handleStatusChange("needs_editing")}>
+          <Edit className="mr-2 h-4 w-4" />
+          <span>Falta editar</span>
+        </ContextMenuItem>
+        <ContextMenuItem onClick={() => handleStatusChange("in_editing")}>
+          <Clock className="mr-2 h-4 w-4" />
+          <span>En edición</span>
+        </ContextMenuItem>
+        <ContextMenuItem onClick={() => handleStatusChange("in_review")}>
+          <AlertCircle className="mr-2 h-4 w-4" />
+          <span>En revisión</span>
+        </ContextMenuItem>
+        <ContextMenuItem onClick={() => handleStatusChange("approved")}>
+          <CheckCircle2 className="mr-2 h-4 w-4" />
+          <span>Aprobado</span>
+        </ContextMenuItem>
+        <ContextMenuItem onClick={() => handleStatusChange("is_published")}>
+          <Upload className="mr-2 h-4 w-4" />
+          <span>Publicado</span>
+        </ContextMenuItem>
+      </ContextMenuContent>
 
       <PublicationDialog
         open={showDialog}
@@ -83,6 +210,6 @@ export const PublicationCard = ({
         client={client}
         onUpdate={onUpdate}
       />
-    </>
+    </ContextMenu>
   );
 };

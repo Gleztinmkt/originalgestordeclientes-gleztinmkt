@@ -3,6 +3,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Client } from "../types/client";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { DesignerDialog } from "./DesignerDialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { InfoIcon } from "lucide-react";
 import { 
   Video, 
   Edit, 
@@ -50,7 +52,7 @@ export const FilterPanel = ({
   const packages = selectedClientData?.packages || [];
 
   return (
-    <div className="w-64 h-full space-y-6 p-4 bg-white dark:bg-gray-800 border-r dark:border-gray-700">
+    <div className="w-56 h-full space-y-6 p-4 bg-white dark:bg-gray-800 border-r dark:border-gray-700">
       <div className="space-y-4">
         <div className="space-y-2">
           <Label className="text-sm font-medium">Cliente</Label>
@@ -80,7 +82,7 @@ export const FilterPanel = ({
                 <SelectItem value="all">Todos los paquetes</SelectItem>
                 {packages.map((pkg: any) => (
                   <SelectItem key={pkg.id} value={pkg.id}>
-                    {pkg.name}
+                    {pkg.month}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -141,6 +143,14 @@ export const FilterPanel = ({
             </SelectContent>
           </Select>
         </div>
+
+        <Alert className="mt-4">
+          <InfoIcon className="h-4 w-4" />
+          <AlertDescription>
+            Información para diseñadores: Haz clic derecho sobre una publicación para cambiar su estado.
+            Haz clic en la publicación para ver toda la información.
+          </AlertDescription>
+        </Alert>
 
         <div className="space-y-2">
           <Label className="text-sm font-medium">Leyenda de estados</Label>
