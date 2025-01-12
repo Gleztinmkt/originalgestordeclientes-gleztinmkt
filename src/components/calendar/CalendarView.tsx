@@ -13,24 +13,6 @@ import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { Button } from "../ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { InfoIcon } from "lucide-react";
-import { 
-  Video, 
-  Edit, 
-  CheckCircle2, 
-  Upload, 
-  AlertCircle,
-  Clock,
-  User
-} from "lucide-react";
-import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuTrigger,
-  ContextMenuSub,
-  ContextMenuSubTrigger,
-  ContextMenuSubContent,
-} from "@/components/ui/context-menu";
 
 export const CalendarView = ({ clients }: { clients: Client[] }) => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -98,10 +80,14 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
     if (!publication) return;
 
     try {
+      // Añadir un día a la fecha de destino
+      const adjustedDate = new Date(destinationDate);
+      adjustedDate.setDate(adjustedDate.getDate() + 1);
+
       const { error } = await supabase
         .from('publications')
         .update({ 
-          date: new Date(destinationDate).toISOString()
+          date: adjustedDate.toISOString()
         })
         .eq('id', publicationId);
 
@@ -155,21 +141,32 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
 
   return (
     <div className="flex h-screen">
-      <FilterPanel
-        clients={clients}
-        designers={designers}
-        selectedClient={selectedClient}
-        selectedDesigner={selectedDesigner}
-        selectedStatus={selectedStatus}
-        selectedType={selectedType}
-        selectedPackage={selectedPackage}
-        onClientChange={setSelectedClient}
-        onDesignerChange={setSelectedDesigner}
-        onStatusChange={setSelectedStatus}
-        onTypeChange={setSelectedType}
-        onPackageChange={setSelectedPackage}
-        onDesignerAdded={refetchDesigners}
-      />
+      <div className="w-72 lg:w-80 flex-shrink-0 border-r">
+        <div className="h-full p-4 flex flex-col">
+          <FilterPanel
+            clients={clients}
+            designers={designers}
+            selectedClient={selectedClient}
+            selectedDesigner={selectedDesigner}
+            selectedStatus={selectedStatus}
+            selectedType={selectedType}
+            selectedPackage={selectedPackage}
+            onClientChange={setSelectedClient}
+            onDesignerChange={setSelectedDesigner}
+            onStatusChange={setSelectedStatus}
+            onTypeChange={setSelectedType}
+            onPackageChange={setSelectedPackage}
+            onDesignerAdded={refetchDesigners}
+          >
+            <Alert className="mt-4">
+              <InfoIcon className="h-4 w-4" />
+              <AlertDescription>
+                Los diseñadores pueden ser asignados a las publicaciones haciendo clic derecho sobre ellas
+              </AlertDescription>
+            </Alert>
+          </FilterPanel>
+        </div>
+      </div>
 
       <div className="flex-1 p-4 space-y-4 overflow-auto">
         <div className="flex items-center justify-between mb-4">
