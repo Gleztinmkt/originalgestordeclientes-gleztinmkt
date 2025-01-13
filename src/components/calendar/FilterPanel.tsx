@@ -5,6 +5,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { DesignerDialog } from "./DesignerDialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { InfoIcon } from "lucide-react";
+import { ReactNode } from "react";
 import { 
   Video, 
   Edit, 
@@ -31,6 +32,7 @@ interface FilterPanelProps {
   onTypeChange: (value: string | null) => void;
   onPackageChange: (value: string | null) => void;
   onDesignerAdded: () => void;
+  children?: ReactNode;
 }
 
 export const FilterPanel = ({

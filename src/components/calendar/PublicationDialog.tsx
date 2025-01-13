@@ -19,6 +19,14 @@ import { useQuery } from "@tanstack/react-query";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import ReactMarkdown from 'react-markdown';
 
+interface PublicationDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  publication: Publication;
+  client?: Client;
+  onUpdate: () => void;
+}
+
 export const PublicationDialog = ({
   open,
   onOpenChange,
