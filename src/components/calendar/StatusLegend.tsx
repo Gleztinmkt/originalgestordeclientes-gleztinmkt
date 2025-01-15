@@ -1,5 +1,5 @@
 import { Badge } from "@/components/ui/badge";
-import { Camera, Edit, CheckCircle, AlertCircle, Upload } from "lucide-react";
+import { Video, Edit, CheckCircle2, AlertCircle, Upload } from "lucide-react";
 
 export const StatusLegend = () => {
   return (
@@ -7,40 +7,40 @@ export const StatusLegend = () => {
       <h3 className="font-semibold">Leyenda de estados</h3>
       <div className="grid grid-cols-2 gap-2">
         <div className="flex items-center gap-2">
-          <Badge variant="secondary" className="flex items-center gap-1">
-            <Camera className="h-3 w-3" /> Grabar
+          <Badge variant="secondary" className="bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100 flex items-center gap-1">
+            <Video className="h-3 w-3" /> Grabar
           </Badge>
-          <span className="text-sm">Falta grabar contenido</span>
+          <span className="text-sm">Falta grabar</span>
         </div>
         <div className="flex items-center gap-2">
-          <Badge variant="secondary" className="flex items-center gap-1">
+          <Badge variant="secondary" className="bg-orange-100 text-orange-800 dark:bg-orange-800 dark:text-orange-100 flex items-center gap-1">
             <Edit className="h-3 w-3" /> Editar
           </Badge>
           <span className="text-sm">Falta editar</span>
         </div>
         <div className="flex items-center gap-2">
-          <Badge variant="secondary" className="flex items-center gap-1">
+          <Badge variant="secondary" className="bg-purple-100 text-purple-800 dark:bg-purple-800 dark:text-purple-100 flex items-center gap-1">
             <Edit className="h-3 w-3" /> En edición
           </Badge>
-          <span className="text-sm">En proceso de edición</span>
+          <span className="text-sm">En proceso</span>
         </div>
         <div className="flex items-center gap-2">
-          <Badge variant="secondary" className="flex items-center gap-1">
+          <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100 flex items-center gap-1">
             <AlertCircle className="h-3 w-3" /> En revisión
           </Badge>
-          <span className="text-sm">En fase de correcciones</span>
+          <span className="text-sm">Correcciones</span>
         </div>
         <div className="flex items-center gap-2">
-          <Badge variant="secondary" className="flex items-center gap-1">
-            <CheckCircle className="h-3 w-3" /> Aprobado
+          <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100 flex items-center gap-1">
+            <CheckCircle2 className="h-3 w-3" /> Aprobado
           </Badge>
-          <span className="text-sm">Contenido aprobado</span>
+          <span className="text-sm">Listo</span>
         </div>
         <div className="flex items-center gap-2">
-          <Badge variant="secondary" className="flex items-center gap-1">
+          <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100 flex items-center gap-1">
             <Upload className="h-3 w-3" /> Publicado
           </Badge>
-          <span className="text-sm">Contenido publicado</span>
+          <span className="text-sm">En redes</span>
         </div>
       </div>
     </div>
