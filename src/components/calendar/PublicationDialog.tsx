@@ -157,7 +157,7 @@ export const PublicationDialog = ({
                 <Label>Tipo de contenido</Label>
                 <Select 
                   value={type} 
-                  onValueChange={(value: string) => setType(value as PublicationType)}
+                  onValueChange={(value: PublicationType) => setType(value)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Seleccionar tipo" />
