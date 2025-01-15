@@ -63,11 +63,17 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
     try {
       setIsLoading(true);
       
-      // Convert ClientInfo to a JSON-compatible format
+      // Convert ClientInfo to a JSON-compatible format, ensuring all nested objects are also JSON-compatible
       const clientInfoJson: Json = {
         generalInfo: info.generalInfo,
-        meetings: info.meetings,
-        socialNetworks: info.socialNetworks
+        meetings: info.meetings.map(meeting => ({
+          date: meeting.date,
+          notes: meeting.notes
+        })),
+        socialNetworks: info.socialNetworks.map(network => ({
+          platform: network.platform,
+          username: network.username
+        }))
       };
 
       // Update the client_info in Supabase
