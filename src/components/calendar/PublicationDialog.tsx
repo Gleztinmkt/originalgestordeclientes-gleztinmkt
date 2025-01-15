@@ -18,7 +18,7 @@ import { toast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
-import { ExternalLink, Link as LinkIcon, Trash2, Edit2 } from "lucide-react";
+import { ExternalLink, Link as LinkIcon, Trash2 } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
