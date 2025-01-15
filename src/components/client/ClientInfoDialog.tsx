@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Info, Trash2 } from "lucide-react";
+import { Info } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -19,22 +19,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
 import { Json } from "@/integrations/supabase/types";
-
-interface SocialNetwork {
-  platform: 'instagram' | 'facebook' | 'linkedin' | 'tiktok' | 'twitter' | 'youtube';
-  username: string;
-}
-
-interface Meeting {
-  date: string;
-  notes: string;
-}
-
-interface ClientInfo {
-  generalInfo: string;
-  meetings: Meeting[];
-  socialNetworks: SocialNetwork[];
-}
+import { ClientInfo } from "../types/client";
 
 interface ClientInfoDialogProps {
   clientId: string;
@@ -58,6 +43,7 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
     socialNetworks: [],
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [open, setOpen] = useState(false);
 
   const handleSave = async () => {
     try {
@@ -87,6 +73,7 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
       if (error) throw error;
 
       onUpdateInfo(clientId, info);
+      setOpen(false);
       toast({
         title: "Información actualizada",
         description: "La información del cliente ha sido actualizada correctamente.",
@@ -110,13 +97,6 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
     }));
   };
 
-  const deleteMeeting = (index: number) => {
-    setInfo(prev => ({
-      ...prev,
-      meetings: prev.meetings.filter((_, i) => i !== index),
-    }));
-  };
-
   const addSocialNetwork = () => {
     setInfo(prev => ({
       ...prev,
@@ -125,7 +105,7 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
   };
 
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm" className="ml-2">
           <Info className="h-4 w-4 mr-2" />
@@ -160,15 +140,7 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
                 Agregar Reunión
               </Button>
               {info.meetings.map((meeting, index) => (
-                <div key={index} className="space-y-2 border p-4 rounded-lg relative">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute top-2 right-2 text-red-500 hover:text-red-700"
-                    onClick={() => deleteMeeting(index)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                <div key={index} className="space-y-2 border p-4 rounded-lg">
                   <Input
                     type="date"
                     value={meeting.date}
