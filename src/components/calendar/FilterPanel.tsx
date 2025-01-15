@@ -131,6 +131,7 @@ export const FilterPanel = ({
         open={showDesignerDialog}
         onOpenChange={setShowDesignerDialog}
         onDesignerAdded={onDesignerAdded}
+        onDesignerDeleted={onDesignerAdded} // We'll reuse the same callback since both actions require a refresh
       />
     </div>
   );
