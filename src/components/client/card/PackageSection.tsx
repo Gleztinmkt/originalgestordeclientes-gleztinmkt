@@ -38,20 +38,20 @@ export const PackageSection = ({
     }
 
     const currentDate = format(new Date(), "d 'de' MMMM 'de' yyyy", { locale: es });
-    let reportText = `📊 *Reporte de Paquetes - ${client.name}*\n`;
-    reportText += `📅 Generado el ${currentDate}\n\n`;
+    let reportText = `*Reporte de Paquetes - ${client.name}*\n`;
+    reportText += `Generado el ${currentDate}\n\n`;
 
     client.packages.forEach((pkg, index) => {
-      reportText += `🔵 Paquete ${index + 1}:\n`;
-      reportText += `• Nombre: ${pkg.name}\n`;
-      reportText += `• Mes: ${pkg.month}\n`;
-      reportText += `• Estado de pago: ${pkg.paid ? '✅ Pagado' : '⏳ Pendiente'}\n`;
-      reportText += `• Publicaciones usadas: ${pkg.usedPublications}/${pkg.totalPublications}\n`;
-      reportText += `• Publicaciones restantes: ${pkg.totalPublications - pkg.usedPublications}\n\n`;
+      reportText += `*Paquete ${index + 1}:*\n`;
+      reportText += `*Nombre:* ${pkg.name}\n`;
+      reportText += `*Mes:* ${pkg.month}\n`;
+      reportText += `*Estado de pago:* ${pkg.paid ? 'Pagado' : 'Pendiente'}\n`;
+      reportText += `*Publicaciones usadas:* ${pkg.usedPublications}/${pkg.totalPublications}\n`;
+      reportText += `*Publicaciones restantes:* ${pkg.totalPublications - pkg.usedPublications}\n\n`;
     });
 
-    reportText += `\n¡Gracias por confiar en Gleztin Marketing Digital! 🚀\n`;
-    reportText += `Estamos comprometidos con tu éxito en redes sociales. 💪\n`;
+    reportText += `\n*¡Gracias por confiar en Gleztin Marketing Digital!*\n`;
+    reportText += `Estamos comprometidos con tu éxito en redes sociales.\n`;
     reportText += `Si tenés alguna pregunta, no dudes en contactarnos.`;
 
     const whatsappUrl = `https://wa.me/${client.phone.replace(/\D/g, '')}?text=${encodeURIComponent(reportText)}`;
