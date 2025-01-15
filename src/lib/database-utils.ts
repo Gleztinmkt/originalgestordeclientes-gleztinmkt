@@ -1,4 +1,4 @@
-import { Client, ClientInfo } from "@/components/types/client";
+import { Client, ClientInfo, SocialNetwork } from "@/components/types/client";
 import { Json } from "@/integrations/supabase/types";
 
 export const parsePackages = (packagesData: any) => {
@@ -25,11 +25,17 @@ export const formatClientForDatabase = (client: Partial<Client>) => {
   // Asegurarse de que client_info sea un objeto JSON válido
   let formattedClientInfo: Json = null;
   if (client.clientInfo) {
+    // Convertir explícitamente las redes sociales a un formato JSON válido
+    const formattedSocialNetworks = client.clientInfo.socialNetworks.map(network => ({
+      platform: network.platform,
+      username: network.username
+    }));
+
     formattedClientInfo = {
       generalInfo: client.clientInfo.generalInfo || '',
       meetings: client.clientInfo.meetings || [],
-      socialNetworks: client.clientInfo.socialNetworks || []
-    };
+      socialNetworks: formattedSocialNetworks
+    } as Json;
   }
 
   const formatted = {
