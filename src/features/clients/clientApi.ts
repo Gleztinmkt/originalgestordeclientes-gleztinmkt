@@ -21,9 +21,12 @@ export const fetchClients = async () => {
 
 export const createClient = async (clientData: Partial<Client>) => {
   console.log('Creating client with data:', clientData);
+  const formattedData = formatClientForDatabase(clientData);
+  console.log('Formatted data for database:', formattedData);
+
   const { data, error } = await supabase
     .from('clients')
-    .insert(formatClientForDatabase(clientData))
+    .insert(formattedData)
     .select()
     .single();
 

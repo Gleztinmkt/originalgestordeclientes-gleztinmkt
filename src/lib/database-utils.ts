@@ -1,4 +1,5 @@
-import { Client } from "@/components/types/client";
+import { Client, ClientInfo } from "@/components/types/client";
+import { Json } from "@/integrations/supabase/types";
 
 export const parsePackages = (packagesData: any) => {
   if (!packagesData) return [];
@@ -20,6 +21,17 @@ export const parsePackages = (packagesData: any) => {
 
 export const formatClientForDatabase = (client: Partial<Client>) => {
   console.log('Formatting client for database:', client);
+  
+  // Asegurarse de que client_info sea un objeto JSON válido
+  let formattedClientInfo: Json = null;
+  if (client.clientInfo) {
+    formattedClientInfo = {
+      generalInfo: client.clientInfo.generalInfo || '',
+      meetings: client.clientInfo.meetings || [],
+      socialNetworks: client.clientInfo.socialNetworks || []
+    };
+  }
+
   const formatted = {
     name: client.name || '',
     phone: client.phone || null,
@@ -28,8 +40,9 @@ export const formatClientForDatabase = (client: Partial<Client>) => {
     instagram: client.instagram || null,
     facebook: client.facebook || null,
     packages: client.packages ? JSON.stringify(client.packages) : null,
-    client_info: client.clientInfo || null
+    client_info: formattedClientInfo
   };
+  
   console.log('Formatted client:', formatted);
   return formatted;
 };
