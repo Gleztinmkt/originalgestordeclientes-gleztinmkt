@@ -6,6 +6,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,28 +48,23 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
   const handleSave = async () => {
     try {
       setIsLoading(true);
-      
-      // Prepare the data in a format that Supabase can handle
-      const clientInfoData = {
-        generalInfo: info.generalInfo,
-        meetings: info.meetings.map(meeting => ({
-          date: meeting.date,
-          notes: meeting.notes
-        })),
-        socialNetworks: info.socialNetworks.map(network => ({
-          platform: network.platform,
-          username: network.username
-        }))
-      };
+      console.log('Saving client info:', info); // Debug log
 
       const { error } = await supabase
         .from('clients')
         .update({ 
-          client_info: clientInfoData
+          client_info: {
+            generalInfo: info.generalInfo,
+            meetings: info.meetings,
+            socialNetworks: info.socialNetworks
+          }
         })
         .eq('id', clientId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error:', error); // Debug log
+        throw error;
+      }
 
       onUpdateInfo(clientId, info);
       setOpen(false);
@@ -113,6 +109,9 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
       <DialogContent className="sm:max-w-[600px] w-[95vw] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Información del Cliente</DialogTitle>
+          <DialogDescription>
+            Gestiona la información detallada del cliente, incluyendo notas generales, reuniones y redes sociales.
+          </DialogDescription>
         </DialogHeader>
         <Tabs defaultValue="general" className="w-full">
           <TabsList className="grid w-full grid-cols-3">
