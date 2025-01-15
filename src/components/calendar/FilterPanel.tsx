@@ -43,6 +43,10 @@ export const FilterPanel = ({
 
   const getPackageLabel = (pkg: any) => {
     try {
+      if (pkg.month) {
+        // Capitalize first letter of month
+        return pkg.month.charAt(0).toUpperCase() + pkg.month.slice(1);
+      }
       const date = new Date(pkg.start_date);
       return format(date, 'MMMM yyyy', { locale: es });
     } catch {

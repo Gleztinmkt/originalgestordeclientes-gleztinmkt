@@ -6,13 +6,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { Publication } from "../client/publication/types";
-import { Client } from "../types/client";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
@@ -31,51 +28,34 @@ import {
 } from "@/components/ui/alert-dialog";
 
 interface PublicationDialogProps {
+  publication: any;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  publication: Publication;
-  client?: Client;
   onUpdate: () => void;
-}
-
-interface TaggedLink {
-  url: string;
-  label: string;
+  onDelete: () => void;
 }
 
 export const PublicationDialog = ({
+  publication,
   open,
   onOpenChange,
-  publication,
-  client,
   onUpdate,
+  onDelete,
 }: PublicationDialogProps) => {
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [name, setName] = useState(publication.name);
+  const [type, setType] = useState(publication.type);
+  const [description, setDescription] = useState(publication.description || "");
+  const [copywriting, setCopywriting] = useState(publication.copywriting || "");
+  const [filmingTime, setFilmingTime] = useState(publication.filming_time || "");
+  const [designer, setDesigner] = useState(publication.designer || "");
+  const [links, setLinks] = useState<Array<{ label: string; url: string }>>(
+    publication.links ? JSON.parse(publication.links) : []
+  );
+  const [newLinkLabel, setNewLinkLabel] = useState("");
+  const [newLinkUrl, setNewLinkUrl] = useState("");
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
-  const [formData, setFormData] = useState({
-    ...publication,
-    filming_time: publication.filming_time || '',
-    links: publication.links || '',
-    copywriting: publication.copywriting || '',
-    description: publication.description || ''
-  });
 
-  const [taggedLinks, setTaggedLinks] = useState<TaggedLink[]>([]);
-  const [newLinkUrl, setNewLinkUrl] = useState('');
-  const [newLinkLabel, setNewLinkLabel] = useState('');
-
-  useEffect(() => {
-    if (formData.links) {
-      try {
-        setTaggedLinks(JSON.parse(formData.links));
-      } catch {
-        const oldLinks = formData.links.split('\n').filter(link => link.trim());
-        setTaggedLinks(oldLinks.map(url => ({ url, label: 'Link' })));
-      }
-    }
-  }, []);
-
-  const { data: designers = [], refetch: refetchDesigners } = useQuery({
+  const { data: designers = [] } = useQuery({
     queryKey: ['designers'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -88,41 +68,30 @@ export const PublicationDialog = ({
     },
   });
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     try {
-      setIsSubmitting(true);
-      
-      const updateData = {
-        designer: formData.designer,
-        type: formData.type,
-        description: formData.description,
-        needs_recording: formData.needs_recording,
-        needs_editing: formData.needs_editing,
-        in_editing: formData.in_editing,
-        in_review: formData.in_review,
-        approved: formData.approved,
-        is_published: formData.is_published,
-        name: formData.name,
-        date: formData.date,
-        filming_time: formData.filming_time,
-        links: JSON.stringify(taggedLinks),
-        copywriting: formData.copywriting
-      };
-
       const { error } = await supabase
         .from('publications')
-        .update(updateData)
+        .update({
+          name,
+          type,
+          description,
+          copywriting,
+          filming_time: filmingTime,
+          designer,
+          links: JSON.stringify(links),
+        })
         .eq('id', publication.id);
 
       if (error) throw error;
 
       toast({
         title: "Publicación actualizada",
-        description: "Los cambios se han guardado correctamente.",
+        description: "Los cambios han sido guardados correctamente.",
       });
 
       onUpdate();
-      onOpenChange(false);
     } catch (error) {
       console.error('Error updating publication:', error);
       toast({
@@ -130,117 +99,55 @@ export const PublicationDialog = ({
         description: "No se pudo actualizar la publicación.",
         variant: "destructive",
       });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleDelete = async () => {
-    try {
-      const { error } = await supabase
-        .from('publications')
-        .update({ deleted_at: new Date().toISOString() })
-        .eq('id', publication.id);
-
-      if (error) throw error;
-
-      toast({
-        title: "Publicación eliminada",
-        description: "La publicación ha sido eliminada correctamente.",
-      });
-
-      onUpdate();
-      onOpenChange(false);
-    } catch (error) {
-      console.error('Error deleting publication:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo eliminar la publicación.",
-        variant: "destructive",
-      });
     }
   };
 
   const addLink = () => {
     if (newLinkUrl && newLinkLabel) {
-      setTaggedLinks([...taggedLinks, { url: newLinkUrl, label: newLinkLabel }]);
-      setNewLinkUrl('');
-      setNewLinkLabel('');
+      setLinks([...links, { label: newLinkLabel, url: newLinkUrl }]);
+      setNewLinkLabel("");
+      setNewLinkUrl("");
     }
   };
 
   const removeLink = (index: number) => {
-    setTaggedLinks(taggedLinks.filter((_, i) => i !== index));
-  };
-
-  const getSocialNetworkUrl = (platform: string, username: string) => {
-    if (username.startsWith('http')) return username;
-    return `https://${platform}.com/${username}`;
+    const newLinks = [...links];
+    newLinks.splice(index, 1);
+    setLinks(newLinks);
   };
 
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogContent className="max-w-[600px] max-h-[80vh]">
           <DialogHeader>
-            <DialogTitle className="flex items-center justify-between">
-              <span>Editar publicación</span>
-              {client && (
-                <span className="text-sm text-muted-foreground">
-                  Cliente: {client.name}
-                </span>
-              )}
-            </DialogTitle>
+            <DialogTitle>Editar Publicación</DialogTitle>
           </DialogHeader>
-
-          <ScrollArea className="flex-1 px-4">
-            <div className="space-y-4">
-              {client?.clientInfo?.socialNetworks && client.clientInfo.socialNetworks.length > 0 && (
-                <Card>
-                  <CardContent className="p-4">
-                    <h3 className="font-semibold mb-2">Redes Sociales del Cliente</h3>
-                    <div className="space-y-2">
-                      {client.clientInfo.socialNetworks.map((network, index) => (
-                        <a
-                          key={index}
-                          href={getSocialNetworkUrl(network.platform, network.username)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center space-x-2 text-blue-500 hover:text-blue-700"
-                        >
-                          <ExternalLink className="h-4 w-4" />
-                          <span>{network.platform}: {network.username}</span>
-                        </a>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
+          <ScrollArea className="h-[calc(80vh-120px)] pr-4">
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label>Nombre de la publicación</Label>
+                <Label htmlFor="name">Nombre de la publicación</Label>
                 <Input
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  id="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
                 />
               </div>
 
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label>Hora de filmación</Label>
-                  <input
-                    type="time"
-                    value={formData.filming_time}
-                    onChange={(e) => setFormData({ ...formData, filming_time: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-md"
+                  <Label htmlFor="filmingTime">Hora de filmación</Label>
+                  <Input
+                    id="filmingTime"
+                    value={filmingTime}
+                    onChange={(e) => setFilmingTime(e.target.value)}
+                    placeholder="Ej: 15:00"
                   />
                 </div>
+
                 <div className="space-y-2">
                   <Label>Tipo de contenido</Label>
-                  <Select
-                    value={formData.type}
-                    onValueChange={(value: 'reel' | 'carousel' | 'image') => setFormData({ ...formData, type: value })}
-                  >
+                  <Select value={type} onValueChange={setType}>
                     <SelectTrigger>
                       <SelectValue placeholder="Seleccionar tipo" />
                     </SelectTrigger>
@@ -251,20 +158,18 @@ export const PublicationDialog = ({
                     </SelectContent>
                   </Select>
                 </div>
+
                 <div className="space-y-2">
-                  <Label>Diseñador</Label>
-                  <Select
-                    value={formData.designer || "no_designer"}
-                    onValueChange={(value) => setFormData({ ...formData, designer: value === "no_designer" ? null : value })}
-                  >
+                  <Label>Diseñador asignado</Label>
+                  <Select value={designer} onValueChange={setDesigner}>
                     <SelectTrigger>
                       <SelectValue placeholder="Seleccionar diseñador" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="no_designer">Sin diseñador</SelectItem>
-                      {designers.map((designer) => (
-                        <SelectItem key={designer.id} value={designer.name}>
-                          {designer.name}
+                      <SelectItem value="">Sin asignar</SelectItem>
+                      {designers.map((d) => (
+                        <SelectItem key={d.id} value={d.name}>
+                          {d.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -274,146 +179,85 @@ export const PublicationDialog = ({
 
               <div className="space-y-2">
                 <Label>Links</Label>
-                <div className="space-y-2">
-                  <div className="flex gap-2">
-                    <Input
-                      value={newLinkLabel}
-                      onChange={(e) => setNewLinkLabel(e.target.value)}
-                      placeholder="Etiqueta del link"
-                      className="flex-1"
-                    />
-                    <Input
-                      value={newLinkUrl}
-                      onChange={(e) => setNewLinkUrl(e.target.value)}
-                      placeholder="URL"
-                      className="flex-1"
-                    />
-                    <Button onClick={addLink} type="button" size="sm">
-                      Agregar
-                    </Button>
-                  </div>
-                  <ScrollArea className="h-[100px]">
-                    <div className="space-y-2">
-                      {taggedLinks.map((link, index) => (
-                        <div key={index} className="flex items-center gap-2 p-2 bg-secondary rounded-lg">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeLink(index)}
-                            className="text-red-500 hover:text-red-700"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                          <LinkIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                          <span className="font-medium whitespace-nowrap">{link.label}:</span>
-                          <div className="flex-1 min-w-0">
+                <Card>
+                  <CardContent className="p-4 space-y-4">
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Etiqueta del link"
+                        value={newLinkLabel}
+                        onChange={(e) => setNewLinkLabel(e.target.value)}
+                      />
+                      <Input
+                        placeholder="URL"
+                        value={newLinkUrl}
+                        onChange={(e) => setNewLinkUrl(e.target.value)}
+                      />
+                      <Button type="button" onClick={addLink}>
+                        <LinkIcon className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <ScrollArea className="h-[100px]">
+                      <div className="space-y-2">
+                        {links.map((link, index) => (
+                          <div key={index} className="flex items-center gap-2 bg-secondary p-2 rounded">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeLink(index)}
+                              className="text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                            <span className="flex-1 truncate">{link.label}</span>
                             <a
                               href={link.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-blue-500 hover:text-blue-700 block truncate"
+                              className="text-blue-500 hover:text-blue-700"
                             >
-                              {link.url}
+                              <ExternalLink className="h-4 w-4" />
                             </a>
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  </ScrollArea>
-                </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  </CardContent>
+                </Card>
               </div>
 
               <div className="space-y-2">
-                <Label>Copywriting</Label>
+                <Label htmlFor="copywriting">Copywriting</Label>
                 <Textarea
-                  value={formData.copywriting}
-                  onChange={(e) => setFormData({ ...formData, copywriting: e.target.value })}
+                  id="copywriting"
+                  value={copywriting}
+                  onChange={(e) => setCopywriting(e.target.value)}
                   className="min-h-[150px]"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label>Descripción</Label>
+                <Label htmlFor="description">Descripción</Label>
                 <Textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="min-h-[200px] font-mono"
+                  id="description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className="min-h-[200px]"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Estado de la publicación</Label>
-                  <div className="space-y-2">
-                    <div className="flex items-center space-x-2">
-                      <Switch
-                        checked={formData.needs_recording}
-                        onCheckedChange={(checked) => setFormData({ ...formData, needs_recording: checked })}
-                      />
-                      <Label>Falta grabar</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Switch
-                        checked={formData.needs_editing}
-                        onCheckedChange={(checked) => setFormData({ ...formData, needs_editing: checked })}
-                      />
-                      <Label>Falta editar</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Switch
-                        checked={formData.in_editing}
-                        onCheckedChange={(checked) => setFormData({ ...formData, in_editing: checked })}
-                      />
-                      <Label>En edición</Label>
-                    </div>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>&nbsp;</Label>
-                  <div className="space-y-2">
-                    <div className="flex items-center space-x-2">
-                      <Switch
-                        checked={formData.in_review}
-                        onCheckedChange={(checked) => setFormData({ ...formData, in_review: checked })}
-                      />
-                      <Label>En revisión</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Switch
-                        checked={formData.approved}
-                        onCheckedChange={(checked) => setFormData({ ...formData, approved: checked })}
-                      />
-                      <Label>Aprobado</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Switch
-                        checked={formData.is_published}
-                        onCheckedChange={(checked) => setFormData({ ...formData, is_published: checked })}
-                      />
-                      <Label>Publicado</Label>
-                    </div>
-                  </div>
-                </div>
+              <div className="flex justify-between pt-4">
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={() => setShowDeleteAlert(true)}
+                >
+                  Eliminar publicación
+                </Button>
+                <Button type="submit">Guardar cambios</Button>
               </div>
-            </div>
+            </form>
           </ScrollArea>
-
-          <div className="flex justify-between gap-2 p-4 border-t">
-            <Button 
-              variant="destructive" 
-              onClick={() => setShowDeleteAlert(true)}
-            >
-              Eliminar publicación
-            </Button>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => onOpenChange(false)}>
-                Cancelar
-              </Button>
-              <Button onClick={handleSubmit} disabled={isSubmitting}>
-                {isSubmitting ? "Guardando..." : "Guardar cambios"}
-              </Button>
-            </div>
-          </div>
         </DialogContent>
       </Dialog>
 
@@ -427,7 +271,13 @@ export const PublicationDialog = ({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-red-500 hover:bg-red-600">
+            <AlertDialogAction
+              onClick={() => {
+                onDelete();
+                setShowDeleteAlert(false);
+              }}
+              className="bg-red-500 hover:bg-red-600"
+            >
               Eliminar
             </AlertDialogAction>
           </AlertDialogFooter>
