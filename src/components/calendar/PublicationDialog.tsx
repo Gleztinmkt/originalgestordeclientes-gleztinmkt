@@ -30,7 +30,7 @@ export const PublicationDialog = ({
   open, 
   onOpenChange, 
   onUpdate,
-  onDelete 
+  onDelete
 }: PublicationDialogProps) => {
   const [name, setName] = useState(publication.name);
   const [type, setType] = useState<PublicationType>(publication.type as PublicationType);
