@@ -26,9 +26,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Publication } from "../client/publication/types";
+import { Client } from "../types/client";
 
 interface PublicationDialogProps {
-  publication: any;
+  publication: Publication;
+  client?: Client;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onUpdate: () => void;
@@ -37,6 +40,7 @@ interface PublicationDialogProps {
 
 export const PublicationDialog = ({
   publication,
+  client,
   open,
   onOpenChange,
   onUpdate,
@@ -48,9 +52,14 @@ export const PublicationDialog = ({
   const [copywriting, setCopywriting] = useState(publication.copywriting || "");
   const [filmingTime, setFilmingTime] = useState(publication.filming_time || "");
   const [designer, setDesigner] = useState(publication.designer || "");
-  const [links, setLinks] = useState<Array<{ label: string; url: string }>>(
-    publication.links ? JSON.parse(publication.links) : []
-  );
+  const [links, setLinks] = useState<Array<{ label: string; url: string }>>(() => {
+    try {
+      return publication.links ? JSON.parse(publication.links) : [];
+    } catch (e) {
+      console.error('Error parsing links:', e);
+      return [];
+    }
+  });
   const [newLinkLabel, setNewLinkLabel] = useState("");
   const [newLinkUrl, setNewLinkUrl] = useState("");
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);

@@ -209,6 +209,10 @@ export const PublicationCard = ({
         publication={publication}
         client={client}
         onUpdate={onUpdate}
+        onDelete={() => {
+          setShowDialog(false);
+          onUpdate();
+        }}
       />
     </ContextMenu>
   );
