@@ -296,6 +296,14 @@ export const PublicationDialog = ({
                     <div className="space-y-2">
                       {taggedLinks.map((link, index) => (
                         <div key={index} className="flex items-center gap-2 p-2 bg-secondary rounded-lg">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeLink(index)}
+                            className="text-red-500 hover:text-red-700"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                           <LinkIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                           <span className="font-medium whitespace-nowrap">{link.label}:</span>
                           <div className="flex-1 min-w-0">
@@ -308,14 +316,6 @@ export const PublicationDialog = ({
                               {link.url}
                             </a>
                           </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeLink(index)}
-                            className="text-red-500 hover:text-red-700 flex-shrink-0"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
                         </div>
                       ))}
                     </div>
