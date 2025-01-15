@@ -11,6 +11,7 @@ export type Database = {
     Tables: {
       clients: {
         Row: {
+          client_info: Json | null
           created_at: string
           deleted_at: string | null
           facebook: string | null
@@ -24,6 +25,7 @@ export type Database = {
           search_text: unknown | null
         }
         Insert: {
+          client_info?: Json | null
           created_at?: string
           deleted_at?: string | null
           facebook?: string | null
@@ -37,6 +39,7 @@ export type Database = {
           search_text?: unknown | null
         }
         Update: {
+          client_info?: Json | null
           created_at?: string
           deleted_at?: string | null
           facebook?: string | null

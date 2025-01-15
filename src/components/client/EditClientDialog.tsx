@@ -12,25 +12,10 @@ import { SocialMediaForm } from "./SocialMediaForm";
 import { toast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState, useCallback } from "react";
+import { Client, ClientInfo } from "../types/client";
 
 interface EditClientDialogProps {
-  client: {
-    id: string;
-    name: string;
-    phone: string;
-    paymentDay: number;
-    instagram?: string;
-    facebook?: string;
-    marketingInfo?: string;
-    packages: Array<{
-      id: string;
-      name: string;
-      totalPublications: number;
-      usedPublications: number;
-      month: string;
-      paid: boolean;
-    }>;
-  };
+  client: Client;
   onUpdateClient: (id: string, data: any) => void;
 }
 
@@ -45,7 +30,7 @@ export const EditClientDialog = ({ client, onUpdateClient }: EditClientDialogPro
         ...client,
         name: values.name,
         phone: values.phone,
-        paymentDay: values.nextPayment, // nextPayment is already a number from zod transform
+        paymentDay: values.nextPayment,
       });
       setOpen(false);
       toast({
@@ -64,19 +49,20 @@ export const EditClientDialog = ({ client, onUpdateClient }: EditClientDialogPro
     }
   }, [client, onUpdateClient]);
 
-  const handleSocialSubmit = useCallback(async (values: any) => {
+  const handleSocialSubmit = useCallback(async (values: ClientInfo) => {
     try {
       setIsSubmitting(true);
       await onUpdateClient(client.id, {
         ...client,
-        instagram: values.instagram,
-        facebook: values.facebook,
-        marketingInfo: values.marketingInfo,
+        clientInfo: {
+          ...client.clientInfo,
+          ...values,
+        }
       });
       setOpen(false);
       toast({
         title: "Cliente actualizado",
-        description: "La información de redes sociales se ha actualizado correctamente.",
+        description: "La información adicional se ha actualizado correctamente.",
       });
     } catch (error) {
       console.error('Error updating client:', error);
@@ -104,7 +90,7 @@ export const EditClientDialog = ({ client, onUpdateClient }: EditClientDialogPro
         <Tabs defaultValue="basic" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="basic">Información Básica</TabsTrigger>
-            <TabsTrigger value="social">Redes Sociales</TabsTrigger>
+            <TabsTrigger value="social">Información Adicional</TabsTrigger>
           </TabsList>
           <TabsContent value="basic">
             <BasicClientForm
@@ -120,11 +106,7 @@ export const EditClientDialog = ({ client, onUpdateClient }: EditClientDialogPro
           <TabsContent value="social">
             <SocialMediaForm
               onSubmit={handleSocialSubmit}
-              defaultValues={{
-                instagram: client.instagram,
-                facebook: client.facebook,
-                marketingInfo: client.marketingInfo || "",
-              }}
+              defaultValues={client.clientInfo}
               isSubmitting={isSubmitting}
             />
           </TabsContent>

@@ -1,5 +1,3 @@
-import { Calendar, Send } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 
 interface PaymentReminderProps {
@@ -9,7 +7,7 @@ interface PaymentReminderProps {
 }
 
 export const PaymentReminder = ({ clientName, paymentDay, phone }: PaymentReminderProps) => {
-  const sendWhatsAppReminder = () => {
+  const handleSendReminder = () => {
     if (!phone) {
       toast({
         title: "Error",
@@ -19,21 +17,27 @@ export const PaymentReminder = ({ clientName, paymentDay, phone }: PaymentRemind
       return;
     }
 
-    const message = `Buenos días, este es un mensaje automático.\n\nLes recordamos la fecha de pago del día ${paymentDay} de cada mes.\n\nMuchas gracias.\n\nEn caso de tener alguna duda o no poder abonarlo dentro de la fecha establecida por favor contáctarnos.\n\nLos valores actualizados los vas a encontrar en el siguiente link:\nhttps://gleztin.com.ar/index.php/valores-de-redes-sociales/\nContraseña: Gleztin`;
+    const message = `Buenos días ${clientName}, este es un mensaje automático.\n\n` +
+      `Les recordamos la fecha de pago del día ${paymentDay} de cada mes.\n\n` +
+      `Los valores actualizados los vas a encontrar en el siguiente link:\n` +
+      `https://gleztin.com.ar/index.php/valores-de-redes-sociales/\n` +
+      `Contraseña: Gleztin\n\n` +
+      `Muchas gracias.\n\n` +
+      `En caso de tener alguna duda o no poder abonarlo dentro de la fecha establecida por favor contáctarnos.`;
+
     const whatsappUrl = `https://wa.me/${phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
   };
 
   return (
-    <div className="flex items-center justify-between p-4 bg-white/50 backdrop-blur-sm rounded-xl">
-      <div className="flex items-center gap-2">
-        <Calendar className="h-5 w-5 text-blue-500" />
-        <span className="font-medium">Día de pago: {paymentDay}</span>
+    <div className="flex items-center justify-between p-4 bg-gray-100 rounded-lg">
+      <div>
+        <h3 className="text-lg font-semibold">Recordatorio de Pago</h3>
+        <p className="text-sm">Día de Pago: {paymentDay}</p>
       </div>
-      <Button onClick={sendWhatsAppReminder} variant="outline" className="gap-2">
-        <Send className="h-4 w-4" />
+      <button onClick={handleSendReminder} className="bg-blue-500 text-white rounded-lg px-4 py-2">
         Enviar Recordatorio
-      </Button>
+      </button>
     </div>
   );
 };

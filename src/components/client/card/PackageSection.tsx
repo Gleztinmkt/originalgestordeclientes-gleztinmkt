@@ -27,21 +27,6 @@ export const PackageSection = ({
   onCaptureStart,
   onCaptureEnd,
 }: PackageSectionProps) => {
-  const sendPackageCompletionMessage = (packageName: string, month: string) => {
-    if (!client.phone) {
-      toast({
-        title: "Error",
-        description: "Este cliente no tiene número de teléfono registrado",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const message = `¡Hola! Te informamos que tu paquete "${packageName}" del mes de ${month} ha sido completado. Para continuar con nuestros servicios, te invitamos a realizar el pago del próximo paquete. ¡Gracias por confiar en nosotros!`;
-    const whatsappUrl = `https://wa.me/${client.phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
-    window.open(whatsappUrl, '_blank');
-  };
-
   const sendPackageReport = () => {
     if (!client.phone) {
       toast({
@@ -57,7 +42,7 @@ export const PackageSection = ({
     reportText += `📅 Generado el ${currentDate}\n\n`;
 
     client.packages.forEach((pkg, index) => {
-      reportText += `📦 *Paquete ${index + 1}:*\n`;
+      reportText += `🔵 Paquete ${index + 1}:\n`;
       reportText += `• Nombre: ${pkg.name}\n`;
       reportText += `• Mes: ${pkg.month}\n`;
       reportText += `• Estado de pago: ${pkg.paid ? '✅ Pagado' : '⏳ Pendiente'}\n`;
@@ -67,7 +52,7 @@ export const PackageSection = ({
 
     reportText += `\n¡Gracias por confiar en Gleztin Marketing Digital! 🚀\n`;
     reportText += `Estamos comprometidos con tu éxito en redes sociales. 💪\n`;
-    reportText += `Si tienes alguna pregunta, no dudes en contactarnos.`;
+    reportText += `Si tenés alguna pregunta, no dudes en contactarnos.`;
 
     const whatsappUrl = `https://wa.me/${client.phone.replace(/\D/g, '')}?text=${encodeURIComponent(reportText)}`;
     window.open(whatsappUrl, '_blank');
