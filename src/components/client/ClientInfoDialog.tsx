@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/lib/supabase";
 
 interface SocialNetwork {
   platform: 'instagram' | 'facebook' | 'linkedin' | 'tiktok' | 'twitter' | 'youtube';
@@ -55,13 +56,37 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
     meetings: [],
     socialNetworks: [],
   });
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSave = () => {
-    onUpdateInfo(clientId, info);
-    toast({
-      title: "Información actualizada",
-      description: "La información del cliente ha sido actualizada correctamente.",
-    });
+  const handleSave = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Update the client_info in Supabase
+      const { error } = await supabase
+        .from('clients')
+        .update({ 
+          client_info: info 
+        })
+        .eq('id', clientId);
+
+      if (error) throw error;
+
+      onUpdateInfo(clientId, info);
+      toast({
+        title: "Información actualizada",
+        description: "La información del cliente ha sido actualizada correctamente.",
+      });
+    } catch (error) {
+      console.error('Error saving client info:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo guardar la información. Por favor, intenta de nuevo.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const addMeeting = () => {
@@ -191,8 +216,8 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
             </div>
           </TabsContent>
         </Tabs>
-        <Button onClick={handleSave} className="mt-4 w-full">
-          Guardar Cambios
+        <Button onClick={handleSave} className="mt-4 w-full" disabled={isLoading}>
+          {isLoading ? "Guardando..." : "Guardar Cambios"}
         </Button>
       </DialogContent>
     </Dialog>
