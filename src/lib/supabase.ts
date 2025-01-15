@@ -8,7 +8,7 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
   throw new Error('Missing Supabase environment variables');
 }
 
-// Ensure URL doesn't have trailing slashes or invalid characters
+// Ensure URL is properly formatted without trailing slashes
 const formattedUrl = SUPABASE_URL.replace(/\/+$/, '');
 
 export const supabase = createClient<Database>(
@@ -18,6 +18,8 @@ export const supabase = createClient<Database>(
     auth: {
       persistSession: true,
       autoRefreshToken: true,
+      detectSessionInUrl: true,
+      flowType: 'pkce'
     },
   }
 );
