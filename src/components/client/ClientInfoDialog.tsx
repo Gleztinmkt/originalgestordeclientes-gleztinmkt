@@ -48,21 +48,30 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
   const handleSave = async () => {
     try {
       setIsLoading(true);
-      console.log('Saving client info:', info); // Debug log
+      console.log('Saving client info:', info);
+
+      // Convertir los datos a un formato compatible con JSON
+      const clientInfoData = {
+        generalInfo: info.generalInfo,
+        meetings: info.meetings.map(meeting => ({
+          date: meeting.date,
+          notes: meeting.notes
+        })),
+        socialNetworks: info.socialNetworks.map(network => ({
+          platform: network.platform,
+          username: network.username
+        }))
+      };
 
       const { error } = await supabase
         .from('clients')
         .update({ 
-          client_info: {
-            generalInfo: info.generalInfo,
-            meetings: info.meetings,
-            socialNetworks: info.socialNetworks
-          }
+          client_info: clientInfoData
         })
         .eq('id', clientId);
 
       if (error) {
-        console.error('Supabase error:', error); // Debug log
+        console.error('Supabase error:', error);
         throw error;
       }
 
