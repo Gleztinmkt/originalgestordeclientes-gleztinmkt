@@ -48,34 +48,37 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
   const handleSave = async () => {
     try {
       setIsLoading(true);
-      console.log('Saving client info:', info);
-
-      // Convertir los datos a un formato compatible con JSON
+      
+      // Asegurarnos que los datos son serializables
       const clientInfoData = {
-        generalInfo: info.generalInfo,
+        generalInfo: info.generalInfo || "",
         meetings: info.meetings.map(meeting => ({
-          date: meeting.date,
-          notes: meeting.notes
+          date: meeting.date || "",
+          notes: meeting.notes || ""
         })),
         socialNetworks: info.socialNetworks.map(network => ({
-          platform: network.platform,
-          username: network.username
+          platform: network.platform || "instagram",
+          username: network.username || ""
         }))
       };
 
-      const { error } = await supabase
+      console.log('Intentando guardar:', clientInfoData);
+
+      const { data, error } = await supabase
         .from('clients')
-        .update({ 
-          client_info: clientInfoData
-        })
-        .eq('id', clientId);
+        .update({ client_info: clientInfoData })
+        .eq('id', clientId)
+        .select()
+        .single();
 
       if (error) {
-        console.error('Supabase error:', error);
+        console.error('Error al guardar:', error);
         throw error;
       }
 
-      onUpdateInfo(clientId, info);
+      console.log('Datos guardados exitosamente:', data);
+      
+      onUpdateInfo(clientId, clientInfoData);
       setOpen(false);
       toast({
         title: "Información actualizada",

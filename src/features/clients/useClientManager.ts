@@ -11,6 +11,7 @@ export const useClientManager = () => {
     try {
       setIsLoading(true);
       const loadedClients = await fetchClients();
+      console.log('Clientes cargados:', loadedClients);
       setClients(loadedClients);
     } catch (error) {
       console.error('Error loading clients:', error);
@@ -26,6 +27,7 @@ export const useClientManager = () => {
 
   const addClient = async (clientData: any) => {
     try {
+      console.log('Agregando cliente:', clientData);
       const newClient = await createClient({
         name: clientData.name,
         phone: clientData.phone,
@@ -36,6 +38,7 @@ export const useClientManager = () => {
         packages: []
       });
 
+      console.log('Cliente agregado:', newClient);
       setClients(prev => [newClient, ...prev]);
       toast({
         title: "Cliente agregado",
@@ -71,26 +74,30 @@ export const useClientManager = () => {
 
   const updateClientData = async (id: string, data: Partial<Client>) => {
     try {
-      // Find the existing client
+      console.log('Actualizando cliente:', id, data);
+      
+      // Encontrar el cliente existente
       const existingClient = clients.find(c => c.id === id);
       if (!existingClient) {
         throw new Error('Cliente no encontrado');
       }
 
-      // Merge the existing client data with the updates
+      // Fusionar los datos existentes con las actualizaciones
       const mergedData = {
         ...existingClient,
         ...data,
-        // Special handling for nested objects
+        // Manejo especial para objetos anidados
         clientInfo: data.clientInfo ? {
           ...existingClient.clientInfo,
           ...data.clientInfo,
         } : existingClient.clientInfo,
-        // Ensure packages are preserved unless explicitly updated
+        // Asegurar que los paquetes se conserven a menos que se actualicen explícitamente
         packages: data.packages || existingClient.packages,
       };
 
+      console.log('Datos fusionados:', mergedData);
       const updatedClient = await updateClient(id, mergedData);
+      console.log('Cliente actualizado:', updatedClient);
       
       setClients(prev => prev.map(c => c.id === id ? updatedClient : c));
       
@@ -130,6 +137,7 @@ export const useClientManager = () => {
 
   const addPackage = async (clientId: string, packageData: any) => {
     try {
+      console.log('Agregando paquete:', clientId, packageData);
       const client = clients.find(c => c.id === clientId);
       if (!client) return;
 
@@ -144,6 +152,7 @@ export const useClientManager = () => {
 
       const updatedPackages = [...client.packages, newPackage];
       await updateClientData(clientId, { ...client, packages: updatedPackages });
+      console.log('Paquete agregado exitosamente');
     } catch (error) {
       console.error('Error adding package:', error);
       toast({

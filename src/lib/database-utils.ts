@@ -19,19 +19,24 @@ export const parsePackages = (packagesData: any) => {
 };
 
 export const formatClientForDatabase = (client: Partial<Client>) => {
-  return {
+  console.log('Formatting client for database:', client);
+  const formatted = {
     name: client.name || '',
     phone: client.phone || null,
     payment_day: client.paymentDay ? parseInt(client.paymentDay.toString()) : null,
     marketing_info: client.marketingInfo || null,
     instagram: client.instagram || null,
     facebook: client.facebook || null,
-    packages: JSON.stringify(client.packages || [])
+    packages: client.packages ? JSON.stringify(client.packages) : null,
+    client_info: client.clientInfo || null
   };
+  console.log('Formatted client:', formatted);
+  return formatted;
 };
 
 export const formatDatabaseClient = (dbClient: any): Client => {
-  return {
+  console.log('Formatting database client:', dbClient);
+  const formatted = {
     id: dbClient.id,
     name: dbClient.name,
     phone: dbClient.phone || "",
@@ -39,6 +44,13 @@ export const formatDatabaseClient = (dbClient: any): Client => {
     marketingInfo: dbClient.marketing_info || "",
     instagram: dbClient.instagram || "",
     facebook: dbClient.facebook || "",
-    packages: parsePackages(dbClient.packages)
+    packages: parsePackages(dbClient.packages),
+    clientInfo: dbClient.client_info || {
+      generalInfo: "",
+      meetings: [],
+      socialNetworks: []
+    }
   };
+  console.log('Formatted client:', formatted);
+  return formatted;
 };
