@@ -7,7 +7,6 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Edit2, Trash2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
@@ -86,12 +85,29 @@ export const DesignerDialog = ({
 
   const handleEdit = async (id: string, newName: string) => {
     try {
-      const { error } = await supabase
+      const { data: oldDesigner } = await supabase
+        .from('designers')
+        .select('name')
+        .eq('id', id)
+        .single();
+
+      if (!oldDesigner) throw new Error('Designer not found');
+
+      // First update the designer's name
+      const { error: designerError } = await supabase
         .from('designers')
         .update({ name: newName })
         .eq('id', id);
 
-      if (error) throw error;
+      if (designerError) throw designerError;
+
+      // Then update all publications that reference this designer
+      const { error: publicationsError } = await supabase
+        .from('publications')
+        .update({ designer: newName })
+        .eq('designer', oldDesigner.name);
+
+      if (publicationsError) throw publicationsError;
 
       toast({
         title: "Diseñador actualizado",
@@ -112,12 +128,29 @@ export const DesignerDialog = ({
 
   const handleDelete = async (id: string) => {
     try {
-      const { error } = await supabase
+      const { data: designer } = await supabase
+        .from('designers')
+        .select('name')
+        .eq('id', id)
+        .single();
+
+      if (!designer) throw new Error('Designer not found');
+
+      // First clear the designer from all publications
+      const { error: publicationsError } = await supabase
+        .from('publications')
+        .update({ designer: null })
+        .eq('designer', designer.name);
+
+      if (publicationsError) throw publicationsError;
+
+      // Then delete the designer
+      const { error: deleteError } = await supabase
         .from('designers')
         .delete()
         .eq('id', id);
 
-      if (error) throw error;
+      if (deleteError) throw deleteError;
 
       toast({
         title: "Diseñador eliminado",
@@ -217,7 +250,7 @@ export const DesignerDialog = ({
           <AlertDialogHeader>
             <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción no se puede deshacer. El diseñador será eliminado permanentemente.
+              Esta acción no se puede deshacer. El diseñador será eliminado permanentemente y se removerá de todas las publicaciones asignadas.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
