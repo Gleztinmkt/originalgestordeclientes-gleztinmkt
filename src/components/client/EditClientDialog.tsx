@@ -9,7 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Pencil } from "lucide-react";
 import { BasicClientForm, BasicFormValues } from "./BasicClientForm";
-import { SocialMediaForm } from "./SocialMediaForm";
+import { ClientInfoForm } from "./ClientInfoForm";
 import { toast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Client, ClientInfo } from "../types/client";
@@ -48,7 +48,7 @@ export const EditClientDialog = ({ client, onUpdateClient }: EditClientDialogPro
     }
   }, [client, onUpdateClient]);
 
-  const handleSocialSubmit = useCallback(async (values: ClientInfo) => {
+  const handleClientInfoSubmit = useCallback(async (values: ClientInfo) => {
     try {
       setIsSubmitting(true);
       // Merge the existing clientInfo with the new values to preserve other fields
@@ -94,7 +94,7 @@ export const EditClientDialog = ({ client, onUpdateClient }: EditClientDialogPro
         <Tabs defaultValue="basic" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="basic">Información Básica</TabsTrigger>
-            <TabsTrigger value="social">Información Adicional</TabsTrigger>
+            <TabsTrigger value="additional">Información Adicional</TabsTrigger>
           </TabsList>
           <TabsContent value="basic">
             <BasicClientForm
@@ -107,9 +107,9 @@ export const EditClientDialog = ({ client, onUpdateClient }: EditClientDialogPro
               isSubmitting={isSubmitting}
             />
           </TabsContent>
-          <TabsContent value="social">
-            <SocialMediaForm
-              onSubmit={handleSocialSubmit}
+          <TabsContent value="additional">
+            <ClientInfoForm
+              onSubmit={handleClientInfoSubmit}
               defaultValues={client.clientInfo}
               isSubmitting={isSubmitting}
             />
