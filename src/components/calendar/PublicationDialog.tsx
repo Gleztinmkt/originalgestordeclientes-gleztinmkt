@@ -11,6 +11,7 @@ import { useState } from "react";
 import { Publication } from "../client/publication/types";
 import { Client } from "../types/client";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 type PublicationType = "reel" | "carousel" | "image";
 
@@ -20,6 +21,7 @@ interface PublicationDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onUpdate: () => void;
+  onDelete?: () => void;
 }
 
 export const PublicationDialog = ({ 
@@ -27,7 +29,8 @@ export const PublicationDialog = ({
   client,
   open, 
   onOpenChange, 
-  onUpdate 
+  onUpdate,
+  onDelete 
 }: PublicationDialogProps) => {
   const [name, setName] = useState(publication.name);
   const [type, setType] = useState<PublicationType>(publication.type as PublicationType);
@@ -49,7 +52,7 @@ export const PublicationDialog = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('publications')
         .update({
           name,
@@ -125,7 +128,7 @@ export const PublicationDialog = ({
                 <Label>Tipo de contenido</Label>
                 <Select 
                   value={type} 
-                  onValueChange={(value) => setType(value as PublicationType)}
+                  onValueChange={(value: string) => setType(value as PublicationType)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Seleccionar tipo" />
