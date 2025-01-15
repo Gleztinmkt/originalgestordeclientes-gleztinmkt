@@ -19,16 +19,18 @@ export const ClientForm = ({ onAddClient }: ClientFormProps) => {
   const [open, setOpen] = useState(false);
 
   const onSubmit = (values: BasicFormValues) => {
+    console.log('Form values:', values); // Debug log
     const newClient = {
       name: values.name,
       phone: values.phone,
-      payment_day: values.nextPayment, // Changed from paymentDay to payment_day to match database column
+      payment_day: parseInt(values.nextPayment.toString()), // Ensure it's properly parsed as a number
       marketingInfo: "",
       instagram: "",
       facebook: "",
       packages: []
     };
     
+    console.log('New client data:', newClient); // Debug log
     onAddClient(newClient);
     setOpen(false);
     toast({
