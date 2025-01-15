@@ -18,7 +18,6 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
-import { Json } from "@/integrations/supabase/types";
 import { ClientInfo, SocialNetwork, SocialPlatform } from "../types/client";
 
 interface ClientInfoDialogProps {
@@ -49,8 +48,8 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
     try {
       setIsLoading(true);
       
-      // Convert ClientInfo to a JSON-compatible format
-      const clientInfoJson: Json = {
+      // Prepare the data in a format that Supabase can handle
+      const clientInfoData = {
         generalInfo: info.generalInfo,
         meetings: info.meetings.map(meeting => ({
           date: meeting.date,
@@ -62,11 +61,10 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
         }))
       };
 
-      // Update the client_info in Supabase
       const { error } = await supabase
         .from('clients')
         .update({ 
-          client_info: clientInfoJson
+          client_info: clientInfoData
         })
         .eq('id', clientId);
 
