@@ -137,17 +137,20 @@ export type Database = {
         Row: {
           approved: boolean | null
           client_id: string | null
+          copywriting: string | null
           created_at: string
           date: string
           deleted_at: string | null
           description: string | null
           designer: string | null
+          filming_time: string | null
           google_calendar_event_id: string | null
           google_calendar_id: string | null
           id: string
           in_editing: boolean | null
           in_review: boolean | null
           is_published: boolean | null
+          links: string | null
           name: string
           needs_editing: boolean | null
           needs_recording: boolean | null
@@ -159,17 +162,20 @@ export type Database = {
         Insert: {
           approved?: boolean | null
           client_id?: string | null
+          copywriting?: string | null
           created_at?: string
           date: string
           deleted_at?: string | null
           description?: string | null
           designer?: string | null
+          filming_time?: string | null
           google_calendar_event_id?: string | null
           google_calendar_id?: string | null
           id?: string
           in_editing?: boolean | null
           in_review?: boolean | null
           is_published?: boolean | null
+          links?: string | null
           name: string
           needs_editing?: boolean | null
           needs_recording?: boolean | null
@@ -181,17 +187,20 @@ export type Database = {
         Update: {
           approved?: boolean | null
           client_id?: string | null
+          copywriting?: string | null
           created_at?: string
           date?: string
           deleted_at?: string | null
           description?: string | null
           designer?: string | null
+          filming_time?: string | null
           google_calendar_event_id?: string | null
           google_calendar_id?: string | null
           id?: string
           in_editing?: boolean | null
           in_review?: boolean | null
           is_published?: boolean | null
+          links?: string | null
           name?: string
           needs_editing?: boolean | null
           needs_recording?: boolean | null

@@ -9,8 +9,6 @@ export interface Publication {
   is_published?: boolean;
   google_calendar_event_id?: string | null;
   google_calendar_id?: string | null;
-  created_at: string;
-  deleted_at?: string | null;
   status?: string;
   designer?: string | null;
   needs_recording?: boolean;
@@ -20,6 +18,9 @@ export interface Publication {
   approved?: boolean;
   in_cloud?: boolean;
   reference_materials?: any[];
+  filming_time?: string | null;
+  links?: string | null;
+  copywriting?: string | null;
 }
 
 export interface PublicationFormValues {

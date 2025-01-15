@@ -101,6 +101,21 @@ export const PublicationDialog = ({
     }
   };
 
+  const renderLinks = () => {
+    if (!formData.links) return null;
+    return formData.links.split('\n').map((link, index) => (
+      <a 
+        key={index}
+        href={link}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-blue-500 hover:text-blue-700 block"
+      >
+        {link}
+      </a>
+    ));
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
@@ -175,6 +190,9 @@ export const PublicationDialog = ({
                 className="min-h-[100px]"
                 placeholder="https://ejemplo.com"
               />
+              <div className="mt-2">
+                {renderLinks()}
+              </div>
             </div>
 
             <div className="space-y-2">
