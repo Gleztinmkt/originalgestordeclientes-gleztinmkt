@@ -182,7 +182,32 @@ export const PublicationDialog = ({
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label>Hora de filmación</Label>
+                <input
+                  type="time"
+                  value={formData.filming_time}
+                  onChange={(e) => setFormData({ ...formData, filming_time: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-md"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Tipo de contenido</Label>
+                <Select
+                  value={formData.type}
+                  onValueChange={(value: 'reel' | 'carousel' | 'image') => setFormData({ ...formData, type: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar tipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="reel">Reel</SelectItem>
+                    <SelectItem value="carousel">Carrusel</SelectItem>
+                    <SelectItem value="image">Imagen</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="space-y-2">
                 <Label>Diseñador</Label>
                 <Select
@@ -202,32 +227,6 @@ export const PublicationDialog = ({
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
-                <Label>Tipo de contenido</Label>
-                <Select
-                  value={formData.type}
-                  onValueChange={(value: 'reel' | 'carousel' | 'image') => setFormData({ ...formData, type: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar tipo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="reel">Reel</SelectItem>
-                    <SelectItem value="carousel">Carrusel</SelectItem>
-                    <SelectItem value="image">Imagen</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Hora de filmación</Label>
-              <input
-                type="time"
-                value={formData.filming_time}
-                onChange={(e) => setFormData({ ...formData, filming_time: e.target.value })}
-                className="w-full px-3 py-2 border rounded-md"
-              />
             </div>
 
             <div className="space-y-2">
@@ -253,8 +252,8 @@ export const PublicationDialog = ({
                 <div className="space-y-2">
                   {taggedLinks.map((link, index) => (
                     <div key={index} className="flex items-center gap-2 p-2 bg-secondary rounded-lg">
-                      <LinkIcon className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium">{link.label}:</span>
+                      <LinkIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                      <span className="font-medium whitespace-nowrap">{link.label}:</span>
                       <a
                         href={link.url}
                         target="_blank"
@@ -267,7 +266,7 @@ export const PublicationDialog = ({
                         variant="ghost"
                         size="sm"
                         onClick={() => removeLink(index)}
-                        className="text-red-500 hover:text-red-700"
+                        className="text-red-500 hover:text-red-700 flex-shrink-0"
                       >
                         Eliminar
                       </Button>
