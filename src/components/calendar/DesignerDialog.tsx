@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, Trash2 } from "lucide-react";
+import { Loader2, Trash2, Edit2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
 
@@ -26,6 +26,7 @@ export const DesignerDialog = ({
 }: DesignerDialogProps) => {
   const [designers, setDesigners] = useState<Designer[]>([]);
   const [newDesigner, setNewDesigner] = useState("");
+  const [editingDesigner, setEditingDesigner] = useState<Designer | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleAddDesigner = async () => {
@@ -56,6 +57,32 @@ export const DesignerDialog = ({
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleEditDesigner = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('designers')
+        .update({ name: editingDesigner?.name })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setDesigners(prev => prev.map(d => d.id === id ? { ...d, name: editingDesigner?.name || '' } : d));
+      setEditingDesigner(null);
+
+      toast({
+        title: "Diseñador actualizado",
+        description: "El diseñador ha sido actualizado correctamente.",
+      });
+    } catch (error) {
+      console.error('Error updating designer:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el diseñador. Por favor, intenta de nuevo.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -105,14 +132,41 @@ export const DesignerDialog = ({
           <div className="space-y-2">
             {designers.map((designer) => (
               <div key={designer.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
-                <span>{designer.name}</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleDeleteDesigner(designer.id)}
-                >
-                  <Trash2 className="h-4 w-4 text-red-500" />
-                </Button>
+                {editingDesigner?.id === designer.id ? (
+                  <Input
+                    value={editingDesigner.name}
+                    onChange={(e) => setEditingDesigner({ ...editingDesigner, name: e.target.value })}
+                    className="flex-1 mr-2"
+                  />
+                ) : (
+                  <span>{designer.name}</span>
+                )}
+                <div className="flex gap-2">
+                  {editingDesigner?.id === designer.id ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleEditDesigner(designer.id)}
+                    >
+                      Guardar
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setEditingDesigner(designer)}
+                    >
+                      <Edit2 className="h-4 w-4 text-blue-500" />
+                    </Button>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDeleteDesigner(designer.id)}
+                  >
+                    <Trash2 className="h-4 w-4 text-red-500" />
+                  </Button>
+                </div>
               </div>
             ))}
           </div>

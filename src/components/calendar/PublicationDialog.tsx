@@ -13,11 +13,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Publication } from "../client/publication/types";
 import { Client } from "../types/client";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase";
 import { toast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import ReactMarkdown from 'react-markdown';
 
 interface PublicationDialogProps {
   open: boolean;
@@ -35,7 +34,12 @@ export const PublicationDialog = ({
   onUpdate,
 }: PublicationDialogProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formData, setFormData] = useState(publication);
+  const [formData, setFormData] = useState({
+    ...publication,
+    filming_time: publication.filming_time || '',
+    links: publication.links || '',
+    copywriting: publication.copywriting || ''
+  });
 
   const { data: designers = [] } = useQuery({
     queryKey: ['designers'],
@@ -54,7 +58,6 @@ export const PublicationDialog = ({
     try {
       setIsSubmitting(true);
       
-      // Only include fields that exist in the publications table schema
       const updateData = {
         designer: formData.designer,
         type: formData.type,
@@ -66,7 +69,10 @@ export const PublicationDialog = ({
         approved: formData.approved,
         is_published: formData.is_published,
         name: formData.name,
-        date: formData.date
+        date: formData.date,
+        filming_time: formData.filming_time,
+        links: formData.links,
+        copywriting: formData.copywriting
       };
 
       const { error } = await supabase
@@ -152,21 +158,41 @@ export const PublicationDialog = ({
             </div>
 
             <div className="space-y-2">
+              <Label>Hora de filmación (opcional)</Label>
+              <Input
+                type="time"
+                value={formData.filming_time}
+                onChange={(e) => setFormData({ ...formData, filming_time: e.target.value })}
+                className="w-full"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Links (uno por línea)</Label>
+              <Textarea
+                value={formData.links}
+                onChange={(e) => setFormData({ ...formData, links: e.target.value })}
+                className="min-h-[100px]"
+                placeholder="https://ejemplo.com"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Copywriting</Label>
+              <Textarea
+                value={formData.copywriting}
+                onChange={(e) => setFormData({ ...formData, copywriting: e.target.value })}
+                className="min-h-[150px]"
+              />
+            </div>
+
+            <div className="space-y-2">
               <Label>Descripción</Label>
               <Textarea
                 value={formData.description || ""}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                className="min-h-[200px] font-mono"
-                placeholder="Puedes usar enlaces con formato [texto](url)"
+                className="min-h-[300px] font-mono"
               />
-              {formData.description && (
-                <div className="mt-2 p-4 border rounded-lg bg-gray-50 dark:bg-gray-800">
-                  <Label className="mb-2 block">Vista previa:</Label>
-                  <ReactMarkdown className="prose dark:prose-invert max-w-none">
-                    {formData.description}
-                  </ReactMarkdown>
-                </div>
-              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
