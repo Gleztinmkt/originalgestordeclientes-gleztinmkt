@@ -27,7 +27,7 @@ interface TaskEditDialogProps {
 export const TaskEditDialog = ({ task, onClose, onSave, clients }: TaskEditDialogProps) => {
   const [content, setContent] = useState(task.content);
   const [type, setType] = useState<Task["type"]>(task.type);
-  const [clientId, setClientId] = useState(task.clientId || "unassigned");
+  const [clientId, setClientId] = useState(task.clientId || "no_client");
   const [executionDate, setExecutionDate] = useState<Date | undefined>(
     task.executionDate ? new Date(task.executionDate) : undefined
   );
@@ -41,7 +41,7 @@ export const TaskEditDialog = ({ task, onClose, onSave, clients }: TaskEditDialo
     onSave({
       content,
       type,
-      clientId: clientId === "unassigned" ? null : clientId,
+      clientId: clientId === "no_client" ? null : clientId,
       executionDate,
       reminderDate: enableReminder ? reminderDate : undefined,
       reminderFrequency: enableReminder ? reminderFrequency : undefined,
@@ -74,6 +74,8 @@ export const TaskEditDialog = ({ task, onClose, onSave, clients }: TaskEditDialo
                 <SelectItem value="campaña">Campaña</SelectItem>
                 <SelectItem value="publicaciones">Publicaciones</SelectItem>
                 <SelectItem value="correcciones">Correcciones</SelectItem>
+                <SelectItem value="calendarios">Calendarios</SelectItem>
+                <SelectItem value="cobros">Cobros</SelectItem>
                 <SelectItem value="otros">Otros</SelectItem>
               </SelectContent>
             </Select>
@@ -86,7 +88,7 @@ export const TaskEditDialog = ({ task, onClose, onSave, clients }: TaskEditDialo
                 <SelectValue placeholder="Seleccionar cliente" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="unassigned">Sin cliente</SelectItem>
+                <SelectItem value="no_client">Sin cliente</SelectItem>
                 {clients.map((client) => (
                   <SelectItem key={client.id} value={client.id}>
                     {client.name}
