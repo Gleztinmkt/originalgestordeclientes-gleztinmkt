@@ -19,6 +19,16 @@ import { useQuery } from "@tanstack/react-query";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
 import { ExternalLink, Link as LinkIcon } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface PublicationDialogProps {
   open: boolean;
@@ -41,6 +51,7 @@ export const PublicationDialog = ({
   onUpdate,
 }: PublicationDialogProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showDeleteAlert, setShowDeleteAlert] = useState(false);
   const [formData, setFormData] = useState({
     ...publication,
     filming_time: publication.filming_time || '',
@@ -123,6 +134,32 @@ export const PublicationDialog = ({
     }
   };
 
+  const handleDelete = async () => {
+    try {
+      const { error } = await supabase
+        .from('publications')
+        .update({ deleted_at: new Date().toISOString() })
+        .eq('id', publication.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Publicación eliminada",
+        description: "La publicación ha sido eliminada correctamente.",
+      });
+
+      onUpdate();
+      onOpenChange(false);
+    } catch (error) {
+      console.error('Error deleting publication:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar la publicación.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const addLink = () => {
     if (newLinkUrl && newLinkLabel) {
       setTaggedLinks([...taggedLinks, { url: newLinkUrl, label: newLinkLabel }]);
@@ -136,230 +173,261 @@ export const PublicationDialog = ({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="flex items-center justify-between">
-            <span>Editar publicación</span>
-            {client && (
-              <span className="text-sm text-muted-foreground">
-                Cliente: {client.name}
-              </span>
-            )}
-          </DialogTitle>
-        </DialogHeader>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between">
+              <span>Editar publicación</span>
+              {client && (
+                <span className="text-sm text-muted-foreground">
+                  Cliente: {client.name}
+                </span>
+              )}
+            </DialogTitle>
+          </DialogHeader>
 
-        <ScrollArea className="flex-1 px-4">
-          <div className="space-y-4 py-4">
-            {client?.clientInfo?.socialNetworks && client.clientInfo.socialNetworks.length > 0 && (
-              <Card>
-                <CardContent className="p-4">
-                  <h3 className="font-semibold mb-2">Redes Sociales del Cliente</h3>
-                  <div className="space-y-2">
-                    {client.clientInfo.socialNetworks.map((network, index) => (
-                      <a
-                        key={index}
-                        href={network.username}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center space-x-2 text-blue-500 hover:text-blue-700"
-                      >
-                        <ExternalLink className="h-4 w-4" />
-                        <span>{network.platform}: {network.username}</span>
-                      </a>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+          <ScrollArea className="flex-1">
+            <div className="space-y-4 p-4">
+              {client?.clientInfo?.socialNetworks && client.clientInfo.socialNetworks.length > 0 && (
+                <Card>
+                  <CardContent className="p-4">
+                    <h3 className="font-semibold mb-2">Redes Sociales del Cliente</h3>
+                    <div className="space-y-2">
+                      {client.clientInfo.socialNetworks.map((network, index) => (
+                        <a
+                          key={index}
+                          href={network.username.startsWith('http') ? network.username : `https://${network.platform}.com/${network.username}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center space-x-2 text-blue-500 hover:text-blue-700"
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                          <span>{network.platform}: {network.username}</span>
+                        </a>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
-            <div className="space-y-2">
-              <Label>Nombre de la publicación</Label>
-              <Input
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full"
-              />
-            </div>
-
-            <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label>Hora de filmación</Label>
-                <input
-                  type="time"
-                  value={formData.filming_time}
-                  onChange={(e) => setFormData({ ...formData, filming_time: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-md"
+                <Label>Nombre de la publicación</Label>
+                <Input
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="w-full"
                 />
               </div>
-              <div className="space-y-2">
-                <Label>Tipo de contenido</Label>
-                <Select
-                  value={formData.type}
-                  onValueChange={(value: 'reel' | 'carousel' | 'image') => setFormData({ ...formData, type: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar tipo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="reel">Reel</SelectItem>
-                    <SelectItem value="carousel">Carrusel</SelectItem>
-                    <SelectItem value="image">Imagen</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Diseñador</Label>
-                <Select
-                  value={formData.designer || "no_designer"}
-                  onValueChange={(value) => setFormData({ ...formData, designer: value === "no_designer" ? null : value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar diseñador" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="no_designer">Sin diseñador</SelectItem>
-                    {designers.map((designer) => (
-                      <SelectItem key={designer.id} value={designer.name}>
-                        {designer.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
 
-            <div className="space-y-2">
-              <Label>Links</Label>
-              <div className="space-y-2">
-                <div className="flex gap-2">
-                  <Input
-                    value={newLinkLabel}
-                    onChange={(e) => setNewLinkLabel(e.target.value)}
-                    placeholder="Etiqueta del link"
-                    className="flex-1"
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label>Hora de filmación</Label>
+                  <input
+                    type="time"
+                    value={formData.filming_time}
+                    onChange={(e) => setFormData({ ...formData, filming_time: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-md"
                   />
-                  <Input
-                    value={newLinkUrl}
-                    onChange={(e) => setNewLinkUrl(e.target.value)}
-                    placeholder="URL"
-                    className="flex-1"
-                  />
-                  <Button onClick={addLink} type="button" size="sm">
-                    Agregar
-                  </Button>
                 </div>
                 <div className="space-y-2">
-                  {taggedLinks.map((link, index) => (
-                    <div key={index} className="flex items-center gap-2 p-2 bg-secondary rounded-lg">
-                      <LinkIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                      <span className="font-medium whitespace-nowrap">{link.label}:</span>
-                      <a
-                        href={link.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-500 hover:text-blue-700 flex-1 truncate"
-                      >
-                        {link.url}
-                      </a>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeLink(index)}
-                        className="text-red-500 hover:text-red-700 flex-shrink-0"
-                      >
-                        Eliminar
-                      </Button>
+                  <Label>Tipo de contenido</Label>
+                  <Select
+                    value={formData.type}
+                    onValueChange={(value: 'reel' | 'carousel' | 'image') => setFormData({ ...formData, type: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar tipo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="reel">Reel</SelectItem>
+                      <SelectItem value="carousel">Carrusel</SelectItem>
+                      <SelectItem value="image">Imagen</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Diseñador</Label>
+                  <Select
+                    value={formData.designer || "no_designer"}
+                    onValueChange={(value) => setFormData({ ...formData, designer: value === "no_designer" ? null : value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar diseñador" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="no_designer">Sin diseñador</SelectItem>
+                      {designers.map((designer) => (
+                        <SelectItem key={designer.id} value={designer.name}>
+                          {designer.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Links</Label>
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <Input
+                      value={newLinkLabel}
+                      onChange={(e) => setNewLinkLabel(e.target.value)}
+                      placeholder="Etiqueta del link"
+                      className="flex-1"
+                    />
+                    <Input
+                      value={newLinkUrl}
+                      onChange={(e) => setNewLinkUrl(e.target.value)}
+                      placeholder="URL"
+                      className="flex-1"
+                    />
+                    <Button onClick={addLink} type="button" size="sm">
+                      Agregar
+                    </Button>
+                  </div>
+                  <ScrollArea className="h-[100px]">
+                    <div className="space-y-2">
+                      {taggedLinks.map((link, index) => (
+                        <div key={index} className="flex items-center gap-2 p-2 bg-secondary rounded-lg">
+                          <LinkIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                          <span className="font-medium whitespace-nowrap">{link.label}:</span>
+                          <div className="flex-1 min-w-0">
+                            <a
+                              href={link.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-500 hover:text-blue-700 block truncate"
+                            >
+                              {link.url}
+                            </a>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeLink(index)}
+                            className="text-red-500 hover:text-red-700 flex-shrink-0"
+                          >
+                            Eliminar
+                          </Button>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  </ScrollArea>
                 </div>
               </div>
-            </div>
 
-            <div className="space-y-2">
-              <Label>Copywriting</Label>
-              <Textarea
-                value={formData.copywriting}
-                onChange={(e) => setFormData({ ...formData, copywriting: e.target.value })}
-                className="min-h-[150px]"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Descripción</Label>
-              <Textarea
-                value={formData.description || ""}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                className="min-h-[300px] font-mono"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Estado de la publicación</Label>
-                <div className="space-y-2">
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      checked={formData.needs_recording}
-                      onCheckedChange={(checked) => setFormData({ ...formData, needs_recording: checked })}
-                    />
-                    <Label>Falta grabar</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      checked={formData.needs_editing}
-                      onCheckedChange={(checked) => setFormData({ ...formData, needs_editing: checked })}
-                    />
-                    <Label>Falta editar</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      checked={formData.in_editing}
-                      onCheckedChange={(checked) => setFormData({ ...formData, in_editing: checked })}
-                    />
-                    <Label>En edición</Label>
-                  </div>
-                </div>
+                <Label>Copywriting</Label>
+                <Textarea
+                  value={formData.copywriting}
+                  onChange={(e) => setFormData({ ...formData, copywriting: e.target.value })}
+                  className="min-h-[150px]"
+                />
               </div>
+
               <div className="space-y-2">
-                <Label>&nbsp;</Label>
+                <Label>Descripción</Label>
+                <Textarea
+                  value={formData.description || ""}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  className="min-h-[200px] font-mono"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      checked={formData.in_review}
-                      onCheckedChange={(checked) => setFormData({ ...formData, in_review: checked })}
-                    />
-                    <Label>En revisión</Label>
+                  <Label>Estado de la publicación</Label>
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        checked={formData.needs_recording}
+                        onCheckedChange={(checked) => setFormData({ ...formData, needs_recording: checked })}
+                      />
+                      <Label>Falta grabar</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        checked={formData.needs_editing}
+                        onCheckedChange={(checked) => setFormData({ ...formData, needs_editing: checked })}
+                      />
+                      <Label>Falta editar</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        checked={formData.in_editing}
+                        onCheckedChange={(checked) => setFormData({ ...formData, in_editing: checked })}
+                      />
+                      <Label>En edición</Label>
+                    </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      checked={formData.approved}
-                      onCheckedChange={(checked) => setFormData({ ...formData, approved: checked })}
-                    />
-                    <Label>Aprobado</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      checked={formData.is_published}
-                      onCheckedChange={(checked) => setFormData({ ...formData, is_published: checked })}
-                    />
-                    <Label>Publicado</Label>
+                </div>
+                <div className="space-y-2">
+                  <Label>&nbsp;</Label>
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        checked={formData.in_review}
+                        onCheckedChange={(checked) => setFormData({ ...formData, in_review: checked })}
+                      />
+                      <Label>En revisión</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        checked={formData.approved}
+                        onCheckedChange={(checked) => setFormData({ ...formData, approved: checked })}
+                      />
+                      <Label>Aprobado</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        checked={formData.is_published}
+                        onCheckedChange={(checked) => setFormData({ ...formData, is_published: checked })}
+                      />
+                      <Label>Publicado</Label>
+                    </div>
                   </div>
                 </div>
               </div>
+            </div>
+          </ScrollArea>
+
+          <div className="flex justify-between gap-2 p-4 border-t">
+            <Button 
+              variant="destructive" 
+              onClick={() => setShowDeleteAlert(true)}
+            >
+              Eliminar publicación
+            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => onOpenChange(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={handleSubmit} disabled={isSubmitting}>
+                {isSubmitting ? "Guardando..." : "Guardar cambios"}
+              </Button>
             </div>
           </div>
-        </ScrollArea>
+        </DialogContent>
+      </Dialog>
 
-        <div className="flex justify-end gap-2 p-4 border-t">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancelar
-          </Button>
-          <Button onClick={handleSubmit} disabled={isSubmitting}>
-            {isSubmitting ? "Guardando..." : "Guardar cambios"}
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+      <AlertDialog open={showDeleteAlert} onOpenChange={setShowDeleteAlert}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. La publicación será eliminada permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-red-500 hover:bg-red-600">
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };
