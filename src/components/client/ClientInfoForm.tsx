@@ -7,9 +7,10 @@ import { ClientInfo } from "@/components/types/client";
 interface ClientInfoFormProps {
   defaultValues?: ClientInfo;
   onSubmit: (data: ClientInfo) => void;
+  isSubmitting?: boolean;
 }
 
-export const ClientInfoForm = ({ defaultValues, onSubmit }: ClientInfoFormProps) => {
+export const ClientInfoForm = ({ defaultValues, onSubmit, isSubmitting }: ClientInfoFormProps) => {
   const [info, setInfo] = useState<ClientInfo>(defaultValues || {
     generalInfo: "",
     meetings: [],
@@ -119,8 +120,8 @@ export const ClientInfoForm = ({ defaultValues, onSubmit }: ClientInfoFormProps)
         ))}
       </div>
 
-      <Button type="submit" className="w-full">
-        Guardar Cambios
+      <Button type="submit" className="w-full" disabled={isSubmitting}>
+        {isSubmitting ? "Guardando..." : "Guardar Cambios"}
       </Button>
     </form>
   );
