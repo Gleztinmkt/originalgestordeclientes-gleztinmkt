@@ -38,7 +38,7 @@ export const PublicationDialog = ({
   const [type, setType] = useState<PublicationType>(publication.type as PublicationType);
   const [description, setDescription] = useState(publication.description || "");
   const [copywriting, setCopywriting] = useState(publication.copywriting || "");
-  const [designer, setDesigner] = useState(publication.designer || "");
+  const [designer, setDesigner] = useState(publication.designer || "no_designer");
   const [links, setLinks] = useState<Array<{ label: string; url: string }>>(() => {
     if (!publication.links) return [];
     try {
@@ -61,7 +61,7 @@ export const PublicationDialog = ({
           type,
           description,
           copywriting,
-          designer,
+          designer: designer === "no_designer" ? null : designer,
           links: JSON.stringify(links),
         })
         .eq('id', publication.id);
@@ -107,7 +107,7 @@ export const PublicationDialog = ({
 
       if (error) throw error;
 
-      setDesigner("");
+      setDesigner("no_designer");
       onUpdate();
       
       toast({
@@ -181,13 +181,13 @@ export const PublicationDialog = ({
                       <SelectValue placeholder="Seleccionar diseñador" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Sin diseñador</SelectItem>
+                      <SelectItem value="no_designer">Sin diseñador</SelectItem>
                       {designers.map((d) => (
                         <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                  {designer && (
+                  {designer !== "no_designer" && (
                     <Button
                       type="button"
                       variant="ghost"
