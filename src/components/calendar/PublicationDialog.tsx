@@ -57,7 +57,6 @@ export const PublicationDialog = ({
       try {
         setTaggedLinks(JSON.parse(formData.links));
       } catch {
-        // Si el formato antiguo está en uso, convertir a nuevo formato
         const oldLinks = formData.links.split('\n').filter(link => link.trim());
         setTaggedLinks(oldLinks.map(url => ({ url, label: 'Link' })));
       }
