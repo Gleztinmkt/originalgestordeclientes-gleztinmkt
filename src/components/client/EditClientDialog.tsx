@@ -1,3 +1,4 @@
+import { useState, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
@@ -11,12 +12,11 @@ import { BasicClientForm, BasicFormValues } from "./BasicClientForm";
 import { SocialMediaForm } from "./SocialMediaForm";
 import { toast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useState, useCallback } from "react";
 import { Client, ClientInfo } from "../types/client";
 
 interface EditClientDialogProps {
   client: Client;
-  onUpdateClient: (id: string, data: any) => void;
+  onUpdateClient: (id: string, data: Partial<Client>) => void;
 }
 
 export const EditClientDialog = ({ client, onUpdateClient }: EditClientDialogProps) => {
@@ -27,7 +27,6 @@ export const EditClientDialog = ({ client, onUpdateClient }: EditClientDialogPro
     try {
       setIsSubmitting(true);
       await onUpdateClient(client.id, {
-        ...client,
         name: values.name,
         phone: values.phone,
         paymentDay: values.nextPayment,
@@ -53,11 +52,7 @@ export const EditClientDialog = ({ client, onUpdateClient }: EditClientDialogPro
     try {
       setIsSubmitting(true);
       await onUpdateClient(client.id, {
-        ...client,
-        clientInfo: {
-          ...client.clientInfo,
-          ...values,
-        }
+        clientInfo: values
       });
       setOpen(false);
       toast({

@@ -74,12 +74,7 @@ export const PackageSection = ({
             usedPublications={pkg.usedPublications}
             month={pkg.month}
             paid={pkg.paid}
-            onUpdateUsed={(newCount) => {
-              onUpdatePackage(client.id, pkg.id, newCount);
-              if (newCount === pkg.totalPublications) {
-                sendPackageCompletionMessage(pkg.name, pkg.month);
-              }
-            }}
+            onUpdateUsed={(newCount) => onUpdatePackage(client.id, pkg.id, newCount)}
             onUpdatePaid={(paid) => onUpdatePaid(pkg.id, paid)}
             onEditPackage={(values) => onEditPackage(pkg.id, values)}
             onDeletePackage={() => onDeletePackage(pkg.id)}

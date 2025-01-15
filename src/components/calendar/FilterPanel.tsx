@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Client } from "../types/client";
@@ -49,7 +50,9 @@ export const FilterPanel = ({
   onTypeChange,
   onPackageChange,
   onDesignerAdded,
+  children
 }: FilterPanelProps) => {
+  const [isDesignerDialogOpen, setIsDesignerDialogOpen] = useState(false);
   const selectedClientData = clients.find(c => c.id === selectedClient);
   const packages = selectedClientData?.packages || [];
 
@@ -91,16 +94,21 @@ export const FilterPanel = ({
             </Select>
           </div>
         )}
-
+        
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <Label className="text-sm font-medium">Diseñador</Label>
-            <DesignerDialog onDesignerAdded={onDesignerAdded} />
+            <Button variant="ghost" size="sm" onClick={() => setIsDesignerDialogOpen(true)}>
+              Gestionar
+            </Button>
           </div>
+          <DesignerDialog 
+            open={isDesignerDialogOpen}
+            onOpenChange={setIsDesignerDialogOpen}
+            onDesignerAdded={onDesignerAdded}
+            onDesignerDeleted={onDesignerAdded} // Reuse the same callback to refresh the list
+          />
           <Select value={selectedDesigner || "all"} onValueChange={(value) => onDesignerChange(value === "all" ? null : value)}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Todos los diseñadores" />
-            </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos los diseñadores</SelectItem>
               {designers.map((designer) => (
@@ -202,6 +210,7 @@ export const FilterPanel = ({
           </ScrollArea>
         </div>
       </div>
+      {children}
     </div>
   );
 };
