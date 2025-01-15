@@ -37,7 +37,7 @@ export const DesignerDialog = ({
   onDesignerDeleted,
 }: DesignerDialogProps) => {
   const [newDesignerName, setNewDesignerName] = useState("");
-  const [editingDesigner, setEditingDesigner] = useState<{ id: string; name: string } | null>(null);
+  const [editingDesigner, setEditingDesigner] = useState<{ id: string; name: string; oldName: string } | null>(null);
   const [showDeleteAlert, setShowDeleteAlert] = useState<string | null>(null);
 
   const { data: designers = [], refetch } = useQuery({
@@ -85,14 +85,6 @@ export const DesignerDialog = ({
 
   const handleEdit = async (id: string, newName: string) => {
     try {
-      const { data: oldDesigner } = await supabase
-        .from('designers')
-        .select('name')
-        .eq('id', id)
-        .single();
-
-      if (!oldDesigner) throw new Error('Designer not found');
-
       // First update the designer's name
       const { error: designerError } = await supabase
         .from('designers')
@@ -102,12 +94,14 @@ export const DesignerDialog = ({
       if (designerError) throw designerError;
 
       // Then update all publications that reference this designer
-      const { error: publicationsError } = await supabase
-        .from('publications')
-        .update({ designer: newName })
-        .eq('designer', oldDesigner.name);
+      if (editingDesigner?.oldName) {
+        const { error: publicationsError } = await supabase
+          .from('publications')
+          .update({ designer: newName })
+          .eq('designer', editingDesigner.oldName);
 
-      if (publicationsError) throw publicationsError;
+        if (publicationsError) throw publicationsError;
+      }
 
       toast({
         title: "Diseñador actualizado",
@@ -200,7 +194,10 @@ export const DesignerDialog = ({
                     <div className="flex-1 flex gap-2">
                       <Input
                         value={editingDesigner.name}
-                        onChange={(e) => setEditingDesigner({ ...editingDesigner, name: e.target.value })}
+                        onChange={(e) => setEditingDesigner({ 
+                          ...editingDesigner, 
+                          name: e.target.value 
+                        })}
                       />
                       <Button
                         size="sm"
@@ -223,7 +220,11 @@ export const DesignerDialog = ({
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => setEditingDesigner(designer)}
+                          onClick={() => setEditingDesigner({
+                            id: designer.id,
+                            name: designer.name,
+                            oldName: designer.name
+                          })}
                         >
                           <Edit2 className="h-4 w-4" />
                         </Button>
