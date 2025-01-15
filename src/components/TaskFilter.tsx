@@ -40,7 +40,7 @@ export const TaskFilter = ({ clients, onFilterChange }: TaskFilterProps) => {
         <SelectContent>
           <SelectItem value="all_clients">Todos los clientes</SelectItem>
           {clients.map((client) => (
-            <SelectItem key={client.id} value={client.id}>
+            <SelectItem key={client.id} value={client.id || "unassigned"}>
               {client.name}
             </SelectItem>
           ))}

@@ -129,7 +129,7 @@ export const TaskInput = ({ onAddTask, clients }: TaskInputProps) => {
           <SelectContent className="dark:bg-gray-800">
             <SelectItem value="unassigned">Sin cliente</SelectItem>
             {clients.map((client) => (
-              <SelectItem key={client.id} value={client.id}>
+              <SelectItem key={client.id} value={client.id || "unassigned"}>
                 {client.name}
               </SelectItem>
             ))}
