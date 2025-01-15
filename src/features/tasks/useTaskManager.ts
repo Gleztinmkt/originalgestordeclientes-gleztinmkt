@@ -11,6 +11,7 @@ export const useTaskManager = () => {
   const loadTasks = async () => {
     try {
       setIsLoading(true);
+      console.log('Cargando tareas...');
       const { data: tasksData, error: tasksError } = await supabase
         .from('tasks')
         .select('*')
@@ -20,7 +21,9 @@ export const useTaskManager = () => {
       if (tasksError) throw tasksError;
 
       if (tasksData) {
+        console.log('Tareas cargadas:', tasksData);
         const formattedTasks = tasksData.map(task => convertDatabaseTask(task as DatabaseTask));
+        console.log('Tareas formateadas:', formattedTasks);
         setTasks(formattedTasks);
       }
     } catch (error) {
@@ -37,6 +40,7 @@ export const useTaskManager = () => {
 
   const addTask = async (content: string, clientId?: string, type: string = 'otros', executionDate?: Date, reminderDate?: Date, reminderFrequency?: string) => {
     try {
+      console.log('Agregando tarea:', { content, clientId, type, executionDate, reminderDate, reminderFrequency });
       const newTask: Task = {
         id: crypto.randomUUID(),
         content,
@@ -49,6 +53,7 @@ export const useTaskManager = () => {
       };
 
       const dbTask = convertTaskForDatabase(newTask);
+      console.log('Tarea formateada para la base de datos:', dbTask);
       const { error } = await supabase
         .from('tasks')
         .insert(dbTask);
@@ -72,9 +77,13 @@ export const useTaskManager = () => {
 
   const updateTask = async (id: string, updates: Partial<Task>) => {
     try {
+      console.log('Actualizando tarea:', { id, updates });
+      const dbUpdates = convertTaskForDatabase(updates as Task);
+      console.log('Actualizaciones formateadas:', dbUpdates);
+      
       const { error } = await supabase
         .from('tasks')
-        .update(convertTaskForDatabase(updates as Task))
+        .update(dbUpdates)
         .eq('id', id);
       
       if (error) throw error;
@@ -99,6 +108,7 @@ export const useTaskManager = () => {
 
   const deleteTask = async (id: string) => {
     try {
+      console.log('Eliminando tarea:', id);
       const { error } = await supabase
         .from('tasks')
         .update({ deleted_at: new Date().toISOString() })
@@ -126,11 +136,12 @@ export const useTaskManager = () => {
       const task = tasks.find(t => t.id === id);
       if (!task) return;
 
+      console.log('Completando tarea:', { id, currentStatus: task.completed });
       const { error } = await supabase
         .from('tasks')
         .update({ 
           completed: !task.completed,
-          deleted_at: null // Ensure the task isn't marked as deleted
+          deleted_at: null // Aseguramos que la tarea no esté marcada como eliminada
         })
         .eq('id', id);
       
