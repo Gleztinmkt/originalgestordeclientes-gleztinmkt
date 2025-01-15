@@ -39,7 +39,7 @@ export const BasicClientForm = ({ onSubmit, defaultValues, isSubmitting }: Basic
     defaultValues: {
       name: defaultValues?.name || "",
       phone: defaultValues?.phone || "",
-      nextPayment: defaultValues?.nextPayment || undefined,
+      nextPayment: defaultValues?.nextPayment || 1,
     },
   });
 

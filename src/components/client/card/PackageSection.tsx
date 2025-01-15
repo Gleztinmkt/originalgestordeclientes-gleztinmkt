@@ -3,7 +3,8 @@ import { FileText } from "lucide-react";
 import { ClientPackage } from "../ClientPackage";
 import { Client } from "../../types/client";
 import { toast } from "@/hooks/use-toast";
-import html2canvas from "html2canvas";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
 
 interface PackageSectionProps {
   client: Client;
@@ -41,7 +42,7 @@ export const PackageSection = ({
     window.open(whatsappUrl, '_blank');
   };
 
-  const sendPackageReport = async () => {
+  const sendPackageReport = () => {
     if (!client.phone) {
       toast({
         title: "Error",
@@ -51,37 +52,30 @@ export const PackageSection = ({
       return;
     }
 
-    onCaptureStart();
-    try {
-      const element = document.getElementById(`client-packages-${client.id}`);
-      if (!element) return;
+    const currentDate = format(new Date(), "d 'de' MMMM 'de' yyyy", { locale: es });
+    let reportText = `📊 *Reporte de Paquetes - ${client.name}*\n`;
+    reportText += `📅 Generado el ${currentDate}\n\n`;
 
-      const canvas = await html2canvas(element);
-      const imageData = canvas.toDataURL('image/png');
+    client.packages.forEach((pkg, index) => {
+      reportText += `📦 *Paquete ${index + 1}:*\n`;
+      reportText += `• Nombre: ${pkg.name}\n`;
+      reportText += `• Mes: ${pkg.month}\n`;
+      reportText += `• Estado de pago: ${pkg.paid ? '✅ Pagado' : '⏳ Pendiente'}\n`;
+      reportText += `• Publicaciones usadas: ${pkg.usedPublications}/${pkg.totalPublications}\n`;
+      reportText += `• Publicaciones restantes: ${pkg.totalPublications - pkg.usedPublications}\n\n`;
+    });
 
-      const tempLink = document.createElement('a');
-      tempLink.href = imageData;
-      tempLink.download = `reporte-${client.name}.png`;
-      tempLink.click();
+    reportText += `\n¡Gracias por confiar en Gleztin Marketing Digital! 🚀\n`;
+    reportText += `Estamos comprometidos con tu éxito en redes sociales. 💪\n`;
+    reportText += `Si tienes alguna pregunta, no dudes en contactarnos.`;
 
-      const message = `¡Hola! Aquí te enviamos el reporte actual de tus paquetes de publicaciones.`;
-      const whatsappUrl = `https://wa.me/${client.phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
-      window.open(whatsappUrl, '_blank');
+    const whatsappUrl = `https://wa.me/${client.phone.replace(/\D/g, '')}?text=${encodeURIComponent(reportText)}`;
+    window.open(whatsappUrl, '_blank');
 
-      toast({
-        title: "Reporte generado",
-        description: "El reporte ha sido generado y descargado. Ahora puedes enviarlo por WhatsApp.",
-      });
-    } catch (error) {
-      console.error('Error generating report:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo generar el reporte. Por favor, intenta de nuevo.",
-        variant: "destructive",
-      });
-    } finally {
-      onCaptureEnd();
-    }
+    toast({
+      title: "Reporte enviado",
+      description: "El reporte ha sido enviado por WhatsApp.",
+    });
   };
 
   return (
@@ -114,11 +108,10 @@ export const PackageSection = ({
       {client.packages.length > 0 && (
         <Button
           onClick={sendPackageReport}
-          disabled={isCapturing}
           className="w-full gap-2 bg-green-600 hover:bg-green-700 text-white"
         >
           <FileText className="h-4 w-4" />
-          {isCapturing ? "Generando reporte..." : "Enviar reporte de paquetes"}
+          Enviar reporte de paquetes
         </Button>
       )}
     </div>

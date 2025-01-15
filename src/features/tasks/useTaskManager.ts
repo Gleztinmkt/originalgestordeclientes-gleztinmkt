@@ -128,7 +128,10 @@ export const useTaskManager = () => {
 
       const { error } = await supabase
         .from('tasks')
-        .update({ completed: !task.completed })
+        .update({ 
+          completed: !task.completed,
+          deleted_at: null // Ensure the task isn't marked as deleted
+        })
         .eq('id', id);
       
       if (error) throw error;
