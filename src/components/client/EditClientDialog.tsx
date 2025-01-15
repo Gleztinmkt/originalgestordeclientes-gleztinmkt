@@ -51,9 +51,18 @@ export const EditClientDialog = ({ client, onUpdateClient }: EditClientDialogPro
   const handleSocialSubmit = useCallback(async (values: ClientInfo) => {
     try {
       setIsSubmitting(true);
+      // Merge the existing clientInfo with the new values to preserve other fields
+      const updatedClientInfo = {
+        ...client.clientInfo,
+        generalInfo: values.generalInfo,
+        meetings: values.meetings,
+        socialNetworks: values.socialNetworks
+      };
+      
       await onUpdateClient(client.id, {
-        clientInfo: values
+        clientInfo: updatedClientInfo
       });
+      
       setOpen(false);
       toast({
         title: "Cliente actualizado",
