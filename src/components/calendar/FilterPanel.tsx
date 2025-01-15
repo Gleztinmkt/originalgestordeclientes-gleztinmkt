@@ -7,6 +7,7 @@ import { DesignerDialog } from "./DesignerDialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { InfoIcon } from "lucide-react";
 import { ReactNode } from "react";
+import { Button } from "@/components/ui/button";
 import { 
   Video, 
   Edit, 
