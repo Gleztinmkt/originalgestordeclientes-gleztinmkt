@@ -19,7 +19,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
 import { Json } from "@/integrations/supabase/types";
-import { ClientInfo } from "../types/client";
+import { ClientInfo, SocialNetwork, SocialPlatform } from "../types/client";
 
 interface ClientInfoDialogProps {
   clientId: string;
@@ -49,7 +49,7 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
     try {
       setIsLoading(true);
       
-      // Convert ClientInfo to a JSON-compatible format, ensuring all nested objects are also JSON-compatible
+      // Convert ClientInfo to a JSON-compatible format
       const clientInfoJson: Json = {
         generalInfo: info.generalInfo,
         meetings: info.meetings.map(meeting => ({
@@ -176,7 +176,7 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
                     value={network.platform}
                     onChange={(e) => {
                       const newNetworks = [...info.socialNetworks];
-                      newNetworks[index].platform = e.target.value as SocialNetwork['platform'];
+                      newNetworks[index].platform = e.target.value as SocialPlatform;
                       setInfo(prev => ({ ...prev, socialNetworks: newNetworks }));
                     }}
                     className="w-full p-2 border rounded-md bg-background"
