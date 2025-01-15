@@ -33,7 +33,7 @@ export const useClientManager = () => {
         marketingInfo: clientData.marketingInfo || "",
         instagram: clientData.instagram || "",
         facebook: clientData.facebook || "",
-        packages: [] // Remove default package creation
+        packages: []
       });
 
       setClients(prev => [newClient, ...prev]);
@@ -69,10 +69,31 @@ export const useClientManager = () => {
     }
   };
 
-  const updateClientData = async (id: string, data: any) => {
+  const updateClientData = async (id: string, data: Partial<Client>) => {
     try {
-      const updatedClient = await updateClient(id, data);
+      // Find the existing client
+      const existingClient = clients.find(c => c.id === id);
+      if (!existingClient) {
+        throw new Error('Cliente no encontrado');
+      }
+
+      // Merge the existing client data with the updates
+      const mergedData = {
+        ...existingClient,
+        ...data,
+        // Special handling for nested objects
+        clientInfo: data.clientInfo ? {
+          ...existingClient.clientInfo,
+          ...data.clientInfo,
+        } : existingClient.clientInfo,
+        // Ensure packages are preserved unless explicitly updated
+        packages: data.packages || existingClient.packages,
+      };
+
+      const updatedClient = await updateClient(id, mergedData);
+      
       setClients(prev => prev.map(c => c.id === id ? updatedClient : c));
+      
       toast({
         title: "Cliente actualizado",
         description: "La información del cliente se ha actualizado correctamente.",
