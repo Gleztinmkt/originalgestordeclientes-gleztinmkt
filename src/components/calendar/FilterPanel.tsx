@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Client } from "../types/client";
 import { DesignerDialog } from "./DesignerDialog";
 import { useState } from "react";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
 
 interface FilterPanelProps {
   clients: Client[];
@@ -38,6 +40,15 @@ export const FilterPanel = ({
   children
 }: FilterPanelProps) => {
   const [isDesignerDialogOpen, setIsDesignerDialogOpen] = useState(false);
+
+  const getPackageLabel = (pkg: any) => {
+    try {
+      const date = new Date(pkg.start_date);
+      return format(date, 'MMMM yyyy', { locale: es });
+    } catch {
+      return pkg.name;
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -113,7 +124,7 @@ export const FilterPanel = ({
           <SelectItem value="all_packages">Todos los paquetes</SelectItem>
           {selectedClient && clients.find(c => c.id === selectedClient)?.packages.map((pkg) => (
             <SelectItem key={pkg.id} value={pkg.id}>
-              {pkg.name}
+              {getPackageLabel(pkg)}
             </SelectItem>
           ))}
         </SelectContent>

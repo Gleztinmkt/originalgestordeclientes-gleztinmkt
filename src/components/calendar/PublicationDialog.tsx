@@ -18,7 +18,7 @@ import { toast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
-import { ExternalLink, Link as LinkIcon } from "lucide-react";
+import { ExternalLink, Link as LinkIcon, Trash2, Edit2 } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -56,7 +56,8 @@ export const PublicationDialog = ({
     ...publication,
     filming_time: publication.filming_time || '',
     links: publication.links || '',
-    copywriting: publication.copywriting || ''
+    copywriting: publication.copywriting || '',
+    description: publication.description || ''
   });
 
   const [taggedLinks, setTaggedLinks] = useState<TaggedLink[]>([]);
@@ -74,7 +75,7 @@ export const PublicationDialog = ({
     }
   }, []);
 
-  const { data: designers = [] } = useQuery({
+  const { data: designers = [], refetch: refetchDesigners } = useQuery({
     queryKey: ['designers'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -172,6 +173,11 @@ export const PublicationDialog = ({
     setTaggedLinks(taggedLinks.filter((_, i) => i !== index));
   };
 
+  const getSocialNetworkUrl = (platform: string, username: string) => {
+    if (username.startsWith('http')) return username;
+    return `https://${platform}.com/${username}`;
+  };
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -187,8 +193,8 @@ export const PublicationDialog = ({
             </DialogTitle>
           </DialogHeader>
 
-          <ScrollArea className="flex-1">
-            <div className="space-y-4 p-4">
+          <ScrollArea className="flex-1 px-4">
+            <div className="space-y-4">
               {client?.clientInfo?.socialNetworks && client.clientInfo.socialNetworks.length > 0 && (
                 <Card>
                   <CardContent className="p-4">
@@ -197,7 +203,7 @@ export const PublicationDialog = ({
                       {client.clientInfo.socialNetworks.map((network, index) => (
                         <a
                           key={index}
-                          href={network.username.startsWith('http') ? network.username : `https://${network.platform}.com/${network.username}`}
+                          href={getSocialNetworkUrl(network.platform, network.username)}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center space-x-2 text-blue-500 hover:text-blue-700"
@@ -216,7 +222,6 @@ export const PublicationDialog = ({
                 <Input
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full"
                 />
               </div>
 
@@ -309,7 +314,7 @@ export const PublicationDialog = ({
                             onClick={() => removeLink(index)}
                             className="text-red-500 hover:text-red-700 flex-shrink-0"
                           >
-                            Eliminar
+                            <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
                       ))}
@@ -330,7 +335,7 @@ export const PublicationDialog = ({
               <div className="space-y-2">
                 <Label>Descripción</Label>
                 <Textarea
-                  value={formData.description || ""}
+                  value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   className="min-h-[200px] font-mono"
                 />
