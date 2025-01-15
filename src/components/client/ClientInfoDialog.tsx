@@ -100,7 +100,7 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
   const addSocialNetwork = () => {
     setInfo(prev => ({
       ...prev,
-      socialNetworks: [...prev.socialNetworks, { platform: 'instagram', username: '' }],
+      socialNetworks: [...prev.socialNetworks, { platform: 'instagram' as SocialPlatform, username: '' }],
     }));
   };
 
