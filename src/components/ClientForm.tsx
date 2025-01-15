@@ -22,7 +22,7 @@ export const ClientForm = ({ onAddClient }: ClientFormProps) => {
     const newClient = {
       name: values.name,
       phone: values.phone,
-      paymentDay: values.nextPayment,
+      payment_day: values.nextPayment, // Changed from paymentDay to payment_day to match database column
       marketingInfo: "",
       instagram: "",
       facebook: "",
