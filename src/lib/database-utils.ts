@@ -41,7 +41,7 @@ export const formatClientForDatabase = (client: Partial<Client>) => {
   const formatted = {
     name: client.name || '',
     phone: client.phone || null,
-    payment_day: client.payment_day ? parseInt(client.payment_day.toString()) : null,
+    payment_day: client.paymentDay ? parseInt(client.paymentDay.toString()) : null,
     marketing_info: client.marketingInfo || null,
     instagram: client.instagram || null,
     facebook: client.facebook || null,
