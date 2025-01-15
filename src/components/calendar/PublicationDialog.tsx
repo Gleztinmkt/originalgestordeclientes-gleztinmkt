@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -17,6 +17,8 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Card, CardContent } from "@/components/ui/card";
+import { ExternalLink, Link as LinkIcon } from "lucide-react";
 
 interface PublicationDialogProps {
   open: boolean;
@@ -24,6 +26,11 @@ interface PublicationDialogProps {
   publication: Publication;
   client?: Client;
   onUpdate: () => void;
+}
+
+interface TaggedLink {
+  url: string;
+  label: string;
 }
 
 export const PublicationDialog = ({
@@ -40,6 +47,22 @@ export const PublicationDialog = ({
     links: publication.links || '',
     copywriting: publication.copywriting || ''
   });
+
+  const [taggedLinks, setTaggedLinks] = useState<TaggedLink[]>([]);
+  const [newLinkUrl, setNewLinkUrl] = useState('');
+  const [newLinkLabel, setNewLinkLabel] = useState('');
+
+  useEffect(() => {
+    if (formData.links) {
+      try {
+        setTaggedLinks(JSON.parse(formData.links));
+      } catch {
+        // Si el formato antiguo está en uso, convertir a nuevo formato
+        const oldLinks = formData.links.split('\n').filter(link => link.trim());
+        setTaggedLinks(oldLinks.map(url => ({ url, label: 'Link' })));
+      }
+    }
+  }, []);
 
   const { data: designers = [] } = useQuery({
     queryKey: ['designers'],
@@ -71,7 +94,7 @@ export const PublicationDialog = ({
         name: formData.name,
         date: formData.date,
         filming_time: formData.filming_time,
-        links: formData.links,
+        links: JSON.stringify(taggedLinks),
         copywriting: formData.copywriting
       };
 
@@ -101,30 +124,56 @@ export const PublicationDialog = ({
     }
   };
 
-  const renderLinks = () => {
-    if (!formData.links) return null;
-    return formData.links.split('\n').map((link, index) => (
-      <a 
-        key={index}
-        href={link}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-blue-500 hover:text-blue-700 block"
-      >
-        {link}
-      </a>
-    ));
+  const addLink = () => {
+    if (newLinkUrl && newLinkLabel) {
+      setTaggedLinks([...taggedLinks, { url: newLinkUrl, label: newLinkLabel }]);
+      setNewLinkUrl('');
+      setNewLinkLabel('');
+    }
+  };
+
+  const removeLink = (index: number) => {
+    setTaggedLinks(taggedLinks.filter((_, i) => i !== index));
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
-          <DialogTitle>Editar publicación</DialogTitle>
+          <DialogTitle className="flex items-center justify-between">
+            <span>Editar publicación</span>
+            {client && (
+              <span className="text-sm text-muted-foreground">
+                Cliente: {client.name}
+              </span>
+            )}
+          </DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="flex-1">
-          <div className="space-y-4 p-4">
+        <ScrollArea className="flex-1 px-4">
+          <div className="space-y-4 py-4">
+            {client?.clientInfo?.socialNetworks && client.clientInfo.socialNetworks.length > 0 && (
+              <Card>
+                <CardContent className="p-4">
+                  <h3 className="font-semibold mb-2">Redes Sociales del Cliente</h3>
+                  <div className="space-y-2">
+                    {client.clientInfo.socialNetworks.map((network, index) => (
+                      <a
+                        key={index}
+                        href={network.username}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center space-x-2 text-blue-500 hover:text-blue-700"
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                        <span>{network.platform}: {network.username}</span>
+                      </a>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             <div className="space-y-2">
               <Label>Nombre de la publicación</Label>
               <Input
@@ -173,25 +222,59 @@ export const PublicationDialog = ({
             </div>
 
             <div className="space-y-2">
-              <Label>Hora de filmación (opcional)</Label>
-              <Input
+              <Label>Hora de filmación</Label>
+              <input
                 type="time"
                 value={formData.filming_time}
                 onChange={(e) => setFormData({ ...formData, filming_time: e.target.value })}
-                className="w-full"
+                className="w-full px-3 py-2 border rounded-md"
               />
             </div>
 
             <div className="space-y-2">
-              <Label>Links (uno por línea)</Label>
-              <Textarea
-                value={formData.links}
-                onChange={(e) => setFormData({ ...formData, links: e.target.value })}
-                className="min-h-[100px]"
-                placeholder="https://ejemplo.com"
-              />
-              <div className="mt-2">
-                {renderLinks()}
+              <Label>Links</Label>
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  <Input
+                    value={newLinkLabel}
+                    onChange={(e) => setNewLinkLabel(e.target.value)}
+                    placeholder="Etiqueta del link"
+                    className="flex-1"
+                  />
+                  <Input
+                    value={newLinkUrl}
+                    onChange={(e) => setNewLinkUrl(e.target.value)}
+                    placeholder="URL"
+                    className="flex-1"
+                  />
+                  <Button onClick={addLink} type="button" size="sm">
+                    Agregar
+                  </Button>
+                </div>
+                <div className="space-y-2">
+                  {taggedLinks.map((link, index) => (
+                    <div key={index} className="flex items-center gap-2 p-2 bg-secondary rounded-lg">
+                      <LinkIcon className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-medium">{link.label}:</span>
+                      <a
+                        href={link.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-500 hover:text-blue-700 flex-1 truncate"
+                      >
+                        {link.url}
+                      </a>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeLink(index)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        Eliminar
+                      </Button>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
 
