@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
-import { ExternalLink, Link as LinkIcon, Trash2 } from "lucide-react";
+import { ExternalLink, Link as LinkIcon, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import { Publication } from "../client/publication/types";
 import { Client } from "../types/client";
@@ -22,6 +22,7 @@ interface PublicationDialogProps {
   onOpenChange: (open: boolean) => void;
   onUpdate: () => void;
   onDelete?: () => void;
+  designers?: any[];
 }
 
 export const PublicationDialog = ({ 
@@ -30,13 +31,14 @@ export const PublicationDialog = ({
   open, 
   onOpenChange, 
   onUpdate,
-  onDelete
+  onDelete,
+  designers = []
 }: PublicationDialogProps) => {
   const [name, setName] = useState(publication.name);
   const [type, setType] = useState<PublicationType>(publication.type as PublicationType);
   const [description, setDescription] = useState(publication.description || "");
   const [copywriting, setCopywriting] = useState(publication.copywriting || "");
-  const [filmingTime, setFilmingTime] = useState(publication.filming_time || "");
+  const [designer, setDesigner] = useState(publication.designer || "");
   const [links, setLinks] = useState<Array<{ label: string; url: string }>>(() => {
     if (!publication.links) return [];
     try {
@@ -59,7 +61,7 @@ export const PublicationDialog = ({
           type,
           description,
           copywriting,
-          filming_time: filmingTime,
+          designer,
           links: JSON.stringify(links),
         })
         .eq('id', publication.id);
@@ -96,11 +98,48 @@ export const PublicationDialog = ({
     setLinks(newLinks);
   };
 
+  const handleDesignerRemove = async () => {
+    try {
+      const { error } = await supabase
+        .from('publications')
+        .update({ designer: null })
+        .eq('id', publication.id);
+
+      if (error) throw error;
+
+      setDesigner("");
+      onUpdate();
+      
+      toast({
+        title: "Diseñador removido",
+        description: "El diseñador ha sido removido de la publicación.",
+      });
+    } catch (error) {
+      console.error('Error removing designer:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo remover el diseñador.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[600px] max-h-[80vh]">
         <DialogHeader>
-          <DialogTitle>Editar Publicación</DialogTitle>
+          <div className="flex justify-between items-center">
+            <DialogTitle>Editar Publicación</DialogTitle>
+            {onDelete && (
+              <Button 
+                variant="destructive" 
+                size="sm"
+                onClick={onDelete}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
         </DialogHeader>
         <ScrollArea className="h-[calc(80vh-120px)] pr-4">
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -114,16 +153,6 @@ export const PublicationDialog = ({
             </div>
 
             <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="filmingTime">Hora de filmación</Label>
-                <Input
-                  id="filmingTime"
-                  value={filmingTime}
-                  onChange={(e) => setFilmingTime(e.target.value)}
-                  placeholder="Ej: 15:00"
-                />
-              </div>
-
               <div className="space-y-2">
                 <Label>Tipo de contenido</Label>
                 <Select 
@@ -139,6 +168,36 @@ export const PublicationDialog = ({
                     <SelectItem value="image">Imagen</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Diseñador asignado</Label>
+                <div className="flex gap-2">
+                  <Select 
+                    value={designer} 
+                    onValueChange={setDesigner}
+                  >
+                    <SelectTrigger className="flex-1">
+                      <SelectValue placeholder="Seleccionar diseñador" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Sin diseñador</SelectItem>
+                      {designers.map((d) => (
+                        <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {designer && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={handleDesignerRemove}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
 

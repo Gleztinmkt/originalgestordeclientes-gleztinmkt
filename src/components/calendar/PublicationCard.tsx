@@ -124,6 +124,32 @@ export const PublicationCard = ({
     }
   };
 
+  const handleDelete = async () => {
+    try {
+      const { error } = await supabase
+        .from('publications')
+        .update({ deleted_at: new Date().toISOString() })
+        .eq('id', publication.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Publicación eliminada",
+        description: "La publicación ha sido eliminada correctamente.",
+      });
+
+      onUpdate();
+      setShowDialog(false);
+    } catch (error) {
+      console.error('Error deleting publication:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar la publicación.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <ContextMenu>
       <ContextMenuTrigger>
@@ -209,6 +235,8 @@ export const PublicationCard = ({
         publication={publication}
         client={client}
         onUpdate={onUpdate}
+        onDelete={handleDelete}
+        designers={designers}
       />
     </ContextMenu>
   );
