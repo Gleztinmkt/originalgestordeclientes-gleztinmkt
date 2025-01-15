@@ -18,6 +18,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
+import { Json } from "@/integrations/supabase/types";
 
 interface SocialNetwork {
   platform: 'instagram' | 'facebook' | 'linkedin' | 'tiktok' | 'twitter' | 'youtube';
@@ -62,11 +63,18 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
     try {
       setIsLoading(true);
       
+      // Convert ClientInfo to a JSON-compatible format
+      const clientInfoJson: Json = {
+        generalInfo: info.generalInfo,
+        meetings: info.meetings,
+        socialNetworks: info.socialNetworks
+      };
+
       // Update the client_info in Supabase
       const { error } = await supabase
         .from('clients')
         .update({ 
-          client_info: info 
+          client_info: clientInfoJson
         })
         .eq('id', clientId);
 
