@@ -38,6 +38,8 @@ interface PublicationDialogProps {
   onDelete: () => void;
 }
 
+type PublicationType = "reel" | "carousel" | "image";
+
 export const PublicationDialog = ({
   publication,
   client,
@@ -47,14 +49,15 @@ export const PublicationDialog = ({
   onDelete,
 }: PublicationDialogProps) => {
   const [name, setName] = useState(publication.name);
-  const [type, setType] = useState(publication.type);
+  const [type, setType] = useState<PublicationType>(publication.type as PublicationType);
   const [description, setDescription] = useState(publication.description || "");
   const [copywriting, setCopywriting] = useState(publication.copywriting || "");
   const [filmingTime, setFilmingTime] = useState(publication.filming_time || "");
   const [designer, setDesigner] = useState(publication.designer || "");
   const [links, setLinks] = useState<Array<{ label: string; url: string }>>(() => {
+    if (!publication.links) return [];
     try {
-      return publication.links ? JSON.parse(publication.links) : [];
+      return JSON.parse(publication.links);
     } catch (e) {
       console.error('Error parsing links:', e);
       return [];
@@ -105,7 +108,7 @@ export const PublicationDialog = ({
       console.error('Error updating publication:', error);
       toast({
         title: "Error",
-        description: "No se pudo actualizar la publicación.",
+        description: "No se pudo actualizar la publicación. Por favor, intenta de nuevo.",
         variant: "destructive",
       });
     }
@@ -156,7 +159,7 @@ export const PublicationDialog = ({
 
                 <div className="space-y-2">
                   <Label>Tipo de contenido</Label>
-                  <Select value={type} onValueChange={setType}>
+                  <Select value={type} onValueChange={(value: PublicationType) => setType(value)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Seleccionar tipo" />
                     </SelectTrigger>
