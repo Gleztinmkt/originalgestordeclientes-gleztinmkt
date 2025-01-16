@@ -33,10 +33,30 @@ export const Auth = () => {
         }
 
         navigate("/");
+      } else if (event === "SIGNED_OUT") {
+        setError(null);
       }
     });
 
-    return () => subscription.unsubscribe();
+    // Listen for auth errors
+    const authListener = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'USER_UPDATED' && !session) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const errorCode = urlParams.get('error_code');
+        const errorMessage = urlParams.get('error_description');
+        
+        if (errorCode === 'email_not_confirmed') {
+          setError('Por favor, confirma tu email antes de iniciar sesión. Revisa tu bandeja de entrada.');
+        } else if (errorMessage) {
+          setError(errorMessage);
+        }
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+      authListener.data.subscription.unsubscribe();
+    };
   }, [navigate]);
 
   const handleAuthError = (error: AuthError) => {
@@ -45,13 +65,17 @@ export const Auth = () => {
         setError('Credenciales inválidas. Por favor, verifica tu email y contraseña.');
         break;
       case 'Email not confirmed':
-        setError('Por favor, confirma tu email antes de iniciar sesión.');
+        setError('Por favor, confirma tu email antes de iniciar sesión. Revisa tu bandeja de entrada.');
         break;
       case 'User already registered':
         setError('Este email ya está registrado. Por favor, inicia sesión.');
         break;
       default:
-        setError(error.message);
+        if (error.message.includes('email_not_confirmed')) {
+          setError('Por favor, confirma tu email antes de iniciar sesión. Revisa tu bandeja de entrada.');
+        } else {
+          setError(error.message);
+        }
     }
   };
 
