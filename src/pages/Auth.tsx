@@ -17,69 +17,44 @@ export const Auth = () => {
   useEffect(() => {
     const checkInitialSession = async () => {
       try {
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        const { data: { session } } = await supabase.auth.getSession();
         
-        if (sessionError) {
-          console.error('Session error:', sessionError);
-          setError('Error checking session');
-          return;
-        }
-
         if (session) {
           setIsLoading(true);
           
-          // Add retry logic for profile check
-          let retryCount = 0;
-          const maxRetries = 3;
+          // Add delay before checking profile to ensure DB consistency
+          await new Promise(resolve => setTimeout(resolve, 1000));
           
-          while (retryCount < maxRetries) {
-            try {
-              const { data: profile, error: profileError } = await supabase
-                .from('profiles')
-                .select('role')
-                .eq('id', session.user.id)
-                .single();
+          try {
+            const { data: profile, error: profileError } = await supabase
+              .from('profiles')
+              .select('role')
+              .eq('id', session.user.id)
+              .single();
 
-              if (profileError) {
-                console.error('Profile check error:', profileError);
-                retryCount++;
-                if (retryCount === maxRetries) {
-                  await supabase.auth.signOut();
-                  setError('Error verifying user profile after multiple attempts');
-                  break;
-                }
-                // Wait before retrying
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                continue;
-              }
-
-              if (!profile) {
-                console.error('No profile found');
-                await supabase.auth.signOut();
-                setError('Profile not found. Please contact the administrator.');
-                break;
-              }
-
-              // Successfully found profile
-              toast({
-                title: "Login successful",
-                description: "Welcome to the system",
-              });
-              navigate("/");
-              break;
-            } catch (err) {
-              console.error('Profile check attempt failed:', err);
-              retryCount++;
-              if (retryCount === maxRetries) {
-                await supabase.auth.signOut();
-                setError('Error verifying user profile');
-              }
-              await new Promise(resolve => setTimeout(resolve, 1000));
+            if (profileError) {
+              console.error('Profile check error:', profileError);
+              setError('Error checking user profile');
+              return;
             }
+
+            if (!profile) {
+              setError('Profile not found. Please contact the administrator.');
+              return;
+            }
+
+            toast({
+              title: "Login successful",
+              description: "Welcome to the system",
+            });
+            navigate("/");
+          } catch (err) {
+            console.error('Profile verification error:', err);
+            setError('Error checking user profile');
           }
         }
       } catch (err) {
-        console.error('Initial session check error:', err);
+        console.error('Session check error:', err);
         setError('Error checking session');
       } finally {
         setIsLoading(false);
@@ -95,7 +70,7 @@ export const Auth = () => {
       if (event === "SIGNED_IN" && session) {
         setIsLoading(true);
         try {
-          // Add a delay to ensure database consistency
+          // Add delay to ensure database consistency
           await new Promise(resolve => setTimeout(resolve, 1000));
           
           const { data: profile, error: profileError } = await supabase
@@ -107,13 +82,11 @@ export const Auth = () => {
           if (profileError) {
             console.error('Error checking profile:', profileError);
             setError('Error checking user profile');
-            await supabase.auth.signOut();
             return;
           }
 
           if (!profile) {
             setError('You do not have access to the system. Please contact the administrator.');
-            await supabase.auth.signOut();
             return;
           }
 
@@ -124,13 +97,10 @@ export const Auth = () => {
           navigate("/");
         } catch (err) {
           console.error('Error during login process:', err);
-          setError('Error processing login');
+          setError('Error checking user profile');
         } finally {
           setIsLoading(false);
         }
-      } else if (event === "SIGNED_OUT") {
-        setError(null);
-        setIsLoading(false);
       }
     });
 
@@ -138,43 +108,6 @@ export const Auth = () => {
       subscription.unsubscribe();
     };
   }, [navigate]);
-
-  const handleAuthError = (error: AuthError) => {
-    console.error('Auth error:', error);
-    let errorMessage = 'An error occurred during authentication';
-
-    if (error instanceof AuthApiError) {
-      switch (error.status) {
-        case 400:
-          switch (error.message) {
-            case 'Invalid login credentials':
-              errorMessage = 'Invalid credentials. Please check your email and password.';
-              break;
-            case 'Email not confirmed':
-              errorMessage = 'Please confirm your email before logging in.';
-              break;
-            default:
-              errorMessage = error.message;
-          }
-          break;
-        case 422:
-          errorMessage = 'Invalid email or password format.';
-          break;
-        case 500:
-          errorMessage = 'Server error. Please try again later.';
-          break;
-        default:
-          errorMessage = error.message;
-      }
-    }
-
-    setError(errorMessage);
-    toast({
-      variant: "destructive",
-      title: "Authentication Error",
-      description: errorMessage,
-    });
-  };
 
   if (isCheckingAuth) {
     return (
