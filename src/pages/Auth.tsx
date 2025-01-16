@@ -66,16 +66,18 @@ export const Auth = () => {
     let errorMessage = 'Ha ocurrido un error durante la autenticación';
 
     try {
+      // Check if error.message is a JSON string
       if (typeof error.message === 'string' && error.message.includes('{')) {
         try {
-          const parsed = JSON.parse(error.message);
-          if (parsed.code === 'email_not_confirmed') {
+          const parsedError = JSON.parse(error.message);
+          if (parsedError.code === 'email_not_confirmed') {
             errorMessage = 'Por favor, confirma tu email antes de iniciar sesión. Revisa tu bandeja de entrada.';
           }
         } catch (e) {
           console.error('Error parsing error message:', e);
         }
       } else {
+        // Handle non-JSON error messages
         switch (error.message) {
           case 'Invalid login credentials':
             errorMessage = 'Credenciales inválidas. Por favor, verifica tu email y contraseña.';
@@ -87,6 +89,7 @@ export const Auth = () => {
             errorMessage = 'Este email ya está registrado. Por favor, inicia sesión.';
             break;
           default:
+            // Check if the error message contains specific strings
             if (error.message.includes('email_not_confirmed')) {
               errorMessage = 'Por favor, confirma tu email antes de iniciar sesión. Revisa tu bandeja de entrada.';
             } else {
