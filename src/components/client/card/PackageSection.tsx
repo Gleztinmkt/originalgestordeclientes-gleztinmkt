@@ -63,6 +63,8 @@ export const PackageSection = ({
       title: "Reporte enviado",
       description: "El reporte ha sido enviado por WhatsApp.",
     });
+
+    return Promise.resolve();
   };
 
   return (
