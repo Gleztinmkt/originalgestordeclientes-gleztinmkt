@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
-import { AuthError } from "@supabase/supabase-js";
+import { AuthError, AuthApiError } from "@supabase/supabase-js";
 
 export const Auth = () => {
   const navigate = useNavigate();
@@ -67,34 +67,26 @@ export const Auth = () => {
     console.error('Auth error:', error);
     let errorMessage = 'Ha ocurrido un error durante la autenticación';
 
-    try {
-      // Parse error message if it's in JSON format
-      const errorBody = error.message.includes('{') 
-        ? JSON.parse(error.message)
-        : { code: error.message };
-
-      switch (errorBody.code) {
-        case 'user_already_exists':
-          errorMessage = 'Este email ya está registrado. Por favor, inicia sesión.';
+    if (error instanceof AuthApiError) {
+      switch (error.status) {
+        case 400:
+          switch (error.message) {
+            case 'Invalid login credentials':
+              errorMessage = 'Credenciales inválidas. Por favor, verifica tu email y contraseña.';
+              break;
+            case 'Email not confirmed':
+              errorMessage = 'Por favor, confirma tu email antes de iniciar sesión.';
+              break;
+            default:
+              errorMessage = error.message;
+          }
           break;
-        case 'email_not_confirmed':
-          errorMessage = 'Por favor, confirma tu email antes de iniciar sesión. Revisa tu bandeja de entrada.';
-          break;
-        case 'invalid_credentials':
-          errorMessage = 'Credenciales inválidas. Por favor, verifica tu email y contraseña.';
-          break;
-        case 'email_provider_disabled':
-          errorMessage = 'El inicio de sesión por email está deshabilitado. Contacta al administrador.';
+        case 422:
+          errorMessage = 'Email o contraseña inválidos.';
           break;
         default:
-          if (error.message.includes('email_not_confirmed')) {
-            errorMessage = 'Por favor, confirma tu email antes de iniciar sesión. Revisa tu bandeja de entrada.';
-          } else {
-            errorMessage = error.message;
-          }
+          errorMessage = error.message;
       }
-    } catch (e) {
-      console.error('Error parsing auth error:', e);
     }
 
     setError(errorMessage);
