@@ -6,10 +6,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { InfoIcon } from "lucide-react";
+import { InfoIcon, Plus } from "lucide-react";
 import { DesignerDialog } from "./DesignerDialog";
 import { StatusLegend } from "./StatusLegend";
 import { useState } from "react";
+import { Button } from "../ui/button";
 
 interface FilterPanelProps {
   clients: Array<{ id: string; name: string }>;
@@ -76,6 +77,14 @@ export const FilterPanel = ({
             ))}
           </SelectContent>
         </Select>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => setShowDesignerDialog(true)}
+          className="flex-shrink-0"
+        >
+          <Plus className="h-4 w-4" />
+        </Button>
       </div>
 
       <Select value={selectedStatus || "all_status"} onValueChange={(value) => onStatusChange(value === "all_status" ? null : value)}>
@@ -120,7 +129,7 @@ export const FilterPanel = ({
         open={showDesignerDialog}
         onOpenChange={setShowDesignerDialog}
         onDesignerAdded={onDesignerAdded}
-        onDesignerDeleted={onDesignerAdded} // We'll reuse the same callback since both actions require a refresh
+        onDesignerDeleted={onDesignerAdded}
       />
     </div>
   );
