@@ -47,6 +47,9 @@ export const Auth = () => {
       case 'Email not confirmed':
         setError('Por favor, confirma tu email antes de iniciar sesión.');
         break;
+      case 'User already registered':
+        setError('Este email ya está registrado. Por favor, inicia sesión.');
+        break;
       default:
         setError(error.message);
     }
@@ -80,6 +83,7 @@ export const Auth = () => {
               },
             }}
             providers={[]}
+            onError={handleAuthError}
           />
         </CardContent>
       </Card>
