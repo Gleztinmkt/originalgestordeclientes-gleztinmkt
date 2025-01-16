@@ -56,12 +56,7 @@ export const PackageSection = ({
 
     const whatsappUrl = `https://wa.me/${client.phone.replace(/\D/g, '')}?text=${encodeURIComponent(reportText)}`;
     window.open(whatsappUrl, '_blank');
-
-    toast({
-      title: "Reporte enviado",
-      description: "El reporte ha sido enviado por WhatsApp.",
-    });
-
+    
     return Promise.resolve();
   };
 
