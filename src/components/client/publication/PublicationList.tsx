@@ -37,7 +37,7 @@ export const PublicationList = ({ publications = [], packageId }: PublicationLis
   }
 
   return (
-    <ScrollArea className="h-[200px] rounded-md border p-4">
+    <ScrollArea className="h-[300px] rounded-md border p-4">
       <div className="space-y-4">
         {filteredPublications.map((pub) => (
           <div

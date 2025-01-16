@@ -143,7 +143,7 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
   return (
     <div className={`h-screen ${isMobile ? 'flex flex-col' : 'flex'}`}>
       <div className={`${isMobile ? 'w-full' : 'w-72 lg:w-80'} flex-shrink-0 ${isMobile ? 'border-b' : 'border-r'}`}>
-        <div className={`${isMobile ? 'p-2' : 'h-full p-4'} flex flex-col`}>
+        <div className={`${isMobile ? 'p-4' : 'h-full p-4'} flex flex-col`}>
           <FilterPanel
             clients={clients}
             designers={designers}
@@ -211,18 +211,12 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
 
         <DragDropContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
           {isMobile ? (
-            <div className="space-y-4">
+            <div className="calendar-mobile-view">
               {daysInMonth.map((date) => {
                 const dateStr = format(date, 'yyyy-MM-dd');
                 const dayPublications = filteredPublications.filter(
                   pub => format(new Date(pub.date), 'yyyy-MM-dd') === dateStr
                 );
-
-                const isExpanded = expandedDays[dateStr];
-                const visiblePublications = isExpanded 
-                  ? dayPublications 
-                  : dayPublications.slice(0, MAX_VISIBLE_PUBLICATIONS);
-                const hasMore = dayPublications.length > MAX_VISIBLE_PUBLICATIONS;
 
                 if (dayPublications.length === 0) return null;
 
@@ -232,18 +226,18 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
                       <div
                         ref={provided.innerRef}
                         {...provided.droppableProps}
-                        className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm"
+                        className="calendar-day-card"
                       >
-                        <div className="flex items-center justify-between mb-2">
-                          <h3 className="font-semibold capitalize">
+                        <div className="calendar-day-header">
+                          <h3 className="calendar-day-title">
                             {format(date, 'EEEE d', { locale: es })}
                           </h3>
                           <span className="text-sm text-gray-500">
                             {dayPublications.length} publicaciones
                           </span>
                         </div>
-                        <div className="space-y-2">
-                          {visiblePublications.map((publication, pubIndex) => {
+                        <div className="calendar-publications">
+                          {dayPublications.map((publication, pubIndex) => {
                             const client = clients.find(c => c.id === publication.client_id);
                             const typeShorthand = publication.type === 'reel' ? 'R' : publication.type === 'carousel' ? 'C' : 'I';
                             const displayTitle = `${client?.name || ''} - ${typeShorthand} - ${publication.name}`;
@@ -275,16 +269,6 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
                             );
                           })}
                           {provided.placeholder}
-                          {hasMore && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="w-full mt-1 text-xs"
-                              onClick={() => toggleDayExpansion(dateStr)}
-                            >
-                              {isExpanded ? 'Ver menos' : `Ver ${dayPublications.length - MAX_VISIBLE_PUBLICATIONS} más`}
-                            </Button>
-                          )}
                         </div>
                       </div>
                     )}
@@ -306,12 +290,6 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
                   pub => format(new Date(pub.date), 'yyyy-MM-dd') === dateStr
                 );
 
-                const isExpanded = expandedDays[dateStr];
-                const visiblePublications = isExpanded 
-                  ? dayPublications 
-                  : dayPublications.slice(0, MAX_VISIBLE_PUBLICATIONS);
-                const hasMore = dayPublications.length > MAX_VISIBLE_PUBLICATIONS;
-
                 return (
                   <Droppable key={dateStr} droppableId={dateStr}>
                     {(provided) => (
@@ -325,7 +303,7 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
                         </div>
                         <ScrollArea className={`h-full ${isMobile ? 'touch-pan-y' : ''}`}>
                           <div className="space-y-1">
-                            {visiblePublications.map((publication, pubIndex) => {
+                            {dayPublications.map((publication, pubIndex) => {
                               const client = clients.find(c => c.id === publication.client_id);
                               const typeShorthand = publication.type === 'reel' ? 'R' : publication.type === 'carousel' ? 'C' : 'I';
                               const displayTitle = `${client?.name || ''} - ${typeShorthand} - ${publication.name}`;
@@ -357,16 +335,6 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
                               );
                             })}
                             {provided.placeholder}
-                            {hasMore && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="w-full mt-1 text-xs h-6 py-0"
-                                onClick={() => toggleDayExpansion(dateStr)}
-                              >
-                                {isExpanded ? 'Ver menos' : `Ver ${dayPublications.length - MAX_VISIBLE_PUBLICATIONS} más`}
-                              </Button>
-                            )}
                           </div>
                         </ScrollArea>
                       </div>
