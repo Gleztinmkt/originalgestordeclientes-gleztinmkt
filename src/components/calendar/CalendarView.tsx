@@ -203,45 +203,46 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
                 &gt;
               </Button>
             </div>
-            <h2 className="text-xl font-semibold">
+            <h2 className="text-xl font-semibold capitalize">
               {format(selectedDate, 'MMMM yyyy', { locale: es })}
             </h2>
           </div>
         </div>
 
         <DragDropContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-          <div className={`grid grid-cols-7 gap-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 ${isMobile ? 'min-w-[800px]' : ''}`}>
-            {['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB'].map((day) => (
-              <div key={day} className="p-2 text-center font-semibold text-sm">
-                {day}
-              </div>
-            ))}
+          {isMobile ? (
+            <div className="space-y-4">
+              {daysInMonth.map((date) => {
+                const dateStr = format(date, 'yyyy-MM-dd');
+                const dayPublications = filteredPublications.filter(
+                  pub => format(new Date(pub.date), 'yyyy-MM-dd') === dateStr
+                );
 
-            {daysInMonth.map((date) => {
-              const dateStr = format(date, 'yyyy-MM-dd');
-              const dayPublications = filteredPublications.filter(
-                pub => format(new Date(pub.date), 'yyyy-MM-dd') === dateStr
-              );
+                const isExpanded = expandedDays[dateStr];
+                const visiblePublications = isExpanded 
+                  ? dayPublications 
+                  : dayPublications.slice(0, MAX_VISIBLE_PUBLICATIONS);
+                const hasMore = dayPublications.length > MAX_VISIBLE_PUBLICATIONS;
 
-              const isExpanded = expandedDays[dateStr];
-              const visiblePublications = isExpanded 
-                ? dayPublications 
-                : dayPublications.slice(0, MAX_VISIBLE_PUBLICATIONS);
-              const hasMore = dayPublications.length > MAX_VISIBLE_PUBLICATIONS;
+                if (dayPublications.length === 0) return null;
 
-              return (
-                <Droppable key={dateStr} droppableId={dateStr}>
-                  {(provided) => (
-                    <div
-                      ref={provided.innerRef}
-                      {...provided.droppableProps}
-                      className="min-h-[120px] border rounded-lg p-1 relative bg-white/50 dark:bg-gray-800/50"
-                    >
-                      <div className="text-right text-sm mb-1 px-1">
-                        {format(date, 'd')}
-                      </div>
-                      <ScrollArea className={`h-full ${isMobile ? 'touch-pan-y' : ''}`}>
-                        <div className="space-y-1">
+                return (
+                  <Droppable key={dateStr} droppableId={dateStr}>
+                    {(provided) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.droppableProps}
+                        className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm"
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className="font-semibold capitalize">
+                            {format(date, 'EEEE d', { locale: es })}
+                          </h3>
+                          <span className="text-sm text-gray-500">
+                            {dayPublications.length} publicaciones
+                          </span>
+                        </div>
+                        <div className="space-y-2">
                           {visiblePublications.map((publication, pubIndex) => {
                             const client = clients.find(c => c.id === publication.client_id);
                             const typeShorthand = publication.type === 'reel' ? 'R' : publication.type === 'carousel' ? 'C' : 'I';
@@ -278,20 +279,103 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="w-full mt-1 text-xs h-6 py-0"
+                              className="w-full mt-1 text-xs"
                               onClick={() => toggleDayExpansion(dateStr)}
                             >
                               {isExpanded ? 'Ver menos' : `Ver ${dayPublications.length - MAX_VISIBLE_PUBLICATIONS} más`}
                             </Button>
                           )}
                         </div>
-                      </ScrollArea>
-                    </div>
-                  )}
-                </Droppable>
-              );
-            })}
-          </div>
+                      </div>
+                    )}
+                  </Droppable>
+                );
+              })}
+            </div>
+          ) : (
+            <div className={`grid grid-cols-7 gap-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4`}>
+              {['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB'].map((day) => (
+                <div key={day} className="p-2 text-center font-semibold text-sm">
+                  {day}
+                </div>
+              ))}
+
+              {daysInMonth.map((date) => {
+                const dateStr = format(date, 'yyyy-MM-dd');
+                const dayPublications = filteredPublications.filter(
+                  pub => format(new Date(pub.date), 'yyyy-MM-dd') === dateStr
+                );
+
+                const isExpanded = expandedDays[dateStr];
+                const visiblePublications = isExpanded 
+                  ? dayPublications 
+                  : dayPublications.slice(0, MAX_VISIBLE_PUBLICATIONS);
+                const hasMore = dayPublications.length > MAX_VISIBLE_PUBLICATIONS;
+
+                return (
+                  <Droppable key={dateStr} droppableId={dateStr}>
+                    {(provided) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.droppableProps}
+                        className="min-h-[120px] border rounded-lg p-1 relative bg-white/50 dark:bg-gray-800/50"
+                      >
+                        <div className="text-right text-sm mb-1 px-1">
+                          {format(date, 'd')}
+                        </div>
+                        <ScrollArea className={`h-full ${isMobile ? 'touch-pan-y' : ''}`}>
+                          <div className="space-y-1">
+                            {visiblePublications.map((publication, pubIndex) => {
+                              const client = clients.find(c => c.id === publication.client_id);
+                              const typeShorthand = publication.type === 'reel' ? 'R' : publication.type === 'carousel' ? 'C' : 'I';
+                              const displayTitle = `${client?.name || ''} - ${typeShorthand} - ${publication.name}`;
+
+                              return (
+                                <Draggable
+                                  key={publication.id}
+                                  draggableId={publication.id}
+                                  index={pubIndex}
+                                  isDragDisabled={isDragging}
+                                >
+                                  {(provided) => (
+                                    <div
+                                      ref={provided.innerRef}
+                                      {...provided.draggableProps}
+                                      {...provided.dragHandleProps}
+                                    >
+                                      <PublicationCard
+                                        publication={publication}
+                                        client={client}
+                                        onUpdate={refetch}
+                                        displayTitle={displayTitle}
+                                        designers={designers}
+                                        isMobile={isMobile}
+                                      />
+                                    </div>
+                                  )}
+                                </Draggable>
+                              );
+                            })}
+                            {provided.placeholder}
+                            {hasMore && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="w-full mt-1 text-xs h-6 py-0"
+                                onClick={() => toggleDayExpansion(dateStr)}
+                              >
+                                {isExpanded ? 'Ver menos' : `Ver ${dayPublications.length - MAX_VISIBLE_PUBLICATIONS} más`}
+                              </Button>
+                            )}
+                          </div>
+                        </ScrollArea>
+                      </div>
+                    )}
+                  </Droppable>
+                );
+              })}
+            </div>
+          )}
         </DragDropContext>
       </div>
     </div>
