@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
-import type { AuthError } from "@supabase/supabase-js";
+import { AuthError } from "@supabase/supabase-js";
 
 export const Auth = () => {
   const navigate = useNavigate();
@@ -16,7 +16,6 @@ export const Auth = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === "SIGNED_IN" && session) {
         try {
-          // Verificar si el usuario tiene un perfil
           const { data: profile, error: profileError } = await supabase
             .from('profiles')
             .select('role')
@@ -53,9 +52,7 @@ export const Auth = () => {
     const urlParams = new URLSearchParams(window.location.search);
     const errorDescription = urlParams.get('error_description');
     if (errorDescription) {
-      const error = new Error(errorDescription) as AuthError;
-      error.name = 'AuthError';
-      error.status = 400;
+      const error = new AuthError(errorDescription, 400);
       handleAuthError(error);
     }
 
