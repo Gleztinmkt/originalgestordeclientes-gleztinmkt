@@ -11,13 +11,15 @@ import { AuthError, AuthApiError } from "@supabase/supabase-js";
 export const Auth = () => {
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === "SIGNED_IN" && session) {
+        setIsLoading(true);
         try {
           // Wait a brief moment before checking profile to ensure the user is fully registered
-          await new Promise(resolve => setTimeout(resolve, 500));
+          await new Promise(resolve => setTimeout(resolve, 1000));
           
           const { data: profile, error: profileError } = await supabase
             .from('profiles')
@@ -28,6 +30,7 @@ export const Auth = () => {
           if (profileError) {
             console.error('Error al verificar perfil:', profileError);
             setError('Error al verificar el perfil de usuario');
+            await supabase.auth.signOut();
             return;
           }
 
@@ -45,9 +48,12 @@ export const Auth = () => {
         } catch (err) {
           console.error('Error en el proceso de inicio de sesión:', err);
           setError('Error al procesar el inicio de sesión');
+        } finally {
+          setIsLoading(false);
         }
       } else if (event === "SIGNED_OUT") {
         setError(null);
+        setIsLoading(false);
       }
     });
 
@@ -84,6 +90,9 @@ export const Auth = () => {
         case 422:
           errorMessage = 'Email o contraseña inválidos.';
           break;
+        case 500:
+          errorMessage = 'Error del servidor. Por favor, intenta más tarde.';
+          break;
         default:
           errorMessage = error.message;
       }
@@ -111,21 +120,27 @@ export const Auth = () => {
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
-          <SupabaseAuth 
-            supabaseClient={supabase}
-            appearance={{
-              theme: ThemeSupa,
-              variables: {
-                default: {
-                  colors: {
-                    brand: '#000000',
-                    brandAccent: '#333333',
+          {isLoading ? (
+            <div className="flex justify-center items-center p-4">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-white"></div>
+            </div>
+          ) : (
+            <SupabaseAuth 
+              supabaseClient={supabase}
+              appearance={{
+                theme: ThemeSupa,
+                variables: {
+                  default: {
+                    colors: {
+                      brand: '#000000',
+                      brandAccent: '#333333',
+                    },
                   },
                 },
-              },
-            }}
-            providers={[]}
-          />
+              }}
+              providers={[]}
+            />
+          )}
         </CardContent>
       </Card>
     </div>
