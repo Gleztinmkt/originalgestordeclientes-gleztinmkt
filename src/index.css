@@ -94,47 +94,6 @@
   100% { width: 100%; }
 }
 
-/* Calendar Styles */
-.calendar-grid {
-  @apply grid grid-cols-7 gap-1;
-}
-
-.calendar-day {
-  @apply min-h-[120px] p-2 border rounded-lg bg-white/50 dark:bg-gray-800/50 transition-colors duration-200;
-}
-
-.calendar-day.today {
-  @apply bg-blue-50 dark:bg-blue-900/20;
-}
-
-.calendar-day-header {
-  @apply flex items-center justify-between mb-2;
-}
-
-.calendar-day-number {
-  @apply text-sm font-medium;
-}
-
-.calendar-day-number.today {
-  @apply text-blue-600 dark:text-blue-400;
-}
-
-.publication-dot {
-  @apply w-2 h-2 rounded-full;
-}
-
-.publication-dot-reel {
-  @apply bg-blue-400;
-}
-
-.publication-dot-carousel {
-  @apply bg-purple-400;
-}
-
-.publication-dot-image {
-  @apply bg-green-400;
-}
-
 /* Mobile Calendar Styles */
 @media (max-width: 768px) {
   .calendar-mobile-view {
