@@ -1,4 +1,4 @@
-import { Package, Edit, MoreVertical, Trash, Send, Calendar } from "lucide-react";
+import { Package, Edit, MoreVertical, Trash, Send } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PackageCounter } from "./PackageCounter";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +15,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { AddPackageForm, PackageFormValues } from "./AddPackageForm";
 import { toast } from "@/hooks/use-toast";
@@ -39,7 +40,7 @@ interface ClientPackageProps {
   paid: boolean;
   onUpdateUsed: (newCount: number) => void;
   onUpdatePaid: (paid: boolean) => void;
-  onEditPackage: (values: PackageFormValues & { name: string, totalPublications: string }) => void;
+  onEditPackage: (values: PackageFormValues & { name: string, totalPublications: string }) => Promise<void>;
   onDeletePackage?: () => void;
   clientId: string;
   clientName: string;
@@ -62,19 +63,13 @@ export const ClientPackage = ({
 }: ClientPackageProps) => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const handleSendCompletionMessage = () => {
-    const message = `¡Hola! Te informamos que tu paquete "${packageName}" del mes de ${month} ha sido completado. Para continuar con nuestros servicios, te invitamos a realizar el pago del próximo paquete. ¡Gracias por confiar en nosotros!`;
-    const whatsappUrl = `https://wa.me/${clientId}?text=${encodeURIComponent(message)}`;
-    window.open(whatsappUrl, '_blank');
-  };
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const handleEditSubmit = useCallback(async (values: PackageFormValues & { name: string, totalPublications: string }) => {
-    if (isSubmitting) return;
+    if (isProcessing) return;
     
     try {
-      setIsSubmitting(true);
+      setIsProcessing(true);
       await onEditPackage(values);
       setIsEditDialogOpen(false);
       toast({
@@ -89,9 +84,15 @@ export const ClientPackage = ({
         variant: "destructive",
       });
     } finally {
-      setIsSubmitting(false);
+      setIsProcessing(false);
     }
-  }, [onEditPackage, isSubmitting]);
+  }, [onEditPackage, isProcessing]);
+
+  const handleSendCompletionMessage = () => {
+    const message = `*Reporte de Paquete - ${clientName}*\n\n*Nombre:* ${packageName}\n*Mes:* ${month}\n*Estado:* Completado\n*Publicaciones:* ${usedPublications}/${totalPublications}\n\n*Gracias por confiar en Gleztin Marketing Digital*`;
+    const whatsappUrl = `https://wa.me/${clientId}?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+  };
 
   return (
     <Card className="bg-white dark:bg-gray-800 border dark:border-gray-700">
@@ -109,7 +110,7 @@ export const ClientPackage = ({
             <Switch 
               checked={paid} 
               onCheckedChange={onUpdatePaid}
-              disabled={isSubmitting}
+              disabled={isProcessing}
             />
           </div>
           <DropdownMenu>
@@ -121,7 +122,7 @@ export const ClientPackage = ({
             <DropdownMenuContent align="end">
               <DropdownMenuItem 
                 onClick={() => setIsEditDialogOpen(true)}
-                disabled={isSubmitting}
+                disabled={isProcessing}
               >
                 <Edit className="mr-2 h-4 w-4" />
                 Editar paquete
@@ -130,7 +131,7 @@ export const ClientPackage = ({
                 <DropdownMenuItem
                   className="text-red-600"
                   onClick={() => setIsDeleteDialogOpen(true)}
-                  disabled={isSubmitting}
+                  disabled={isProcessing}
                 >
                   <Trash className="mr-2 h-4 w-4" />
                   Eliminar paquete
@@ -177,7 +178,7 @@ export const ClientPackage = ({
               month: month,
               paid: paid,
             }}
-            isSubmitting={isSubmitting}
+            isSubmitting={isProcessing}
           />
         </DialogContent>
       </Dialog>

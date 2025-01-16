@@ -128,18 +128,7 @@ export const PublicationDialog = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[600px] max-h-[80vh]">
         <DialogHeader>
-          <div className="flex justify-between items-center">
-            <DialogTitle>Editar Publicación</DialogTitle>
-            {onDelete && (
-              <Button 
-                variant="destructive" 
-                size="sm"
-                onClick={onDelete}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            )}
-          </div>
+          <DialogTitle>Editar Publicación</DialogTitle>
         </DialogHeader>
         <ScrollArea className="h-[calc(80vh-120px)] pr-4">
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -270,8 +259,20 @@ export const PublicationDialog = ({
               />
             </div>
 
-            <div className="flex justify-end pt-4">
-              <Button type="submit">Guardar cambios</Button>
+            <div className="flex justify-end gap-2 pt-4">
+              {onDelete && (
+                <Button 
+                  type="button"
+                  variant="destructive"
+                  onClick={onDelete}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Eliminar
+                </Button>
+              )}
+              <Button type="submit">
+                Guardar cambios
+              </Button>
             </div>
           </form>
         </ScrollArea>
