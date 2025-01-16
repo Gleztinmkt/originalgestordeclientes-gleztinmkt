@@ -83,7 +83,6 @@ export const Auth = () => {
               },
             }}
             providers={[]}
-            onError={handleAuthError}
           />
         </CardContent>
       </Card>
