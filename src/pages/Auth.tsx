@@ -53,12 +53,13 @@ export const Auth = () => {
     const urlParams = new URLSearchParams(window.location.search);
     const errorDescription = urlParams.get('error_description');
     if (errorDescription) {
-      handleAuthError({ 
+      handleAuthError({
         message: errorDescription,
+        code: 'custom_error',
         name: 'AuthError',
         status: 400,
-        __isAuthError: true,
-      } as AuthError);
+        __isAuthError: true
+      });
     }
 
     return () => {
@@ -71,17 +72,24 @@ export const Auth = () => {
     let errorMessage = 'Ha ocurrido un error durante la autenticación';
 
     try {
-      // Parse error message from JSON string if needed
-      let parsedError: AuthError = error;
+      let parsedError: AuthError = {
+        ...error,
+        code: error.code || 'unknown_error',
+        name: error.name || 'AuthError',
+        status: error.status || 400,
+        __isAuthError: true
+      };
+
       if (typeof error.message === 'string' && error.message.includes('{')) {
         try {
           const parsed = JSON.parse(error.message);
           if (parsed.code === 'email_not_confirmed') {
             parsedError = {
               message: 'Email not confirmed',
+              code: 'email_not_confirmed',
               name: 'AuthError',
               status: 400,
-              __isAuthError: true,
+              __isAuthError: true
             };
           }
         } catch (e) {
