@@ -66,7 +66,7 @@ export const FilterPanel = ({
       <div className="flex items-center gap-2">
         <Select value={selectedDesigner || "all_designers"} onValueChange={(value) => onDesignerChange(value === "all_designers" ? null : value)}>
           <SelectTrigger className="flex-1">
-            <SelectValue placeholder="Diseñador asignado" />
+            <SelectValue placeholder="Diseñador" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all_designers">Sin filtro de diseñador</SelectItem>
