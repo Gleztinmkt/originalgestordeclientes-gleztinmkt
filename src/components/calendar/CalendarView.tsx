@@ -142,7 +142,7 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
 
   return (
     <div className={`h-screen ${isMobile ? 'flex flex-col' : 'flex'}`}>
-      <div className={`${isMobile ? 'w-full' : 'w-72 lg:w-80'} flex-shrink-0 ${isMobile ? 'border-b' : 'border-r'}`}>
+      <div className={`${isMobile ? 'w-full' : 'w-64'} flex-shrink-0 ${isMobile ? 'border-b' : 'border-r'}`}>
         <div className={`${isMobile ? 'p-4' : 'h-full p-4'} flex flex-col`}>
           <FilterPanel
             clients={clients}
@@ -169,7 +169,7 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
         </div>
       </div>
 
-      <div className="flex-1 p-4 space-y-4 overflow-auto">
+      <div className="flex-1 p-2 space-y-2 overflow-auto min-w-0">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-2">
             <Button
@@ -277,7 +277,7 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
               })}
             </div>
           ) : (
-            <div className={`grid grid-cols-7 gap-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4`}>
+            <div className="grid grid-cols-7 gap-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 min-h-[800px]">
               {['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB'].map((day) => (
                 <div key={day} className="p-2 text-center font-semibold text-sm">
                   {day}
@@ -296,13 +296,13 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
                       <div
                         ref={provided.innerRef}
                         {...provided.droppableProps}
-                        className="min-h-[120px] border rounded-lg p-1 relative bg-white/50 dark:bg-gray-800/50"
+                        className="min-h-[140px] border rounded-lg p-2 relative bg-white/50 dark:bg-gray-800/50"
                       >
                         <div className="text-right text-sm mb-1 px-1">
                           {format(date, 'd')}
                         </div>
-                        <ScrollArea className={`h-full ${isMobile ? 'touch-pan-y' : ''}`}>
-                          <div className="space-y-1">
+                        <ScrollArea className={`h-[120px] ${isMobile ? 'touch-pan-y' : ''}`}>
+                          <div className="space-y-1 pr-2">
                             {dayPublications.map((publication, pubIndex) => {
                               const client = clients.find(c => c.id === publication.client_id);
                               const typeShorthand = publication.type === 'reel' ? 'R' : publication.type === 'carousel' ? 'C' : 'I';
