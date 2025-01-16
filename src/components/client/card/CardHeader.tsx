@@ -2,7 +2,6 @@ import { CardHeader as UICardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Trash2, X } from "lucide-react";
 import { ClientInfoDialog } from "../ClientInfoDialog";
-import { PublicationCalendarDialog } from "../PublicationCalendarDialog";
 import { EditClientDialog } from "../EditClientDialog";
 import { AddPackageDialog } from "../AddPackageDialog";
 import { Client, ClientInfo } from "../../types/client";
@@ -38,10 +37,6 @@ export const ClientCardHeader = ({
           clientId={client.id}
           clientInfo={client.clientInfo}
           onUpdateInfo={onUpdateClientInfo}
-        />
-        <PublicationCalendarDialog 
-          clientId={client.id}
-          clientName={client.name}
         />
         <EditClientDialog 
           client={client}
