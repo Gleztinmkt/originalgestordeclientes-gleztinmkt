@@ -52,7 +52,7 @@ export const Auth = () => {
     const urlParams = new URLSearchParams(window.location.search);
     const errorDescription = urlParams.get('error_description');
     if (errorDescription) {
-      handleAuthError(new AuthError(errorDescription, 400));
+      handleAuthError(new AuthError(errorDescription));
     }
 
     return () => {
@@ -65,7 +65,6 @@ export const Auth = () => {
     let errorMessage = 'Ha ocurrido un error durante la autenticación';
 
     try {
-      // Parse error body if it's a JSON string
       const errorBody = error.message.includes('{') 
         ? JSON.parse(error.message)
         : { code: error.message };
