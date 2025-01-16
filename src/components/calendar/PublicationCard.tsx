@@ -33,6 +33,7 @@ interface PublicationCardProps {
   onUpdate: () => void;
   displayTitle: string;
   designers?: any[];
+  isMobile?: boolean;
 }
 
 export const PublicationCard = ({ 
@@ -40,9 +41,34 @@ export const PublicationCard = ({
   client, 
   onUpdate,
   displayTitle,
-  designers = []
+  designers = [],
+  isMobile = false
 }: PublicationCardProps) => {
   const [showDialog, setShowDialog] = useState(false);
+  const [touchCount, setTouchCount] = useState(0);
+  const [touchTimer, setTouchTimer] = useState<NodeJS.Timeout | null>(null);
+
+  const handleTouch = () => {
+    if (isMobile) {
+      setTouchCount(prev => prev + 1);
+      
+      if (touchTimer) {
+        clearTimeout(touchTimer);
+      }
+      
+      const timer = setTimeout(() => {
+        setTouchCount(0);
+      }, 300);
+      
+      setTouchTimer(timer);
+      
+      if (touchCount === 1) {
+        setShowDialog(true);
+        setTouchCount(0);
+        if (touchTimer) clearTimeout(touchTimer);
+      }
+    }
+  };
 
   const getStatusColor = () => {
     if (publication.is_published) return "bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100";
@@ -158,7 +184,7 @@ export const PublicationCard = ({
             "mb-1 hover:shadow-md transition-shadow cursor-pointer group",
             getStatusColor()
           )}
-          onClick={() => setShowDialog(true)}
+          onClick={isMobile ? handleTouch : () => setShowDialog(true)}
         >
           <CardContent className="p-2">
             <div className="flex flex-col gap-1">

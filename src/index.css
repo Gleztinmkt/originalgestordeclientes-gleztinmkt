@@ -42,15 +42,13 @@
 /* Loading Screen */
 .loading-screen {
   @apply fixed inset-0 flex flex-col items-center justify-center z-50;
-  background-image: url('https://imgur.com/Bu1x6cf.jpg');
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
+  background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
 }
 
 .loading-screen::before {
   content: '';
-  @apply absolute inset-0 bg-black/40;
+  @apply absolute inset-0;
+  background: radial-gradient(circle at center, transparent 0%, rgba(0, 0, 0, 0.4) 100%);
 }
 
 .loading-screen .content {

@@ -13,6 +13,7 @@ import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { Button } from "../ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { InfoIcon } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export const CalendarView = ({ clients }: { clients: Client[] }) => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -23,6 +24,7 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
   const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [expandedDays, setExpandedDays] = useState<{ [key: string]: boolean }>({});
+  const isMobile = useIsMobile();
   const MAX_VISIBLE_PUBLICATIONS = 3;
 
   const { data: publications = [], refetch } = useQuery({
@@ -80,7 +82,6 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
     if (!publication) return;
 
     try {
-      // Añadir un día a la fecha de destino
       const adjustedDate = new Date(destinationDate);
       adjustedDate.setDate(adjustedDate.getDate() + 1);
 
@@ -140,9 +141,9 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
   };
 
   return (
-    <div className="flex h-screen">
-      <div className="w-72 lg:w-80 flex-shrink-0 border-r">
-        <div className="h-full p-4 flex flex-col">
+    <div className={`h-screen ${isMobile ? 'flex flex-col' : 'flex'}`}>
+      <div className={`${isMobile ? 'w-full' : 'w-72 lg:w-80'} flex-shrink-0 ${isMobile ? 'border-b' : 'border-r'}`}>
+        <div className={`${isMobile ? 'p-2' : 'h-full p-4'} flex flex-col`}>
           <FilterPanel
             clients={clients}
             designers={designers}
@@ -161,7 +162,7 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
             <Alert className="mt-4">
               <InfoIcon className="h-4 w-4" />
               <AlertDescription>
-                Los diseñadores pueden ser asignados a las publicaciones haciendo clic derecho sobre ellas
+                Los diseñadores pueden ser asignados a las publicaciones haciendo {isMobile ? 'doble toque' : 'clic derecho'} sobre ellas
               </AlertDescription>
             </Alert>
           </FilterPanel>
@@ -209,7 +210,7 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
         </div>
 
         <DragDropContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-          <div className="grid grid-cols-7 gap-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4">
+          <div className={`grid grid-cols-7 gap-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 ${isMobile ? 'min-w-[800px]' : ''}`}>
             {['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB'].map((day) => (
               <div key={day} className="p-2 text-center font-semibold text-sm">
                 {day}
@@ -239,49 +240,52 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
                       <div className="text-right text-sm mb-1 px-1">
                         {format(date, 'd')}
                       </div>
-                      <div className="space-y-1">
-                        {visiblePublications.map((publication, pubIndex) => {
-                          const client = clients.find(c => c.id === publication.client_id);
-                          const typeShorthand = publication.type === 'reel' ? 'R' : publication.type === 'carousel' ? 'C' : 'I';
-                          const displayTitle = `${client?.name || ''} - ${typeShorthand} - ${publication.name}`;
+                      <ScrollArea className={`h-full ${isMobile ? 'touch-pan-y' : ''}`}>
+                        <div className="space-y-1">
+                          {visiblePublications.map((publication, pubIndex) => {
+                            const client = clients.find(c => c.id === publication.client_id);
+                            const typeShorthand = publication.type === 'reel' ? 'R' : publication.type === 'carousel' ? 'C' : 'I';
+                            const displayTitle = `${client?.name || ''} - ${typeShorthand} - ${publication.name}`;
 
-                          return (
-                            <Draggable
-                              key={publication.id}
-                              draggableId={publication.id}
-                              index={pubIndex}
-                              isDragDisabled={isDragging}
+                            return (
+                              <Draggable
+                                key={publication.id}
+                                draggableId={publication.id}
+                                index={pubIndex}
+                                isDragDisabled={isDragging}
+                              >
+                                {(provided) => (
+                                  <div
+                                    ref={provided.innerRef}
+                                    {...provided.draggableProps}
+                                    {...provided.dragHandleProps}
+                                  >
+                                    <PublicationCard
+                                      publication={publication}
+                                      client={client}
+                                      onUpdate={refetch}
+                                      displayTitle={displayTitle}
+                                      designers={designers}
+                                      isMobile={isMobile}
+                                    />
+                                  </div>
+                                )}
+                              </Draggable>
+                            );
+                          })}
+                          {provided.placeholder}
+                          {hasMore && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="w-full mt-1 text-xs h-6 py-0"
+                              onClick={() => toggleDayExpansion(dateStr)}
                             >
-                              {(provided) => (
-                                <div
-                                  ref={provided.innerRef}
-                                  {...provided.draggableProps}
-                                  {...provided.dragHandleProps}
-                                >
-                                  <PublicationCard
-                                    publication={publication}
-                                    client={client}
-                                    onUpdate={refetch}
-                                    displayTitle={displayTitle}
-                                    designers={designers}
-                                  />
-                                </div>
-                              )}
-                            </Draggable>
-                          );
-                        })}
-                        {provided.placeholder}
-                        {hasMore && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="w-full mt-1 text-xs h-6 py-0"
-                            onClick={() => toggleDayExpansion(dateStr)}
-                          >
-                            {isExpanded ? 'Ver menos' : `Ver ${dayPublications.length - MAX_VISIBLE_PUBLICATIONS} más`}
-                          </Button>
-                        )}
-                      </div>
+                              {isExpanded ? 'Ver menos' : `Ver ${dayPublications.length - MAX_VISIBLE_PUBLICATIONS} más`}
+                            </Button>
+                          )}
+                        </div>
+                      </ScrollArea>
                     </div>
                   )}
                 </Droppable>
