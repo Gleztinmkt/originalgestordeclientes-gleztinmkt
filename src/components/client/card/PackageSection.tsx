@@ -34,7 +34,7 @@ export const PackageSection = ({
         description: "Este cliente no tiene número de teléfono registrado",
         variant: "destructive",
       });
-      return;
+      return Promise.resolve();
     }
 
     const currentDate = format(new Date(), "d 'de' MMMM 'de' yyyy", { locale: es });
@@ -57,7 +57,7 @@ export const PackageSection = ({
     const whatsappUrl = `https://wa.me/${client.phone.replace(/\D/g, '')}?text=${encodeURIComponent(reportText)}`;
     window.open(whatsappUrl, '_blank');
 
-    await Promise.resolve(); // Ensure we return a Promise<void>
+    await Promise.resolve();
 
     toast({
       title: "Reporte enviado",
