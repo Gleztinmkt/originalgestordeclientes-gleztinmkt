@@ -27,7 +27,7 @@ export const PackageSection = ({
   onCaptureStart,
   onCaptureEnd,
 }: PackageSectionProps) => {
-  const sendPackageReport = async () => {
+  const sendPackageReport = async (): Promise<void> => {
     if (!client.phone) {
       toast({
         title: "Error",
@@ -56,8 +56,6 @@ export const PackageSection = ({
 
     const whatsappUrl = `https://wa.me/${client.phone.replace(/\D/g, '')}?text=${encodeURIComponent(reportText)}`;
     window.open(whatsappUrl, '_blank');
-
-    await Promise.resolve();
 
     toast({
       title: "Reporte enviado",
