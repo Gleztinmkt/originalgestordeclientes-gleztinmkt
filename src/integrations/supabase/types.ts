@@ -485,6 +485,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      is_super_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
     }
     Enums: {
       user_role:
