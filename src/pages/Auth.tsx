@@ -53,7 +53,12 @@ export const Auth = () => {
     const urlParams = new URLSearchParams(window.location.search);
     const errorDescription = urlParams.get('error_description');
     if (errorDescription) {
-      handleAuthError({ message: errorDescription } as AuthError);
+      handleAuthError({ 
+        message: errorDescription,
+        name: 'AuthError',
+        status: 400,
+        __isAuthError: true,
+      } as AuthError);
     }
 
     return () => {
@@ -65,35 +70,44 @@ export const Auth = () => {
     console.error('Auth error:', error);
     let errorMessage = 'Ha ocurrido un error durante la autenticación';
 
-    // Parse error message from JSON string if needed
-    let parsedError = error;
-    if (typeof error.message === 'string' && error.message.includes('{')) {
-      try {
-        const parsed = JSON.parse(error.message);
-        if (parsed.code === 'email_not_confirmed') {
-          parsedError = { message: 'Email not confirmed' };
+    try {
+      // Parse error message from JSON string if needed
+      let parsedError: AuthError = error;
+      if (typeof error.message === 'string' && error.message.includes('{')) {
+        try {
+          const parsed = JSON.parse(error.message);
+          if (parsed.code === 'email_not_confirmed') {
+            parsedError = {
+              message: 'Email not confirmed',
+              name: 'AuthError',
+              status: 400,
+              __isAuthError: true,
+            };
+          }
+        } catch (e) {
+          console.error('Error parsing error message:', e);
         }
-      } catch (e) {
-        console.error('Error parsing error message:', e);
       }
-    }
 
-    switch (parsedError.message) {
-      case 'Invalid login credentials':
-        errorMessage = 'Credenciales inválidas. Por favor, verifica tu email y contraseña.';
-        break;
-      case 'Email not confirmed':
-        errorMessage = 'Por favor, confirma tu email antes de iniciar sesión. Revisa tu bandeja de entrada.';
-        break;
-      case 'User already registered':
-        errorMessage = 'Este email ya está registrado. Por favor, inicia sesión.';
-        break;
-      default:
-        if (parsedError.message.includes('email_not_confirmed')) {
+      switch (parsedError.message) {
+        case 'Invalid login credentials':
+          errorMessage = 'Credenciales inválidas. Por favor, verifica tu email y contraseña.';
+          break;
+        case 'Email not confirmed':
           errorMessage = 'Por favor, confirma tu email antes de iniciar sesión. Revisa tu bandeja de entrada.';
-        } else {
-          errorMessage = parsedError.message;
-        }
+          break;
+        case 'User already registered':
+          errorMessage = 'Este email ya está registrado. Por favor, inicia sesión.';
+          break;
+        default:
+          if (parsedError.message.includes('email_not_confirmed')) {
+            errorMessage = 'Por favor, confirma tu email antes de iniciar sesión. Revisa tu bandeja de entrada.';
+          } else {
+            errorMessage = parsedError.message;
+          }
+      }
+    } catch (e) {
+      console.error('Error handling auth error:', e);
     }
 
     setError(errorMessage);
