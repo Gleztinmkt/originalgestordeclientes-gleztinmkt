@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { es } from "date-fns/locale";
 import {
   Select,
   SelectContent,
@@ -72,6 +73,7 @@ export const PublicationForm = ({ onSubmit, isSubmitting, packageId }: Publicati
             mode="single"
             selected={date}
             onSelect={setDate}
+            locale={es}
             className="rounded-md border dark:bg-gray-800 dark:text-white"
           />
         </div>
