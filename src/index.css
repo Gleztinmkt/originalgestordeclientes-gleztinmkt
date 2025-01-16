@@ -41,39 +41,53 @@
 
 /* Loading Screen */
 .loading-screen {
-  @apply fixed inset-0 flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50 z-50;
+  @apply fixed inset-0 flex flex-col items-center justify-center z-50;
+  background-image: url('https://imgur.com/Bu1x6cf.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.loading-screen::before {
+  content: '';
+  @apply absolute inset-0 bg-black/40;
+}
+
+.loading-screen .content {
+  @apply relative z-10 flex flex-col items-center justify-center space-y-8;
+}
+
+.loading-screen h1 {
+  @apply text-4xl md:text-5xl font-light text-white mb-8;
 }
 
 .loading-screen img {
-  @apply w-32 h-32 animate-pulse;
+  @apply w-32 h-32 animate-pulse mb-8;
 }
 
-/* Animaciones suaves */
-.animate-fade-in {
-  animation: fadeIn 0.5s ease-out;
+.loading-screen .progress-bar {
+  @apply w-64 h-2 bg-white/20 rounded-full overflow-hidden;
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
+.loading-screen .progress-bar div {
+  @apply h-full bg-blue-500 rounded-full;
+  animation: loading 2s ease-in-out infinite;
+}
+
+.loading-screen .copyright {
+  @apply text-white/60 text-sm absolute bottom-4 text-center;
+}
+
+@keyframes loading {
+  0% {
+    width: 0%;
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+  50% {
+    width: 70%;
+  }
+  100% {
+    width: 100%;
   }
 }
 
-/* Estilos modernos para inputs y botones */
-input, textarea {
-  @apply bg-white/70 backdrop-blur-sm border border-gray-100 rounded-xl shadow-sm transition-all duration-200;
-}
-
-button {
-  @apply rounded-xl transition-all duration-200;
-}
-
-/* Glassmorphism moderno */
-.glass-card {
-  @apply bg-white/60 backdrop-blur-md border border-white/20 shadow-lg rounded-2xl;
-}
+/* ... keep existing code */

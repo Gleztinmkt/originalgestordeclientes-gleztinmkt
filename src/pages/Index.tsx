@@ -72,7 +72,20 @@ const Index = () => {
   if (isLoading) {
     return (
       <div className="loading-screen">
-        <img src="https://i.imgur.com/YvEDrAv.png" alt="Gleztin Marketing Digital" />
+        <div className="content">
+          <h1>Gestor de clientes</h1>
+          <img 
+            src="https://i.imgur.com/YvEDrAv.png" 
+            alt="Gleztin Marketing Digital" 
+            className="animate-pulse"
+          />
+          <div className="progress-bar">
+            <div />
+          </div>
+          <div className="copyright">
+            Copyright {new Date().getFullYear()} - Gleztin Marketing Digital
+          </div>
+        </div>
       </div>
     );
   }
