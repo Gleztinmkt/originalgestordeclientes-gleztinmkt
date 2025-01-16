@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Publication } from "../client/publication/types";
 import { Client } from "../types/client";
@@ -13,6 +13,7 @@ import {
   Clock,
   User
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -46,49 +47,27 @@ export const PublicationCard = ({
   const [showDialog, setShowDialog] = useState(false);
   const [touchCount, setTouchCount] = useState(0);
   const [touchTimer, setTouchTimer] = useState<NodeJS.Timeout | null>(null);
-  const [showContextMenu, setShowContextMenu] = useState(false);
-  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
 
   const handleTouch = () => {
-    if (!isMobile) return;
-    
-    setTouchCount(prev => prev + 1);
-    
-    if (touchTimer) {
-      clearTimeout(touchTimer);
-    }
-    
-    const timer = setTimeout(() => {
-      if (touchCount === 0) {
-        setShowDialog(true);
-      } else if (touchCount === 1) {
-        setShowContextMenu(true);
+    if (isMobile) {
+      setTouchCount(prev => prev + 1);
+      
+      if (touchTimer) {
+        clearTimeout(touchTimer);
       }
-      setTouchCount(0);
-    }, 300);
-    
-    setTouchTimer(timer);
-  };
-
-  const handleTouchStart = () => {
-    if (!isMobile) return;
-    
-    longPressTimer.current = setTimeout(() => {
-      setIsDragging(true);
-    }, 500);
-  };
-
-  const handleTouchEnd = () => {
-    if (!isMobile) return;
-    
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current);
+      
+      const timer = setTimeout(() => {
+        setTouchCount(0);
+      }, 300);
+      
+      setTouchTimer(timer);
+      
+      if (touchCount === 1) {
+        setShowDialog(true);
+        setTouchCount(0);
+        if (touchTimer) clearTimeout(touchTimer);
+      }
     }
-    if (!isDragging) {
-      handleTouch();
-    }
-    setIsDragging(false);
   };
 
   const getStatusColor = () => {
@@ -202,14 +181,13 @@ export const PublicationCard = ({
       <ContextMenuTrigger>
         <Card 
           className={cn(
-            "mb-1 hover:shadow-md transition-shadow cursor-pointer group min-w-0 max-w-full",
+            "mb-1 hover:shadow-md transition-shadow cursor-pointer group",
             getStatusColor()
           )}
-          onTouchStart={handleTouchStart}
-          onTouchEnd={handleTouchEnd}
+          onClick={isMobile ? handleTouch : () => setShowDialog(true)}
         >
-          <CardContent className="p-1.5">
-            <div className="flex flex-col gap-0.5 min-w-0">
+          <CardContent className="p-2">
+            <div className="flex flex-col gap-1">
               <div className="flex items-center gap-1 min-w-0">
                 {getStatusIcon()}
                 <p className="text-xs font-medium truncate">
@@ -217,8 +195,8 @@ export const PublicationCard = ({
                 </p>
               </div>
               {publication.designer && (
-                <div className="flex items-center gap-1 min-w-0">
-                  <User className="h-3 w-3 flex-shrink-0" />
+                <div className="flex items-center gap-1">
+                  <User className="h-3 w-3" />
                   <span className="text-xs truncate">{publication.designer}</span>
                 </div>
               )}
@@ -278,11 +256,8 @@ export const PublicationCard = ({
       </ContextMenuContent>
 
       <PublicationDialog
-        open={showDialog || showContextMenu}
-        onOpenChange={(open) => {
-          setShowDialog(open);
-          setShowContextMenu(false);
-        }}
+        open={showDialog}
+        onOpenChange={setShowDialog}
         publication={publication}
         client={client}
         onUpdate={onUpdate}
