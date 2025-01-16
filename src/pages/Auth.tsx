@@ -16,10 +16,10 @@ export const Auth = () => {
 
   useEffect(() => {
     const checkInitialSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        setIsLoading(true);
-        try {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          setIsLoading(true);
           const { data: profile, error: profileError } = await supabase
             .from('profiles')
             .select('role')
@@ -27,15 +27,19 @@ export const Auth = () => {
             .single();
 
           if (profileError || !profile) {
+            console.error('Profile check error:', profileError);
             await supabase.auth.signOut();
+            setError('Error verifying user profile');
           } else {
             navigate("/");
           }
-        } catch (err) {
-          console.error('Initial session check error:', err);
         }
+      } catch (err) {
+        console.error('Initial session check error:', err);
+        setError('Error checking session');
+      } finally {
+        setIsCheckingAuth(false);
       }
-      setIsCheckingAuth(false);
     };
 
     checkInitialSession();
@@ -46,6 +50,7 @@ export const Auth = () => {
       if (event === "SIGNED_IN" && session) {
         setIsLoading(true);
         try {
+          // Add a small delay to ensure database consistency
           await new Promise(resolve => setTimeout(resolve, 1000));
           
           const { data: profile, error: profileError } = await supabase
@@ -108,7 +113,7 @@ export const Auth = () => {
           }
           break;
         case 422:
-          errorMessage = 'Invalid email or password.';
+          errorMessage = 'Invalid email or password format.';
           break;
         case 500:
           errorMessage = 'Server error. Please try again later.';
