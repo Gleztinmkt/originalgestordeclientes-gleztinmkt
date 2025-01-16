@@ -22,6 +22,7 @@ import {
   DialogContent,
 } from "@/components/ui/dialog";
 import { Task } from "../TaskList";
+import { toast } from "@/hooks/use-toast";
 
 interface ClientCardProps {
   client: Client;
@@ -53,28 +54,88 @@ export const ClientCard = ({
   const [isExpanded, setIsExpanded] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
 
-  const handleUpdateClientInfo = (clientId: string, info: ClientInfo) => {
-    onUpdateClient(clientId, { clientInfo: info });
+  const handleUpdateClientInfo = async (clientId: string, info: ClientInfo) => {
+    try {
+      await onUpdateClient(clientId, { clientInfo: info });
+    } catch (error) {
+      console.error('Error updating client info:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar la información del cliente.",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleUpdatePackagePaid = (packageId: string, paid: boolean) => {
-    const updatedPackages = client.packages.map(pkg =>
-      pkg.id === packageId ? { ...pkg, paid } : pkg
-    );
-    onUpdateClient(client.id, { ...client, packages: updatedPackages });
+  const handleUpdatePackagePaid = async (packageId: string, paid: boolean) => {
+    if (isUpdating) return;
+    
+    try {
+      setIsUpdating(true);
+      const updatedPackages = client.packages.map(pkg =>
+        pkg.id === packageId ? { ...pkg, paid } : pkg
+      );
+      await onUpdateClient(client.id, { ...client, packages: updatedPackages });
+    } catch (error) {
+      console.error('Error updating package paid status:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el estado del pago.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
-  const handleEditPackage = (packageId: string, values: any) => {
-    const updatedPackages = client.packages.map(pkg =>
-      pkg.id === packageId ? { ...pkg, ...values } : pkg
-    );
-    onUpdateClient(client.id, { ...client, packages: updatedPackages });
+  const handleEditPackage = async (packageId: string, values: any) => {
+    if (isUpdating) return;
+    
+    try {
+      setIsUpdating(true);
+      const updatedPackages = client.packages.map(pkg =>
+        pkg.id === packageId ? { ...pkg, ...values } : pkg
+      );
+      await onUpdateClient(client.id, { ...client, packages: updatedPackages });
+      toast({
+        title: "Paquete actualizado",
+        description: "Los cambios se han guardado correctamente.",
+      });
+    } catch (error) {
+      console.error('Error editing package:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el paquete.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
-  const handleDeletePackage = (packageId: string) => {
-    const updatedPackages = client.packages.filter(pkg => pkg.id !== packageId);
-    onUpdateClient(client.id, { ...client, packages: updatedPackages });
+  const handleDeletePackage = async (packageId: string) => {
+    if (isUpdating) return;
+    
+    try {
+      setIsUpdating(true);
+      const updatedPackages = client.packages.filter(pkg => pkg.id !== packageId);
+      await onUpdateClient(client.id, { ...client, packages: updatedPackages });
+      toast({
+        title: "Paquete eliminado",
+        description: "El paquete se ha eliminado correctamente.",
+      });
+    } catch (error) {
+      console.error('Error deleting package:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar el paquete.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   const getClientTasks = () => {

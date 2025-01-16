@@ -67,6 +67,8 @@ export const AddPackageForm = ({ onSubmit, defaultValues, isSubmitting = false }
   });
 
   const handleSubmit = async (values: PackageFormValues) => {
+    if (isProcessing || isSubmitting) return;
+    
     try {
       setIsProcessing(true);
       const packageInfo = PACKAGE_TYPES[values.packageType];
@@ -81,6 +83,8 @@ export const AddPackageForm = ({ onSubmit, defaultValues, isSubmitting = false }
           : packageInfo.name,
         totalPublications,
       });
+
+      form.reset(form.getValues());
     } catch (error) {
       console.error('Error al procesar el paquete:', error);
       toast({
@@ -105,54 +109,23 @@ export const AddPackageForm = ({ onSubmit, defaultValues, isSubmitting = false }
             <FormItem>
               <FormLabel className="text-gray-700">Tipo de Paquete</FormLabel>
               <div className="grid grid-cols-2 gap-2">
-                <Button
-                  type="button"
-                  variant={field.value === "basico" ? "default" : "outline"}
-                  onClick={() => {
-                    field.onChange("basico");
-                    setSelectedType("basico");
-                  }}
-                  className="w-full"
-                  disabled={disabled}
-                >
-                  Básico
-                </Button>
-                <Button
-                  type="button"
-                  variant={field.value === "avanzado" ? "default" : "outline"}
-                  onClick={() => {
-                    field.onChange("avanzado");
-                    setSelectedType("avanzado");
-                  }}
-                  className="w-full"
-                  disabled={disabled}
-                >
-                  Avanzado
-                </Button>
-                <Button
-                  type="button"
-                  variant={field.value === "premium" ? "default" : "outline"}
-                  onClick={() => {
-                    field.onChange("premium");
-                    setSelectedType("premium");
-                  }}
-                  className="w-full"
-                  disabled={disabled}
-                >
-                  Premium
-                </Button>
-                <Button
-                  type="button"
-                  variant={field.value === "personalizado" ? "default" : "outline"}
-                  onClick={() => {
-                    field.onChange("personalizado");
-                    setSelectedType("personalizado");
-                  }}
-                  className="w-full"
-                  disabled={disabled}
-                >
-                  Personalizado
-                </Button>
+                {Object.entries(PACKAGE_TYPES).map(([type, info]) => (
+                  <Button
+                    key={type}
+                    type="button"
+                    variant={field.value === type ? "default" : "outline"}
+                    onClick={() => {
+                      if (!disabled) {
+                        field.onChange(type);
+                        setSelectedType(type as keyof typeof PACKAGE_TYPES);
+                      }
+                    }}
+                    className="w-full"
+                    disabled={disabled}
+                  >
+                    {info.name.split(" ")[1]}
+                  </Button>
+                ))}
               </div>
               {selectedType !== "personalizado" && (
                 <FormDescription>
