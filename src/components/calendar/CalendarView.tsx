@@ -277,7 +277,8 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
               })}
             </div>
           ) : (
-            <div className={`grid grid-cols-7 gap-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4`}>
+
+            <div className={`grid grid-cols-7 gap-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 min-w-[1024px]`}>
               {['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB'].map((day) => (
                 <div key={day} className="p-2 text-center font-semibold text-sm">
                   {day}
@@ -296,13 +297,13 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
                       <div
                         ref={provided.innerRef}
                         {...provided.droppableProps}
-                        className="min-h-[120px] border rounded-lg p-1 relative bg-white/50 dark:bg-gray-800/50"
+                        className="min-h-[140px] border rounded-lg p-2 relative bg-white/50 dark:bg-gray-800/50"
                       >
                         <div className="text-right text-sm mb-1 px-1">
                           {format(date, 'd')}
                         </div>
                         <ScrollArea className={`h-full ${isMobile ? 'touch-pan-y' : ''}`}>
-                          <div className="space-y-1">
+                          <div className="space-y-1.5">
                             {dayPublications.map((publication, pubIndex) => {
                               const client = clients.find(c => c.id === publication.client_id);
                               const typeShorthand = publication.type === 'reel' ? 'R' : publication.type === 'carousel' ? 'C' : 'I';
@@ -343,9 +344,11 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
                 );
               })}
             </div>
+
           )}
         </DragDropContext>
       </div>
     </div>
   );
 };
+
