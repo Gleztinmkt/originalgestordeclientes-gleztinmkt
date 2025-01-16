@@ -8,6 +8,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { PublicationForm } from "./PublicationForm";
@@ -15,10 +17,6 @@ import { PublicationItem } from "./PublicationItem";
 import { PublicationDescription } from "./PublicationDescription";
 import { Publication, PublicationFormValues, PublicationCalendarDialogProps } from "./types";
 import { useQuery } from "@tanstack/react-query";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 
 export const PublicationCalendarDialog = ({ 
   clientId, 
