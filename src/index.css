@@ -42,7 +42,10 @@
 /* Loading Screen */
 .loading-screen {
   @apply fixed inset-0 flex flex-col items-center justify-center z-50;
-  background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+  background-image: url('https://i.imgur.com/9AuPZ3x.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   position: relative;
   overflow: hidden;
 }
@@ -51,12 +54,7 @@
   content: '';
   position: absolute;
   inset: 0;
-  background: 
-    radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.2) 0%, transparent 50%),
-    radial-gradient(circle at 75% 75%, rgba(255, 255, 255, 0.2) 0%, transparent 50%),
-    radial-gradient(circle at 50% 50%, #1e40af 0%, transparent 100%),
-    linear-gradient(45deg, #1e3a8a 0%, #1e40af 100%);
-  opacity: 0.9;
+  background: rgba(0, 0, 0, 0.5);
   z-index: 1;
 }
 
@@ -113,5 +111,3 @@
     @apply space-y-3 max-h-[70vh] overflow-y-auto;
   }
 }
-
-/* ... keep existing code */
