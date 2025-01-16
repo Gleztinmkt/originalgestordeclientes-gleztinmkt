@@ -5,6 +5,7 @@ import { ThemeSupa } from "@supabase/auth-ui-shared";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { toast } from "@/hooks/use-toast";
 import type { AuthError } from "@supabase/supabase-js";
 
 export const Auth = () => {
@@ -14,69 +15,80 @@ export const Auth = () => {
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === "SIGNED_IN" && session) {
-        // Verificar si el usuario tiene un perfil
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', session.user.id)
-          .single();
+        try {
+          // Verificar si el usuario tiene un perfil
+          const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', session.user.id)
+            .single();
 
-        if (profileError) {
-          setError('Error al verificar el perfil de usuario');
-          return;
+          if (profileError) {
+            console.error('Error al verificar perfil:', profileError);
+            setError('Error al verificar el perfil de usuario');
+            return;
+          }
+
+          if (!profile) {
+            setError('No tienes acceso al sistema. Contacta al administrador.');
+            await supabase.auth.signOut();
+            return;
+          }
+
+          toast({
+            title: "Inicio de sesión exitoso",
+            description: "Bienvenido al sistema",
+          });
+          navigate("/");
+        } catch (err) {
+          console.error('Error en el proceso de inicio de sesión:', err);
+          setError('Error al procesar el inicio de sesión');
         }
-
-        if (!profile) {
-          setError('No tienes acceso al sistema. Contacta al administrador.');
-          await supabase.auth.signOut();
-          return;
-        }
-
-        navigate("/");
       } else if (event === "SIGNED_OUT") {
         setError(null);
       }
     });
 
-    // Listen for auth errors
-    const authListener = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'USER_UPDATED' && !session) {
-        const urlParams = new URLSearchParams(window.location.search);
-        const errorCode = urlParams.get('error_code');
-        const errorMessage = urlParams.get('error_description');
-        
-        if (errorCode === 'email_not_confirmed') {
-          setError('Por favor, confirma tu email antes de iniciar sesión. Revisa tu bandeja de entrada.');
-        } else if (errorMessage) {
-          setError(errorMessage);
-        }
-      }
-    });
+    // Check URL parameters for errors on load
+    const urlParams = new URLSearchParams(window.location.search);
+    const errorDescription = urlParams.get('error_description');
+    if (errorDescription) {
+      handleAuthError({ message: errorDescription } as AuthError);
+    }
 
     return () => {
       subscription.unsubscribe();
-      authListener.data.subscription.unsubscribe();
     };
   }, [navigate]);
 
   const handleAuthError = (error: AuthError) => {
+    console.error('Auth error:', error);
+    let errorMessage = 'Ha ocurrido un error durante la autenticación';
+
     switch (error.message) {
       case 'Invalid login credentials':
-        setError('Credenciales inválidas. Por favor, verifica tu email y contraseña.');
+        errorMessage = 'Credenciales inválidas. Por favor, verifica tu email y contraseña.';
         break;
       case 'Email not confirmed':
-        setError('Por favor, confirma tu email antes de iniciar sesión. Revisa tu bandeja de entrada.');
+        errorMessage = 'Por favor, confirma tu email antes de iniciar sesión. Revisa tu bandeja de entrada.';
         break;
       case 'User already registered':
-        setError('Este email ya está registrado. Por favor, inicia sesión.');
+        errorMessage = 'Este email ya está registrado. Por favor, inicia sesión.';
         break;
       default:
         if (error.message.includes('email_not_confirmed')) {
-          setError('Por favor, confirma tu email antes de iniciar sesión. Revisa tu bandeja de entrada.');
+          errorMessage = 'Por favor, confirma tu email antes de iniciar sesión. Revisa tu bandeja de entrada.';
         } else {
-          setError(error.message);
+          errorMessage = error.message;
         }
     }
+
+    setError(errorMessage);
+    toast({
+      variant: "destructive",
+      title: "Error de autenticación",
+      description: errorMessage,
+    });
   };
 
   return (
@@ -107,6 +119,7 @@ export const Auth = () => {
               },
             }}
             providers={[]}
+            onError={handleAuthError}
           />
         </CardContent>
       </Card>
