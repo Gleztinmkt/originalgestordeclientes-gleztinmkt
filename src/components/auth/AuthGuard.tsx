@@ -2,10 +2,12 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
+import { useRole } from "@/hooks/useRole";
 
 export const AuthGuard = ({ children }: { children: React.ReactNode }) => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const { role, loading: roleLoading } = useRole();
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -33,10 +35,22 @@ export const AuthGuard = ({ children }: { children: React.ReactNode }) => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  if (loading) {
+  if (loading || roleLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  // Si el usuario no tiene un rol asignado, mostrar mensaje de error
+  if (!role) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold mb-2">Acceso no autorizado</h2>
+          <p className="text-gray-600">No tienes un rol asignado en el sistema.</p>
+        </div>
       </div>
     );
   }

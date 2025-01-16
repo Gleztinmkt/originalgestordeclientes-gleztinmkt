@@ -487,12 +487,7 @@ export type Database = {
       }
     }
     Enums: {
-      user_role:
-        | "super_admin"
-        | "agency_owner"
-        | "marketing_manager"
-        | "designer"
-        | "filming_crew"
+      user_role: "super_admin" | "agency_owner" | "marketing_manager" | "designer" | "filming_crew"
     }
     CompositeTypes: {
       [_ in never]: never
