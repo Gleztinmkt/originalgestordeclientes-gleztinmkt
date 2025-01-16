@@ -17,6 +17,8 @@ import { Publication, PublicationFormValues, PublicationCalendarDialogProps } fr
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 export const PublicationCalendarDialog = ({ 
   clientId, 
@@ -26,6 +28,7 @@ export const PublicationCalendarDialog = ({
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedPublication, setSelectedPublication] = useState<Publication | null>(null);
+  const [copywriting, setCopywriting] = useState("");
 
   const { data: publications = [], refetch } = useQuery({
     queryKey: ['publications', clientId, packageId],
@@ -89,7 +92,8 @@ export const PublicationCalendarDialog = ({
       date: values.date.toISOString(),
       description: values.description || null,
       package_id: packageId || null,
-      is_published: false
+      is_published: false,
+      copywriting: copywriting || null
     };
 
     try {
@@ -106,6 +110,7 @@ export const PublicationCalendarDialog = ({
       });
 
       await refetch();
+      setCopywriting("");
     } catch (error) {
       console.error('Error adding publication:', error);
       toast({
@@ -153,7 +158,7 @@ export const PublicationCalendarDialog = ({
           <CalendarIcon className="h-4 w-4" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px] max-h-[80vh] overflow-y-auto dark:bg-gray-900">
+      <DialogContent className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto dark:bg-gray-900">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold dark:text-white">
             Calendario de publicaciones - {clientName}
@@ -176,11 +181,24 @@ export const PublicationCalendarDialog = ({
             <PublicationDescription publication={selectedPublication} />
           )}
 
-          <PublicationForm 
-            onSubmit={handleSubmit} 
-            isSubmitting={isSubmitting}
-            packageId={packageId}
-          />
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="copywriting">Copywriting</Label>
+              <Textarea
+                id="copywriting"
+                value={copywriting}
+                onChange={(e) => setCopywriting(e.target.value)}
+                placeholder="Ingresa el copywriting para la publicación..."
+                className="min-h-[100px] resize-y"
+              />
+            </div>
+
+            <PublicationForm 
+              onSubmit={handleSubmit} 
+              isSubmitting={isSubmitting}
+              packageId={packageId}
+            />
+          </div>
         </div>
       </DialogContent>
     </Dialog>
