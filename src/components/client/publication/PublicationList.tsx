@@ -11,18 +11,17 @@ interface PublicationListProps {
 const getTypeIcon = (type: string) => {
   switch (type) {
     case 'reel':
-      return 'r';
+      return '📹';
     case 'carousel':
-      return 'c';
+      return '🎠';
     case 'image':
-      return 'i';
+      return '🖼️';
     default:
       return '';
   }
 };
 
 export const PublicationList = ({ publications = [], packageId }: PublicationListProps) => {
-  // Ensure publications is always an array
   const safePublications = Array.isArray(publications) ? publications : [];
   
   const filteredPublications = packageId 
@@ -43,23 +42,32 @@ export const PublicationList = ({ publications = [], packageId }: PublicationLis
         {filteredPublications.map((pub) => (
           <div
             key={pub.id}
-            className="flex items-start space-x-4 p-3 rounded-lg bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm"
+            className="flex items-start space-x-4 p-4 rounded-lg bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm hover:bg-blue-50/50 dark:hover:bg-blue-900/20 transition-colors duration-200"
           >
-            <div className="flex-1 space-y-1">
-              <h4 className="font-medium">{pub.name}</h4>
+            <div className="flex-shrink-0 text-2xl">
+              {getTypeIcon(pub.type)}
+            </div>
+            <div className="flex-1 space-y-2">
+              <h4 className="font-medium text-lg">{pub.name}</h4>
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                {format(new Date(pub.date), "PPP", { locale: es })}
+                {format(new Date(pub.date), "EEEE, d 'de' MMMM 'de' yyyy", { locale: es })}
               </p>
-              <div className="flex items-center space-x-2">
-                <span className="text-xs px-2 py-1 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100">
-                  {getTypeIcon(pub.type)}
-                </span>
-              </div>
               {pub.description && (
-                <p className="text-sm text-gray-600 dark:text-gray-300">
+                <p className="text-sm text-gray-600 dark:text-gray-300 mt-2 line-clamp-2">
                   {pub.description}
                 </p>
               )}
+              <div className="flex items-center space-x-2 mt-2">
+                {pub.is_published ? (
+                  <span className="text-xs px-2 py-1 rounded-full bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100">
+                    Publicado
+                  </span>
+                ) : (
+                  <span className="text-xs px-2 py-1 rounded-full bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-100">
+                    Pendiente
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         ))}

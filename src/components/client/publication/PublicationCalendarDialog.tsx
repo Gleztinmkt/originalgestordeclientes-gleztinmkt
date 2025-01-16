@@ -13,13 +13,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { PublicationForm } from "./PublicationForm";
 import { PublicationItem } from "./PublicationItem";
 import { PublicationDescription } from "./PublicationDescription";
-import { GoogleCalendarIntegration } from "./GoogleCalendarIntegration";
 import { Publication, PublicationFormValues, PublicationCalendarDialogProps } from "./types";
 import { useQuery } from "@tanstack/react-query";
-import { 
-  createGoogleCalendarEvent, 
-  deleteGoogleCalendarEvent,
-} from "@/utils/googleCalendar";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
 
 export const PublicationCalendarDialog = ({ 
   clientId, 
@@ -29,8 +26,6 @@ export const PublicationCalendarDialog = ({
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedPublication, setSelectedPublication] = useState<Publication | null>(null);
-  const [selectedCalendarId, setSelectedCalendarId] = useState<string>("");
-  const [accessToken, setAccessToken] = useState<string>("");
 
   const { data: publications = [], refetch } = useQuery({
     queryKey: ['publications', clientId, packageId],
@@ -47,6 +42,7 @@ export const PublicationCalendarDialog = ({
       }
 
       const { data, error } = await query;
+
       if (error) throw error;
       return data as Publication[];
     },
@@ -54,15 +50,6 @@ export const PublicationCalendarDialog = ({
 
   const handleDelete = async (publicationId: string) => {
     try {
-      const publication = publications.find(p => p.id === publicationId);
-      if (publication?.google_calendar_event_id && publication?.google_calendar_id && accessToken) {
-        await deleteGoogleCalendarEvent(
-          accessToken,
-          publication.google_calendar_id,
-          publication.google_calendar_event_id
-        );
-      }
-
       const { error } = await supabase
         .from('publications')
         .update({ deleted_at: new Date().toISOString() })
@@ -95,47 +82,18 @@ export const PublicationCalendarDialog = ({
       return;
     }
 
-    if (!selectedCalendarId) {
-      toast({
-        title: "Error",
-        description: "Por favor selecciona un calendario de Google.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const typeShorthand = values.type === 'reel' ? 'r' : values.type === 'carousel' ? 'c' : 'i';
-    const eventTitle = `${clientName} - ${typeShorthand} - ${values.name}`;
+    const publicationData = {
+      client_id: clientId,
+      name: values.name,
+      type: values.type,
+      date: values.date.toISOString(),
+      description: values.description || null,
+      package_id: packageId || null,
+      is_published: false
+    };
 
     try {
       setIsSubmitting(true);
-
-      const endDate = new Date(values.date);
-      endDate.setHours(endDate.getHours() + 1);
-
-      const eventId = await createGoogleCalendarEvent(
-        accessToken,
-        selectedCalendarId,
-        {
-          title: eventTitle,
-          description: values.description,
-          startDate: values.date,
-          endDate,
-        }
-      );
-
-      const publicationData = {
-        client_id: clientId,
-        name: values.name,
-        type: values.type,
-        date: values.date.toISOString(),
-        description: values.description || null,
-        package_id: packageId || null,
-        is_published: false,
-        google_calendar_event_id: eventId,
-        google_calendar_id: selectedCalendarId
-      };
-
       const { error } = await supabase
         .from('publications')
         .insert(publicationData);
@@ -144,7 +102,7 @@ export const PublicationCalendarDialog = ({
 
       toast({
         title: "Publicación agregada",
-        description: "La publicación se ha agregado correctamente y sincronizado con Google Calendar.",
+        description: "La publicación se ha agregado correctamente.",
       });
 
       await refetch();
@@ -184,11 +142,6 @@ export const PublicationCalendarDialog = ({
     }
   };
 
-  const handleCalendarSelect = (calendarId: string, token: string) => {
-    setSelectedCalendarId(calendarId);
-    setAccessToken(token);
-  };
-
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
@@ -207,8 +160,6 @@ export const PublicationCalendarDialog = ({
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-6">
-          <GoogleCalendarIntegration onCalendarSelect={handleCalendarSelect} />
-
           <div className="space-y-4">
             {publications.map((publication) => (
               <PublicationItem
