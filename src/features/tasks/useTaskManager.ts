@@ -103,6 +103,8 @@ export const useTaskManager = () => {
         description: "No se pudo actualizar la tarea. Por favor, intenta de nuevo.",
         variant: "destructive",
       });
+      // Recargar las tareas para asegurar consistencia
+      await loadTasks();
     }
   };
 
@@ -128,6 +130,8 @@ export const useTaskManager = () => {
         description: "No se pudo eliminar la tarea. Por favor, intenta de nuevo.",
         variant: "destructive",
       });
+      // Recargar las tareas para asegurar consistencia
+      await loadTasks();
     }
   };
 
@@ -141,7 +145,7 @@ export const useTaskManager = () => {
         .from('tasks')
         .update({ 
           completed: !task.completed,
-          deleted_at: null // Aseguramos que la tarea no esté marcada como eliminada
+          deleted_at: null
         })
         .eq('id', id);
       
@@ -162,6 +166,8 @@ export const useTaskManager = () => {
         description: "No se pudo actualizar el estado de la tarea. Por favor, intenta de nuevo.",
         variant: "destructive",
       });
+      // Recargar las tareas para asegurar consistencia
+      await loadTasks();
     }
   };
 

@@ -69,6 +69,8 @@ export const useClientManager = () => {
         description: "No se pudo eliminar el cliente. Por favor, intenta de nuevo.",
         variant: "destructive",
       });
+      // Recargar los clientes para asegurar consistencia
+      await loadClients();
     }
   };
 
@@ -76,22 +78,18 @@ export const useClientManager = () => {
     try {
       console.log('Actualizando cliente:', id, data);
       
-      // Encontrar el cliente existente
       const existingClient = clients.find(c => c.id === id);
       if (!existingClient) {
         throw new Error('Cliente no encontrado');
       }
 
-      // Fusionar los datos existentes con las actualizaciones
       const mergedData = {
         ...existingClient,
         ...data,
-        // Manejo especial para objetos anidados
         clientInfo: data.clientInfo ? {
           ...existingClient.clientInfo,
           ...data.clientInfo,
         } : existingClient.clientInfo,
-        // Asegurar que los paquetes se conserven a menos que se actualicen explícitamente
         packages: data.packages || existingClient.packages,
       };
 
@@ -112,13 +110,18 @@ export const useClientManager = () => {
         description: "No se pudo actualizar el cliente. Por favor, intenta de nuevo.",
         variant: "destructive",
       });
+      // Recargar los clientes para asegurar consistencia
+      await loadClients();
     }
   };
 
   const updatePackage = async (clientId: string, packageId: string, usedPublications: number) => {
     try {
       const client = clients.find(c => c.id === clientId);
-      if (!client) return;
+      if (!client) {
+        console.error('Cliente no encontrado:', clientId);
+        return;
+      }
 
       const updatedPackages = client.packages.map(pkg => 
         pkg.id === packageId ? { ...pkg, usedPublications } : pkg
@@ -132,6 +135,8 @@ export const useClientManager = () => {
         description: "No se pudo actualizar el paquete. Por favor, intenta de nuevo.",
         variant: "destructive",
       });
+      // Recargar los clientes para asegurar consistencia
+      await loadClients();
     }
   };
 
@@ -139,7 +144,10 @@ export const useClientManager = () => {
     try {
       console.log('Agregando paquete:', clientId, packageData);
       const client = clients.find(c => c.id === clientId);
-      if (!client) return;
+      if (!client) {
+        console.error('Cliente no encontrado:', clientId);
+        return;
+      }
 
       const newPackage = {
         id: crypto.randomUUID(),
@@ -160,6 +168,8 @@ export const useClientManager = () => {
         description: "No se pudo agregar el paquete. Por favor, intenta de nuevo.",
         variant: "destructive",
       });
+      // Recargar los clientes para asegurar consistencia
+      await loadClients();
     }
   };
 
