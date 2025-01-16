@@ -44,8 +44,16 @@
   @apply fixed inset-0 flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50 z-50;
 }
 
+.loading-screen::before {
+  content: '';
+  @apply absolute w-32 h-32 rounded-full bg-gradient-to-br from-navy-600 to-navy-800;
+  background: linear-gradient(135deg, #1a365d 0%, #0f2744 100%);
+  filter: blur(8px);
+  z-index: -1;
+}
+
 .loading-screen img {
-  @apply w-32 h-32 animate-pulse;
+  @apply w-32 h-32 animate-pulse relative z-10;
 }
 
 /* Animaciones suaves */

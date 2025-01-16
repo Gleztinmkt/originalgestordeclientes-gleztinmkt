@@ -1,19 +1,5 @@
-import { useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
 import { Publication } from "../client/publication/types";
 import { Client } from "../types/client";
-import { PublicationDialog } from "./PublicationDialog";
-import { cn } from "@/lib/utils";
-import { 
-  Video, 
-  Edit, 
-  CheckCircle2, 
-  Upload, 
-  AlertCircle,
-  Clock,
-  User
-} from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -24,68 +10,39 @@ import {
   ContextMenuSubTrigger,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
-import { supabase } from "@/integrations/supabase/client";
+import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface PublicationCardProps {
   publication: Publication;
   client?: Client;
   onUpdate: () => void;
   displayTitle: string;
-  designers?: any[];
+  designers: any[];
+  onAssignDesigner: (publicationId: string, designerName: string | null) => Promise<void>;
 }
 
-export const PublicationCard = ({ 
-  publication, 
-  client, 
+export const PublicationCard = ({
+  publication,
+  client,
   onUpdate,
   displayTitle,
-  designers = []
+  designers,
+  onAssignDesigner
 }: PublicationCardProps) => {
-  const [showDialog, setShowDialog] = useState(false);
-
-  const getStatusColor = () => {
-    if (publication.is_published) return "bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100";
-    if (publication.approved) return "bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100";
-    if (publication.in_review) return "bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100";
-    if (publication.in_editing) return "bg-purple-100 text-purple-800 dark:bg-purple-800 dark:text-purple-100";
-    if (publication.needs_editing) return "bg-orange-100 text-orange-800 dark:bg-orange-800 dark:text-orange-100";
-    if (publication.needs_recording) return "bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100";
-    return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100";
-  };
-
-  const getStatusIcon = () => {
-    if (publication.is_published) return <CheckCircle2 className="h-3 w-3" />;
-    if (publication.approved) return <Upload className="h-3 w-3" />;
-    if (publication.in_review) return <AlertCircle className="h-3 w-3" />;
-    if (publication.in_editing) return <Edit className="h-3 w-3" />;
-    if (publication.needs_recording) return <Video className="h-3 w-3" />;
-    return <Clock className="h-3 w-3" />;
-  };
-
-  const handleStatusChange = async (status: string) => {
+  const handleStatusChange = async (field: string) => {
     try {
-      const updates: any = {
-        needs_recording: false,
-        needs_editing: false,
-        in_editing: false,
-        in_review: false,
-        approved: false,
-        is_published: false
-      };
-
-      updates[status] = true;
-
       const { error } = await supabase
         .from('publications')
-        .update(updates)
+        .update({ [field]: !publication[field as keyof Publication] })
         .eq('id', publication.id);
 
       if (error) throw error;
 
       toast({
         title: "Estado actualizado",
-        description: "El estado de la publicación ha sido actualizado correctamente.",
+        description: "El estado de la publicación ha sido actualizado.",
       });
 
       onUpdate();
@@ -99,145 +56,93 @@ export const PublicationCard = ({
     }
   };
 
-  const handleDesignerAssign = async (designerName: string) => {
-    try {
-      const { error } = await supabase
-        .from('publications')
-        .update({ designer: designerName })
-        .eq('id', publication.id);
-
-      if (error) throw error;
-
-      toast({
-        title: "Diseñador asignado",
-        description: "El diseñador ha sido asignado correctamente.",
-      });
-
-      onUpdate();
-    } catch (error) {
-      console.error('Error assigning designer:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo asignar el diseñador.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleDelete = async () => {
-    try {
-      const { error } = await supabase
-        .from('publications')
-        .update({ deleted_at: new Date().toISOString() })
-        .eq('id', publication.id);
-
-      if (error) throw error;
-
-      toast({
-        title: "Publicación eliminada",
-        description: "La publicación ha sido eliminada correctamente.",
-      });
-
-      onUpdate();
-      setShowDialog(false);
-    } catch (error) {
-      console.error('Error deleting publication:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo eliminar la publicación.",
-        variant: "destructive",
-      });
-    }
+  const getStatusColor = () => {
+    if (publication.is_published) return "bg-green-500";
+    if (publication.approved) return "bg-blue-500";
+    if (publication.in_review) return "bg-yellow-500";
+    if (publication.in_editing) return "bg-purple-500";
+    if (publication.needs_editing) return "bg-orange-500";
+    if (publication.needs_recording) return "bg-red-500";
+    return "bg-gray-500";
   };
 
   return (
     <ContextMenu>
       <ContextMenuTrigger>
-        <Card 
+        <div
           className={cn(
-            "mb-1 hover:shadow-md transition-shadow cursor-pointer group",
-            getStatusColor()
+            "p-1 rounded text-xs text-left truncate border shadow-sm",
+            getStatusColor(),
+            "text-white hover:opacity-90 transition-opacity cursor-pointer"
           )}
-          onClick={() => setShowDialog(true)}
         >
-          <CardContent className="p-2">
-            <div className="flex flex-col gap-1">
-              <div className="flex items-center gap-1 min-w-0">
-                {getStatusIcon()}
-                <p className="text-xs font-medium truncate">
-                  {displayTitle}
-                </p>
-              </div>
-              {publication.designer && (
-                <div className="flex items-center gap-1">
-                  <User className="h-3 w-3" />
-                  <span className="text-xs truncate">{publication.designer}</span>
-                </div>
-              )}
+          <div className="truncate">{displayTitle}</div>
+          {publication.designer && (
+            <div className="text-xs opacity-75 truncate">
+              Diseñador: {publication.designer}
             </div>
-          </CardContent>
-        </Card>
+          )}
+        </div>
       </ContextMenuTrigger>
-
       <ContextMenuContent className="w-64">
+        <ContextMenuItem
+          onClick={() => handleStatusChange('needs_recording')}
+          className={publication.needs_recording ? 'bg-accent' : ''}
+        >
+          {publication.needs_recording ? '✓ ' : ''}Falta grabar
+        </ContextMenuItem>
+        <ContextMenuItem
+          onClick={() => handleStatusChange('needs_editing')}
+          className={publication.needs_editing ? 'bg-accent' : ''}
+        >
+          {publication.needs_editing ? '✓ ' : ''}Falta editar
+        </ContextMenuItem>
+        <ContextMenuItem
+          onClick={() => handleStatusChange('in_editing')}
+          className={publication.in_editing ? 'bg-accent' : ''}
+        >
+          {publication.in_editing ? '✓ ' : ''}En edición
+        </ContextMenuItem>
+        <ContextMenuItem
+          onClick={() => handleStatusChange('in_review')}
+          className={publication.in_review ? 'bg-accent' : ''}
+        >
+          {publication.in_review ? '✓ ' : ''}En revisión
+        </ContextMenuItem>
+        <ContextMenuItem
+          onClick={() => handleStatusChange('approved')}
+          className={publication.approved ? 'bg-accent' : ''}
+        >
+          {publication.approved ? '✓ ' : ''}Aprobado
+        </ContextMenuItem>
+        <ContextMenuItem
+          onClick={() => handleStatusChange('is_published')}
+          className={publication.is_published ? 'bg-accent' : ''}
+        >
+          {publication.is_published ? '✓ ' : ''}Publicado
+        </ContextMenuItem>
+        
+        <ContextMenuSeparator />
+        
         <ContextMenuSub>
           <ContextMenuSubTrigger>
-            <User className="mr-2 h-4 w-4" />
-            <span>Asignar diseñador</span>
+            Asignar diseñador
           </ContextMenuSubTrigger>
           <ContextMenuSubContent className="w-48">
-            <ContextMenuItem onClick={() => handleDesignerAssign("")}>
-              Sin diseñador
+            <ContextMenuItem onClick={() => onAssignDesigner(publication.id, null)}>
+              Sin asignar
             </ContextMenuItem>
-            <ContextMenuSeparator />
             {designers.map((designer) => (
               <ContextMenuItem
                 key={designer.id}
-                onClick={() => handleDesignerAssign(designer.name)}
+                onClick={() => onAssignDesigner(publication.id, designer.name)}
               >
                 {designer.name}
               </ContextMenuItem>
             ))}
           </ContextMenuSubContent>
         </ContextMenuSub>
-
-        <ContextMenuSeparator />
-
-        <ContextMenuItem onClick={() => handleStatusChange("needs_recording")}>
-          <Video className="mr-2 h-4 w-4" />
-          <span>Falta grabar</span>
-        </ContextMenuItem>
-        <ContextMenuItem onClick={() => handleStatusChange("needs_editing")}>
-          <Edit className="mr-2 h-4 w-4" />
-          <span>Falta editar</span>
-        </ContextMenuItem>
-        <ContextMenuItem onClick={() => handleStatusChange("in_editing")}>
-          <Clock className="mr-2 h-4 w-4" />
-          <span>En edición</span>
-        </ContextMenuItem>
-        <ContextMenuItem onClick={() => handleStatusChange("in_review")}>
-          <AlertCircle className="mr-2 h-4 w-4" />
-          <span>En revisión</span>
-        </ContextMenuItem>
-        <ContextMenuItem onClick={() => handleStatusChange("approved")}>
-          <CheckCircle2 className="mr-2 h-4 w-4" />
-          <span>Aprobado</span>
-        </ContextMenuItem>
-        <ContextMenuItem onClick={() => handleStatusChange("is_published")}>
-          <Upload className="mr-2 h-4 w-4" />
-          <span>Publicado</span>
-        </ContextMenuItem>
       </ContextMenuContent>
-
-      <PublicationDialog
-        open={showDialog}
-        onOpenChange={setShowDialog}
-        publication={publication}
-        client={client}
-        onUpdate={onUpdate}
-        onDelete={handleDelete}
-        designers={designers}
-      />
     </ContextMenu>
   );
 };

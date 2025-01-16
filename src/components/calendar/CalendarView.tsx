@@ -13,6 +13,7 @@ import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { Button } from "../ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { InfoIcon } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export const CalendarView = ({ clients }: { clients: Client[] }) => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -23,6 +24,7 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
   const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [expandedDays, setExpandedDays] = useState<{ [key: string]: boolean }>({});
+  const isMobile = useIsMobile();
   const MAX_VISIBLE_PUBLICATIONS = 3;
 
   const { data: publications = [], refetch } = useQuery({
@@ -80,7 +82,6 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
     if (!publication) return;
 
     try {
-      // Añadir un día a la fecha de destino
       const adjustedDate = new Date(destinationDate);
       adjustedDate.setDate(adjustedDate.getDate() + 1);
 
@@ -104,6 +105,31 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
       toast({
         title: "Error",
         description: "No se pudo actualizar la fecha de la publicación.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleAssignDesigner = async (publicationId: string, designerName: string | null) => {
+    try {
+      const { error } = await supabase
+        .from('publications')
+        .update({ designer: designerName })
+        .eq('id', publicationId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Diseñador asignado",
+        description: "El diseñador ha sido asignado correctamente.",
+      });
+
+      refetch();
+    } catch (error) {
+      console.error('Error assigning designer:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo asignar el diseñador.",
         variant: "destructive",
       });
     }
@@ -140,9 +166,9 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
   };
 
   return (
-    <div className="flex h-screen">
-      <div className="w-72 lg:w-80 flex-shrink-0 border-r">
-        <div className="h-full p-4 flex flex-col">
+    <div className={`flex flex-col ${isMobile ? 'h-auto' : 'h-screen'}`}>
+      <div className={`${isMobile ? 'w-full mb-4' : 'w-72 lg:w-80 flex-shrink-0 border-r'}`}>
+        <div className={`${isMobile ? 'p-2' : 'h-full p-4'} flex flex-col`}>
           <FilterPanel
             clients={clients}
             designers={designers}
@@ -168,7 +194,7 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
         </div>
       </div>
 
-      <div className="flex-1 p-4 space-y-4 overflow-auto">
+      <div className={`flex-1 ${isMobile ? 'p-2' : 'p-4'} space-y-4 overflow-auto`}>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-2">
             <Button
@@ -209,9 +235,9 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
         </div>
 
         <DragDropContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-          <div className="grid grid-cols-7 gap-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4">
+          <div className={`grid grid-cols-7 gap-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 ${isMobile ? 'text-xs' : ''}`}>
             {['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB'].map((day) => (
-              <div key={day} className="p-2 text-center font-semibold text-sm">
+              <div key={day} className={`p-2 text-center font-semibold ${isMobile ? 'text-xs' : 'text-sm'}`}>
                 {day}
               </div>
             ))}
@@ -234,7 +260,7 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
                     <div
                       ref={provided.innerRef}
                       {...provided.droppableProps}
-                      className="min-h-[120px] border rounded-lg p-1 relative bg-white/50 dark:bg-gray-800/50"
+                      className={`min-h-[${isMobile ? '80px' : '120px'}] border rounded-lg p-1 relative bg-white/50 dark:bg-gray-800/50`}
                     >
                       <div className="text-right text-sm mb-1 px-1">
                         {format(date, 'd')}
@@ -264,6 +290,7 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
                                     onUpdate={refetch}
                                     displayTitle={displayTitle}
                                     designers={designers}
+                                    onAssignDesigner={handleAssignDesigner}
                                   />
                                 </div>
                               )}
