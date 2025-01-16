@@ -17,27 +17,72 @@ export const Auth = () => {
   useEffect(() => {
     const checkInitialSession = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          console.error('Session error:', sessionError);
+          setError('Error checking session');
+          return;
+        }
+
         if (session) {
           setIsLoading(true);
-          const { data: profile, error: profileError } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', session.user.id)
-            .single();
+          
+          // Add retry logic for profile check
+          let retryCount = 0;
+          const maxRetries = 3;
+          
+          while (retryCount < maxRetries) {
+            try {
+              const { data: profile, error: profileError } = await supabase
+                .from('profiles')
+                .select('role')
+                .eq('id', session.user.id)
+                .single();
 
-          if (profileError || !profile) {
-            console.error('Profile check error:', profileError);
-            await supabase.auth.signOut();
-            setError('Error verifying user profile');
-          } else {
-            navigate("/");
+              if (profileError) {
+                console.error('Profile check error:', profileError);
+                retryCount++;
+                if (retryCount === maxRetries) {
+                  await supabase.auth.signOut();
+                  setError('Error verifying user profile after multiple attempts');
+                  break;
+                }
+                // Wait before retrying
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                continue;
+              }
+
+              if (!profile) {
+                console.error('No profile found');
+                await supabase.auth.signOut();
+                setError('Profile not found. Please contact the administrator.');
+                break;
+              }
+
+              // Successfully found profile
+              toast({
+                title: "Login successful",
+                description: "Welcome to the system",
+              });
+              navigate("/");
+              break;
+            } catch (err) {
+              console.error('Profile check attempt failed:', err);
+              retryCount++;
+              if (retryCount === maxRetries) {
+                await supabase.auth.signOut();
+                setError('Error verifying user profile');
+              }
+              await new Promise(resolve => setTimeout(resolve, 1000));
+            }
           }
         }
       } catch (err) {
         console.error('Initial session check error:', err);
         setError('Error checking session');
       } finally {
+        setIsLoading(false);
         setIsCheckingAuth(false);
       }
     };
@@ -50,7 +95,7 @@ export const Auth = () => {
       if (event === "SIGNED_IN" && session) {
         setIsLoading(true);
         try {
-          // Add a small delay to ensure database consistency
+          // Add a delay to ensure database consistency
           await new Promise(resolve => setTimeout(resolve, 1000));
           
           const { data: profile, error: profileError } = await supabase
