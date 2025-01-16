@@ -46,8 +46,8 @@
 
 .loading-screen::before {
   content: '';
-  @apply absolute w-32 h-32 rounded-full bg-gradient-to-br from-navy-600 to-navy-800;
-  background: linear-gradient(135deg, #1a365d 0%, #0f2744 100%);
+  @apply absolute w-32 h-32 rounded-full;
+  background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
   filter: blur(8px);
   z-index: -1;
 }
