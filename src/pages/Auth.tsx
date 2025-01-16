@@ -16,6 +16,9 @@ export const Auth = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === "SIGNED_IN" && session) {
         try {
+          // Wait a brief moment before checking profile to ensure the user is fully registered
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
           const { data: profile, error: profileError } = await supabase
             .from('profiles')
             .select('role')
@@ -65,6 +68,7 @@ export const Auth = () => {
     let errorMessage = 'Ha ocurrido un error durante la autenticación';
 
     try {
+      // Parse error message if it's in JSON format
       const errorBody = error.message.includes('{') 
         ? JSON.parse(error.message)
         : { code: error.message };
@@ -78,6 +82,9 @@ export const Auth = () => {
           break;
         case 'invalid_credentials':
           errorMessage = 'Credenciales inválidas. Por favor, verifica tu email y contraseña.';
+          break;
+        case 'email_provider_disabled':
+          errorMessage = 'El inicio de sesión por email está deshabilitado. Contacta al administrador.';
           break;
         default:
           if (error.message.includes('email_not_confirmed')) {
