@@ -65,7 +65,20 @@ export const Auth = () => {
     console.error('Auth error:', error);
     let errorMessage = 'Ha ocurrido un error durante la autenticación';
 
-    switch (error.message) {
+    // Parse error message from JSON string if needed
+    let parsedError = error;
+    if (typeof error.message === 'string' && error.message.includes('{')) {
+      try {
+        const parsed = JSON.parse(error.message);
+        if (parsed.code === 'email_not_confirmed') {
+          parsedError = { message: 'Email not confirmed' };
+        }
+      } catch (e) {
+        console.error('Error parsing error message:', e);
+      }
+    }
+
+    switch (parsedError.message) {
       case 'Invalid login credentials':
         errorMessage = 'Credenciales inválidas. Por favor, verifica tu email y contraseña.';
         break;
@@ -76,10 +89,10 @@ export const Auth = () => {
         errorMessage = 'Este email ya está registrado. Por favor, inicia sesión.';
         break;
       default:
-        if (error.message.includes('email_not_confirmed')) {
+        if (parsedError.message.includes('email_not_confirmed')) {
           errorMessage = 'Por favor, confirma tu email antes de iniciar sesión. Revisa tu bandeja de entrada.';
         } else {
-          errorMessage = error.message;
+          errorMessage = parsedError.message;
         }
     }
 
@@ -119,7 +132,6 @@ export const Auth = () => {
               },
             }}
             providers={[]}
-            onError={handleAuthError}
           />
         </CardContent>
       </Card>
