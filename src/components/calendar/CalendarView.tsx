@@ -6,7 +6,7 @@ import { PublicationCard } from "./PublicationCard";
 import { FilterPanel } from "./FilterPanel";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { format, addDays, startOfMonth, endOfMonth, eachDayOfInterval } from "date-fns";
+import { format, addDays, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay } from "date-fns";
 import { es } from "date-fns/locale";
 import { toast } from "@/hooks/use-toast";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
@@ -23,9 +23,7 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [expandedDays, setExpandedDays] = useState<{ [key: string]: boolean }>({});
   const isMobile = useIsMobile();
-  const MAX_VISIBLE_PUBLICATIONS = 3;
 
   const { data: publications = [], refetch } = useQuery({
     queryKey: ['publications', selectedClient],
@@ -133,17 +131,12 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
     end: endOfMonth(selectedDate)
   });
 
-  const toggleDayExpansion = (date: string) => {
-    setExpandedDays(prev => ({
-      ...prev,
-      [date]: !prev[date]
-    }));
-  };
+  const weekDays = ['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB'];
 
   return (
-    <div className={`h-screen ${isMobile ? 'flex flex-col' : 'flex'}`}>
-      <div className={`${isMobile ? 'w-full' : 'w-72 lg:w-80'} flex-shrink-0 ${isMobile ? 'border-b' : 'border-r'}`}>
-        <div className={`${isMobile ? 'p-4' : 'h-full p-4'} flex flex-col`}>
+    <div className="h-screen flex flex-col">
+      <div className="w-full flex-shrink-0 border-b">
+        <div className="p-4 flex flex-col">
           <FilterPanel
             clients={clients}
             designers={designers}
@@ -169,7 +162,7 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
         </div>
       </div>
 
-      <div className="flex-1 p-4 space-y-4 overflow-auto">
+      <div className="flex-1 p-4 overflow-auto">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-2">
             <Button
@@ -210,33 +203,53 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
         </div>
 
         <DragDropContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-          {isMobile ? (
-            <div className="calendar-mobile-view">
-              {daysInMonth.map((date) => {
-                const dateStr = format(date, 'yyyy-MM-dd');
-                const dayPublications = filteredPublications.filter(
-                  pub => format(new Date(pub.date), 'yyyy-MM-dd') === dateStr
-                );
+          <div className="grid grid-cols-7 gap-1">
+            {weekDays.map((day) => (
+              <div key={day} className="p-2 text-center font-semibold text-sm text-gray-600">
+                {day}
+              </div>
+            ))}
 
-                if (dayPublications.length === 0) return null;
+            {daysInMonth.map((date, index) => {
+              const dateStr = format(date, 'yyyy-MM-dd');
+              const dayPublications = filteredPublications.filter(
+                pub => format(new Date(pub.date), 'yyyy-MM-dd') === dateStr
+              );
+              const isToday = isSameDay(date, new Date());
 
-                return (
-                  <Droppable key={dateStr} droppableId={dateStr}>
-                    {(provided) => (
-                      <div
-                        ref={provided.innerRef}
-                        {...provided.droppableProps}
-                        className="calendar-day-card"
-                      >
-                        <div className="calendar-day-header">
-                          <h3 className="calendar-day-title">
-                            {format(date, 'EEEE d', { locale: es })}
-                          </h3>
-                          <span className="text-sm text-gray-500">
-                            {dayPublications.length} publicaciones
-                          </span>
-                        </div>
-                        <div className="calendar-publications">
+              return (
+                <Droppable key={dateStr} droppableId={dateStr}>
+                  {(provided) => (
+                    <div
+                      ref={provided.innerRef}
+                      {...provided.droppableProps}
+                      className={`min-h-[120px] p-2 border rounded-lg ${
+                        isToday ? 'bg-blue-50 dark:bg-blue-900/20' : 'bg-white/50 dark:bg-gray-800/50'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <span className={`text-sm font-medium ${
+                          isToday ? 'text-blue-600 dark:text-blue-400' : ''
+                        }`}>
+                          {format(date, 'd')}
+                        </span>
+                        {dayPublications.length > 0 && (
+                          <div className="flex -space-x-1">
+                            {dayPublications.map((pub, i) => (
+                              <div
+                                key={i}
+                                className={`w-2 h-2 rounded-full ${
+                                  pub.type === 'reel' ? 'bg-blue-400' :
+                                  pub.type === 'carousel' ? 'bg-purple-400' :
+                                  'bg-green-400'
+                                }`}
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <ScrollArea className="h-full">
+                        <div className="space-y-1">
                           {dayPublications.map((publication, pubIndex) => {
                             const client = clients.find(c => c.id === publication.client_id);
                             const typeShorthand = publication.type === 'reel' ? 'R' : publication.type === 'carousel' ? 'C' : 'I';
@@ -270,80 +283,13 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
                           })}
                           {provided.placeholder}
                         </div>
-                      </div>
-                    )}
-                  </Droppable>
-                );
-              })}
-            </div>
-          ) : (
-            <div className={`grid grid-cols-7 gap-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4`}>
-              {['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB'].map((day) => (
-                <div key={day} className="p-2 text-center font-semibold text-sm">
-                  {day}
-                </div>
-              ))}
-
-              {daysInMonth.map((date) => {
-                const dateStr = format(date, 'yyyy-MM-dd');
-                const dayPublications = filteredPublications.filter(
-                  pub => format(new Date(pub.date), 'yyyy-MM-dd') === dateStr
-                );
-
-                return (
-                  <Droppable key={dateStr} droppableId={dateStr}>
-                    {(provided) => (
-                      <div
-                        ref={provided.innerRef}
-                        {...provided.droppableProps}
-                        className="min-h-[120px] border rounded-lg p-1 relative bg-white/50 dark:bg-gray-800/50"
-                      >
-                        <div className="text-right text-sm mb-1 px-1">
-                          {format(date, 'd')}
-                        </div>
-                        <ScrollArea className={`h-full ${isMobile ? 'touch-pan-y' : ''}`}>
-                          <div className="space-y-1">
-                            {dayPublications.map((publication, pubIndex) => {
-                              const client = clients.find(c => c.id === publication.client_id);
-                              const typeShorthand = publication.type === 'reel' ? 'R' : publication.type === 'carousel' ? 'C' : 'I';
-                              const displayTitle = `${client?.name || ''} - ${typeShorthand} - ${publication.name}`;
-
-                              return (
-                                <Draggable
-                                  key={publication.id}
-                                  draggableId={publication.id}
-                                  index={pubIndex}
-                                  isDragDisabled={isDragging}
-                                >
-                                  {(provided) => (
-                                    <div
-                                      ref={provided.innerRef}
-                                      {...provided.draggableProps}
-                                      {...provided.dragHandleProps}
-                                    >
-                                      <PublicationCard
-                                        publication={publication}
-                                        client={client}
-                                        onUpdate={refetch}
-                                        displayTitle={displayTitle}
-                                        designers={designers}
-                                        isMobile={isMobile}
-                                      />
-                                    </div>
-                                  )}
-                                </Draggable>
-                              );
-                            })}
-                            {provided.placeholder}
-                          </div>
-                        </ScrollArea>
-                      </div>
-                    )}
-                  </Droppable>
-                );
-              })}
-            </div>
-          )}
+                      </ScrollArea>
+                    </div>
+                  )}
+                </Droppable>
+              );
+            })}
+          </div>
         </DragDropContext>
       </div>
     </div>
