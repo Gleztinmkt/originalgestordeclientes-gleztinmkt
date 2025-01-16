@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import { toast } from "@/hooks/use-toast";
 
 const PACKAGE_TYPES = {
   basico: {
@@ -49,10 +50,11 @@ interface AddPackageFormProps {
   isSubmitting?: boolean;
 }
 
-export const AddPackageForm = ({ onSubmit, defaultValues, isSubmitting }: AddPackageFormProps) => {
+export const AddPackageForm = ({ onSubmit, defaultValues, isSubmitting = false }: AddPackageFormProps) => {
   const [selectedType, setSelectedType] = useState<keyof typeof PACKAGE_TYPES>(
     defaultValues?.packageType || "basico"
   );
+  const [isProcessing, setIsProcessing] = useState(false);
   
   const form = useForm<PackageFormValues>({
     resolver: zodResolver(packageFormSchema),
@@ -64,20 +66,34 @@ export const AddPackageForm = ({ onSubmit, defaultValues, isSubmitting }: AddPac
     },
   });
 
-  const handleSubmit = (values: PackageFormValues) => {
-    const packageInfo = PACKAGE_TYPES[values.packageType];
-    const totalPublications = values.packageType === "personalizado" 
-      ? values.customPublications || "0"
-      : packageInfo.totalPublications;
-      
-    onSubmit({
-      ...values,
-      name: values.packageType === "personalizado" 
-        ? `Paquete Personalizado (${totalPublications} publicaciones)`
-        : packageInfo.name,
-      totalPublications,
-    });
+  const handleSubmit = async (values: PackageFormValues) => {
+    try {
+      setIsProcessing(true);
+      const packageInfo = PACKAGE_TYPES[values.packageType];
+      const totalPublications = values.packageType === "personalizado" 
+        ? values.customPublications || "0"
+        : packageInfo.totalPublications;
+        
+      await onSubmit({
+        ...values,
+        name: values.packageType === "personalizado" 
+          ? `Paquete Personalizado (${totalPublications} publicaciones)`
+          : packageInfo.name,
+        totalPublications,
+      });
+    } catch (error) {
+      console.error('Error al procesar el paquete:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo procesar el paquete. Por favor, intenta de nuevo.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
   };
+
+  const disabled = isSubmitting || isProcessing;
 
   return (
     <Form {...form}>
@@ -97,7 +113,7 @@ export const AddPackageForm = ({ onSubmit, defaultValues, isSubmitting }: AddPac
                     setSelectedType("basico");
                   }}
                   className="w-full"
-                  disabled={isSubmitting}
+                  disabled={disabled}
                 >
                   Básico
                 </Button>
@@ -109,7 +125,7 @@ export const AddPackageForm = ({ onSubmit, defaultValues, isSubmitting }: AddPac
                     setSelectedType("avanzado");
                   }}
                   className="w-full"
-                  disabled={isSubmitting}
+                  disabled={disabled}
                 >
                   Avanzado
                 </Button>
@@ -121,7 +137,7 @@ export const AddPackageForm = ({ onSubmit, defaultValues, isSubmitting }: AddPac
                     setSelectedType("premium");
                   }}
                   className="w-full"
-                  disabled={isSubmitting}
+                  disabled={disabled}
                 >
                   Premium
                 </Button>
@@ -133,7 +149,7 @@ export const AddPackageForm = ({ onSubmit, defaultValues, isSubmitting }: AddPac
                     setSelectedType("personalizado");
                   }}
                   className="w-full"
-                  disabled={isSubmitting}
+                  disabled={disabled}
                 >
                   Personalizado
                 </Button>
@@ -161,7 +177,7 @@ export const AddPackageForm = ({ onSubmit, defaultValues, isSubmitting }: AddPac
                     placeholder="Ej: 20" 
                     {...field}
                     className="rounded-xl bg-white/70 backdrop-blur-sm border-gray-100"
-                    disabled={isSubmitting}
+                    disabled={disabled}
                   />
                 </FormControl>
                 <FormMessage />
@@ -181,7 +197,7 @@ export const AddPackageForm = ({ onSubmit, defaultValues, isSubmitting }: AddPac
                   placeholder="Ej: Enero" 
                   {...field}
                   className="rounded-xl bg-white/70 backdrop-blur-sm border-gray-100"
-                  disabled={isSubmitting}
+                  disabled={disabled}
                 />
               </FormControl>
               <FormMessage />
@@ -204,7 +220,7 @@ export const AddPackageForm = ({ onSubmit, defaultValues, isSubmitting }: AddPac
                 <Switch
                   checked={field.value}
                   onCheckedChange={field.onChange}
-                  disabled={isSubmitting}
+                  disabled={disabled}
                 />
               </FormControl>
             </FormItem>
@@ -214,9 +230,9 @@ export const AddPackageForm = ({ onSubmit, defaultValues, isSubmitting }: AddPac
         <Button 
           type="submit" 
           className="w-full bg-black hover:bg-gray-900 text-white rounded-2xl py-6 shadow-lg hover:shadow-xl transition-all duration-300"
-          disabled={isSubmitting}
+          disabled={disabled}
         >
-          {isSubmitting ? 'Guardando...' : defaultValues ? 'Actualizar Paquete' : 'Agregar Paquete'}
+          {disabled ? 'Procesando...' : defaultValues ? 'Actualizar Paquete' : 'Agregar Paquete'}
         </Button>
       </form>
     </Form>
