@@ -10,9 +10,9 @@ interface PackageSectionProps {
   client: Client;
   isCapturing: boolean;
   onUpdatePackage: (clientId: string, packageId: string, usedPublications: number) => void;
-  onUpdatePaid: (packageId: string, paid: boolean) => void;
-  onEditPackage: (packageId: string, values: any) => void;
-  onDeletePackage: (packageId: string) => void;
+  onUpdatePaid: (packageId: string, paid: boolean) => Promise<void>;
+  onEditPackage: (packageId: string, values: any) => Promise<void>;
+  onDeletePackage: (packageId: string) => Promise<void>;
   onCaptureStart: () => void;
   onCaptureEnd: () => void;
 }
@@ -27,7 +27,7 @@ export const PackageSection = ({
   onCaptureStart,
   onCaptureEnd,
 }: PackageSectionProps) => {
-  const sendPackageReport = () => {
+  const sendPackageReport = async () => {
     if (!client.phone) {
       toast({
         title: "Error",
