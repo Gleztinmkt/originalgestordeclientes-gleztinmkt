@@ -12,13 +12,40 @@ export const Auth = () => {
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+
+  useEffect(() => {
+    const checkInitialSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        setIsLoading(true);
+        try {
+          const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', session.user.id)
+            .single();
+
+          if (profileError || !profile) {
+            await supabase.auth.signOut();
+          } else {
+            navigate("/");
+          }
+        } catch (err) {
+          console.error('Initial session check error:', err);
+        }
+      }
+      setIsCheckingAuth(false);
+    };
+
+    checkInitialSession();
+  }, [navigate]);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === "SIGNED_IN" && session) {
         setIsLoading(true);
         try {
-          // Wait a brief moment before checking profile to ensure the user is fully registered
           await new Promise(resolve => setTimeout(resolve, 1000));
           
           const { data: profile, error: profileError } = await supabase
@@ -56,13 +83,6 @@ export const Auth = () => {
         setIsLoading(false);
       }
     });
-
-    // Check URL parameters for errors on load
-    const urlParams = new URLSearchParams(window.location.search);
-    const errorDescription = urlParams.get('error_description');
-    if (errorDescription) {
-      handleAuthError(new AuthError(errorDescription));
-    }
 
     return () => {
       subscription.unsubscribe();
@@ -105,6 +125,14 @@ export const Auth = () => {
       description: errorMessage,
     });
   };
+
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-white"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 p-4">
