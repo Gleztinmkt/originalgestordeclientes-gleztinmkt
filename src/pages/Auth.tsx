@@ -28,26 +28,26 @@ export const Auth = () => {
             .single();
 
           if (profileError) {
-            console.error('Error al verificar perfil:', profileError);
-            setError('Error al verificar el perfil de usuario');
+            console.error('Error checking profile:', profileError);
+            setError('Error checking user profile');
             await supabase.auth.signOut();
             return;
           }
 
           if (!profile) {
-            setError('No tienes acceso al sistema. Contacta al administrador.');
+            setError('You do not have access to the system. Please contact the administrator.');
             await supabase.auth.signOut();
             return;
           }
 
           toast({
-            title: "Inicio de sesión exitoso",
-            description: "Bienvenido al sistema",
+            title: "Login successful",
+            description: "Welcome to the system",
           });
           navigate("/");
         } catch (err) {
-          console.error('Error en el proceso de inicio de sesión:', err);
-          setError('Error al procesar el inicio de sesión');
+          console.error('Error during login process:', err);
+          setError('Error processing login');
         } finally {
           setIsLoading(false);
         }
@@ -71,27 +71,27 @@ export const Auth = () => {
 
   const handleAuthError = (error: AuthError) => {
     console.error('Auth error:', error);
-    let errorMessage = 'Ha ocurrido un error durante la autenticación';
+    let errorMessage = 'An error occurred during authentication';
 
     if (error instanceof AuthApiError) {
       switch (error.status) {
         case 400:
           switch (error.message) {
             case 'Invalid login credentials':
-              errorMessage = 'Credenciales inválidas. Por favor, verifica tu email y contraseña.';
+              errorMessage = 'Invalid credentials. Please check your email and password.';
               break;
             case 'Email not confirmed':
-              errorMessage = 'Por favor, confirma tu email antes de iniciar sesión.';
+              errorMessage = 'Please confirm your email before logging in.';
               break;
             default:
               errorMessage = error.message;
           }
           break;
         case 422:
-          errorMessage = 'Email o contraseña inválidos.';
+          errorMessage = 'Invalid email or password.';
           break;
         case 500:
-          errorMessage = 'Error del servidor. Por favor, intenta más tarde.';
+          errorMessage = 'Server error. Please try again later.';
           break;
         default:
           errorMessage = error.message;
@@ -101,7 +101,7 @@ export const Auth = () => {
     setError(errorMessage);
     toast({
       variant: "destructive",
-      title: "Error de autenticación",
+      title: "Authentication Error",
       description: errorMessage,
     });
   };
