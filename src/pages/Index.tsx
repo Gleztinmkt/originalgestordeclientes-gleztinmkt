@@ -96,12 +96,10 @@ const Index = () => {
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-2">
             <TrashDialog />
-
-<NotificationCenter 
-  onSendPaymentReminders={() => {}}
-  onCompleteTask={() => {}}
-/>
-
+            <NotificationCenter 
+              onSendPaymentReminders={() => {}}
+              onCompleteTask={() => {}}
+            />
             <img 
               src="https://i.imgur.com/YvEDrAv.png" 
               alt="Gleztin Marketing Digital" 
