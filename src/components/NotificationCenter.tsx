@@ -59,10 +59,12 @@ export const NotificationCenter = ({
       
       if (error) throw error;
       
-      // Convert the date strings to Date objects
+      // Convert the date strings to Date objects and ensure type safety
       return (data || []).map(notification => ({
         ...notification,
         date: new Date(notification.date),
+        type: notification.type as 'payment' | 'task' | 'reminder' | 'publication',
+        priority: notification.priority as 'high' | 'normal' | 'low'
       })) as Notification[];
     },
   });
@@ -200,7 +202,6 @@ export const NotificationCenter = ({
         actions.push({
           label: 'Revisar publicación',
           onClick: () => {
-            // Implementar navegación a la publicación
             toast({
               title: "Función en desarrollo",
               description: "La revisión de publicaciones estará disponible próximamente.",
