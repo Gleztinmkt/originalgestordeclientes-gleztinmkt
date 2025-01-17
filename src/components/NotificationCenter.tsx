@@ -10,7 +10,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { format } from "date-fns";
+import { format, isSameDay } from "date-fns";
+import { es } from "date-fns/locale";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -41,6 +42,11 @@ interface NotificationCenterProps {
   onCompleteTask?: (taskId: string) => void;
 }
 
+interface NotificationGroup {
+  date: Date;
+  notifications: Notification[];
+}
+
 export const NotificationCenter = ({
   onSendPaymentReminders,
   onCompleteTask,
@@ -59,7 +65,6 @@ export const NotificationCenter = ({
       
       if (error) throw error;
       
-      // Convert the date strings to Date objects and ensure type safety
       return (data || []).map(notification => ({
         ...notification,
         date: new Date(notification.date),
@@ -215,6 +220,24 @@ export const NotificationCenter = ({
     return actions;
   };
 
+  const groupNotificationsByDate = (notifications: Notification[]): NotificationGroup[] => {
+    const groups: { [key: string]: Notification[] } = {};
+    
+    notifications.forEach(notification => {
+      const dateKey = format(notification.date, 'yyyy-MM-dd');
+      if (!groups[dateKey]) {
+        groups[dateKey] = [];
+      }
+      groups[dateKey].push(notification);
+    });
+
+    return Object.entries(groups).map(([dateStr, notifications]) => ({
+      date: new Date(dateStr),
+      notifications: notifications.sort((a, b) => b.date.getTime() - a.date.getTime())
+    })).sort((a, b) => b.date.getTime() - a.date.getTime());
+  };
+
+  const notificationGroups = groupNotificationsByDate(notifications);
   const unreadCount = notifications.length;
 
   return (
@@ -249,56 +272,65 @@ export const NotificationCenter = ({
           )}
         </SheetHeader>
         <ScrollArea className="h-[calc(100vh-100px)] mt-4">
-          <div className="space-y-4">
-            {notifications.map((notification) => (
-              <div
-                key={notification.id}
-                className="p-4 rounded-lg bg-white dark:bg-gray-800 shadow-sm border dark:border-gray-700"
-              >
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Badge className={getNotificationColor(notification.type, notification.priority)}>
-                        <span className="flex items-center gap-1">
-                          {getNotificationIcon(notification.type)}
-                          {notification.type}
-                        </span>
-                      </Badge>
-                      <span className="text-sm text-gray-500 dark:text-gray-400">
-                        {format(notification.date, "dd/MM/yyyy HH:mm")}
-                      </span>
+          <div className="space-y-6">
+            {notificationGroups.map((group) => (
+              <div key={group.date.toISOString()} className="space-y-4">
+                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                  {format(group.date, "EEEE, d 'de' MMMM", { locale: es })}
+                </h3>
+                <div className="space-y-4">
+                  {group.notifications.map((notification) => (
+                    <div
+                      key={notification.id}
+                      className="p-4 rounded-lg bg-white dark:bg-gray-800 shadow-sm border dark:border-gray-700"
+                    >
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Badge className={getNotificationColor(notification.type, notification.priority)}>
+                              <span className="flex items-center gap-1">
+                                {getNotificationIcon(notification.type)}
+                                {notification.type}
+                              </span>
+                            </Badge>
+                            <span className="text-sm text-gray-500 dark:text-gray-400">
+                              {format(notification.date, "HH:mm", { locale: es })}
+                            </span>
+                          </div>
+                          <h4 className="font-semibold mb-1 dark:text-white">{notification.title}</h4>
+                          <p className="text-sm text-gray-600 dark:text-gray-300">{notification.message}</p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDismiss(notification.id)}
+                          className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      {getNotificationActions(notification).length > 0 && (
+                        <div className="flex gap-2 mt-3">
+                          {getNotificationActions(notification).map((action, index) => (
+                            <Button
+                              key={index}
+                              variant="outline"
+                              size="sm"
+                              onClick={action.onClick}
+                              className="dark:bg-gray-700 dark:text-white"
+                            >
+                              {action.type === 'message' && <MessageCircle className="mr-2 h-4 w-4" />}
+                              {action.type === 'complete' && <CheckCircle className="mr-2 h-4 w-4" />}
+                              {action.type === 'payment' && <DollarSign className="mr-2 h-4 w-4" />}
+                              {action.type === 'review' && <Calendar className="mr-2 h-4 w-4" />}
+                              {action.label}
+                            </Button>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                    <h4 className="font-semibold mb-1 dark:text-white">{notification.title}</h4>
-                    <p className="text-sm text-gray-600 dark:text-gray-300">{notification.message}</p>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleDismiss(notification.id)}
-                    className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
+                  ))}
                 </div>
-                {getNotificationActions(notification).length > 0 && (
-                  <div className="flex gap-2 mt-3">
-                    {getNotificationActions(notification).map((action, index) => (
-                      <Button
-                        key={index}
-                        variant="outline"
-                        size="sm"
-                        onClick={action.onClick}
-                        className="dark:bg-gray-700 dark:text-white"
-                      >
-                        {action.type === 'message' && <MessageCircle className="mr-2 h-4 w-4" />}
-                        {action.type === 'complete' && <CheckCircle className="mr-2 h-4 w-4" />}
-                        {action.type === 'payment' && <DollarSign className="mr-2 h-4 w-4" />}
-                        {action.type === 'review' && <Calendar className="mr-2 h-4 w-4" />}
-                        {action.label}
-                      </Button>
-                    ))}
-                  </div>
-                )}
               </div>
             ))}
           </div>

@@ -1,4 +1,4 @@
-import { Package, Edit, MoreVertical, Trash, Send, Calendar } from "lucide-react";
+import { Package, Edit, MoreVertical, Trash, Send } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PackageCounter } from "./PackageCounter";
 import { Badge } from "@/components/ui/badge";
@@ -32,7 +32,6 @@ import {
 import { AddPackageForm, PackageFormValues } from "./AddPackageForm";
 import { toast } from "@/hooks/use-toast";
 import { useState, useCallback } from "react";
-import { PublicationCalendarDialog } from "./PublicationCalendarDialog";
 
 interface ClientPackageProps {
   packageName: string;
@@ -153,19 +152,10 @@ export const ClientPackage = ({
             onUpdateUsed={onUpdateUsed}
           />
           
-          <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
-            <div className="flex items-center gap-2">
-              <PublicationCalendarDialog 
-                clientId={clientId}
-                clientName={clientName}
-                packageId={packageId}
-              />
-              <Calendar className="h-4 w-4" />
-              Ver calendario
-            </div>
+          <div className="text-sm text-gray-500 dark:text-gray-400">
             {lastUpdate && (
               <span className="text-xs">
-                Última actualización: {format(new Date(lastUpdate), "d 'de' MMMM yyyy HH:mm", { locale: es })}
+                Última actualización: {format(new Date(lastUpdate), "d 'de' MMMM yyyy HH:mm", { locale: es })} horas
               </span>
             )}
           </div>
