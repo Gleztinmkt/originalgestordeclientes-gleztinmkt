@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Bell, X, MessageCircle, CheckCircle } from 'lucide-react';
+import { Bell, X, MessageCircle, CheckCircle, DollarSign, Calendar } from 'lucide-react';
 import {
   Sheet,
   SheetContent,
@@ -12,43 +12,81 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from "date-fns";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 
 interface NotificationAction {
   label: string;
   onClick: () => void;
-  type?: 'message' | 'complete';
+  type?: 'message' | 'complete' | 'payment' | 'review';
 }
 
 interface Notification {
   id: string;
   title: string;
   message: string;
-  type: 'payment' | 'task' | 'reminder';
+  type: 'payment' | 'task' | 'reminder' | 'publication';
   date: Date;
+  priority: 'high' | 'normal' | 'low';
+  action_type?: string;
+  action_data?: any;
+  client_id?: string;
+  publication_id?: string;
+  task_id?: string;
   actions?: NotificationAction[];
 }
 
 interface NotificationCenterProps {
-  notifications: Notification[];
-  onDismiss: (id: string) => void;
   onSendPaymentReminders?: () => void;
   onCompleteTask?: (taskId: string) => void;
 }
 
 export const NotificationCenter = ({
-  notifications,
-  onDismiss,
   onSendPaymentReminders,
   onCompleteTask,
 }: NotificationCenterProps) => {
-  const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>("default");
 
+  const { data: notifications = [], refetch } = useQuery({
+    queryKey: ['notifications'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .is('deleted_at', null)
+        .order('date', { ascending: false });
+      
+      if (error) throw error;
+      return data as Notification[];
+    },
+  });
+
   useEffect(() => {
-    setUnreadCount(notifications.length);
     checkNotificationPermission();
-  }, [notifications]);
+    setupRealtimeSubscription();
+  }, []);
+
+  const setupRealtimeSubscription = () => {
+    const channel = supabase
+      .channel('schema-db-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'notifications'
+        },
+        () => {
+          refetch();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  };
 
   const checkNotificationPermission = async () => {
     if ("Notification" in window) {
@@ -77,44 +115,101 @@ export const NotificationCenter = ({
     }
   };
 
-  const sendSystemNotification = (notification: Notification) => {
-    if (notificationPermission === "granted") {
-      const systemNotification = new Notification(notification.title, {
-        body: notification.message,
-        icon: "/favicon.ico",
+  const handleDismiss = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('notifications')
+        .update({ deleted_at: new Date().toISOString() })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      refetch();
+      toast({
+        title: "Notificación descartada",
+        description: "La notificación ha sido archivada.",
       });
-
-      systemNotification.onclick = () => {
-        window.focus();
-        setIsOpen(true);
-      };
+    } catch (error) {
+      console.error('Error dismissing notification:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo descartar la notificación.",
+        variant: "destructive",
+      });
     }
   };
 
-  useEffect(() => {
-    if (notifications.length > 0 && notificationPermission === "granted") {
-      const latestNotification = notifications[notifications.length - 1];
-      sendSystemNotification(latestNotification);
+  const getNotificationColor = (type: Notification['type'], priority: Notification['priority']) => {
+    if (priority === 'high') {
+      return 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100';
     }
-  }, [notifications, notificationPermission]);
-
-  const handleDismiss = (id: string) => {
-    onDismiss(id);
-    setUnreadCount(prev => Math.max(0, prev - 1));
-  };
-
-  const getNotificationColor = (type: Notification['type']) => {
+    
     switch (type) {
       case 'payment':
         return 'bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100';
       case 'task':
         return 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100';
-      case 'reminder':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100';
+      case 'publication':
+        return 'bg-purple-100 text-purple-800 dark:bg-purple-800 dark:text-purple-100';
       default:
         return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100';
     }
   };
+
+  const getNotificationIcon = (type: Notification['type']) => {
+    switch (type) {
+      case 'payment':
+        return <DollarSign className="h-4 w-4" />;
+      case 'task':
+        return <CheckCircle className="h-4 w-4" />;
+      case 'publication':
+        return <Calendar className="h-4 w-4" />;
+      default:
+        return <MessageCircle className="h-4 w-4" />;
+    }
+  };
+
+  const getNotificationActions = (notification: Notification): NotificationAction[] => {
+    const actions: NotificationAction[] = [];
+
+    switch (notification.action_type) {
+      case 'send_payment_reminder':
+        if (onSendPaymentReminders) {
+          actions.push({
+            label: 'Enviar recordatorio',
+            onClick: onSendPaymentReminders,
+            type: 'payment'
+          });
+        }
+        break;
+      case 'complete_task':
+        if (onCompleteTask && notification.task_id) {
+          actions.push({
+            label: 'Completar tarea',
+            onClick: () => onCompleteTask(notification.task_id!),
+            type: 'complete'
+          });
+        }
+        break;
+      case 'review_publication':
+        actions.push({
+          label: 'Revisar publicación',
+          onClick: () => {
+            // Implementar navegación a la publicación
+            toast({
+              title: "Función en desarrollo",
+              description: "La revisión de publicaciones estará disponible próximamente.",
+            });
+          },
+          type: 'review'
+        });
+        break;
+    }
+
+    return actions;
+  };
+
+  const unreadCount = notifications.length;
 
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -157,8 +252,11 @@ export const NotificationCenter = ({
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
-                      <Badge className={getNotificationColor(notification.type)}>
-                        {notification.type}
+                      <Badge className={getNotificationColor(notification.type, notification.priority)}>
+                        <span className="flex items-center gap-1">
+                          {getNotificationIcon(notification.type)}
+                          {notification.type}
+                        </span>
                       </Badge>
                       <span className="text-sm text-gray-500 dark:text-gray-400">
                         {format(new Date(notification.date), "dd/MM/yyyy HH:mm")}
@@ -176,9 +274,9 @@ export const NotificationCenter = ({
                     <X className="h-4 w-4" />
                   </Button>
                 </div>
-                {notification.actions && (
+                {getNotificationActions(notification).length > 0 && (
                   <div className="flex gap-2 mt-3">
-                    {notification.actions.map((action, index) => (
+                    {getNotificationActions(notification).map((action, index) => (
                       <Button
                         key={index}
                         variant="outline"
@@ -188,6 +286,8 @@ export const NotificationCenter = ({
                       >
                         {action.type === 'message' && <MessageCircle className="mr-2 h-4 w-4" />}
                         {action.type === 'complete' && <CheckCircle className="mr-2 h-4 w-4" />}
+                        {action.type === 'payment' && <DollarSign className="mr-2 h-4 w-4" />}
+                        {action.type === 'review' && <Calendar className="mr-2 h-4 w-4" />}
                         {action.label}
                       </Button>
                     ))}

@@ -214,11 +214,14 @@ export type Database = {
       }
       notifications: {
         Row: {
+          action_data: Json | null
+          action_type: string | null
           client_id: string | null
           date: string
           deleted_at: string | null
           id: string
           message: string
+          priority: string | null
           publication_id: string | null
           read: boolean | null
           task_id: string | null
@@ -226,11 +229,14 @@ export type Database = {
           type: string
         }
         Insert: {
+          action_data?: Json | null
+          action_type?: string | null
           client_id?: string | null
           date?: string
           deleted_at?: string | null
           id?: string
           message: string
+          priority?: string | null
           publication_id?: string | null
           read?: boolean | null
           task_id?: string | null
@@ -238,11 +244,14 @@ export type Database = {
           type: string
         }
         Update: {
+          action_data?: Json | null
+          action_type?: string | null
           client_id?: string | null
           date?: string
           deleted_at?: string | null
           id?: string
           message?: string
+          priority?: string | null
           publication_id?: string | null
           read?: boolean | null
           task_id?: string | null
