@@ -58,7 +58,12 @@ export const NotificationCenter = ({
         .order('date', { ascending: false });
       
       if (error) throw error;
-      return data as Notification[];
+      
+      // Convert the date strings to Date objects
+      return (data || []).map(notification => ({
+        ...notification,
+        date: new Date(notification.date),
+      })) as Notification[];
     },
   });
 
@@ -259,7 +264,7 @@ export const NotificationCenter = ({
                         </span>
                       </Badge>
                       <span className="text-sm text-gray-500 dark:text-gray-400">
-                        {format(new Date(notification.date), "dd/MM/yyyy HH:mm")}
+                        {format(notification.date, "dd/MM/yyyy HH:mm")}
                       </span>
                     </div>
                     <h4 className="font-semibold mb-1 dark:text-white">{notification.title}</h4>
