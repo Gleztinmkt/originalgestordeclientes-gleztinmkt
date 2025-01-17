@@ -23,36 +23,30 @@ export const Auth = () => {
         if (session) {
           setIsLoading(true);
           
-          // Add delay before checking profile to ensure DB consistency
           await new Promise(resolve => setTimeout(resolve, 1000));
           
-          try {
-            const { data: profile, error: profileError } = await supabase
-              .from('profiles')
-              .select('role')
-              .eq('id', session.user.id)
-              .single();
+          const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', session.user.id)
+            .single();
 
-            if (profileError) {
-              console.error('Profile check error:', profileError);
-              setError('Error verificando el perfil de usuario');
-              return;
-            }
-
-            if (!profile) {
-              setError('Perfil no encontrado. Por favor contacta al administrador.');
-              return;
-            }
-
-            toast({
-              title: "Login exitoso",
-              description: "Bienvenido al sistema",
-            });
-            navigate("/");
-          } catch (err) {
-            console.error('Profile verification error:', err);
+          if (profileError) {
+            console.error('Profile check error:', profileError);
             setError('Error verificando el perfil de usuario');
+            return;
           }
+
+          if (!profile) {
+            setError('Perfil no encontrado. Por favor contacta al administrador.');
+            return;
+          }
+
+          toast({
+            title: "Login exitoso",
+            description: "Bienvenido al sistema",
+          });
+          navigate("/");
         }
       } catch (err) {
         console.error('Session check error:', err);
@@ -71,7 +65,6 @@ export const Auth = () => {
       if (event === "SIGNED_IN" && session) {
         setIsLoading(true);
         try {
-          // Add delay to ensure database consistency
           await new Promise(resolve => setTimeout(resolve, 1000));
           
           const { data: profile, error: profileError } = await supabase
@@ -109,22 +102,6 @@ export const Auth = () => {
       subscription.unsubscribe();
     };
   }, [navigate]);
-
-  const getErrorMessage = (error: AuthError | Error) => {
-    if (error instanceof AuthApiError) {
-      switch (error.status) {
-        case 400:
-          return 'Datos de acceso inválidos';
-        case 422:
-          return 'El usuario ya existe';
-        case 401:
-          return 'No autorizado';
-        default:
-          return error.message;
-      }
-    }
-    return error.message;
-  };
 
   if (isCheckingAuth) {
     return (
