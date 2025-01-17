@@ -4,8 +4,6 @@ import { PackageCounter } from "./PackageCounter";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,6 +17,10 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { AddPackageForm, PackageFormValues } from "./AddPackageForm";
+import { toast } from "@/hooks/use-toast";
+import { useState, useCallback } from "react";
+import { PublicationCalendarDialog } from "./PublicationCalendarDialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,9 +31,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { AddPackageForm, PackageFormValues } from "./AddPackageForm";
-import { toast } from "@/hooks/use-toast";
-import { useState, useCallback } from "react";
 
 interface ClientPackageProps {
   packageName: string;
@@ -46,7 +45,6 @@ interface ClientPackageProps {
   clientId: string;
   clientName: string;
   packageId: string;
-  lastUpdate?: string | null;
 }
 
 export const ClientPackage = ({
@@ -62,7 +60,6 @@ export const ClientPackage = ({
   clientId,
   clientName,
   packageId,
-  lastUpdate,
 }: ClientPackageProps) => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -145,21 +142,12 @@ export const ClientPackage = ({
         </div>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          <PackageCounter
-            total={totalPublications}
-            used={usedPublications}
-            onUpdateUsed={onUpdateUsed}
-          />
-          
-          <div className="text-sm text-gray-500 dark:text-gray-400">
-            {lastUpdate && (
-              <span className="text-xs">
-                Última actualización: {format(new Date(lastUpdate), "d 'de' MMMM yyyy HH:mm", { locale: es })} horas
-              </span>
-            )}
-          </div>
-
+        <PackageCounter
+          total={totalPublications}
+          used={usedPublications}
+          onUpdateUsed={onUpdateUsed}
+        />
+        <div className="flex gap-2 mt-4">
           {usedPublications === totalPublications && (
             <Button 
               onClick={handleSendCompletionMessage}
@@ -170,6 +158,11 @@ export const ClientPackage = ({
               Enviar mensaje de completado
             </Button>
           )}
+          <PublicationCalendarDialog 
+            clientId={clientId}
+            clientName={clientName}
+            packageId={packageId}
+          />
         </div>
       </CardContent>
 

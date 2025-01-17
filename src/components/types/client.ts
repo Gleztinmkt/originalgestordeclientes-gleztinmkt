@@ -29,7 +29,6 @@ export interface Client {
     usedPublications: number;
     month: string;
     paid: boolean;
-    last_update?: string | null;
   }>;
   clientInfo?: ClientInfo;
 }
