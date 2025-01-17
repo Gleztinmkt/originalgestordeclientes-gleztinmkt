@@ -43,7 +43,6 @@ export const AuthGuard = ({ children }: { children: React.ReactNode }) => {
     );
   }
 
-  // Si el usuario no tiene un rol asignado, mostrar mensaje de error
   if (!role) {
     return (
       <div className="min-h-screen flex items-center justify-center">

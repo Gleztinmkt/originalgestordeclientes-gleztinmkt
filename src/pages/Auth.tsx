@@ -5,8 +5,9 @@ import { ThemeSupa } from "@supabase/auth-ui-shared";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { toast } from "@/hooks/use-toast";
+import { Loader2 } from "lucide-react";
 import { AuthError, AuthApiError } from "@supabase/supabase-js";
+import { toast } from "@/hooks/use-toast";
 
 export const Auth = () => {
   const navigate = useNavigate();
@@ -34,28 +35,28 @@ export const Auth = () => {
 
             if (profileError) {
               console.error('Profile check error:', profileError);
-              setError('Error checking user profile');
+              setError('Error verificando el perfil de usuario');
               return;
             }
 
             if (!profile) {
-              setError('Profile not found. Please contact the administrator.');
+              setError('Perfil no encontrado. Por favor contacta al administrador.');
               return;
             }
 
             toast({
-              title: "Login successful",
-              description: "Welcome to the system",
+              title: "Login exitoso",
+              description: "Bienvenido al sistema",
             });
             navigate("/");
           } catch (err) {
             console.error('Profile verification error:', err);
-            setError('Error checking user profile');
+            setError('Error verificando el perfil de usuario');
           }
         }
       } catch (err) {
         console.error('Session check error:', err);
-        setError('Error checking session');
+        setError('Error verificando la sesión');
       } finally {
         setIsLoading(false);
         setIsCheckingAuth(false);
@@ -81,23 +82,23 @@ export const Auth = () => {
 
           if (profileError) {
             console.error('Error checking profile:', profileError);
-            setError('Error checking user profile');
+            setError('Error verificando el perfil de usuario');
             return;
           }
 
           if (!profile) {
-            setError('You do not have access to the system. Please contact the administrator.');
+            setError('No tienes acceso al sistema. Por favor contacta al administrador.');
             return;
           }
 
           toast({
-            title: "Login successful",
-            description: "Welcome to the system",
+            title: "Login exitoso",
+            description: "Bienvenido al sistema",
           });
           navigate("/");
         } catch (err) {
           console.error('Error during login process:', err);
-          setError('Error checking user profile');
+          setError('Error verificando el perfil de usuario');
         } finally {
           setIsLoading(false);
         }
@@ -108,6 +109,22 @@ export const Auth = () => {
       subscription.unsubscribe();
     };
   }, [navigate]);
+
+  const getErrorMessage = (error: AuthError) => {
+    if (error instanceof AuthApiError) {
+      switch (error.status) {
+        case 400:
+          return 'Datos de acceso inválidos';
+        case 422:
+          return 'El usuario ya existe';
+        case 401:
+          return 'No autorizado';
+        default:
+          return error.message;
+      }
+    }
+    return error.message;
+  };
 
   if (isCheckingAuth) {
     return (
@@ -133,7 +150,7 @@ export const Auth = () => {
           )}
           {isLoading ? (
             <div className="flex justify-center items-center p-4">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-white"></div>
+              <Loader2 className="h-8 w-8 animate-spin" />
             </div>
           ) : (
             <SupabaseAuth 
