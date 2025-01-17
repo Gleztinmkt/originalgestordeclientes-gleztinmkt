@@ -155,17 +155,7 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
       onTypeChange={setSelectedType}
       onPackageChange={setSelectedPackage}
       onDesignerAdded={refetchDesigners}
-    >
-      <Alert>
-        <InfoIcon className="h-4 w-4" />
-        <AlertDescription>
-          {isMobile ? 
-            'Toca dos veces sobre una publicación para asignar diseñadores' :
-            'Haz clic derecho sobre una publicación para asignar diseñadores'
-          }
-        </AlertDescription>
-      </Alert>
-    </FilterPanel>
+    />
   );
 
   const CalendarContent = () => (
@@ -366,7 +356,7 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
       ) : (
         <>
           <div className="p-4 border-b space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mb-4">
               <div className="flex items-center space-x-2">
                 <Button
                   variant="outline"
@@ -404,9 +394,7 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
                 </h2>
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              <FilterContent />
-            </div>
+            <FilterContent />
           </div>
           <div className="flex-1 p-4 overflow-auto">
             <CalendarContent />

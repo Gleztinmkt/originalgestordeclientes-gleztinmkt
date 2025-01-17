@@ -5,7 +5,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { InfoIcon, Plus } from "lucide-react";
+import { Plus, Info } from "lucide-react";
 import { DesignerDialog } from "./DesignerDialog";
 import { StatusLegend } from "./StatusLegend";
 import { useState } from "react";
@@ -54,93 +54,85 @@ export const FilterPanel = ({
   const isMobile = useIsMobile();
 
   return (
-    <div className={`space-y-4 ${isMobile ? 'w-full' : ''}`}>
-      <div className="flex flex-wrap gap-4 items-center">
-        <div className="flex-1 min-w-[200px]">
-          <Select value={selectedClient || "all_clients"} onValueChange={(value) => onClientChange(value === "all_clients" ? null : value)}>
-            <SelectTrigger>
-              <SelectValue placeholder="Filtrar por cliente" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all_clients">Todos los clientes</SelectItem>
-              {clients.map((client) => (
-                <SelectItem key={client.id} value={client.id}>
-                  {client.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+    <div className={`flex items-center gap-4 ${isMobile ? 'flex-col w-full' : 'flex-row'}`}>
+      <Select value={selectedClient || "all_clients"} onValueChange={(value) => onClientChange(value === "all_clients" ? null : value)}>
+        <SelectTrigger className="min-w-[200px]">
+          <SelectValue placeholder="Todos los clientes" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all_clients">Todos los clientes</SelectItem>
+          {clients.map((client) => (
+            <SelectItem key={client.id} value={client.id}>
+              {client.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
 
-        <div className="flex items-center gap-2 flex-1 min-w-[200px]">
-          <Select value={selectedDesigner || "all_designers"} onValueChange={(value) => onDesignerChange(value === "all_designers" ? null : value)}>
-            <SelectTrigger className="flex-1">
-              <SelectValue placeholder="Filtrar por diseñador" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all_designers">Todos los diseñadores</SelectItem>
-              {designers.map((designer) => (
-                <SelectItem key={designer.id} value={designer.name}>
-                  {designer.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => setShowDesignerDialog(true)}
-            className="flex-shrink-0"
-          >
-            <Plus className="h-4 w-4" />
-          </Button>
-        </div>
-
-        <div className="flex-1 min-w-[200px]">
-          <Select value={selectedStatus || "all_status"} onValueChange={(value) => onStatusChange(value === "all_status" ? null : value)}>
-            <SelectTrigger>
-              <SelectValue placeholder="Filtrar por estado" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all_status">Todos los estados</SelectItem>
-              <SelectItem value="needs_recording">Falta grabar</SelectItem>
-              <SelectItem value="needs_editing">Falta editar</SelectItem>
-              <SelectItem value="in_editing">En edición</SelectItem>
-              <SelectItem value="in_review">En revisión</SelectItem>
-              <SelectItem value="approved">Aprobado</SelectItem>
-              <SelectItem value="published">Publicado</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="flex-1 min-w-[200px]">
-          <Select value={selectedType || "all_types"} onValueChange={(value) => onTypeChange(value === "all_types" ? null : value)}>
-            <SelectTrigger>
-              <SelectValue placeholder="Filtrar por tipo" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all_types">Todos los tipos</SelectItem>
-              <SelectItem value="reel">Reel</SelectItem>
-              <SelectItem value="carousel">Carrusel</SelectItem>
-              <SelectItem value="image">Imagen</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="outline" size="icon">
-              <InfoIcon className="h-4 w-4" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-80">
-            <div className="space-y-4">
-              <StatusLegend />
-              {children}
-            </div>
-          </PopoverContent>
-        </Popover>
+      <div className="flex items-center gap-2">
+        <Select value={selectedDesigner || "all_designers"} onValueChange={(value) => onDesignerChange(value === "all_designers" ? null : value)}>
+          <SelectTrigger className="min-w-[200px]">
+            <SelectValue placeholder="Todos los diseñadores" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all_designers">Todos los diseñadores</SelectItem>
+            {designers.map((designer) => (
+              <SelectItem key={designer.id} value={designer.name}>
+                {designer.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => setShowDesignerDialog(true)}
+          className="flex-shrink-0"
+        >
+          <Plus className="h-4 w-4" />
+        </Button>
       </div>
+
+      <Select value={selectedStatus || "all_status"} onValueChange={(value) => onStatusChange(value === "all_status" ? null : value)}>
+        <SelectTrigger className="min-w-[200px]">
+          <SelectValue placeholder="Todos los estados" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all_status">Todos los estados</SelectItem>
+          <SelectItem value="needs_recording">Falta grabar</SelectItem>
+          <SelectItem value="needs_editing">Falta editar</SelectItem>
+          <SelectItem value="in_editing">En edición</SelectItem>
+          <SelectItem value="in_review">En revisión</SelectItem>
+          <SelectItem value="approved">Aprobado</SelectItem>
+          <SelectItem value="published">Publicado</SelectItem>
+        </SelectContent>
+      </Select>
+
+      <Select value={selectedType || "all_types"} onValueChange={(value) => onTypeChange(value === "all_types" ? null : value)}>
+        <SelectTrigger className="min-w-[200px]">
+          <SelectValue placeholder="Todos los tipos" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all_types">Todos los tipos</SelectItem>
+          <SelectItem value="reel">Reel</SelectItem>
+          <SelectItem value="carousel">Carrusel</SelectItem>
+          <SelectItem value="image">Imagen</SelectItem>
+        </SelectContent>
+      </Select>
+
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button variant="outline" size="icon">
+            <Info className="h-4 w-4" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-80">
+          <div className="space-y-4">
+            <StatusLegend />
+            {children}
+          </div>
+        </PopoverContent>
+      </Popover>
 
       <DesignerDialog
         open={showDesignerDialog}
