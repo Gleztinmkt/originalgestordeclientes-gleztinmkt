@@ -110,7 +110,7 @@ export const Auth = () => {
     };
   }, [navigate]);
 
-  const getErrorMessage = (error: AuthError) => {
+  const getErrorMessage = (error: AuthError | Error) => {
     if (error instanceof AuthApiError) {
       switch (error.status) {
         case 400:
