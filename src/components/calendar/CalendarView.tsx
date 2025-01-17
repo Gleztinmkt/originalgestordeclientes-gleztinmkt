@@ -142,7 +142,7 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
 
   return (
     <div className={`h-screen ${isMobile ? 'flex flex-col' : 'flex'}`}>
-      <div className={`${isMobile ? 'w-full' : 'w-72 lg:w-80'} flex-shrink-0 ${isMobile ? 'border-b' : 'border-r'}`}>
+      <div className={`${isMobile ? 'w-full' : 'w-60 lg:w-64'} flex-shrink-0 ${isMobile ? 'border-b' : 'border-r'}`}>
         <div className={`${isMobile ? 'p-4' : 'h-full p-4'} flex flex-col`}>
           <FilterPanel
             clients={clients}

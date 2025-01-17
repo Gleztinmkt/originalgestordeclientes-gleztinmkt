@@ -9,8 +9,103 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      agencies: {
+        Row: {
+          created_at: string
+          deleted_at: string | null
+          id: string
+          name: string
+          owner_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          name: string
+          owner_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          name?: string
+          owner_id?: string | null
+        }
+        Relationships: []
+      }
+      client_links: {
+        Row: {
+          access_token: string
+          client_id: string | null
+          created_at: string
+          deleted_at: string | null
+          expires_at: string | null
+          id: string
+        }
+        Insert: {
+          access_token: string
+          client_id?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          expires_at?: string | null
+          id?: string
+        }
+        Update: {
+          access_token?: string
+          client_id?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          expires_at?: string | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_links_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_notes: {
+        Row: {
+          client_id: string | null
+          content: string
+          created_at: string
+          deleted_at: string | null
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          content: string
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          content?: string
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_notes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
+          agency_id: string | null
           client_info: Json | null
           created_at: string
           deleted_at: string | null
@@ -25,6 +120,7 @@ export type Database = {
           search_text: unknown | null
         }
         Insert: {
+          agency_id?: string | null
           client_info?: Json | null
           created_at?: string
           deleted_at?: string | null
@@ -39,6 +135,7 @@ export type Database = {
           search_text?: unknown | null
         }
         Update: {
+          agency_id?: string | null
           client_info?: Json | null
           created_at?: string
           deleted_at?: string | null
@@ -52,7 +149,15 @@ export type Database = {
           phone?: string | null
           search_text?: unknown | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "clients_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       designers: {
         Row: {
@@ -71,6 +176,41 @@ export type Database = {
           name?: string
         }
         Relationships: []
+      }
+      note_replies: {
+        Row: {
+          content: string
+          created_at: string
+          deleted_at: string | null
+          id: string
+          note_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          note_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          note_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "note_replies_note_id_fkey"
+            columns: ["note_id"]
+            isOneToOne: false
+            referencedRelation: "client_notes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       notifications: {
         Row: {
@@ -129,6 +269,41 @@ export type Database = {
             columns: ["task_id"]
             isOneToOne: false
             referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          agency_id: string | null
+          created_at: string
+          deleted_at: string | null
+          full_name: string | null
+          id: string
+          role: Database["public"]["Enums"]["user_role"]
+        }
+        Insert: {
+          agency_id?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          full_name?: string | null
+          id: string
+          role?: Database["public"]["Enums"]["user_role"]
+        }
+        Update: {
+          agency_id?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          full_name?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["user_role"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
             referencedColumns: ["id"]
           },
         ]
@@ -303,10 +478,25 @@ export type Database = {
       }
     }
     Functions: {
-      [_ in never]: never
+      create_initial_super_admin: {
+        Args: {
+          user_id: string
+          full_name: string
+        }
+        Returns: undefined
+      }
+      is_super_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      user_role:
+        | "super_admin"
+        | "agency_owner"
+        | "marketing_manager"
+        | "designer"
+        | "filming_crew"
     }
     CompositeTypes: {
       [_ in never]: never
