@@ -71,6 +71,7 @@ export const PackageSection = ({
             usedPublications={pkg.usedPublications}
             month={pkg.month}
             paid={pkg.paid}
+            lastUpdate={pkg.last_update}
             onUpdateUsed={(newCount) => onUpdatePackage(client.id, pkg.id, newCount)}
             onUpdatePaid={(paid) => onUpdatePaid(pkg.id, paid)}
             onEditPackage={(values) => onEditPackage(pkg.id, values)}
