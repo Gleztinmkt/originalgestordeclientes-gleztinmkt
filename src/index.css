@@ -80,7 +80,7 @@
   }
 
   .loading-screen .progress-bar div {
-    @apply h-full bg-blue-500 animate-progress;
+    @apply h-full bg-blue-500 relative overflow-hidden before:absolute before:inset-0 before:bg-blue-500 before:animate-progress;
   }
 
   .loading-screen .copyright {
