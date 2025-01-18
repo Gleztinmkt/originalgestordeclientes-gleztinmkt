@@ -63,19 +63,25 @@ export const NotificationCenter = ({
   const { data: notifications = [], refetch } = useQuery({
     queryKey: ['notifications'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: notificationsData, error: notificationsError } = await supabase
         .from('notifications')
-        .select('*')
+        .select(`
+          *,
+          clients (
+            name
+          )
+        `)
         .is('deleted_at', null)
         .order('date', { ascending: false });
       
-      if (error) throw error;
+      if (notificationsError) throw notificationsError;
       
-      return (data || []).map(notification => ({
+      return (notificationsData || []).map(notification => ({
         ...notification,
         date: new Date(notification.date),
         type: notification.type as 'payment' | 'task' | 'reminder' | 'publication',
-        priority: notification.priority as 'high' | 'normal' | 'low'
+        priority: notification.priority as 'high' | 'normal' | 'low',
+        clientName: notification.clients?.name
       })) as Notification[];
     },
   });
@@ -224,18 +230,18 @@ export const NotificationCenter = ({
 
   const getNotificationColor = (type: Notification['type'], priority: Notification['priority']) => {
     if (priority === 'high') {
-      return 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100';
+      return 'bg-red-100 text-red-800 dark:bg-red-800/50 dark:text-red-100';
     }
     
     switch (type) {
       case 'payment':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100';
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-800/50 dark:text-blue-100';
       case 'task':
-        return 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100';
+        return 'bg-green-100 text-green-800 dark:bg-green-800/50 dark:text-green-100';
       case 'publication':
-        return 'bg-purple-100 text-purple-800 dark:bg-purple-800 dark:text-purple-100';
+        return 'bg-purple-100 text-purple-800 dark:bg-purple-800/50 dark:text-purple-100';
       default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100';
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-800/50 dark:text-gray-100';
     }
   };
 
@@ -277,10 +283,17 @@ export const NotificationCenter = ({
           break;
         case 'review_publication':
           if (notification.publication_id) {
+            const { error } = await supabase
+              .from('publications')
+              .update({ in_review: true })
+              .eq('id', notification.publication_id);
+
+            if (error) throw error;
+
             await handleDismiss(notification.id);
             toast({
-              title: "Publicación revisada",
-              description: "Se ha marcado la publicación como revisada.",
+              title: "Publicación en revisión",
+              description: "Se ha marcado la publicación para revisión.",
             });
           }
           break;
@@ -332,7 +345,7 @@ export const NotificationCenter = ({
                 <Button 
                   variant="ghost" 
                   size="icon"
-                  className="md:hidden bg-transparent"
+                  className="md:hidden bg-transparent dark:text-white dark:hover:bg-gray-800"
                   onClick={() => setIsOpen(false)}
                 >
                   <ArrowLeft className="h-5 w-5" />
@@ -345,7 +358,7 @@ export const NotificationCenter = ({
                     onClick={requestNotificationPermission}
                     variant="outline"
                     size="sm"
-                    className="whitespace-nowrap bg-transparent"
+                    className="whitespace-nowrap bg-transparent dark:text-white dark:hover:bg-gray-800"
                   >
                     Activar notificaciones
                   </Button>
@@ -355,7 +368,7 @@ export const NotificationCenter = ({
                     <Button
                       variant="destructive"
                       size="sm"
-                      className="whitespace-nowrap"
+                      className="whitespace-nowrap dark:bg-red-900/50 dark:hover:bg-red-900"
                       disabled={notifications.length === 0}
                     >
                       <Trash2 className="h-4 w-4 mr-1" />
@@ -391,7 +404,7 @@ export const NotificationCenter = ({
                   {dateNotifications.map((notification) => (
                     <div
                       key={notification.id}
-                      className="p-4 rounded-lg bg-white dark:bg-gray-800 shadow-sm border dark:border-gray-700"
+                      className="p-4 rounded-lg bg-white dark:bg-gray-800/50 shadow-sm border dark:border-gray-700"
                     >
                       <div className="flex flex-col gap-4">
                         <div className="flex items-start justify-between">
@@ -408,7 +421,10 @@ export const NotificationCenter = ({
                               </span>
                             </div>
                             <h4 className="font-semibold mb-1 dark:text-white">{notification.title}</h4>
-                            <p className="text-sm text-gray-600 dark:text-gray-300">{notification.message}</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-300">
+                              {notification.message}
+                              {notification.clientName && ` - Cliente: ${notification.clientName}`}
+                            </p>
                           </div>
                           <Button
                             variant="ghost"
