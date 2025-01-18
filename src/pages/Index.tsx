@@ -94,7 +94,7 @@ const Index = () => {
     <ThemeProvider>
       <div className="min-h-screen p-4 md:p-8 space-y-6 md:space-y-8 dark:bg-gray-900 dark:text-white transition-colors duration-200">
         <div className="flex justify-between items-center">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-4">
             <TrashDialog />
             <NotificationCenter 
               onSendPaymentReminders={() => {}}
@@ -106,7 +106,7 @@ const Index = () => {
               className="h-8 w-8 object-contain"
             />
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-4">
             <ThemeToggle />
           </div>
         </div>

@@ -324,7 +324,7 @@ export const NotificationCenter = ({
           )}
         </Button>
       </SheetTrigger>
-      <SheetContent className="w-[100vw] sm:w-[540px] p-0 dark:bg-gray-900">
+      <SheetContent className="w-[100vw] sm:w-[540px] p-0 bg-white dark:bg-gray-900">
         <div className="flex flex-col h-full">
           <SheetHeader className="p-4 border-b dark:border-gray-800">
             <div className="flex items-center justify-between">

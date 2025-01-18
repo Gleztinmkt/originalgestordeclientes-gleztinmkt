@@ -205,20 +205,20 @@ export const ClientList = ({
                 <div className="flex items-center gap-2">
                   {clientLinks[client.id] ? (
                     <Button
-                      variant="outline"
+                      variant="ghost"
                       size="sm"
                       onClick={() => copyClientLink(client.id)}
-                      className="gap-2 bg-transparent dark:text-white dark:hover:bg-gray-800"
+                      className="gap-2 bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800"
                     >
                       <Copy className="h-4 w-4" />
                       Copiar enlace
                     </Button>
                   ) : (
                     <Button
-                      variant="outline"
+                      variant="ghost"
                       size="sm"
                       onClick={() => generateClientLink(client.id)}
-                      className="gap-2 bg-transparent dark:text-white dark:hover:bg-gray-800"
+                      className="gap-2 bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800"
                     >
                       <LinkIcon className="h-4 w-4" />
                       Generar enlace
