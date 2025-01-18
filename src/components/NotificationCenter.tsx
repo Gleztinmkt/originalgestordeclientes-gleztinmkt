@@ -46,6 +46,9 @@ interface Notification {
   publication_id?: string;
   task_id?: string;
   actions?: NotificationAction[];
+  clients?: {
+    name: string;
+  };
 }
 
 interface NotificationCenterProps {
@@ -81,7 +84,6 @@ export const NotificationCenter = ({
         date: new Date(notification.date),
         type: notification.type as 'payment' | 'task' | 'reminder' | 'publication',
         priority: notification.priority as 'high' | 'normal' | 'low',
-        clientName: notification.clients?.name
       })) as Notification[];
     },
   });
@@ -423,7 +425,7 @@ export const NotificationCenter = ({
                             <h4 className="font-semibold mb-1 dark:text-white">{notification.title}</h4>
                             <p className="text-sm text-gray-600 dark:text-gray-300">
                               {notification.message}
-                              {notification.clientName && ` - Cliente: ${notification.clientName}`}
+                              {notification.clients?.name && ` - Cliente: ${notification.clients.name}`}
                             </p>
                           </div>
                           <Button
