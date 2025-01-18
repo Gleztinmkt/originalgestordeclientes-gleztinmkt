@@ -258,21 +258,27 @@ export const NotificationCenter = ({
       case 'send_payment_reminder':
         if (onSendPaymentReminders && notification.client_id) {
           onSendPaymentReminders();
-          // Navigate to client details or payment section
-          window.location.href = `/clients/${notification.client_id}`;
+          toast({
+            title: "Recordatorio enviado",
+            description: "Se ha enviado el recordatorio de pago al cliente.",
+          });
         }
         break;
       case 'complete_task':
         if (onCompleteTask && notification.task_id) {
           onCompleteTask(notification.task_id);
-          // Navigate to task details
-          window.location.href = `/tasks/${notification.task_id}`;
+          toast({
+            title: "Tarea actualizada",
+            description: "Se ha actualizado el estado de la tarea.",
+          });
         }
         break;
       case 'review_publication':
         if (notification.publication_id) {
-          // Navigate to publication details
-          window.location.href = `/publications/${notification.publication_id}`;
+          toast({
+            title: "Revisión de publicación",
+            description: "Redirigiendo a la publicación...",
+          });
         }
         break;
     }
@@ -399,7 +405,7 @@ export const NotificationCenter = ({
                           {notification.action_type === 'send_payment_reminder' && <DollarSign className="mr-2 h-4 w-4" />}
                           {notification.action_type === 'complete_task' && <CheckCircle className="mr-2 h-4 w-4" />}
                           {notification.action_type === 'review_publication' && <Calendar className="mr-2 h-4 w-4" />}
-                          {notification.action_type === 'send_payment_reminder' && 'Ver detalles de pago'}
+                          {notification.action_type === 'send_payment_reminder' && 'Enviar recordatorio de pago'}
                           {notification.action_type === 'complete_task' && 'Ver tarea'}
                           {notification.action_type === 'review_publication' && 'Ver publicación'}
                         </Button>
