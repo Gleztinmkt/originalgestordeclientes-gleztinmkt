@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Bell, X, MessageCircle, CheckCircle, DollarSign, Calendar } from 'lucide-react';
+import { Bell, X, MessageCircle, CheckCircle, DollarSign, Calendar, Trash2 } from 'lucide-react';
 import {
   Sheet,
   SheetContent,
@@ -7,10 +7,22 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { format } from "date-fns";
+import { format, isSameDay } from "date-fns";
+import { es } from 'date-fns/locale';
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -59,7 +71,6 @@ export const NotificationCenter = ({
       
       if (error) throw error;
       
-      // Convert the date strings to Date objects and ensure type safety
       return (data || []).map(notification => ({
         ...notification,
         date: new Date(notification.date),
@@ -72,6 +83,7 @@ export const NotificationCenter = ({
   useEffect(() => {
     checkNotificationPermission();
     setupRealtimeSubscription();
+    setupTaskReminders();
   }, []);
 
   const setupRealtimeSubscription = () => {
@@ -95,10 +107,51 @@ export const NotificationCenter = ({
     };
   };
 
+  const setupTaskReminders = () => {
+    const checkReminders = async () => {
+      const { data: tasks, error } = await supabase
+        .from('tasks')
+        .select('*')
+        .is('deleted_at', null)
+        .is('completed', false)
+        .not('reminder_date', 'is', null);
+
+      if (error) {
+        console.error('Error fetching task reminders:', error);
+        return;
+      }
+
+      tasks.forEach(task => {
+        const reminderDate = new Date(task.reminder_date);
+        if (reminderDate && new Date() >= reminderDate) {
+          showSystemNotification(
+            'Recordatorio de tarea',
+            `Tarea pendiente: ${task.content}`
+          );
+        }
+      });
+    };
+
+    // Check reminders every minute
+    const interval = setInterval(checkReminders, 60000);
+    checkReminders(); // Initial check
+
+    return () => clearInterval(interval);
+  };
+
   const checkNotificationPermission = async () => {
     if ("Notification" in window) {
       const permission = await Notification.requestPermission();
       setNotificationPermission(permission);
+    }
+  };
+
+  const showSystemNotification = (title: string, body: string) => {
+    if (notificationPermission === "granted") {
+      new Notification(title, {
+        body,
+        icon: '/favicon.ico'
+      });
     }
   };
 
@@ -146,6 +199,30 @@ export const NotificationCenter = ({
     }
   };
 
+  const handleDismissAll = async () => {
+    try {
+      const { error } = await supabase
+        .from('notifications')
+        .update({ deleted_at: new Date().toISOString() })
+        .is('deleted_at', null);
+
+      if (error) throw error;
+
+      refetch();
+      toast({
+        title: "Notificaciones descartadas",
+        description: "Todas las notificaciones han sido archivadas.",
+      });
+    } catch (error) {
+      console.error('Error dismissing all notifications:', error);
+      toast({
+        title: "Error",
+        description: "No se pudieron descartar las notificaciones.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const getNotificationColor = (type: Notification['type'], priority: Notification['priority']) => {
     if (priority === 'high') {
       return 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100';
@@ -176,44 +253,40 @@ export const NotificationCenter = ({
     }
   };
 
-  const getNotificationActions = (notification: Notification): NotificationAction[] => {
-    const actions: NotificationAction[] = [];
-
+  const handleNotificationAction = async (notification: Notification) => {
     switch (notification.action_type) {
       case 'send_payment_reminder':
-        if (onSendPaymentReminders) {
-          actions.push({
-            label: 'Enviar recordatorio',
-            onClick: onSendPaymentReminders,
-            type: 'payment'
-          });
+        if (onSendPaymentReminders && notification.client_id) {
+          onSendPaymentReminders();
+          // Navigate to client details or payment section
+          window.location.href = `/clients/${notification.client_id}`;
         }
         break;
       case 'complete_task':
         if (onCompleteTask && notification.task_id) {
-          actions.push({
-            label: 'Completar tarea',
-            onClick: () => onCompleteTask(notification.task_id!),
-            type: 'complete'
-          });
+          onCompleteTask(notification.task_id);
+          // Navigate to task details
+          window.location.href = `/tasks/${notification.task_id}`;
         }
         break;
       case 'review_publication':
-        actions.push({
-          label: 'Revisar publicación',
-          onClick: () => {
-            toast({
-              title: "Función en desarrollo",
-              description: "La revisión de publicaciones estará disponible próximamente.",
-            });
-          },
-          type: 'review'
-        });
+        if (notification.publication_id) {
+          // Navigate to publication details
+          window.location.href = `/publications/${notification.publication_id}`;
+        }
         break;
     }
-
-    return actions;
   };
+
+  // Group notifications by date
+  const groupedNotifications = notifications.reduce((groups, notification) => {
+    const date = format(notification.date, 'yyyy-MM-dd');
+    if (!groups[date]) {
+      groups[date] = [];
+    }
+    groups[date].push(notification);
+    return groups;
+  }, {} as Record<string, Notification[]>);
 
   const unreadCount = notifications.length;
 
@@ -236,69 +309,104 @@ export const NotificationCenter = ({
         </Button>
       </SheetTrigger>
       <SheetContent className="w-[400px] sm:w-[540px] dark:bg-gray-900 dark:text-white">
-        <SheetHeader>
+        <SheetHeader className="flex flex-row justify-between items-center">
           <SheetTitle className="text-xl font-bold dark:text-white">Notificaciones</SheetTitle>
-          {notificationPermission !== "granted" && (
-            <Button 
-              onClick={requestNotificationPermission}
-              variant="outline"
-              className="mt-2"
-            >
-              Activar notificaciones del sistema
-            </Button>
-          )}
+          <div className="flex gap-2">
+            {notificationPermission !== "granted" && (
+              <Button 
+                onClick={requestNotificationPermission}
+                variant="outline"
+                size="sm"
+                className="whitespace-nowrap"
+              >
+                Activar notificaciones
+              </Button>
+            )}
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  className="whitespace-nowrap"
+                  disabled={notifications.length === 0}
+                >
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  Borrar todo
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>¿Borrar todas las notificaciones?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Esta acción no se puede deshacer. Se borrarán todas las notificaciones.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDismissAll}>
+                    Confirmar
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
         </SheetHeader>
         <ScrollArea className="h-[calc(100vh-100px)] mt-4">
-          <div className="space-y-4">
-            {notifications.map((notification) => (
-              <div
-                key={notification.id}
-                className="p-4 rounded-lg bg-white dark:bg-gray-800 shadow-sm border dark:border-gray-700"
-              >
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Badge className={getNotificationColor(notification.type, notification.priority)}>
-                        <span className="flex items-center gap-1">
-                          {getNotificationIcon(notification.type)}
-                          {notification.type}
-                        </span>
-                      </Badge>
-                      <span className="text-sm text-gray-500 dark:text-gray-400">
-                        {format(notification.date, "dd/MM/yyyy HH:mm")}
-                      </span>
-                    </div>
-                    <h4 className="font-semibold mb-1 dark:text-white">{notification.title}</h4>
-                    <p className="text-sm text-gray-600 dark:text-gray-300">{notification.message}</p>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleDismiss(notification.id)}
-                    className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+          <div className="space-y-6">
+            {Object.entries(groupedNotifications).map(([date, dateNotifications]) => (
+              <div key={date} className="space-y-4">
+                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 sticky top-0 bg-white dark:bg-gray-900 py-2">
+                  {format(new Date(date), "d 'de' MMMM yyyy", { locale: es })}
+                </h3>
+                {dateNotifications.map((notification) => (
+                  <div
+                    key={notification.id}
+                    className="p-4 rounded-lg bg-white dark:bg-gray-800 shadow-sm border dark:border-gray-700"
                   >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-                {getNotificationActions(notification).length > 0 && (
-                  <div className="flex gap-2 mt-3">
-                    {getNotificationActions(notification).map((action, index) => (
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Badge className={getNotificationColor(notification.type, notification.priority)}>
+                            <span className="flex items-center gap-1">
+                              {getNotificationIcon(notification.type)}
+                              {notification.type}
+                            </span>
+                          </Badge>
+                          <span className="text-sm text-gray-500 dark:text-gray-400">
+                            {format(notification.date, "HH:mm", { locale: es })}
+                          </span>
+                        </div>
+                        <h4 className="font-semibold mb-1 dark:text-white">{notification.title}</h4>
+                        <p className="text-sm text-gray-600 dark:text-gray-300">{notification.message}</p>
+                      </div>
                       <Button
-                        key={index}
-                        variant="outline"
-                        size="sm"
-                        onClick={action.onClick}
-                        className="dark:bg-gray-700 dark:text-white"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDismiss(notification.id)}
+                        className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
                       >
-                        {action.type === 'message' && <MessageCircle className="mr-2 h-4 w-4" />}
-                        {action.type === 'complete' && <CheckCircle className="mr-2 h-4 w-4" />}
-                        {action.type === 'payment' && <DollarSign className="mr-2 h-4 w-4" />}
-                        {action.type === 'review' && <Calendar className="mr-2 h-4 w-4" />}
-                        {action.label}
+                        <X className="h-4 w-4" />
                       </Button>
-                    ))}
+                    </div>
+                    {notification.action_type && (
+                      <div className="mt-3">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleNotificationAction(notification)}
+                          className="dark:bg-gray-700 dark:text-white"
+                        >
+                          {notification.action_type === 'send_payment_reminder' && <DollarSign className="mr-2 h-4 w-4" />}
+                          {notification.action_type === 'complete_task' && <CheckCircle className="mr-2 h-4 w-4" />}
+                          {notification.action_type === 'review_publication' && <Calendar className="mr-2 h-4 w-4" />}
+                          {notification.action_type === 'send_payment_reminder' && 'Ver detalles de pago'}
+                          {notification.action_type === 'complete_task' && 'Ver tarea'}
+                          {notification.action_type === 'review_publication' && 'Ver publicación'}
+                        </Button>
+                      </div>
+                    )}
                   </div>
-                )}
+                ))}
               </div>
             ))}
           </div>
