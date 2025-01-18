@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { BulkMessageButton } from "./client/BulkMessageButton";
 import { ClientFilter } from "./client/ClientFilter";
 import { ClientCard } from "./client/ClientCard";
@@ -6,7 +6,15 @@ import { Task } from "./TaskList";
 import { Client } from "./types/client";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
-import { Grid3x3, List, Search, DollarSign } from "lucide-react";
+import { Grid3x3, List, Search, DollarSign, Link as LinkIcon, Copy } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
+
+interface ClientLink {
+  id: string;
+  client_id: string;
+  access_token: string;
+}
 
 interface ClientListProps {
   clients: Client[];
@@ -37,6 +45,75 @@ export const ClientList = ({
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   const [showPendingPayments, setShowPendingPayments] = useState(false);
+  const [clientLinks, setClientLinks] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    fetchClientLinks();
+  }, [clients]);
+
+  const fetchClientLinks = async () => {
+    try {
+      const { data: links, error } = await supabase
+        .from('client_links')
+        .select('*')
+        .is('deleted_at', null);
+
+      if (error) throw error;
+
+      const linkMap = (links || []).reduce((acc: Record<string, string>, link: ClientLink) => {
+        acc[link.client_id] = link.access_token;
+        return acc;
+      }, {});
+
+      setClientLinks(linkMap);
+    } catch (error) {
+      console.error('Error fetching client links:', error);
+    }
+  };
+
+  const generateClientLink = async (clientId: string) => {
+    try {
+      const accessToken = crypto.randomUUID();
+      
+      const { error } = await supabase
+        .from('client_links')
+        .insert([
+          { 
+            client_id: clientId,
+            access_token: accessToken
+          }
+        ]);
+
+      if (error) throw error;
+
+      setClientLinks(prev => ({
+        ...prev,
+        [clientId]: accessToken
+      }));
+
+      toast({
+        title: "Enlace generado",
+        description: "Se ha generado un nuevo enlace de acceso para el cliente.",
+      });
+    } catch (error) {
+      console.error('Error generating client link:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo generar el enlace. Por favor, intente de nuevo.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const copyClientLink = (clientId: string) => {
+    const baseUrl = window.location.origin;
+    const link = `${baseUrl}/client/${clientLinks[clientId]}`;
+    navigator.clipboard.writeText(link);
+    toast({
+      title: "Enlace copiado",
+      description: "El enlace ha sido copiado al portapapeles.",
+    });
+  };
 
   const getSubtleGradient = (index: number) => {
     const gradients = [
@@ -118,19 +195,49 @@ export const ClientList = ({
       }>
         {filteredClients.map((client, index) => (
           <div key={client.id} className={getSubtleGradient(index)}>
-            <ClientCard
-              client={client}
-              onDeleteClient={onDeleteClient}
-              onUpdateClient={onUpdateClient}
-              onUpdatePackage={onUpdatePackage}
-              onAddPackage={onAddPackage}
-              tasks={tasks}
-              onAddTask={onAddTask}
-              onDeleteTask={onDeleteTask}
-              onCompleteTask={onCompleteTask}
-              onUpdateTask={onUpdateTask}
-              viewMode={viewMode}
-            />
+            <div className="p-4 rounded-lg">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-heading font-semibold text-gray-800 dark:text-white">
+                  {client.name}
+                </h3>
+                <div className="flex items-center gap-2">
+                  {clientLinks[client.id] ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => copyClientLink(client.id)}
+                      className="gap-2"
+                    >
+                      <Copy className="h-4 w-4" />
+                      Copiar enlace
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => generateClientLink(client.id)}
+                      className="gap-2"
+                    >
+                      <LinkIcon className="h-4 w-4" />
+                      Generar enlace
+                    </Button>
+                  )}
+                </div>
+              </div>
+              <ClientCard
+                client={client}
+                onDeleteClient={onDeleteClient}
+                onUpdateClient={onUpdateClient}
+                onUpdatePackage={onUpdatePackage}
+                onAddPackage={onAddPackage}
+                tasks={tasks}
+                onAddTask={onAddTask}
+                onDeleteTask={onDeleteTask}
+                onCompleteTask={onCompleteTask}
+                onUpdateTask={onUpdateTask}
+                viewMode={viewMode}
+              />
+            </div>
           </div>
         ))}
       </div>
