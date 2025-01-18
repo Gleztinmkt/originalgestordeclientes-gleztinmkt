@@ -23,7 +23,6 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
   const [expandedDays, setExpandedDays] = useState<{ [key: string]: boolean }>({});
   const isMobile = useIsMobile();
 
@@ -66,13 +65,7 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
     },
   });
 
-  const handleDragStart = () => {
-    setIsDragging(true);
-  };
-
   const handleDragEnd = async (result: DropResult) => {
-    setIsDragging(false);
-    
     if (!result.destination) return;
 
     const destinationDate = result.destination.droppableId;
@@ -159,7 +152,7 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
   );
 
   const CalendarContent = () => (
-    <DragDropContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+    <DragDropContext onDragEnd={handleDragEnd}>
       {isMobile ? (
         <div className="calendar-mobile-view">
           {daysInMonth.map((date) => {
@@ -203,10 +196,7 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
                                 ref={provided.innerRef}
                                 {...provided.draggableProps}
                                 {...provided.dragHandleProps}
-                                style={{
-                                  ...provided.draggableProps.style,
-                                  opacity: snapshot.isDragging ? 0.5 : 1
-                                }}
+                                className={`draggable-item ${snapshot.isDragging ? 'dragging' : ''}`}
                               >
                                 <PublicationCard
                                   publication={publication}
@@ -272,10 +262,7 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
                                   ref={provided.innerRef}
                                   {...provided.draggableProps}
                                   {...provided.dragHandleProps}
-                                  style={{
-                                    ...provided.draggableProps.style,
-                                    opacity: snapshot.isDragging ? 0.5 : 1
-                                  }}
+                                  className={`draggable-item ${snapshot.isDragging ? 'dragging' : ''}`}
                                 >
                                   <PublicationCard
                                     publication={publication}
