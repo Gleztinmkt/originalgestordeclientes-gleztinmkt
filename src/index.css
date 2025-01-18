@@ -103,15 +103,6 @@
   @apply text-sm text-gray-500 dark:text-gray-400;
 }
 
-@keyframes progress {
-  0% {
-    width: 0%;
-  }
-  100% {
-    width: 100%;
-  }
-}
-
 .draggable-item {
   transition: transform 0.2s ease, opacity 0.2s ease;
 }
