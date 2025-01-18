@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Bell, X, MessageCircle, CheckCircle, DollarSign, Calendar, Trash2 } from 'lucide-react';
+import { Bell, X, MessageCircle, CheckCircle, DollarSign, Calendar, Trash2, ArrowLeft } from 'lucide-react';
 import {
   Sheet,
   SheetContent,
@@ -314,109 +314,128 @@ export const NotificationCenter = ({
           )}
         </Button>
       </SheetTrigger>
-      <SheetContent className="w-[400px] sm:w-[540px] dark:bg-gray-900 dark:text-white">
-        <SheetHeader className="flex flex-row justify-between items-center">
-          <SheetTitle className="text-xl font-bold dark:text-white">Notificaciones</SheetTitle>
-          <div className="flex gap-2">
-            {notificationPermission !== "granted" && (
-              <Button 
-                onClick={requestNotificationPermission}
-                variant="outline"
-                size="sm"
-                className="whitespace-nowrap"
-              >
-                Activar notificaciones
-              </Button>
-            )}
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  className="whitespace-nowrap"
-                  disabled={notifications.length === 0}
+      <SheetContent className="w-[100vw] sm:w-[540px] p-0 dark:bg-gray-900 dark:text-white">
+        <div className="flex flex-col h-full">
+          <SheetHeader className="p-4 border-b dark:border-gray-800">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  className="md:hidden"
+                  onClick={() => setIsOpen(false)}
                 >
-                  <Trash2 className="h-4 w-4 mr-1" />
-                  Borrar todo
+                  <ArrowLeft className="h-5 w-5" />
                 </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>¿Borrar todas las notificaciones?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Esta acción no se puede deshacer. Se borrarán todas las notificaciones.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDismissAll}>
-                    Confirmar
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
-        </SheetHeader>
-        <ScrollArea className="h-[calc(100vh-100px)] mt-4">
-          <div className="space-y-6">
-            {Object.entries(groupedNotifications).map(([date, dateNotifications]) => (
-              <div key={date} className="space-y-4">
-                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 sticky top-0 bg-white dark:bg-gray-900 py-2">
-                  {format(new Date(date), "d 'de' MMMM yyyy", { locale: es })}
-                </h3>
-                {dateNotifications.map((notification) => (
-                  <div
-                    key={notification.id}
-                    className="p-4 rounded-lg bg-white dark:bg-gray-800 shadow-sm border dark:border-gray-700"
-                  >
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Badge className={getNotificationColor(notification.type, notification.priority)}>
-                            <span className="flex items-center gap-1">
-                              {getNotificationIcon(notification.type)}
-                              {notification.type}
-                            </span>
-                          </Badge>
-                          <span className="text-sm text-gray-500 dark:text-gray-400">
-                            {format(notification.date, "HH:mm", { locale: es })}
-                          </span>
-                        </div>
-                        <h4 className="font-semibold mb-1 dark:text-white">{notification.title}</h4>
-                        <p className="text-sm text-gray-600 dark:text-gray-300">{notification.message}</p>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDismiss(notification.id)}
-                        className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    {notification.action_type && (
-                      <div className="mt-3">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleNotificationAction(notification)}
-                          className="dark:bg-gray-700 dark:text-white"
-                        >
-                          {notification.action_type === 'send_payment_reminder' && <DollarSign className="mr-2 h-4 w-4" />}
-                          {notification.action_type === 'complete_task' && <CheckCircle className="mr-2 h-4 w-4" />}
-                          {notification.action_type === 'review_publication' && <Calendar className="mr-2 h-4 w-4" />}
-                          {notification.action_type === 'send_payment_reminder' && 'Enviar recordatorio de pago'}
-                          {notification.action_type === 'complete_task' && 'Ver tarea'}
-                          {notification.action_type === 'review_publication' && 'Ver publicación'}
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                ))}
+                <SheetTitle className="text-xl font-bold dark:text-white">Notificaciones</SheetTitle>
               </div>
-            ))}
-          </div>
-        </ScrollArea>
+              <div className="flex gap-2">
+                {notificationPermission !== "granted" && (
+                  <Button 
+                    onClick={requestNotificationPermission}
+                    variant="outline"
+                    size="sm"
+                    className="whitespace-nowrap"
+                  >
+                    Activar notificaciones
+                  </Button>
+                )}
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="whitespace-nowrap"
+                      disabled={notifications.length === 0}
+                    >
+                      <Trash2 className="h-4 w-4 mr-1" />
+                      Borrar todo
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>¿Borrar todas las notificaciones?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Esta acción no se puede deshacer. Se borrarán todas las notificaciones.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleDismissAll}>
+                        Confirmar
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+            </div>
+          </SheetHeader>
+          
+          <ScrollArea className="flex-1 p-4">
+            <div className="space-y-6">
+              {Object.entries(groupedNotifications).map(([date, dateNotifications]) => (
+                <div key={date} className="space-y-4">
+                  <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 sticky top-0 bg-white dark:bg-gray-900 py-2">
+                    {format(new Date(date), "d 'de' MMMM yyyy", { locale: es })}
+                  </h3>
+                  {dateNotifications.map((notification) => (
+                    <div
+                      key={notification.id}
+                      className="p-4 rounded-lg bg-white dark:bg-gray-800 shadow-sm border dark:border-gray-700"
+                    >
+                      <div className="flex flex-col gap-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Badge className={getNotificationColor(notification.type, notification.priority)}>
+                                <span className="flex items-center gap-1">
+                                  {getNotificationIcon(notification.type)}
+                                  {notification.type}
+                                </span>
+                              </Badge>
+                              <span className="text-sm text-gray-500 dark:text-gray-400">
+                                {format(notification.date, "HH:mm", { locale: es })}
+                              </span>
+                            </div>
+                            <h4 className="font-semibold mb-1 dark:text-white">{notification.title}</h4>
+                            <p className="text-sm text-gray-600 dark:text-gray-300">{notification.message}</p>
+                          </div>
+                          <div className="flex flex-col gap-2">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDismiss(notification.id)}
+                              className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                        {notification.action_type && (
+                          <div className="mt-3">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleNotificationAction(notification)}
+                              className="w-full sm:w-auto dark:bg-gray-700 dark:text-white"
+                            >
+                              {notification.action_type === 'send_payment_reminder' && <DollarSign className="mr-2 h-4 w-4" />}
+                              {notification.action_type === 'complete_task' && <CheckCircle className="mr-2 h-4 w-4" />}
+                              {notification.action_type === 'review_publication' && <Calendar className="mr-2 h-4 w-4" />}
+                              {notification.action_type === 'send_payment_reminder' && 'Enviar recordatorio de pago'}
+                              {notification.action_type === 'complete_task' && 'Ver tarea'}
+                              {notification.action_type === 'review_publication' && 'Ver publicación'}
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+        </div>
       </SheetContent>
     </Sheet>
   );

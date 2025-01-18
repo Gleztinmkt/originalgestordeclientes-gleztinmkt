@@ -77,15 +77,14 @@ export const ClientList = ({
       
       const { error } = await supabase
         .from('client_links')
-        .insert([
-          { 
-            client_id: clientId,
-            access_token: accessToken
-          }
-        ]);
+        .insert({
+          client_id: clientId,
+          access_token: accessToken
+        });
 
       if (error) throw error;
 
+      // Update local state after successful insertion
       setClientLinks(prev => ({
         ...prev,
         [clientId]: accessToken
