@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Bell, X, MessageCircle, CheckCircle, DollarSign, Calendar, Trash2, ArrowLeft } from 'lucide-react';
+import { Bell, X, MessageCircle, CheckCircle, DollarSign, Calendar, Trash2 } from 'lucide-react';
 import {
   Sheet,
   SheetContent,
@@ -46,9 +46,6 @@ interface Notification {
   publication_id?: string;
   task_id?: string;
   actions?: NotificationAction[];
-  clients?: {
-    name: string;
-  };
 }
 
 interface NotificationCenterProps {
@@ -66,24 +63,19 @@ export const NotificationCenter = ({
   const { data: notifications = [], refetch } = useQuery({
     queryKey: ['notifications'],
     queryFn: async () => {
-      const { data: notificationsData, error: notificationsError } = await supabase
+      const { data, error } = await supabase
         .from('notifications')
-        .select(`
-          *,
-          clients (
-            name
-          )
-        `)
+        .select('*')
         .is('deleted_at', null)
         .order('date', { ascending: false });
       
-      if (notificationsError) throw notificationsError;
+      if (error) throw error;
       
-      return (notificationsData || []).map(notification => ({
+      return (data || []).map(notification => ({
         ...notification,
         date: new Date(notification.date),
         type: notification.type as 'payment' | 'task' | 'reminder' | 'publication',
-        priority: notification.priority as 'high' | 'normal' | 'low',
+        priority: notification.priority as 'high' | 'normal' | 'low'
       })) as Notification[];
     },
   });
@@ -140,8 +132,9 @@ export const NotificationCenter = ({
       });
     };
 
+    // Check reminders every minute
     const interval = setInterval(checkReminders, 60000);
-    checkReminders();
+    checkReminders(); // Initial check
 
     return () => clearInterval(interval);
   };
@@ -232,18 +225,18 @@ export const NotificationCenter = ({
 
   const getNotificationColor = (type: Notification['type'], priority: Notification['priority']) => {
     if (priority === 'high') {
-      return 'bg-red-100 text-red-800 dark:bg-red-800/50 dark:text-red-100';
+      return 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100';
     }
     
     switch (type) {
       case 'payment':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-800/50 dark:text-blue-100';
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100';
       case 'task':
-        return 'bg-green-100 text-green-800 dark:bg-green-800/50 dark:text-green-100';
+        return 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100';
       case 'publication':
-        return 'bg-purple-100 text-purple-800 dark:bg-purple-800/50 dark:text-purple-100';
+        return 'bg-purple-100 text-purple-800 dark:bg-purple-800 dark:text-purple-100';
       default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-800/50 dark:text-gray-100';
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100';
     }
   };
 
@@ -261,55 +254,37 @@ export const NotificationCenter = ({
   };
 
   const handleNotificationAction = async (notification: Notification) => {
-    try {
-      switch (notification.action_type) {
-        case 'send_payment_reminder':
-          if (onSendPaymentReminders && notification.client_id) {
-            await onSendPaymentReminders();
-            await handleDismiss(notification.id);
-            toast({
-              title: "Recordatorio enviado",
-              description: "Se ha enviado el recordatorio de pago al cliente.",
-            });
-          }
-          break;
-        case 'complete_task':
-          if (onCompleteTask && notification.task_id) {
-            await onCompleteTask(notification.task_id);
-            await handleDismiss(notification.id);
-            toast({
-              title: "Tarea completada",
-              description: "Se ha marcado la tarea como completada.",
-            });
-          }
-          break;
-        case 'review_publication':
-          if (notification.publication_id) {
-            const { error } = await supabase
-              .from('publications')
-              .update({ in_review: true })
-              .eq('id', notification.publication_id);
-
-            if (error) throw error;
-
-            await handleDismiss(notification.id);
-            toast({
-              title: "Publicación en revisión",
-              description: "Se ha marcado la publicación para revisión.",
-            });
-          }
-          break;
-      }
-    } catch (error) {
-      console.error('Error handling notification action:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo procesar la acción. Por favor, intente de nuevo.",
-        variant: "destructive",
-      });
+    switch (notification.action_type) {
+      case 'send_payment_reminder':
+        if (onSendPaymentReminders && notification.client_id) {
+          onSendPaymentReminders();
+          toast({
+            title: "Recordatorio enviado",
+            description: "Se ha enviado el recordatorio de pago al cliente.",
+          });
+        }
+        break;
+      case 'complete_task':
+        if (onCompleteTask && notification.task_id) {
+          onCompleteTask(notification.task_id);
+          toast({
+            title: "Tarea actualizada",
+            description: "Se ha actualizado el estado de la tarea.",
+          });
+        }
+        break;
+      case 'review_publication':
+        if (notification.publication_id) {
+          toast({
+            title: "Revisión de publicación",
+            description: "Redirigiendo a la publicación...",
+          });
+        }
+        break;
     }
   };
 
+  // Group notifications by date
   const groupedNotifications = notifications.reduce((groups, notification) => {
     const date = format(notification.date, 'yyyy-MM-dd');
     if (!groups[date]) {
@@ -327,7 +302,7 @@ export const NotificationCenter = ({
         <Button
           variant="ghost"
           size="icon"
-          className="relative bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800"
+          className="relative dark:text-white"
         >
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
@@ -339,129 +314,109 @@ export const NotificationCenter = ({
           )}
         </Button>
       </SheetTrigger>
-      <SheetContent className="w-[100vw] sm:w-[540px] p-0 bg-white dark:bg-gray-900">
-        <div className="flex flex-col h-full">
-          <SheetHeader className="p-4 border-b dark:border-gray-800">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Button 
-                  variant="ghost" 
-                  size="icon"
-                  className="md:hidden bg-transparent dark:text-white dark:hover:bg-gray-800"
-                  onClick={() => setIsOpen(false)}
+      <SheetContent className="w-[400px] sm:w-[540px] dark:bg-gray-900 dark:text-white">
+        <SheetHeader className="flex flex-row justify-between items-center">
+          <SheetTitle className="text-xl font-bold dark:text-white">Notificaciones</SheetTitle>
+          <div className="flex gap-2">
+            {notificationPermission !== "granted" && (
+              <Button 
+                onClick={requestNotificationPermission}
+                variant="outline"
+                size="sm"
+                className="whitespace-nowrap"
+              >
+                Activar notificaciones
+              </Button>
+            )}
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  className="whitespace-nowrap"
+                  disabled={notifications.length === 0}
                 >
-                  <ArrowLeft className="h-5 w-5" />
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  Borrar todo
                 </Button>
-                <SheetTitle>Notificaciones</SheetTitle>
-              </div>
-              <div className="flex gap-2">
-                {notificationPermission !== "granted" && (
-                  <Button 
-                    onClick={requestNotificationPermission}
-                    variant="outline"
-                    size="sm"
-                    className="whitespace-nowrap bg-transparent dark:text-white dark:hover:bg-gray-800"
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>¿Borrar todas las notificaciones?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Esta acción no se puede deshacer. Se borrarán todas las notificaciones.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDismissAll}>
+                    Confirmar
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        </SheetHeader>
+        <ScrollArea className="h-[calc(100vh-100px)] mt-4">
+          <div className="space-y-6">
+            {Object.entries(groupedNotifications).map(([date, dateNotifications]) => (
+              <div key={date} className="space-y-4">
+                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 sticky top-0 bg-white dark:bg-gray-900 py-2">
+                  {format(new Date(date), "d 'de' MMMM yyyy", { locale: es })}
+                </h3>
+                {dateNotifications.map((notification) => (
+                  <div
+                    key={notification.id}
+                    className="p-4 rounded-lg bg-white dark:bg-gray-800 shadow-sm border dark:border-gray-700"
                   >
-                    Activar notificaciones
-                  </Button>
-                )}
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      className="whitespace-nowrap dark:bg-red-900/50 dark:hover:bg-red-900"
-                      disabled={notifications.length === 0}
-                    >
-                      <Trash2 className="h-4 w-4 mr-1" />
-                      Borrar todo
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>¿Borrar todas las notificaciones?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Esta acción no se puede deshacer. Se borrarán todas las notificaciones.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleDismissAll}>
-                        Confirmar
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
-            </div>
-          </SheetHeader>
-          
-          <ScrollArea className="flex-1">
-            <div className="p-4 space-y-6">
-              {Object.entries(groupedNotifications).map(([date, dateNotifications]) => (
-                <div key={date} className="space-y-4">
-                  <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 sticky top-0 bg-white dark:bg-gray-900 py-2">
-                    {format(new Date(date), "d 'de' MMMM yyyy", { locale: es })}
-                  </h3>
-                  {dateNotifications.map((notification) => (
-                    <div
-                      key={notification.id}
-                      className="p-4 rounded-lg bg-white dark:bg-gray-800/50 shadow-sm border dark:border-gray-700"
-                    >
-                      <div className="flex flex-col gap-4">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
-                              <Badge className={getNotificationColor(notification.type, notification.priority)}>
-                                <span className="flex items-center gap-1">
-                                  {getNotificationIcon(notification.type)}
-                                  {notification.type}
-                                </span>
-                              </Badge>
-                              <span className="text-sm text-gray-500 dark:text-gray-400">
-                                {format(notification.date, "HH:mm", { locale: es })}
-                              </span>
-                            </div>
-                            <h4 className="font-semibold mb-1 dark:text-white">{notification.title}</h4>
-                            <p className="text-sm text-gray-600 dark:text-gray-300">
-                              {notification.message}
-                              {notification.clients?.name && ` - Cliente: ${notification.clients.name}`}
-                            </p>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDismiss(notification.id)}
-                            className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 bg-transparent ml-4"
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Badge className={getNotificationColor(notification.type, notification.priority)}>
+                            <span className="flex items-center gap-1">
+                              {getNotificationIcon(notification.type)}
+                              {notification.type}
+                            </span>
+                          </Badge>
+                          <span className="text-sm text-gray-500 dark:text-gray-400">
+                            {format(notification.date, "HH:mm", { locale: es })}
+                          </span>
                         </div>
-                        {notification.action_type && (
-                          <div className="mt-3">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleNotificationAction(notification)}
-                              className="w-full sm:w-auto bg-transparent dark:text-white dark:hover:bg-gray-700"
-                            >
-                              {notification.action_type === 'send_payment_reminder' && <DollarSign className="mr-2 h-4 w-4" />}
-                              {notification.action_type === 'complete_task' && <CheckCircle className="mr-2 h-4 w-4" />}
-                              {notification.action_type === 'review_publication' && <Calendar className="mr-2 h-4 w-4" />}
-                              {notification.action_type === 'send_payment_reminder' && 'Enviar recordatorio de pago'}
-                              {notification.action_type === 'complete_task' && 'Completar tarea'}
-                              {notification.action_type === 'review_publication' && 'Revisar publicación'}
-                            </Button>
-                          </div>
-                        )}
+                        <h4 className="font-semibold mb-1 dark:text-white">{notification.title}</h4>
+                        <p className="text-sm text-gray-600 dark:text-gray-300">{notification.message}</p>
                       </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDismiss(notification.id)}
+                        className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
                     </div>
-                  ))}
-                </div>
-              ))}
-            </div>
-          </ScrollArea>
-        </div>
+                    {notification.action_type && (
+                      <div className="mt-3">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleNotificationAction(notification)}
+                          className="dark:bg-gray-700 dark:text-white"
+                        >
+                          {notification.action_type === 'send_payment_reminder' && <DollarSign className="mr-2 h-4 w-4" />}
+                          {notification.action_type === 'complete_task' && <CheckCircle className="mr-2 h-4 w-4" />}
+                          {notification.action_type === 'review_publication' && <Calendar className="mr-2 h-4 w-4" />}
+                          {notification.action_type === 'send_payment_reminder' && 'Enviar recordatorio de pago'}
+                          {notification.action_type === 'complete_task' && 'Ver tarea'}
+                          {notification.action_type === 'review_publication' && 'Ver publicación'}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        </ScrollArea>
       </SheetContent>
     </Sheet>
   );
