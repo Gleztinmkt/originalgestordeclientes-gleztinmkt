@@ -82,7 +82,10 @@ export const ClientList = ({
           access_token: accessToken
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error generating client link:', error);
+        throw error;
+      }
 
       // Update local state after successful insertion
       setClientLinks(prev => ({
@@ -156,7 +159,7 @@ export const ClientList = ({
           <Button
             variant={showPendingPayments ? "default" : "outline"}
             onClick={() => setShowPendingPayments(!showPendingPayments)}
-            className="gap-2"
+            className="gap-2 bg-transparent dark:text-white dark:hover:bg-gray-800"
           >
             <DollarSign className="h-4 w-4" />
             Pagos pendientes
@@ -168,7 +171,7 @@ export const ClientList = ({
               variant={viewMode === "list" ? "default" : "ghost"}
               size="sm"
               onClick={() => setViewMode("list")}
-              className="h-8 w-8 p-0"
+              className="h-8 w-8 p-0 bg-transparent dark:text-white dark:hover:bg-gray-800"
             >
               <List className="h-4 w-4" />
             </Button>
@@ -176,7 +179,7 @@ export const ClientList = ({
               variant={viewMode === "grid" ? "default" : "ghost"}
               size="sm"
               onClick={() => setViewMode("grid")}
-              className="h-8 w-8 p-0"
+              className="h-8 w-8 p-0 bg-transparent dark:text-white dark:hover:bg-gray-800"
             >
               <Grid3x3 className="h-4 w-4" />
             </Button>
@@ -205,7 +208,7 @@ export const ClientList = ({
                       variant="outline"
                       size="sm"
                       onClick={() => copyClientLink(client.id)}
-                      className="gap-2"
+                      className="gap-2 bg-transparent dark:text-white dark:hover:bg-gray-800"
                     >
                       <Copy className="h-4 w-4" />
                       Copiar enlace
@@ -215,7 +218,7 @@ export const ClientList = ({
                       variant="outline"
                       size="sm"
                       onClick={() => generateClientLink(client.id)}
-                      className="gap-2"
+                      className="gap-2 bg-transparent dark:text-white dark:hover:bg-gray-800"
                     >
                       <LinkIcon className="h-4 w-4" />
                       Generar enlace

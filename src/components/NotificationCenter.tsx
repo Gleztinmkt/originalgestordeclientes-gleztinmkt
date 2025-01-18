@@ -132,9 +132,8 @@ export const NotificationCenter = ({
       });
     };
 
-    // Check reminders every minute
     const interval = setInterval(checkReminders, 60000);
-    checkReminders(); // Initial check
+    checkReminders();
 
     return () => clearInterval(interval);
   };
@@ -254,37 +253,48 @@ export const NotificationCenter = ({
   };
 
   const handleNotificationAction = async (notification: Notification) => {
-    switch (notification.action_type) {
-      case 'send_payment_reminder':
-        if (onSendPaymentReminders && notification.client_id) {
-          onSendPaymentReminders();
-          toast({
-            title: "Recordatorio enviado",
-            description: "Se ha enviado el recordatorio de pago al cliente.",
-          });
-        }
-        break;
-      case 'complete_task':
-        if (onCompleteTask && notification.task_id) {
-          onCompleteTask(notification.task_id);
-          toast({
-            title: "Tarea actualizada",
-            description: "Se ha actualizado el estado de la tarea.",
-          });
-        }
-        break;
-      case 'review_publication':
-        if (notification.publication_id) {
-          toast({
-            title: "Revisión de publicación",
-            description: "Redirigiendo a la publicación...",
-          });
-        }
-        break;
+    try {
+      switch (notification.action_type) {
+        case 'send_payment_reminder':
+          if (onSendPaymentReminders && notification.client_id) {
+            await onSendPaymentReminders();
+            await handleDismiss(notification.id);
+            toast({
+              title: "Recordatorio enviado",
+              description: "Se ha enviado el recordatorio de pago al cliente.",
+            });
+          }
+          break;
+        case 'complete_task':
+          if (onCompleteTask && notification.task_id) {
+            await onCompleteTask(notification.task_id);
+            await handleDismiss(notification.id);
+            toast({
+              title: "Tarea completada",
+              description: "Se ha marcado la tarea como completada.",
+            });
+          }
+          break;
+        case 'review_publication':
+          if (notification.publication_id) {
+            await handleDismiss(notification.id);
+            toast({
+              title: "Publicación revisada",
+              description: "Se ha marcado la publicación como revisada.",
+            });
+          }
+          break;
+      }
+    } catch (error) {
+      console.error('Error handling notification action:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo procesar la acción. Por favor, intente de nuevo.",
+        variant: "destructive",
+      });
     }
   };
 
-  // Group notifications by date
   const groupedNotifications = notifications.reduce((groups, notification) => {
     const date = format(notification.date, 'yyyy-MM-dd');
     if (!groups[date]) {
@@ -302,7 +312,7 @@ export const NotificationCenter = ({
         <Button
           variant="ghost"
           size="icon"
-          className="relative dark:text-white"
+          className="relative bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800"
         >
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
@@ -314,7 +324,7 @@ export const NotificationCenter = ({
           )}
         </Button>
       </SheetTrigger>
-      <SheetContent className="w-[100vw] sm:w-[540px] p-0 dark:bg-gray-900 dark:text-white">
+      <SheetContent className="w-[100vw] sm:w-[540px] p-0 dark:bg-gray-900">
         <div className="flex flex-col h-full">
           <SheetHeader className="p-4 border-b dark:border-gray-800">
             <div className="flex items-center justify-between">
@@ -322,12 +332,12 @@ export const NotificationCenter = ({
                 <Button 
                   variant="ghost" 
                   size="icon"
-                  className="md:hidden"
+                  className="md:hidden bg-transparent"
                   onClick={() => setIsOpen(false)}
                 >
                   <ArrowLeft className="h-5 w-5" />
                 </Button>
-                <SheetTitle className="text-xl font-bold dark:text-white">Notificaciones</SheetTitle>
+                <SheetTitle>Notificaciones</SheetTitle>
               </div>
               <div className="flex gap-2">
                 {notificationPermission !== "granted" && (
@@ -335,7 +345,7 @@ export const NotificationCenter = ({
                     onClick={requestNotificationPermission}
                     variant="outline"
                     size="sm"
-                    className="whitespace-nowrap"
+                    className="whitespace-nowrap bg-transparent"
                   >
                     Activar notificaciones
                   </Button>
@@ -371,8 +381,8 @@ export const NotificationCenter = ({
             </div>
           </SheetHeader>
           
-          <ScrollArea className="flex-1 p-4">
-            <div className="space-y-6">
+          <ScrollArea className="flex-1">
+            <div className="p-4 space-y-6">
               {Object.entries(groupedNotifications).map(([date, dateNotifications]) => (
                 <div key={date} className="space-y-4">
                   <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 sticky top-0 bg-white dark:bg-gray-900 py-2">
@@ -400,16 +410,14 @@ export const NotificationCenter = ({
                             <h4 className="font-semibold mb-1 dark:text-white">{notification.title}</h4>
                             <p className="text-sm text-gray-600 dark:text-gray-300">{notification.message}</p>
                           </div>
-                          <div className="flex flex-col gap-2">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleDismiss(notification.id)}
-                              className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDismiss(notification.id)}
+                            className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 bg-transparent ml-4"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
                         </div>
                         {notification.action_type && (
                           <div className="mt-3">
@@ -417,14 +425,14 @@ export const NotificationCenter = ({
                               variant="outline"
                               size="sm"
                               onClick={() => handleNotificationAction(notification)}
-                              className="w-full sm:w-auto dark:bg-gray-700 dark:text-white"
+                              className="w-full sm:w-auto bg-transparent dark:text-white dark:hover:bg-gray-700"
                             >
                               {notification.action_type === 'send_payment_reminder' && <DollarSign className="mr-2 h-4 w-4" />}
                               {notification.action_type === 'complete_task' && <CheckCircle className="mr-2 h-4 w-4" />}
                               {notification.action_type === 'review_publication' && <Calendar className="mr-2 h-4 w-4" />}
                               {notification.action_type === 'send_payment_reminder' && 'Enviar recordatorio de pago'}
-                              {notification.action_type === 'complete_task' && 'Ver tarea'}
-                              {notification.action_type === 'review_publication' && 'Ver publicación'}
+                              {notification.action_type === 'complete_task' && 'Completar tarea'}
+                              {notification.action_type === 'review_publication' && 'Revisar publicación'}
                             </Button>
                           </div>
                         )}
