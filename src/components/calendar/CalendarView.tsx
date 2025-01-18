@@ -9,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { format, addDays, startOfMonth, endOfMonth, eachDayOfInterval } from "date-fns";
 import { es } from "date-fns/locale";
 import { toast } from "@/hooks/use-toast";
-import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { Button } from "../ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { InfoIcon, Filter } from "lucide-react";
@@ -70,7 +70,7 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
     setIsDragging(true);
   };
 
-  const handleDragEnd = async (result: any) => {
+  const handleDragEnd = async (result: DropResult) => {
     setIsDragging(false);
     
     if (!result.destination) return;
@@ -197,13 +197,16 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
                             key={publication.id}
                             draggableId={publication.id}
                             index={pubIndex}
-                            isDragDisabled={isDragging}
                           >
-                            {(provided) => (
+                            {(provided, snapshot) => (
                               <div
                                 ref={provided.innerRef}
                                 {...provided.draggableProps}
                                 {...provided.dragHandleProps}
+                                style={{
+                                  ...provided.draggableProps.style,
+                                  opacity: snapshot.isDragging ? 0.5 : 1
+                                }}
                               >
                                 <PublicationCard
                                   publication={publication}
@@ -263,13 +266,16 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
                               key={publication.id}
                               draggableId={publication.id}
                               index={pubIndex}
-                              isDragDisabled={isDragging}
                             >
-                              {(provided) => (
+                              {(provided, snapshot) => (
                                 <div
                                   ref={provided.innerRef}
                                   {...provided.draggableProps}
                                   {...provided.dragHandleProps}
+                                  style={{
+                                    ...provided.draggableProps.style,
+                                    opacity: snapshot.isDragging ? 0.5 : 1
+                                  }}
                                 >
                                   <PublicationCard
                                     publication={publication}
