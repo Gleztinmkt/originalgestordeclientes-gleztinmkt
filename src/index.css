@@ -4,21 +4,19 @@
 
 @layer components {
   .highlight-task {
-    @apply ring-2 ring-blue-500 ring-offset-2 transition-all duration-500;
-    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) 1;
   }
 
   .highlight-publication {
-    @apply ring-2 ring-green-500 ring-offset-2 transition-all duration-500;
-    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) 1;
   }
+}
 
-  @keyframes pulse {
-    0%, 100% {
-      opacity: 1;
-    }
-    50% {
-      opacity: .5;
-    }
+@keyframes pulse {
+  0%, 100% {
+    background-color: transparent;
+  }
+  50% {
+    background-color: rgb(147 197 253 / 0.3);
   }
 }
