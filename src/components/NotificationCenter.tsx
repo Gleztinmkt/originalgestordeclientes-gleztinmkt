@@ -34,6 +34,11 @@ interface NotificationAction {
   type?: 'message' | 'complete' | 'payment' | 'review';
 }
 
+interface NotificationClient {
+  name: string;
+  phone: string | null;
+}
+
 interface Notification {
   id: string;
   title: string;
@@ -47,6 +52,7 @@ interface Notification {
   publication_id?: string;
   task_id?: string;
   actions?: NotificationAction[];
+  clients?: NotificationClient;
 }
 
 interface NotificationCenterProps {
