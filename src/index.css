@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 @layer components {
   .highlight-task {
     @apply ring-2 ring-blue-500 ring-offset-2 transition-all duration-500;
