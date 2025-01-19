@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Bell, X, MessageCircle, CheckCircle, DollarSign, Calendar, ArrowRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import {
   Sheet,
   SheetContent,
@@ -66,6 +67,7 @@ export const NotificationCenter = ({
 }: NotificationCenterProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
 
   const { data: notifications = [], refetch } = useQuery({
     queryKey: ['notifications'],
@@ -192,6 +194,61 @@ export const NotificationCenter = ({
     }
   };
 
+  const handleNotificationAction = async (notification: Notification) => {
+    const clientData = notification.clients;
+    
+    switch (notification.action_type) {
+      case 'send_payment_reminder':
+        if (clientData?.phone) {
+          const message = `Buenos días ${clientData.name}, este es un mensaje automático.\n\nLes recordamos la fecha de pago.\n\nMuchas gracias.\n\nEn caso de tener alguna duda o no poder abonarlo dentro de la fecha establecida por favor contáctarnos.\n\nSi los valores no fueron enviados por favor pedirlos.`;
+          const whatsappUrl = `https://wa.me/${clientData.phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
+          window.open(whatsappUrl, '_blank');
+          toast({
+            title: "Recordatorio enviado",
+            description: "Se ha abierto WhatsApp con el mensaje predefinido.",
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: "El cliente no tiene número de teléfono registrado.",
+            variant: "destructive",
+          });
+        }
+        break;
+      case 'complete_task':
+        if (notification.task_id) {
+          navigate('/tasks');
+          setTimeout(() => {
+            const taskElement = document.getElementById(`task-${notification.task_id}`);
+            if (taskElement) {
+              taskElement.scrollIntoView({ behavior: 'smooth' });
+              taskElement.classList.add('highlight-task');
+              setTimeout(() => {
+                taskElement.classList.remove('highlight-task');
+              }, 3000);
+            }
+          }, 100);
+        }
+        break;
+      case 'review_publication':
+        if (notification.publication_id) {
+          navigate('/calendar');
+          setTimeout(() => {
+            const publicationElement = document.getElementById(`publication-${notification.publication_id}`);
+            if (publicationElement) {
+              publicationElement.scrollIntoView({ behavior: 'smooth' });
+              publicationElement.classList.add('highlight-publication');
+              setTimeout(() => {
+                publicationElement.classList.remove('highlight-publication');
+              }, 3000);
+            }
+          }, 100);
+        }
+        break;
+    }
+    setIsOpen(false);
+  };
+
   const getNotificationColor = (type: Notification['type'], priority: Notification['priority']) => {
     if (priority === 'high') {
       return 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100';
@@ -219,55 +276,6 @@ export const NotificationCenter = ({
         return <Calendar className="h-4 w-4" />;
       default:
         return <MessageCircle className="h-4 w-4" />;
-    }
-  };
-
-  const handleNotificationAction = async (notification: Notification) => {
-    const clientData = notification.clients;
-    if (!clientData) {
-      toast({
-        title: "Error",
-        description: "No se encontró información del cliente.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    switch (notification.action_type) {
-      case 'send_payment_reminder':
-        if (clientData.phone) {
-          const message = `Buenos días ${clientData.name}, este es un mensaje automático.\n\nLes recordamos la fecha de pago.\n\nMuchas gracias.\n\nEn caso de tener alguna duda o no poder abonarlo dentro de la fecha establecida por favor contáctarnos.\n\nSi los valores no fueron enviados por favor pedirlos.`;
-          const whatsappUrl = `https://wa.me/${clientData.phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
-          window.open(whatsappUrl, '_blank');
-          toast({
-            title: "Recordatorio enviado",
-            description: "Se ha abierto WhatsApp con el mensaje predefinido.",
-          });
-        } else {
-          toast({
-            title: "Error",
-            description: "El cliente no tiene número de teléfono registrado.",
-            variant: "destructive",
-          });
-        }
-        break;
-      case 'complete_task':
-        if (onCompleteTask && notification.task_id) {
-          onCompleteTask(notification.task_id);
-          toast({
-            title: "Tarea actualizada",
-            description: "Se ha actualizado el estado de la tarea.",
-          });
-        }
-        break;
-      case 'review_publication':
-        if (notification.publication_id) {
-          toast({
-            title: "Revisión de publicación",
-            description: "Redirigiendo a la publicación...",
-          });
-        }
-        break;
     }
   };
 
