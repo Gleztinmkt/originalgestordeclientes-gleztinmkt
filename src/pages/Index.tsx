@@ -119,7 +119,7 @@ const Index = () => {
             Gestiona tus clientes y tareas de forma eficiente
           </p>
         </div>
-
+        
         <Tabs defaultValue="clients" className="w-full max-w-[1200px] mx-auto">
           <TabsList className={`grid w-full grid-cols-3 rounded-2xl p-1 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm ${isMobile ? 'sticky top-2 z-10' : ''}`}>
             <TabsTrigger value="clients" className="rounded-xl data-[state=active]:bg-black data-[state=active]:text-white dark:data-[state=active]:bg-white dark:data-[state=active]:text-black">
@@ -132,41 +132,43 @@ const Index = () => {
               Calendario
             </TabsTrigger>
           </TabsList>
-          <TabsContent value="clients" className="space-y-4 mt-6">
-            <ClientForm onAddClient={addClient} />
-            <ClientList 
-              clients={clients} 
-              onDeleteClient={deleteClient}
-              onUpdateClient={updateClient}
-              onUpdatePackage={updatePackage}
-              onAddPackage={addPackage}
-              tasks={tasks}
-              onAddTask={addTask}
-              onDeleteTask={deleteTask}
-              onCompleteTask={handleCompleteTask}
-              onUpdateTask={updateTask}
-            />
-          </TabsContent>
-          <TabsContent value="tasks" className="space-y-4 mt-6">
-            <TaskFilter 
-              clients={clients}
-              onFilterChange={handleFilterChange}
-            />
-            <TaskInput 
-              onAddTask={addTask}
-              clients={clients}
-            />
-            <TaskList 
-              tasks={filteredTasks}
-              onDeleteTask={deleteTask}
-              onCompleteTask={handleCompleteTask}
-              onUpdateTask={updateTask}
-              clients={clients}
-            />
-          </TabsContent>
-          <TabsContent value="calendar" className="mt-6">
-            <CalendarView clients={clients} />
-          </TabsContent>
+          <div className="section-container mt-6">
+            <TabsContent value="clients" className="space-y-4">
+              <ClientForm onAddClient={addClient} />
+              <ClientList 
+                clients={clients} 
+                onDeleteClient={deleteClient}
+                onUpdateClient={updateClient}
+                onUpdatePackage={updatePackage}
+                onAddPackage={addPackage}
+                tasks={tasks}
+                onAddTask={addTask}
+                onDeleteTask={deleteTask}
+                onCompleteTask={handleCompleteTask}
+                onUpdateTask={updateTask}
+              />
+            </TabsContent>
+            <TabsContent value="tasks" className="space-y-4">
+              <TaskFilter 
+                clients={clients}
+                onFilterChange={handleFilterChange}
+              />
+              <TaskInput 
+                onAddTask={addTask}
+                clients={clients}
+              />
+              <TaskList 
+                tasks={filteredTasks}
+                onDeleteTask={deleteTask}
+                onCompleteTask={handleCompleteTask}
+                onUpdateTask={updateTask}
+                clients={clients}
+              />
+            </TabsContent>
+            <TabsContent value="calendar">
+              <CalendarView clients={clients} />
+            </TabsContent>
+          </div>
         </Tabs>
       </div>
     </ThemeProvider>

@@ -14,8 +14,18 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  background: white;
+  background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('https://imgur.com/7pac5Ry.jpg');
+  background-size: cover;
+  background-position: center;
   z-index: 9999;
+}
+
+.loading-screen .content {
+  background: rgba(255, 255, 255, 0.9);
+  padding: 2rem;
+  border-radius: 1rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
 }
 
 .loading-screen img {
@@ -46,4 +56,25 @@
   .loading-screen img {
     height: 60px;
   }
+}
+
+/* Dark mode client cards */
+.dark .glass-card {
+  background: rgba(26, 31, 44, 0.8) !important;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Light mode section container */
+.section-container {
+  background: white;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.dark .section-container {
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
 }

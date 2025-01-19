@@ -217,30 +217,42 @@ export const NotificationCenter = ({
         break;
       case 'complete_task':
         if (notification.task_id) {
-          navigate('/tasks');
+          navigate('/');
           setTimeout(() => {
-            const taskElement = document.getElementById(`task-${notification.task_id}`);
-            if (taskElement) {
-              taskElement.scrollIntoView({ behavior: 'smooth' });
-              taskElement.classList.add('highlight-task');
+            const tasksTab = document.querySelector('[data-state="inactive"][value="tasks"]');
+            if (tasksTab) {
+              (tasksTab as HTMLElement).click();
               setTimeout(() => {
-                taskElement.classList.remove('highlight-task');
-              }, 3000);
+                const taskElement = document.getElementById(`task-${notification.task_id}`);
+                if (taskElement) {
+                  taskElement.scrollIntoView({ behavior: 'smooth' });
+                  taskElement.classList.add('highlight-task');
+                  setTimeout(() => {
+                    taskElement.classList.remove('highlight-task');
+                  }, 3000);
+                }
+              }, 100);
             }
           }, 100);
         }
         break;
       case 'review_publication':
         if (notification.publication_id) {
-          navigate('/calendar');
+          navigate('/');
           setTimeout(() => {
-            const publicationElement = document.getElementById(`publication-${notification.publication_id}`);
-            if (publicationElement) {
-              publicationElement.scrollIntoView({ behavior: 'smooth' });
-              publicationElement.classList.add('highlight-publication');
+            const calendarTab = document.querySelector('[data-state="inactive"][value="calendar"]');
+            if (calendarTab) {
+              (calendarTab as HTMLElement).click();
               setTimeout(() => {
-                publicationElement.classList.remove('highlight-publication');
-              }, 3000);
+                const publicationElement = document.getElementById(`publication-${notification.publication_id}`);
+                if (publicationElement) {
+                  publicationElement.scrollIntoView({ behavior: 'smooth' });
+                  publicationElement.classList.add('highlight-publication');
+                  setTimeout(() => {
+                    publicationElement.classList.remove('highlight-publication');
+                  }, 3000);
+                }
+              }, 100);
             }
           }, 100);
         }
