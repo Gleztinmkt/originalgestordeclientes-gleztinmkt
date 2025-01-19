@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Publication } from "../client/publication/types";
 import { Client } from "../types/client";
@@ -24,6 +24,7 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
   const [expandedDays, setExpandedDays] = useState<{ [key: string]: boolean }>({});
+  const [highlightedPublicationId, setHighlightedPublicationId] = useState<string | null>(null);
   const isMobile = useIsMobile();
 
   const { data: publications = [], refetch } = useQuery({
@@ -87,6 +88,7 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
 
       if (error) throw error;
 
+      setHighlightedPublicationId(publicationId);
       toast({
         title: "Fecha actualizada",
         description: "La fecha de la publicación ha sido actualizada correctamente.",
@@ -102,6 +104,15 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
       });
     }
   };
+
+  useEffect(() => {
+    if (highlightedPublicationId) {
+      const timer = setTimeout(() => {
+        setHighlightedPublicationId(null);
+      }, 2000); // Clear highlight after 2 seconds
+      return () => clearTimeout(timer);
+    }
+  }, [highlightedPublicationId]);
 
   const filteredPublications = publications.filter(pub => {
     if (selectedType && pub.type !== selectedType) return false;
@@ -196,7 +207,9 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
                                 ref={provided.innerRef}
                                 {...provided.draggableProps}
                                 {...provided.dragHandleProps}
-                                className={`draggable-item ${snapshot.isDragging ? 'dragging' : ''}`}
+                                className={`draggable-item ${snapshot.isDragging ? 'dragging' : ''} ${
+                                  highlightedPublicationId === publication.id ? 'animate-pulse bg-blue-100 dark:bg-blue-900' : ''
+                                }`}
                               >
                                 <PublicationCard
                                   publication={publication}
@@ -262,7 +275,9 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
                                   ref={provided.innerRef}
                                   {...provided.draggableProps}
                                   {...provided.dragHandleProps}
-                                  className={`draggable-item ${snapshot.isDragging ? 'dragging' : ''}`}
+                                  className={`draggable-item ${snapshot.isDragging ? 'dragging' : ''} ${
+                                    highlightedPublicationId === publication.id ? 'animate-pulse bg-blue-100 dark:bg-blue-900' : ''
+                                  }`}
                                 >
                                   <PublicationCard
                                     publication={publication}
