@@ -26,7 +26,6 @@ const CalendarWrapper = () => {
         return [];
       }
 
-      // Transform the data to match the Client type
       return data.map((client): Client => ({
         id: client.id,
         name: client.name,
@@ -35,23 +34,41 @@ const CalendarWrapper = () => {
         marketingInfo: client.marketing_info || "",
         instagram: client.instagram || "",
         facebook: client.facebook || "",
-        packages: Array.isArray(client.packages) ? client.packages.map((pkg: any) => ({
-          id: typeof pkg === 'object' && pkg !== null && typeof pkg.id === 'string' ? pkg.id : crypto.randomUUID(),
-          name: typeof pkg === 'object' && pkg !== null && typeof pkg.name === 'string' ? pkg.name : "",
-          totalPublications: typeof pkg === 'object' && pkg !== null && typeof pkg.totalPublications === 'number' ? pkg.totalPublications : 0,
-          usedPublications: typeof pkg === 'object' && pkg !== null && typeof pkg.usedPublications === 'number' ? pkg.usedPublications : 0,
-          month: typeof pkg === 'object' && pkg !== null && typeof pkg.month === 'string' ? pkg.month : "",
-          paid: typeof pkg === 'object' && pkg !== null && typeof pkg.paid === 'boolean' ? pkg.paid : false
-        })) : [],
-        clientInfo: typeof client.client_info === 'object' && client.client_info !== null ? {
-          generalInfo: typeof (client.client_info as any).generalInfo === 'string' ? (client.client_info as any).generalInfo : "",
-          meetings: Array.isArray((client.client_info as any).meetings) ? (client.client_info as any).meetings : [],
-          socialNetworks: Array.isArray((client.client_info as any).socialNetworks) ? (client.client_info as any).socialNetworks : []
-        } : {
-          generalInfo: "",
-          meetings: [],
-          socialNetworks: []
-        }
+        packages: Array.isArray(client.packages) ? client.packages.map((pkg: any) => {
+          if (typeof pkg !== 'object' || pkg === null) {
+            return {
+              id: crypto.randomUUID(),
+              name: "",
+              totalPublications: 0,
+              usedPublications: 0,
+              month: "",
+              paid: false
+            };
+          }
+          return {
+            id: typeof pkg.id === 'string' ? pkg.id : crypto.randomUUID(),
+            name: typeof pkg.name === 'string' ? pkg.name : "",
+            totalPublications: typeof pkg.totalPublications === 'number' ? pkg.totalPublications : 0,
+            usedPublications: typeof pkg.usedPublications === 'number' ? pkg.usedPublications : 0,
+            month: typeof pkg.month === 'string' ? pkg.month : "",
+            paid: typeof pkg.paid === 'boolean' ? pkg.paid : false
+          };
+        }) : [],
+        clientInfo: (() => {
+          const clientInfo = client.client_info;
+          if (typeof clientInfo !== 'object' || clientInfo === null) {
+            return {
+              generalInfo: "",
+              meetings: [],
+              socialNetworks: []
+            };
+          }
+          return {
+            generalInfo: typeof (clientInfo as any).generalInfo === 'string' ? (clientInfo as any).generalInfo : "",
+            meetings: Array.isArray((clientInfo as any).meetings) ? (clientInfo as any).meetings : [],
+            socialNetworks: Array.isArray((clientInfo as any).socialNetworks) ? (clientInfo as any).socialNetworks : []
+          };
+        })()
       }));
     },
   });
