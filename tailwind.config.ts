@@ -72,12 +72,18 @@ export default {
         progress: {
           '0%': { transform: 'translateX(-100%)' },
           '100%': { transform: 'translateX(0)' }
+        },
+        "highlight-pulse": {
+          '0%': { backgroundColor: 'transparent' },
+          '50%': { backgroundColor: 'rgba(59, 130, 246, 0.2)' },
+          '100%': { backgroundColor: 'transparent' }
         }
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "progress": "progress 2s linear infinite",
+        "highlight": "highlight-pulse 2s ease-in-out",
       },
     },
   },
