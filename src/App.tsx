@@ -36,14 +36,18 @@ const CalendarWrapper = () => {
         instagram: client.instagram || "",
         facebook: client.facebook || "",
         packages: Array.isArray(client.packages) ? client.packages.map(pkg => ({
-          id: pkg.id || crypto.randomUUID(),
-          name: pkg.name || "",
-          totalPublications: pkg.totalPublications || 0,
-          usedPublications: pkg.usedPublications || 0,
-          month: pkg.month || "",
-          paid: pkg.paid || false
+          id: typeof pkg === 'object' && pkg !== null ? (pkg.id as string || crypto.randomUUID()) : crypto.randomUUID(),
+          name: typeof pkg === 'object' && pkg !== null ? (pkg.name as string || "") : "",
+          totalPublications: typeof pkg === 'object' && pkg !== null ? (pkg.totalPublications as number || 0) : 0,
+          usedPublications: typeof pkg === 'object' && pkg !== null ? (pkg.usedPublications as number || 0) : 0,
+          month: typeof pkg === 'object' && pkg !== null ? (pkg.month as string || "") : "",
+          paid: typeof pkg === 'object' && pkg !== null ? (pkg.paid as boolean || false) : false
         })) : [],
-        clientInfo: client.client_info || {
+        clientInfo: typeof client.client_info === 'object' && client.client_info !== null ? {
+          generalInfo: (client.client_info as any).generalInfo || "",
+          meetings: Array.isArray((client.client_info as any).meetings) ? (client.client_info as any).meetings : [],
+          socialNetworks: Array.isArray((client.client_info as any).socialNetworks) ? (client.client_info as any).socialNetworks : []
+        } : {
           generalInfo: "",
           meetings: [],
           socialNetworks: []
