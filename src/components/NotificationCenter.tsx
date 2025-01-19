@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Bell, X, MessageCircle, CheckCircle, DollarSign, Calendar, Trash2 } from 'lucide-react';
+import { Bell, X, MessageCircle, CheckCircle, DollarSign, Calendar, ArrowRight } from 'lucide-react';
 import {
   Sheet,
   SheetContent,
@@ -26,6 +26,7 @@ import { es } from 'date-fns/locale';
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface NotificationAction {
   label: string;
@@ -58,20 +59,20 @@ export const NotificationCenter = ({
   onCompleteTask,
 }: NotificationCenterProps) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>("default");
+  const isMobile = useIsMobile();
 
   const { data: notifications = [], refetch } = useQuery({
     queryKey: ['notifications'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: notificationsData, error } = await supabase
         .from('notifications')
-        .select('*')
+        .select('*, clients(name, phone)')
         .is('deleted_at', null)
         .order('date', { ascending: false });
       
       if (error) throw error;
       
-      return (data || []).map(notification => ({
+      return (notificationsData || []).map(notification => ({
         ...notification,
         date: new Date(notification.date),
         type: notification.type as 'payment' | 'task' | 'reminder' | 'publication',
@@ -81,7 +82,6 @@ export const NotificationCenter = ({
   });
 
   useEffect(() => {
-    checkNotificationPermission();
     setupRealtimeSubscription();
     setupTaskReminders();
   }, []);
@@ -124,55 +124,18 @@ export const NotificationCenter = ({
       tasks.forEach(task => {
         const reminderDate = new Date(task.reminder_date);
         if (reminderDate && new Date() >= reminderDate) {
-          showSystemNotification(
-            'Recordatorio de tarea',
-            `Tarea pendiente: ${task.content}`
-          );
+          toast({
+            title: "Recordatorio de tarea",
+            description: `Tarea pendiente: ${task.content}`
+          });
         }
       });
     };
 
-    // Check reminders every minute
     const interval = setInterval(checkReminders, 60000);
-    checkReminders(); // Initial check
+    checkReminders();
 
     return () => clearInterval(interval);
-  };
-
-  const checkNotificationPermission = async () => {
-    if ("Notification" in window) {
-      const permission = await Notification.requestPermission();
-      setNotificationPermission(permission);
-    }
-  };
-
-  const showSystemNotification = (title: string, body: string) => {
-    if (notificationPermission === "granted") {
-      new Notification(title, {
-        body,
-        icon: '/favicon.ico'
-      });
-    }
-  };
-
-  const requestNotificationPermission = async () => {
-    try {
-      const permission = await Notification.requestPermission();
-      setNotificationPermission(permission);
-      if (permission === "granted") {
-        toast({
-          title: "Notificaciones activadas",
-          description: "Recibirás notificaciones del sistema cuando haya actualizaciones importantes.",
-        });
-      }
-    } catch (error) {
-      console.error('Error requesting notification permission:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo activar las notificaciones. Por favor, inténtalo de nuevo.",
-        variant: "destructive",
-      });
-    }
   };
 
   const handleDismiss = async (id: string) => {
@@ -254,13 +217,31 @@ export const NotificationCenter = ({
   };
 
   const handleNotificationAction = async (notification: Notification) => {
+    const clientData = notification.clients;
+    if (!clientData) {
+      toast({
+        title: "Error",
+        description: "No se encontró información del cliente.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     switch (notification.action_type) {
       case 'send_payment_reminder':
-        if (onSendPaymentReminders && notification.client_id) {
-          onSendPaymentReminders();
+        if (clientData.phone) {
+          const message = `Buenos días ${clientData.name}, este es un mensaje automático.\n\nLes recordamos la fecha de pago.\n\nMuchas gracias.\n\nEn caso de tener alguna duda o no poder abonarlo dentro de la fecha establecida por favor contáctarnos.\n\nSi los valores no fueron enviados por favor pedirlos.`;
+          const whatsappUrl = `https://wa.me/${clientData.phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
+          window.open(whatsappUrl, '_blank');
           toast({
             title: "Recordatorio enviado",
-            description: "Se ha enviado el recordatorio de pago al cliente.",
+            description: "Se ha abierto WhatsApp con el mensaje predefinido.",
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: "El cliente no tiene número de teléfono registrado.",
+            variant: "destructive",
           });
         }
         break;
@@ -314,20 +295,10 @@ export const NotificationCenter = ({
           )}
         </Button>
       </SheetTrigger>
-      <SheetContent className="w-[400px] sm:w-[540px] dark:bg-gray-900 dark:text-white">
+      <SheetContent className={`${isMobile ? 'w-full' : 'w-[540px]'} dark:bg-gray-900 dark:text-white`}>
         <SheetHeader className="flex flex-row justify-between items-center">
           <SheetTitle className="text-xl font-bold dark:text-white">Notificaciones</SheetTitle>
           <div className="flex gap-2">
-            {notificationPermission !== "granted" && (
-              <Button 
-                onClick={requestNotificationPermission}
-                variant="outline"
-                size="sm"
-                className="whitespace-nowrap"
-              >
-                Activar notificaciones
-              </Button>
-            )}
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button
@@ -336,7 +307,6 @@ export const NotificationCenter = ({
                   className="whitespace-nowrap"
                   disabled={notifications.length === 0}
                 >
-                  <Trash2 className="h-4 w-4 mr-1" />
                   Borrar todo
                 </Button>
               </AlertDialogTrigger>
@@ -355,9 +325,17 @@ export const NotificationCenter = ({
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={() => setIsOpen(false)}
+              className="md:hidden"
+            >
+              <ArrowRight className="h-4 w-4" />
+            </Button>
           </div>
         </SheetHeader>
-        <ScrollArea className="h-[calc(100vh-100px)] mt-4">
+        <ScrollArea className={`${isMobile ? 'h-[calc(100vh-100px)]' : 'h-[calc(100vh-120px)]'} mt-4`}>
           <div className="space-y-6">
             {Object.entries(groupedNotifications).map(([date, dateNotifications]) => (
               <div key={date} className="space-y-4">
