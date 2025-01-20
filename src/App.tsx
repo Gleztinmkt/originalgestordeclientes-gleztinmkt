@@ -38,8 +38,19 @@ function App() {
         marketingInfo: client.marketing_info || "",
         instagram: client.instagram || "",
         facebook: client.facebook || "",
-        packages: Array.isArray(client.packages) ? client.packages : [],
-        clientInfo: client.client_info || {
+        packages: Array.isArray(client.packages) ? client.packages.map(pkg => ({
+          id: pkg.id || crypto.randomUUID(),
+          name: pkg.name || "",
+          totalPublications: parseInt(pkg.totalPublications) || 0,
+          usedPublications: parseInt(pkg.usedPublications) || 0,
+          month: pkg.month || "",
+          paid: Boolean(pkg.paid)
+        })) : [],
+        clientInfo: client.client_info ? {
+          generalInfo: String(client.client_info.generalInfo || ""),
+          meetings: Array.isArray(client.client_info.meetings) ? client.client_info.meetings : [],
+          socialNetworks: Array.isArray(client.client_info.socialNetworks) ? client.client_info.socialNetworks : []
+        } : {
           generalInfo: "",
           meetings: [],
           socialNetworks: []
