@@ -107,6 +107,7 @@ const Index = () => {
             />
           </div>
           <div className="flex items-center gap-2">
+            <UserManagement />
             <ThemeToggle />
           </div>
         </div>

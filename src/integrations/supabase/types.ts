@@ -500,7 +500,7 @@ export type Database = {
       }
     }
     Enums: {
-      user_role: "designer" | "marketing_agent" | "admin"
+      user_role: "designer" | "marketing_agent" | "admin" | "calendar_viewer"
     }
     CompositeTypes: {
       [_ in never]: never
