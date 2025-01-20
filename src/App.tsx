@@ -6,6 +6,9 @@ import { Spinner } from "./components/ui/spinner";
 import { supabase } from "@/integrations/supabase/client";
 import { Client } from "@/components/types/client";
 import { Json } from "@/integrations/supabase/types";
+import { Button } from "./components/ui/button";
+import { useNavigate } from "react-router-dom";
+import { toast } from "@/hooks/use-toast";
 
 const CalendarView = lazy(() => import("@/components/calendar/CalendarView"));
 
@@ -19,6 +22,7 @@ const queryClient = new QueryClient({
 });
 
 function AppContent() {
+  const navigate = useNavigate();
   const { data: clients = [] } = useQuery({
     queryKey: ['clients'],
     queryFn: async () => {
@@ -66,11 +70,48 @@ function AppContent() {
     },
   });
 
+  const handleLogout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      navigate("/login");
+      toast({
+        title: "Sesión cerrada",
+        description: "Has cerrado sesión exitosamente",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleLogin = () => {
+    navigate("/login");
+  };
+
   return (
     <ThemeProvider>
-      <Suspense fallback={<Spinner />}>
-        <CalendarView clients={clients} />
-      </Suspense>
+      <div className="min-h-screen">
+        <header className="border-b p-4 flex justify-between items-center">
+          <h1 className="text-xl font-semibold">Gleztin Marketing Digital</h1>
+          <div className="flex gap-2">
+            <Button onClick={handleLogin} variant="outline">
+              Cambiar usuario
+            </Button>
+            <Button onClick={handleLogout} variant="destructive">
+              Cerrar sesión
+            </Button>
+          </div>
+        </header>
+        <main className="p-4">
+          <Suspense fallback={<Spinner />}>
+            <CalendarView clients={clients} />
+          </Suspense>
+        </main>
+      </div>
       <Toaster />
     </ThemeProvider>
   );
