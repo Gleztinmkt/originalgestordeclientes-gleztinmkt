@@ -67,12 +67,13 @@ const ProtectedRoute = ({ children, allowedRoles = [] }: { children: React.React
     return <Navigate to="/login" replace />;
   }
 
+  // Si el usuario es diseñador o calendar_viewer, redirigir a la vista del calendario
+  if (userRole && (userRole === 'designer' || userRole === 'calendar_viewer')) {
+    return <Navigate to="/calendar" replace />;
+  }
+
+  // Para otros roles, verificar si tienen permiso para la ruta actual
   if (allowedRoles.length > 0 && userRole && !allowedRoles.includes(userRole)) {
-    // Si el usuario es calendar_viewer, redirigir a la vista del calendario
-    if (userRole === 'calendar_viewer') {
-      return <Navigate to="/calendar" replace />;
-    }
-    // Para otros roles no autorizados, redirigir a la página principal
     return <Navigate to="/" replace />;
   }
 
@@ -91,7 +92,7 @@ const App = () => (
             <Route 
               path="/" 
               element={
-                <ProtectedRoute allowedRoles={['admin', 'marketing_agent', 'designer']}>
+                <ProtectedRoute allowedRoles={['admin', 'marketing_agent']}>
                   <Index />
                 </ProtectedRoute>
               } 
