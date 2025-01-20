@@ -36,7 +36,18 @@ export const UserManagement = () => {
         password,
       });
 
-      if (authError) throw authError;
+      if (authError) {
+        // Manejar el error específico de usuario ya existente
+        if (authError.message.includes("User already registered")) {
+          toast({
+            title: "Error",
+            description: "Este correo electrónico ya está registrado. Por favor, use otro.",
+            variant: "destructive",
+          });
+          return;
+        }
+        throw authError;
+      }
 
       if (authData.user) {
         // Actualizar el perfil con el rol
@@ -106,6 +117,7 @@ export const UserManagement = () => {
                 <SelectItem value="calendar_viewer">Visor de Calendario</SelectItem>
                 <SelectItem value="marketing_agent">Agente de Marketing</SelectItem>
                 <SelectItem value="designer">Diseñador</SelectItem>
+                <SelectItem value="admin">Administrador</SelectItem>
               </SelectContent>
             </Select>
           </div>
