@@ -412,3 +412,5 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
     </div>
   );
 };
+
+export default CalendarView;
