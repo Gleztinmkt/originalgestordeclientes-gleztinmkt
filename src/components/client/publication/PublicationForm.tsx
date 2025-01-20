@@ -19,6 +19,7 @@ interface PublicationFormProps {
     type: 'reel' | 'carousel' | 'image';
     date: Date;
     description: string;
+    copywriting: string;
   }) => void;
   isSubmitting?: boolean;
   packageId?: string;
@@ -29,15 +30,17 @@ export const PublicationForm = ({ onSubmit, isSubmitting, packageId }: Publicati
   const [type, setType] = useState<'reel' | 'carousel' | 'image'>('image');
   const [date, setDate] = useState<Date>();
   const [description, setDescription] = useState("");
+  const [copywriting, setCopywriting] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!date || !name) return;
-    onSubmit({ name, type, date, description });
+    onSubmit({ name, type, date, description, copywriting });
     setName("");
     setType("image");
     setDate(undefined);
     setDescription("");
+    setCopywriting("");
   };
 
   return (
@@ -77,6 +80,17 @@ export const PublicationForm = ({ onSubmit, isSubmitting, packageId }: Publicati
             className="rounded-md border dark:bg-gray-800 dark:text-white"
           />
         </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="copywriting">Copywriting</Label>
+        <Textarea
+          id="copywriting"
+          value={copywriting}
+          onChange={(e) => setCopywriting(e.target.value)}
+          className="dark:bg-gray-800 dark:text-white min-h-[100px]"
+          placeholder="Ingresa el copywriting para esta publicación..."
+        />
       </div>
 
       <div className="space-y-2">

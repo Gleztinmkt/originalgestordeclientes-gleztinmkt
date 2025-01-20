@@ -28,6 +28,7 @@ export interface PublicationFormValues {
   type: 'reel' | 'carousel' | 'image';
   date: Date;
   description?: string;
+  copywriting?: string;
 }
 
 export interface PublicationCalendarDialogProps {
