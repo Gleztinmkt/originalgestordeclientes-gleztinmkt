@@ -4,14 +4,28 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense, lazy } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import Index from "./pages/Index";
-import Login from "./pages/Login";
-import { CalendarView } from "@/components/calendar/CalendarView";
-import { UserManagement } from "@/components/settings/UserManagement";
 
-const queryClient = new QueryClient();
+// Lazy load components
+const Index = lazy(() => import("./pages/Index"));
+const Login = lazy(() => import("./pages/Login"));
+const CalendarView = lazy(() => import("@/components/calendar/CalendarView"));
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      cacheTime: 1000 * 60 * 30, // 30 minutes
+    },
+  },
+});
+
+const LoadingSpinner = () => (
+  <div className="min-h-screen flex items-center justify-center">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-white"></div>
+  </div>
+);
 
 const ProtectedRoute = ({ children, allowedRoles = [] }: { children: React.ReactNode, allowedRoles?: string[] }) => {
   const [session, setSession] = useState<any>(null);
@@ -19,25 +33,39 @@ const ProtectedRoute = ({ children, allowedRoles = [] }: { children: React.React
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let mounted = true;
+
     const getSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setSession(session);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!mounted) return;
+        
+        setSession(session);
 
-      if (session?.user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', session.user.id)
-          .single();
+        if (session?.user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', session.user.id)
+            .single();
 
-        setUserRole(profile?.role || null);
+          if (!mounted) return;
+          setUserRole(profile?.role || null);
+        }
+      } catch (error) {
+        console.error('Error fetching session:', error);
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
       }
-      setLoading(false);
     };
 
     getSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!mounted) return;
+      
       setSession(session);
       if (session?.user) {
         const { data: profile } = await supabase
@@ -46,33 +74,31 @@ const ProtectedRoute = ({ children, allowedRoles = [] }: { children: React.React
           .eq('id', session.user.id)
           .single();
 
+        if (!mounted) return;
         setUserRole(profile?.role || null);
       } else {
         setUserRole(null);
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
   if (!session) {
     return <Navigate to="/login" replace />;
   }
 
-  // Si el usuario es diseñador o calendar_viewer, redirigir a la vista del calendario
   if (userRole && (userRole === 'designer' || userRole === 'calendar_viewer')) {
     return <Navigate to="/calendar" replace />;
   }
 
-  // Para otros roles, verificar si tienen permiso para la ruta actual
   if (allowedRoles.length > 0 && userRole && !allowedRoles.includes(userRole)) {
     return <Navigate to="/" replace />;
   }
@@ -87,25 +113,27 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route 
-              path="/" 
-              element={
-                <ProtectedRoute allowedRoles={['admin', 'marketing_agent']}>
-                  <Index />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/calendar" 
-              element={
-                <ProtectedRoute allowedRoles={['calendar_viewer', 'admin', 'marketing_agent', 'designer']}>
-                  <CalendarView clients={[]} />
-                </ProtectedRoute>
-              } 
-            />
-          </Routes>
+          <Suspense fallback={<LoadingSpinner />}>
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route 
+                path="/" 
+                element={
+                  <ProtectedRoute allowedRoles={['admin', 'marketing_agent']}>
+                    <Index />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/calendar" 
+                element={
+                  <ProtectedRoute allowedRoles={['calendar_viewer', 'admin', 'marketing_agent', 'designer']}>
+                    <CalendarView clients={[]} />
+                  </ProtectedRoute>
+                } 
+              />
+            </Routes>
+          </Suspense>
         </BrowserRouter>
       </TooltipProvider>
     </GoogleOAuthProvider>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense, lazy } from "react";
 import { TaskInput } from "@/components/TaskInput";
 import { TaskList } from "@/components/TaskList";
 import { ClientList } from "@/components/ClientList";
@@ -13,8 +13,16 @@ import { useTaskManager } from "@/features/tasks/useTaskManager";
 import { useClientManager } from "@/features/clients/useClientManager";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "@/hooks/use-toast";
-import { CalendarView } from "@/components/calendar/CalendarView";
-import { UserManagement } from "@/components/settings/UserManagement";
+
+// Lazy load heavier components
+const CalendarView = lazy(() => import("@/components/calendar/CalendarView"));
+const UserManagement = lazy(() => import("@/components/settings/UserManagement"));
+
+const LoadingSpinner = () => (
+  <div className="flex items-center justify-center p-4">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-white"></div>
+  </div>
+);
 
 const Index = () => {
   const { tasks, loadTasks, addTask, deleteTask, updateTask, completeTask } = useTaskManager();
@@ -34,12 +42,33 @@ const Index = () => {
   const isMobile = useIsMobile();
 
   useEffect(() => {
+    let mounted = true;
+
     const init = async () => {
-      await Promise.all([loadClients(), loadTasks()]);
-      // Simulate minimum loading time for better UX
-      setTimeout(() => setIsLoading(false), 1000);
+      try {
+        await Promise.all([
+          loadClients(),
+          loadTasks()
+        ]);
+      } catch (error) {
+        console.error('Error loading initial data:', error);
+        toast({
+          title: "Error",
+          description: "No se pudieron cargar los datos iniciales. Por favor, recarga la página.",
+          variant: "destructive",
+        });
+      } finally {
+        if (mounted) {
+          setIsLoading(false);
+        }
+      }
     };
+
     init();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   const handleFilterChange = (type: string | null, clientId: string | null) => {
@@ -79,6 +108,9 @@ const Index = () => {
             src="https://i.imgur.com/YvEDrAv.png" 
             alt="Gleztin Marketing Digital" 
             className="animate-pulse"
+            loading="eager"
+            width={100}
+            height={100}
           />
           <div className="progress-bar">
             <div />
@@ -105,10 +137,15 @@ const Index = () => {
               src="https://i.imgur.com/YvEDrAv.png" 
               alt="Gleztin Marketing Digital" 
               className="h-8 w-8 object-contain"
+              loading="eager"
+              width={32}
+              height={32}
             />
           </div>
           <div className="flex items-center gap-2">
-            <UserManagement />
+            <Suspense fallback={<LoadingSpinner />}>
+              <UserManagement />
+            </Suspense>
             <ThemeToggle />
           </div>
         </div>
@@ -168,7 +205,9 @@ const Index = () => {
               />
             </TabsContent>
             <TabsContent value="calendar">
-              <CalendarView clients={clients} />
+              <Suspense fallback={<LoadingSpinner />}>
+                <CalendarView clients={clients} />
+              </Suspense>
             </TabsContent>
           </div>
         </Tabs>
