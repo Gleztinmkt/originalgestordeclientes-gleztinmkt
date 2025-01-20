@@ -31,6 +31,12 @@ function AppContent() {
   const { data: clients = [] } = useQuery({
     queryKey: ['clients'],
     queryFn: async () => {
+      const { data: session } = await supabase.auth.getSession();
+      if (!session.session) {
+        navigate('/login');
+        return [];
+      }
+
       const { data, error } = await supabase
         .from('clients')
         .select('*')
