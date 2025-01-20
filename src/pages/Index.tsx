@@ -15,6 +15,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "@/hooks/use-toast";
 import { CalendarView } from "@/components/calendar/CalendarView";
 import { UserManagement } from "@/components/settings/UserManagement";
+import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
   const { tasks, loadTasks, addTask, deleteTask, updateTask, completeTask } = useTaskManager();
@@ -31,14 +32,38 @@ const Index = () => {
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const isMobile = useIsMobile();
 
   useEffect(() => {
     const init = async () => {
-      await Promise.all([loadClients(), loadTasks()]);
-      // Simulate minimum loading time for better UX
-      setTimeout(() => setIsLoading(false), 1000);
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        // Verificar la sesión primero
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          window.location.href = '/login';
+          return;
+        }
+
+        // Cargar datos en paralelo
+        await Promise.all([loadClients(), loadTasks()]);
+      } catch (err) {
+        console.error('Error loading data:', err);
+        setError('Error al cargar los datos. Por favor, recarga la página.');
+        toast({
+          title: "Error",
+          description: "Hubo un problema al cargar los datos. Por favor, intenta de nuevo.",
+          variant: "destructive",
+        });
+      } finally {
+        // Asegurar un tiempo mínimo de carga para mejor UX
+        setTimeout(() => setIsLoading(false), 500);
+      }
     };
+
     init();
   }, []);
 
@@ -69,6 +94,23 @@ const Index = () => {
     if (selectedClientId && task.clientId !== selectedClientId) return false;
     return true;
   });
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="text-center space-y-4">
+          <h2 className="text-xl font-semibold text-red-600">Error</h2>
+          <p className="text-gray-600">{error}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+          >
+            Reintentar
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
