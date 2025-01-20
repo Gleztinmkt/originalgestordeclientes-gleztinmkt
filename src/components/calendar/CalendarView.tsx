@@ -30,24 +30,37 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
   const { data: publications = [], refetch } = useQuery({
     queryKey: ['publications', selectedClient],
     queryFn: async () => {
-      let query = supabase
-        .from('publications')
-        .select('*')
-        .is('deleted_at', null)
-        .order('date', { ascending: true });
+      try {
+        console.log("Fetching publications...");
+        let query = supabase
+          .from('publications')
+          .select('*')
+          .is('deleted_at', null);
 
-      if (selectedClient) {
-        query = query.eq('client_id', selectedClient);
-      }
+        if (selectedClient) {
+          query = query.eq('client_id', selectedClient);
+        }
 
-      const { data, error } = await query;
+        const { data, error } = await query;
 
-      if (error) {
-        console.error('Error fetching publications:', error);
+        if (error) {
+          console.error('Error fetching publications:', error);
+          toast({
+            title: "Error",
+            description: "No se pudieron cargar las publicaciones.",
+            variant: "destructive",
+          });
+          return [];
+        }
+
+        console.log("Publications fetched:", data);
+        return data as Publication[];
+      } catch (error) {
+        console.error('Error in query:', error);
         return [];
       }
-      return data as Publication[];
     },
+    refetchOnWindowFocus: false
   });
 
   const { data: designers = [], refetch: refetchDesigners } = useQuery({
