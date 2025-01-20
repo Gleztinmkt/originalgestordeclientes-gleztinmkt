@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useState } from "react";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { Toaster } from "./components/ui/toaster";
 import { Spinner } from "./components/ui/spinner";
@@ -9,6 +9,9 @@ import { Json } from "@/integrations/supabase/types";
 import { Button } from "./components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./components/ui/dialog";
+import { Auth } from "@supabase/auth-ui-react";
+import { ThemeSupa } from "@supabase/auth-ui-shared";
 
 const CalendarView = lazy(() => import("@/components/calendar/CalendarView"));
 
@@ -23,6 +26,8 @@ const queryClient = new QueryClient({
 
 function AppContent() {
   const navigate = useNavigate();
+  const [showLoginDialog, setShowLoginDialog] = useState(false);
+
   const { data: clients = [] } = useQuery({
     queryKey: ['clients'],
     queryFn: async () => {
@@ -88,17 +93,13 @@ function AppContent() {
     }
   };
 
-  const handleLogin = () => {
-    navigate("/login");
-  };
-
   return (
     <ThemeProvider>
       <div className="min-h-screen">
         <header className="border-b p-4 flex justify-between items-center">
           <h1 className="text-xl font-semibold">Gleztin Marketing Digital</h1>
           <div className="flex gap-2">
-            <Button onClick={handleLogin} variant="outline">
+            <Button onClick={() => setShowLoginDialog(true)} variant="outline">
               Cambiar usuario
             </Button>
             <Button onClick={handleLogout} variant="destructive">
@@ -112,6 +113,19 @@ function AppContent() {
           </Suspense>
         </main>
       </div>
+      <Dialog open={showLoginDialog} onOpenChange={setShowLoginDialog}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Iniciar sesión como otro usuario</DialogTitle>
+          </DialogHeader>
+          <Auth
+            supabaseClient={supabase}
+            appearance={{ theme: ThemeSupa }}
+            theme="light"
+            providers={[]}
+          />
+        </DialogContent>
+      </Dialog>
       <Toaster />
     </ThemeProvider>
   );
