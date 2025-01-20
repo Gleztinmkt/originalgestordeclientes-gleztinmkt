@@ -30,12 +30,15 @@ export const PaymentReminder = ({ clientName, paymentDay, phone }: PaymentRemind
   };
 
   return (
-    <div className="flex items-center justify-between p-4 bg-gray-100 rounded-lg">
-      <div>
-        <h3 className="text-lg font-semibold">Recordatorio de Pago</h3>
-        <p className="text-sm">Día de Pago: {paymentDay}</p>
+    <div className="flex items-center justify-between p-4 bg-white dark:bg-[#1a1f2c]/80 backdrop-blur-md border border-gray-200 dark:border-white/10 rounded-lg shadow-sm">
+      <div className="space-y-1">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Recordatorio de Pago</h3>
+        <p className="text-sm text-gray-600 dark:text-gray-300">Día de Pago: {paymentDay}</p>
       </div>
-      <button onClick={handleSendReminder} className="bg-blue-500 text-white rounded-lg px-4 py-2">
+      <button 
+        onClick={handleSendReminder} 
+        className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors duration-200"
+      >
         Enviar Recordatorio
       </button>
     </div>
