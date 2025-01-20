@@ -1,9 +1,8 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { lazy, Suspense } from "react";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { Toaster } from "./components/ui/toaster";
 import { Spinner } from "./components/ui/spinner";
-import { useQuery } from "@tanstack/react-query";
 import { supabase } from "./integrations/supabase/client";
 import { Client } from "./components/types/client";
 
@@ -18,7 +17,7 @@ const queryClient = new QueryClient({
   },
 });
 
-function App() {
+function AppContent() {
   const { data: clients = [] } = useQuery({
     queryKey: ['clients'],
     queryFn: async () => {
@@ -59,13 +58,19 @@ function App() {
   });
 
   return (
+    <ThemeProvider>
+      <Suspense fallback={<Spinner />}>
+        <CalendarView clients={clients} />
+      </Suspense>
+      <Toaster />
+    </ThemeProvider>
+  );
+}
+
+function App() {
+  return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <Suspense fallback={<Spinner />}>
-          <CalendarView clients={clients} />
-        </Suspense>
-        <Toaster />
-      </ThemeProvider>
+      <AppContent />
     </QueryClientProvider>
   );
 }

@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { Loader2 } from "lucide-react";
 
 interface SpinnerProps {
   className?: string;
@@ -6,13 +7,8 @@ interface SpinnerProps {
 
 export function Spinner({ className }: SpinnerProps) {
   return (
-    <div className="flex items-center justify-center w-full h-full">
-      <div
-        className={cn(
-          "h-8 w-8 animate-spin rounded-full border-4 border-primary border-r-transparent",
-          className
-        )}
-      />
+    <div className="flex items-center justify-center w-full h-full min-h-[100px]">
+      <Loader2 className={cn("h-8 w-8 animate-spin", className)} />
     </div>
   );
 }

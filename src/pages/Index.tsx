@@ -1,13 +1,12 @@
-import { lazy, Suspense } from "react";
-import { Spinner } from "@/components/ui/spinner";
 import { useQuery } from "@tanstack/react-query";
+import { Spinner } from "@/components/ui/spinner";
 import { supabase } from "@/integrations/supabase/client";
 import { Client } from "@/components/types/client";
+import { lazy, Suspense } from "react";
 
 const CalendarView = lazy(() => import("@/components/calendar/CalendarView"));
-const UserManagement = lazy(() => import("@/components/settings/UserManagement"));
 
-const Index = () => {
+function IndexContent() {
   const { data: clients = [] } = useQuery({
     queryKey: ['clients'],
     queryFn: async () => {
@@ -49,12 +48,11 @@ const Index = () => {
 
   return (
     <Suspense fallback={<Spinner />}>
-      <div>
-        <CalendarView clients={clients} />
-        <UserManagement />
-      </div>
+      <CalendarView clients={clients} />
     </Suspense>
   );
-};
+}
 
-export default Index;
+export default function Index() {
+  return <IndexContent />;
+}
