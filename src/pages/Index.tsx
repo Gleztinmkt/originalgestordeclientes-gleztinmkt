@@ -3,6 +3,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { supabase } from "@/integrations/supabase/client";
 import { Client } from "@/components/types/client";
 import { lazy, Suspense } from "react";
+import { Json } from "@/integrations/supabase/types";
 
 const CalendarView = lazy(() => import("@/components/calendar/CalendarView"));
 
@@ -25,23 +26,31 @@ function IndexContent() {
         marketingInfo: client.marketing_info || "",
         instagram: client.instagram || "",
         facebook: client.facebook || "",
-        packages: Array.isArray(client.packages) ? client.packages.map(pkg => ({
-          id: String(pkg.id || crypto.randomUUID()),
-          name: String(pkg.name || ""),
-          totalPublications: Number(pkg.totalPublications) || 0,
-          usedPublications: Number(pkg.usedPublications) || 0,
-          month: String(pkg.month || ""),
-          paid: Boolean(pkg.paid)
-        })) : [],
-        clientInfo: client.client_info ? {
-          generalInfo: String(client.client_info.generalInfo || ""),
-          meetings: Array.isArray(client.client_info.meetings) ? client.client_info.meetings : [],
-          socialNetworks: Array.isArray(client.client_info.socialNetworks) ? client.client_info.socialNetworks : []
-        } : {
-          generalInfo: "",
-          meetings: [],
-          socialNetworks: []
-        }
+        packages: Array.isArray(client.packages) 
+          ? (client.packages as Json[]).map(pkg => ({
+              id: String((pkg as any)?.id || crypto.randomUUID()),
+              name: String((pkg as any)?.name || ""),
+              totalPublications: Number((pkg as any)?.totalPublications) || 0,
+              usedPublications: Number((pkg as any)?.usedPublications) || 0,
+              month: String((pkg as any)?.month || ""),
+              paid: Boolean((pkg as any)?.paid)
+            }))
+          : [],
+        clientInfo: client.client_info 
+          ? {
+              generalInfo: String((client.client_info as any)?.generalInfo || ""),
+              meetings: Array.isArray((client.client_info as any)?.meetings) 
+                ? (client.client_info as any).meetings 
+                : [],
+              socialNetworks: Array.isArray((client.client_info as any)?.socialNetworks) 
+                ? (client.client_info as any).socialNetworks 
+                : []
+            }
+          : {
+              generalInfo: "",
+              meetings: [],
+              socialNetworks: []
+            }
       }));
     },
   });
