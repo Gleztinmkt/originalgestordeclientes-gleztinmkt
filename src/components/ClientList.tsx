@@ -40,11 +40,11 @@ export const ClientList = ({
 
   const getSubtleGradient = (index: number) => {
     const gradients = [
-      'bg-gradient-to-br from-blue-50 to-indigo-50',
-      'bg-gradient-to-br from-purple-50 to-pink-50',
-      'bg-gradient-to-br from-green-50 to-emerald-50',
-      'bg-gradient-to-br from-yellow-50 to-amber-50',
-      'bg-gradient-to-br from-red-50 to-orange-50'
+      'bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-700',
+      'bg-gradient-to-br from-purple-50 to-pink-50 dark:from-gray-800 dark:to-gray-700',
+      'bg-gradient-to-br from-green-50 to-emerald-50 dark:from-gray-800 dark:to-gray-700',
+      'bg-gradient-to-br from-yellow-50 to-amber-50 dark:from-gray-800 dark:to-gray-700',
+      'bg-gradient-to-br from-red-50 to-orange-50 dark:from-gray-800 dark:to-gray-700'
     ];
     return gradients[index % gradients.length];
   };
