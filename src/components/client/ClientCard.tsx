@@ -4,7 +4,7 @@ import { PaymentReminder } from "./PaymentReminder";
 import { TaskInput } from "../TaskInput";
 import { TaskList } from "../TaskList";
 import { Client, ClientInfo } from "../types/client";
-import { getSubtleGradient } from "./utils/gradients";
+import { getSubtleGradient, getBorderColor } from "./utils/gradients";
 import { ClientCardHeader } from "./card/CardHeader";
 import { PackageSection } from "./card/PackageSection";
 import {
@@ -36,6 +36,7 @@ interface ClientCardProps {
   onCompleteTask: (id: string) => void;
   onUpdateTask: (id: string, task: Partial<Task>) => void;
   viewMode: "list" | "grid";
+  index: number;
 }
 
 export const ClientCard = ({
@@ -49,7 +50,8 @@ export const ClientCard = ({
   onDeleteTask,
   onCompleteTask,
   onUpdateTask,
-  viewMode
+  viewMode,
+  index
 }: ClientCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -206,12 +208,14 @@ export const ClientCard = ({
     </>
   );
 
+  const cardClasses = `glass-card hover:shadow-lg transition-all duration-300 dark:bg-gray-800/50 dark:border-gray-700 border-2 ${getBorderColor(index)}`;
+
   return (
     <>
       {viewMode === "grid" ? (
         <>
           <Card 
-            className="glass-card hover:shadow-lg transition-all duration-300 cursor-pointer h-full dark:bg-gray-800/50 dark:border-gray-700" 
+            className={cardClasses}
             style={{ background: getSubtleGradient() }}
             onClick={() => setIsExpanded(true)}
           >
@@ -230,7 +234,7 @@ export const ClientCard = ({
         </>
       ) : (
         <Card 
-          className="glass-card hover:shadow-lg transition-all duration-300 dark:bg-gray-800/50 dark:border-gray-700" 
+          className={cardClasses}
           style={{ background: getSubtleGradient() }}
         >
           {content}

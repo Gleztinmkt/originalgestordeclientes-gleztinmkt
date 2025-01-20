@@ -117,21 +117,21 @@ export const ClientList = ({
         : "space-y-6"
       }>
         {filteredClients.map((client, index) => (
-          <div key={client.id} className={getSubtleGradient(index)}>
-            <ClientCard
-              client={client}
-              onDeleteClient={onDeleteClient}
-              onUpdateClient={onUpdateClient}
-              onUpdatePackage={onUpdatePackage}
-              onAddPackage={onAddPackage}
-              tasks={tasks}
-              onAddTask={onAddTask}
-              onDeleteTask={onDeleteTask}
-              onCompleteTask={onCompleteTask}
-              onUpdateTask={onUpdateTask}
-              viewMode={viewMode}
-            />
-          </div>
+          <ClientCard
+            key={client.id}
+            client={client}
+            onDeleteClient={onDeleteClient}
+            onUpdateClient={onUpdateClient}
+            onUpdatePackage={onUpdatePackage}
+            onAddPackage={onAddPackage}
+            tasks={tasks}
+            onAddTask={onAddTask}
+            onDeleteTask={onDeleteTask}
+            onCompleteTask={onCompleteTask}
+            onUpdateTask={onUpdateTask}
+            viewMode={viewMode}
+            index={index}
+          />
         ))}
       </div>
     </div>
