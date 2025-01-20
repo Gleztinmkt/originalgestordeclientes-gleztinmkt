@@ -27,11 +27,11 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
   const [highlightedPublicationId, setHighlightedPublicationId] = useState<string | null>(null);
   const isMobile = useIsMobile();
 
-  const { data: publications = [], refetch } = useQuery({
+  const { data: publications = [], refetch, isError, error } = useQuery({
     queryKey: ['publications', selectedClient],
     queryFn: async () => {
       try {
-        console.log("Fetching publications...");
+        console.log("Iniciando consulta de publicaciones...");
         let query = supabase
           .from('publications')
           .select('*')
@@ -44,24 +44,30 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
         const { data, error } = await query;
 
         if (error) {
-          console.error('Error fetching publications:', error);
-          toast({
-            title: "Error",
-            description: "No se pudieron cargar las publicaciones.",
-            variant: "destructive",
-          });
-          return [];
+          console.error('Error al cargar publicaciones:', error);
+          throw error;
         }
 
-        console.log("Publications fetched:", data);
+        console.log("Publicaciones cargadas exitosamente:", data);
         return data as Publication[];
       } catch (error) {
-        console.error('Error in query:', error);
-        return [];
+        console.error('Error en la consulta:', error);
+        throw error;
       }
     },
-    refetchOnWindowFocus: false
+    retry: 3,
+    refetchOnWindowFocus: true
   });
+
+  useEffect(() => {
+    if (isError) {
+      toast({
+        title: "Error al cargar publicaciones",
+        description: "Hubo un problema al cargar las publicaciones. Por favor, intenta de nuevo.",
+        variant: "destructive",
+      });
+    }
+  }, [isError]);
 
   const { data: designers = [], refetch: refetchDesigners } = useQuery({
     queryKey: ['designers'],
@@ -117,15 +123,6 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
       });
     }
   };
-
-  useEffect(() => {
-    if (highlightedPublicationId) {
-      const timer = setTimeout(() => {
-        setHighlightedPublicationId(null);
-      }, 2000); // Clear highlight after 2 seconds
-      return () => clearTimeout(timer);
-    }
-  }, [highlightedPublicationId]);
 
   const filteredPublications = publications.filter(pub => {
     if (selectedType && pub.type !== selectedType) return false;
@@ -371,7 +368,16 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
             </Sheet>
           </div>
           <div className="flex-1 overflow-auto">
-            <CalendarContent />
+            {isError ? (
+              <Alert variant="destructive" className="m-4">
+                <InfoIcon className="h-4 w-4" />
+                <AlertDescription>
+                  Error al cargar las publicaciones. Por favor, intenta recargar la página.
+                </AlertDescription>
+              </Alert>
+            ) : (
+              <CalendarContent />
+            )}
           </div>
         </>
       ) : (
@@ -418,7 +424,16 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
             <FilterContent />
           </div>
           <div className="flex-1 p-4 overflow-auto">
-            <CalendarContent />
+            {isError ? (
+              <Alert variant="destructive">
+                <InfoIcon className="h-4 w-4" />
+                <AlertDescription>
+                  Error al cargar las publicaciones. Por favor, intenta recargar la página.
+                </AlertDescription>
+              </Alert>
+            ) : (
+              <CalendarContent />
+            )}
           </div>
         </>
       )}
