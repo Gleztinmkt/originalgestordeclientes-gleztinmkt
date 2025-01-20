@@ -133,3 +133,5 @@ export const UserManagement = () => {
     </Dialog>
   );
 };
+
+export default UserManagement;
