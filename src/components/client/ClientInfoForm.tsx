@@ -1,63 +1,39 @@
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { ClientInfo } from "@/components/types/client";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { ClientInfo } from "../types/client";
 
 interface ClientInfoFormProps {
-  defaultValues?: ClientInfo;
-  onSubmit: (data: ClientInfo) => void;
-  isSubmitting?: boolean;
+  initialInfo: ClientInfo;
+  onSave: (info: ClientInfo) => void;
+  isLoading?: boolean;
 }
 
-export const ClientInfoForm = ({ defaultValues, onSubmit, isSubmitting }: ClientInfoFormProps) => {
-  const [info, setInfo] = useState<ClientInfo>(defaultValues || {
-    generalInfo: "",
-    meetings: [],
-    socialNetworks: []
-  });
+export const ClientInfoForm = ({ initialInfo, onSave, isLoading = false }: ClientInfoFormProps) => {
+  const [info, setInfo] = useState<ClientInfo>(initialInfo);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(info);
-  };
-
-  const addMeeting = () => {
-    setInfo(prev => ({
-      ...prev,
-      meetings: [...prev.meetings, { date: new Date().toISOString().split('T')[0], notes: "" }]
-    }));
-  };
-
-  const addSocialNetwork = () => {
-    setInfo(prev => ({
-      ...prev,
-      socialNetworks: [...prev.socialNetworks, { platform: 'instagram', username: '' }]
-    }));
+    onSave(info);
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-2">
-        <label htmlFor="generalInfo" className="text-sm font-medium">
-          Información General
-        </label>
+        <Label htmlFor="generalInfo">Información General</Label>
         <Textarea
           id="generalInfo"
           value={info.generalInfo}
           onChange={(e) => setInfo(prev => ({ ...prev, generalInfo: e.target.value }))}
           placeholder="Información general del cliente..."
-          className="min-h-[200px]"
+          className="min-h-[100px]"
         />
       </div>
 
-      <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <h3 className="text-lg font-semibold">Reuniones</h3>
-          <Button type="button" onClick={addMeeting} variant="outline" size="sm">
-            Agregar Reunión
-          </Button>
-        </div>
+      <div className="space-y-2">
+        <Label>Reuniones</Label>
         {info.meetings.map((meeting, index) => (
           <div key={index} className="space-y-2 border p-4 rounded-lg">
             <Input
@@ -78,17 +54,34 @@ export const ClientInfoForm = ({ defaultValues, onSubmit, isSubmitting }: Client
               }}
               placeholder="Notas de la reunión..."
             />
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() => {
+                const newMeetings = info.meetings.filter((_, i) => i !== index);
+                setInfo(prev => ({ ...prev, meetings: newMeetings }));
+              }}
+            >
+              Eliminar Reunión
+            </Button>
           </div>
         ))}
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => {
+            setInfo(prev => ({
+              ...prev,
+              meetings: [...prev.meetings, { date: new Date().toISOString().split('T')[0], notes: "" }]
+            }));
+          }}
+        >
+          Agregar Reunión
+        </Button>
       </div>
 
-      <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <h3 className="text-lg font-semibold">Redes Sociales</h3>
-          <Button type="button" onClick={addSocialNetwork} variant="outline" size="sm">
-            Agregar Red Social
-          </Button>
-        </div>
+      <div className="space-y-2">
+        <Label>Redes Sociales</Label>
         {info.socialNetworks.map((network, index) => (
           <div key={index} className="space-y-2 border p-4 rounded-lg">
             <select
@@ -103,12 +96,12 @@ export const ClientInfoForm = ({ defaultValues, onSubmit, isSubmitting }: Client
               <option value="instagram">Instagram</option>
               <option value="facebook">Facebook</option>
               <option value="linkedin">LinkedIn</option>
+              <option value="tiktok">TikTok</option>
               <option value="twitter">Twitter</option>
               <option value="youtube">YouTube</option>
-              <option value="tiktok">TikTok</option>
             </select>
             <Input
-              placeholder="Usuario o URL"
+              placeholder="Nombre de usuario o URL"
               value={network.username}
               onChange={(e) => {
                 const newNetworks = [...info.socialNetworks];
@@ -116,12 +109,34 @@ export const ClientInfoForm = ({ defaultValues, onSubmit, isSubmitting }: Client
                 setInfo(prev => ({ ...prev, socialNetworks: newNetworks }));
               }}
             />
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() => {
+                const newNetworks = info.socialNetworks.filter((_, i) => i !== index);
+                setInfo(prev => ({ ...prev, socialNetworks: newNetworks }));
+              }}
+            >
+              Eliminar Red Social
+            </Button>
           </div>
         ))}
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => {
+            setInfo(prev => ({
+              ...prev,
+              socialNetworks: [...prev.socialNetworks, { platform: "instagram", username: "" }]
+            }));
+          }}
+        >
+          Agregar Red Social
+        </Button>
       </div>
 
-      <Button type="submit" className="w-full" disabled={isSubmitting}>
-        {isSubmitting ? "Guardando..." : "Guardar Cambios"}
+      <Button type="submit" className="w-full" disabled={isLoading}>
+        {isLoading ? "Guardando..." : "Guardar Cambios"}
       </Button>
     </form>
   );
