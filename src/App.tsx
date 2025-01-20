@@ -3,16 +3,16 @@ import { lazy, Suspense } from "react";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { Toaster } from "./components/ui/toaster";
 import { Spinner } from "./components/ui/spinner";
-import { supabase } from "./integrations/supabase/client";
-import { Client } from "./components/types/client";
+import { supabase } from "@/integrations/supabase/client";
+import { Client } from "@/components/types/client";
 
-const CalendarView = lazy(() => import("./components/calendar/CalendarView"));
+const CalendarView = lazy(() => import("@/components/calendar/CalendarView"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      gcTime: 1000 * 60 * 5, // 5 minutes
-      staleTime: 1000 * 60 * 5,
+      gcTime: 1000 * 60 * 5,
+      staleTime: 1000 * 60 * 5
     },
   },
 });
@@ -36,7 +36,7 @@ function AppContent() {
         marketingInfo: client.marketing_info || "",
         instagram: client.instagram || "",
         facebook: client.facebook || "",
-        packages: Array.isArray(client.packages) ? (client.packages as any[]).map(pkg => ({
+        packages: Array.isArray(client.packages) ? client.packages.map(pkg => ({
           id: String(pkg.id || crypto.randomUUID()),
           name: String(pkg.name || ""),
           totalPublications: Number(pkg.totalPublications) || 0,
@@ -45,9 +45,9 @@ function AppContent() {
           paid: Boolean(pkg.paid)
         })) : [],
         clientInfo: client.client_info ? {
-          generalInfo: String((client.client_info as any)?.generalInfo || ""),
-          meetings: Array.isArray((client.client_info as any)?.meetings) ? (client.client_info as any).meetings : [],
-          socialNetworks: Array.isArray((client.client_info as any)?.socialNetworks) ? (client.client_info as any).socialNetworks : []
+          generalInfo: String(client.client_info.generalInfo || ""),
+          meetings: Array.isArray(client.client_info.meetings) ? client.client_info.meetings : [],
+          socialNetworks: Array.isArray(client.client_info.socialNetworks) ? client.client_info.socialNetworks : []
         } : {
           generalInfo: "",
           meetings: [],
@@ -67,12 +67,10 @@ function AppContent() {
   );
 }
 
-function App() {
+export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AppContent />
     </QueryClientProvider>
   );
 }
-
-export default App;
