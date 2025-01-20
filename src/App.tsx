@@ -8,6 +8,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
+import { CalendarView } from "@/components/calendar/CalendarView";
+import { UserManagement } from "@/components/settings/UserManagement";
 
 const queryClient = new QueryClient();
 

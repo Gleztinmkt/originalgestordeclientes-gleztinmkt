@@ -19,10 +19,12 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
+type UserRole = "designer" | "marketing_agent" | "admin" | "calendar_viewer";
+
 export const UserManagement = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<string>("calendar_viewer");
+  const [role, setRole] = useState<UserRole>("calendar_viewer");
   const [loading, setLoading] = useState(false);
 
   const handleCreateUser = async () => {
@@ -96,7 +98,7 @@ export const UserManagement = () => {
           </div>
           <div className="space-y-2">
             <Label htmlFor="role">Rol</Label>
-            <Select value={role} onValueChange={setRole}>
+            <Select value={role} onValueChange={(value: UserRole) => setRole(value)}>
               <SelectTrigger>
                 <SelectValue placeholder="Seleccionar rol" />
               </SelectTrigger>

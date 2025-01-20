@@ -14,6 +14,7 @@ import { useClientManager } from "@/features/clients/useClientManager";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "@/hooks/use-toast";
 import { CalendarView } from "@/components/calendar/CalendarView";
+import { UserManagement } from "@/components/settings/UserManagement";
 
 const Index = () => {
   const { tasks, loadTasks, addTask, deleteTask, updateTask, completeTask } = useTaskManager();
