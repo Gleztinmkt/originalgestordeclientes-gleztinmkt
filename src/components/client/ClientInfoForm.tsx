@@ -5,19 +5,38 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { ClientInfo } from "../types/client";
 
-interface ClientInfoFormProps {
-  initialInfo: ClientInfo;
-  onSave: (info: ClientInfo) => void;
+export interface ClientInfoFormProps {
+  initialInfo?: ClientInfo;
+  defaultValues?: ClientInfo;
+  onSave?: (info: ClientInfo) => void;
+  onSubmit?: (info: ClientInfo) => void;
   isLoading?: boolean;
+  isSubmitting?: boolean;
 }
 
-export const ClientInfoForm = ({ initialInfo, onSave, isLoading = false }: ClientInfoFormProps) => {
-  const [info, setInfo] = useState<ClientInfo>(initialInfo);
+export const ClientInfoForm = ({ 
+  initialInfo,
+  defaultValues,
+  onSave,
+  onSubmit,
+  isLoading = false,
+  isSubmitting = false
+}: ClientInfoFormProps) => {
+  const [info, setInfo] = useState<ClientInfo>(
+    initialInfo || defaultValues || {
+      generalInfo: "",
+      meetings: [],
+      socialNetworks: [],
+    }
+  );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(info);
+    if (onSave) onSave(info);
+    if (onSubmit) onSubmit(info);
   };
+
+  const isProcessing = isLoading || isSubmitting;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -135,8 +154,8 @@ export const ClientInfoForm = ({ initialInfo, onSave, isLoading = false }: Clien
         </Button>
       </div>
 
-      <Button type="submit" className="w-full" disabled={isLoading}>
-        {isLoading ? "Guardando..." : "Guardar Cambios"}
+      <Button type="submit" className="w-full" disabled={isProcessing}>
+        {isProcessing ? "Guardando..." : "Guardar Cambios"}
       </Button>
     </form>
   );

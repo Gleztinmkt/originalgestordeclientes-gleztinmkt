@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
 import { ClientInfo } from "../types/client";
-import { ClientInfoForm } from "./ClientInfoForm";
+import { ClientInfoForm } from "@/components/client/ClientInfoForm";
 
 interface ClientInfoDialogProps {
   clientId: string;
@@ -35,7 +35,13 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
       
       const { data, error } = await supabase
         .from('clients')
-        .update({ client_info: updatedInfo })
+        .update({ 
+          client_info: {
+            generalInfo: updatedInfo.generalInfo,
+            meetings: updatedInfo.meetings,
+            socialNetworks: updatedInfo.socialNetworks
+          }
+        })
         .eq('id', clientId)
         .select()
         .single();
