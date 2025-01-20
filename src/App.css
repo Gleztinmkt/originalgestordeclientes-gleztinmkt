@@ -99,3 +99,18 @@
   box-shadow: none;
   padding: 0;
 }
+
+/* Light mode subtle backgrounds */
+:root:not(.dark) {
+  background-color: #f8f9fa;
+}
+
+:root:not(.dark) .glass-card {
+  background: rgba(255, 255, 255, 0.9) !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+:root:not(.dark) .section-container {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(8px);
+}
