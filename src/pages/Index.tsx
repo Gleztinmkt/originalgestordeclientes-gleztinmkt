@@ -18,7 +18,6 @@ const Index = () => {
       
       if (error) throw error;
       
-      // Transform the data to match the Client type
       return (data || []).map((client): Client => ({
         id: client.id,
         name: client.name,
@@ -27,18 +26,18 @@ const Index = () => {
         marketingInfo: client.marketing_info || "",
         instagram: client.instagram || "",
         facebook: client.facebook || "",
-        packages: Array.isArray(client.packages) ? client.packages.map(pkg => ({
-          id: pkg.id || crypto.randomUUID(),
-          name: pkg.name || "",
-          totalPublications: parseInt(pkg.totalPublications) || 0,
-          usedPublications: parseInt(pkg.usedPublications) || 0,
-          month: pkg.month || "",
+        packages: Array.isArray(client.packages) ? (client.packages as any[]).map(pkg => ({
+          id: String(pkg.id || crypto.randomUUID()),
+          name: String(pkg.name || ""),
+          totalPublications: Number(pkg.totalPublications) || 0,
+          usedPublications: Number(pkg.usedPublications) || 0,
+          month: String(pkg.month || ""),
           paid: Boolean(pkg.paid)
         })) : [],
         clientInfo: client.client_info ? {
-          generalInfo: String(client.client_info.generalInfo || ""),
-          meetings: Array.isArray(client.client_info.meetings) ? client.client_info.meetings : [],
-          socialNetworks: Array.isArray(client.client_info.socialNetworks) ? client.client_info.socialNetworks : []
+          generalInfo: String((client.client_info as any)?.generalInfo || ""),
+          meetings: Array.isArray((client.client_info as any)?.meetings) ? (client.client_info as any).meetings : [],
+          socialNetworks: Array.isArray((client.client_info as any)?.socialNetworks) ? (client.client_info as any).socialNetworks : []
         } : {
           generalInfo: "",
           meetings: [],
