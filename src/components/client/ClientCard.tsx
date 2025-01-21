@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { PaymentReminder } from "./PaymentReminder";
 import { TaskInput } from "../TaskInput";
@@ -7,6 +7,10 @@ import { Client, ClientInfo } from "../types/client";
 import { getSubtleGradient, getBorderColor } from "./utils/gradients";
 import { ClientCardHeader } from "./card/CardHeader";
 import { PackageSection } from "./card/PackageSection";
+import { Button } from "@/components/ui/button";
+import { Link, Copy } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,7 +26,6 @@ import {
   DialogContent,
 } from "@/components/ui/dialog";
 import { Task } from "../TaskList";
-import { toast } from "@/hooks/use-toast";
 
 interface ClientCardProps {
   client: Client;
@@ -57,6 +60,40 @@ export const ClientCard = ({
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [clientLink, setClientLink] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchClientLink = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('client_links')
+          .select('unique_id')
+          .eq('client_id', client.id)
+          .eq('is_active', true)
+          .single();
+
+        if (error) throw error;
+        if (data) {
+          const baseUrl = window.location.origin;
+          setClientLink(`${baseUrl}/client-view?id=${data.unique_id}`);
+        }
+      } catch (error) {
+        console.error('Error fetching client link:', error);
+      }
+    };
+
+    fetchClientLink();
+  }, [client.id]);
+
+  const handleCopyLink = () => {
+    if (clientLink) {
+      navigator.clipboard.writeText(clientLink);
+      toast({
+        title: "Link copiado",
+        description: "El link ha sido copiado al portapapeles.",
+      });
+    }
+  };
 
   const handleUpdateClientInfo = async (clientId: string, info: ClientInfo) => {
     try {
@@ -169,6 +206,21 @@ export const ClientCard = ({
         onClose={() => setIsExpanded(false)}
       />
       <CardContent className="space-y-4">
+        {clientLink && (
+          <div className="flex items-center gap-2 p-2 bg-gray-100 dark:bg-gray-800 rounded-lg">
+            <Link className="h-4 w-4 text-blue-500" />
+            <div className="flex-1 text-sm truncate">{clientLink}</div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleCopyLink}
+              className="h-8 w-8 p-0"
+            >
+              <Copy className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+        
         <PaymentReminder
           clientName={client.name}
           paymentDay={client.paymentDay}
