@@ -15,11 +15,11 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { AddPackageForm, PackageFormValues } from "./AddPackageForm";
 import { toast } from "@/hooks/use-toast";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { PublicationCalendarDialog } from "./PublicationCalendarDialog";
 import {
   AlertDialog,
@@ -64,13 +64,23 @@ export const ClientPackage = ({
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const processingRef = useRef(false);
 
   const handleEditSubmit = useCallback(async (values: PackageFormValues & { name: string, totalPublications: string }) => {
-    if (isProcessing) return;
-    
+    // Prevenir múltiples envíos usando una ref
+    if (processingRef.current || isProcessing) {
+      console.log('Submission already in progress, preventing double submit');
+      return;
+    }
+
     try {
+      console.log('Starting package update process...', values);
       setIsProcessing(true);
+      processingRef.current = true;
+
       await onEditPackage(values);
+      
+      console.log('Package updated successfully');
       setIsEditDialogOpen(false);
       toast({
         title: "Paquete actualizado",
@@ -84,7 +94,9 @@ export const ClientPackage = ({
         variant: "destructive",
       });
     } finally {
+      console.log('Cleaning up after update attempt');
       setIsProcessing(false);
+      processingRef.current = false;
     }
   }, [onEditPackage, isProcessing]);
 
@@ -92,6 +104,12 @@ export const ClientPackage = ({
     const message = `*Reporte de Paquete - ${clientName}*\n\n*Nombre:* ${packageName}\n*Mes:* ${month}\n*Estado:* Completado\n*Publicaciones:* ${usedPublications}/${totalPublications}\n\n*Gracias por confiar en Gleztin Marketing Digital*`;
     const whatsappUrl = `https://wa.me/${clientId}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
+  };
+
+  const closeEditDialog = () => {
+    if (!isProcessing) {
+      setIsEditDialogOpen(false);
+    }
   };
 
   return (
@@ -104,7 +122,7 @@ export const ClientPackage = ({
         <div className="flex items-center gap-4">
           <Badge>{month}</Badge>
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600">
+            <span className="text-sm text-gray-600 dark:text-gray-300">
               {paid ? "Pagado" : "Pendiente"}
             </span>
             <Switch 
@@ -129,7 +147,7 @@ export const ClientPackage = ({
               </DropdownMenuItem>
               {onDeletePackage && (
                 <DropdownMenuItem
-                  className="text-red-600"
+                  className="text-red-600 dark:text-red-400"
                   onClick={() => setIsDeleteDialogOpen(true)}
                   disabled={isProcessing}
                 >
@@ -166,10 +184,13 @@ export const ClientPackage = ({
         </div>
       </CardContent>
 
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent>
+      <Dialog open={isEditDialogOpen} onOpenChange={closeEditDialog}>
+        <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>Editar Paquete</DialogTitle>
+            <DialogDescription>
+              Actualiza los detalles del paquete aquí.
+            </DialogDescription>
           </DialogHeader>
           <AddPackageForm
             onSubmit={handleEditSubmit}
