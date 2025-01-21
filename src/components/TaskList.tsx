@@ -1,5 +1,4 @@
-import { useEffect } from "react";
-import { Task } from "@/components/TaskList";
+import { Task } from "@/components/types/task";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";

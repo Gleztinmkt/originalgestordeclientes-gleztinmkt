@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Client } from "@/components/types/client";
-import { Task } from "@/components/TaskList";
+import { Task } from "@/components/types/task";
 import { supabase } from "@/integrations/supabase/client";
 import { ClientPackage } from "../ClientPackage";
 import { TaskList } from "@/components/TaskList";
@@ -84,11 +84,18 @@ export const ClientViewer = ({ clientId }: { clientId: string }) => {
               {client.packages.map((pkg) => (
                 <ClientPackage
                   key={pkg.id}
-                  client={client}
-                  package={pkg}
-                  onUpdatePackage={async () => {}}
+                  packageName={pkg.name}
+                  totalPublications={pkg.totalPublications}
+                  usedPublications={pkg.usedPublications}
+                  month={pkg.month}
+                  paid={pkg.paid}
+                  onUpdateUsed={async () => {}}
+                  onUpdatePaid={async () => {}}
                   onEditPackage={async () => {}}
                   onDeletePackage={async () => {}}
+                  clientId={client.id}
+                  clientName={client.name}
+                  packageId={pkg.id}
                   viewOnly
                 />
               ))}
