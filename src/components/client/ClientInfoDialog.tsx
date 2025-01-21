@@ -33,15 +33,18 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
     try {
       setIsLoading(true);
       
+      const clientInfoJson = {
+        generalInfo: updatedInfo.generalInfo,
+        meetings: updatedInfo.meetings,
+        socialNetworks: updatedInfo.socialNetworks.map(network => ({
+          platform: network.platform,
+          username: network.username
+        }))
+      };
+      
       const { data, error } = await supabase
         .from('clients')
-        .update({ 
-          client_info: {
-            generalInfo: updatedInfo.generalInfo,
-            meetings: updatedInfo.meetings,
-            socialNetworks: updatedInfo.socialNetworks
-          }
-        })
+        .update({ client_info: clientInfoJson })
         .eq('id', clientId)
         .select()
         .single();

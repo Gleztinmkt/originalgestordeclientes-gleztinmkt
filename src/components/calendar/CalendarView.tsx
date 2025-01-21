@@ -65,6 +65,27 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
     staleTime: 1000 * 60 * 5, // 5 minutos
   });
 
+  const { data: designers = [], refetch: refetchDesigners } = useQuery({
+    queryKey: ['designers'],
+    queryFn: async () => {
+      try {
+        const { data, error } = await supabase
+          .from('designers')
+          .select('*')
+          .order('name', { ascending: true });
+
+        if (error) {
+          console.error('Error fetching designers:', error);
+          return [];
+        }
+        return data;
+      } catch (error) {
+        console.error('Error fetching designers:', error);
+        return [];
+      }
+    },
+  });
+
   useEffect(() => {
     if (isError) {
       toast({
@@ -147,6 +168,7 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
   const FilterContent = () => (
     <FilterPanel
       clients={clients}
+      designers={designers}
       selectedClient={selectedClient}
       selectedDesigner={selectedDesigner}
       selectedStatus={selectedStatus}
@@ -157,6 +179,7 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
       onStatusChange={setSelectedStatus}
       onTypeChange={setSelectedType}
       onPackageChange={setSelectedPackage}
+      onDesignerAdded={refetchDesigners}
     />
   );
 
