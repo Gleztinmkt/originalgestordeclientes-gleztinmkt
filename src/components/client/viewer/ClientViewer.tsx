@@ -8,7 +8,6 @@ import { ClientPackage } from "../ClientPackage";
 import { TaskList } from "@/components/TaskList";
 import { CalendarView } from "@/components/calendar/CalendarView";
 import { convertDatabaseTask } from "@/lib/database-types";
-import { Json } from "@/integrations/supabase/types";
 
 interface DatabasePackage {
   id?: string;
