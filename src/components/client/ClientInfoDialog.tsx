@@ -1,38 +1,29 @@
 import { useState } from "react";
-import { Info } from "lucide-react";
+import { Calendar } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogDescription,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
-import { supabase } from "@/lib/supabase";
-import { ClientInfo } from "../types/client";
-import { ClientInfoForm } from "@/components/client/ClientInfoForm";
+import { supabase } from "@/integrations/supabase/client";
+import { PublicationForm } from "./publication/PublicationForm";
+import { PublicationItem } from "./publication/PublicationItem";
+import { PublicationDescription } from "./publication/PublicationDescription";
+import { Publication, PublicationFormValues, PublicationCalendarDialogProps } from "./publication/types";
+import { useQuery } from "@tanstack/react-query";
 
-interface ClientInfoDialogProps {
-  clientId: string;
-  clientInfo?: ClientInfo;
-  onUpdateInfo: (clientId: string, info: ClientInfo) => void;
-}
-
-export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientInfoDialogProps) => {
-  const [info, setInfo] = useState<ClientInfo>(clientInfo || {
-    generalInfo: "",
-    meetings: [],
-    socialNetworks: [],
-  });
+export const ClientInfoDialog = ({ client, onUpdate }: ClientInfoDialogProps) => {
   const [isLoading, setIsLoading] = useState(false);
-  const [open, setOpen] = useState(false);
 
-  const handleSave = async (updatedInfo: ClientInfo) => {
+  const handleSubmit = async (updatedInfo: ClientInfo) => {
     try {
       setIsLoading(true);
       
+      // Convert the social networks to a plain object format that matches Json type
       const clientInfoJson = {
         generalInfo: updatedInfo.generalInfo,
         meetings: updatedInfo.meetings,
@@ -45,28 +36,25 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
       const { data, error } = await supabase
         .from('clients')
         .update({ client_info: clientInfoJson })
-        .eq('id', clientId)
+        .eq('id', client.id)
         .select()
         .single();
 
-      if (error) {
-        console.error('Error al guardar:', error);
-        throw error;
-      }
+      if (error) throw error;
 
-      console.log('Datos guardados exitosamente:', data);
-      
-      onUpdateInfo(clientId, updatedInfo);
-      setOpen(false);
       toast({
         title: "Información actualizada",
         description: "La información del cliente ha sido actualizada correctamente.",
       });
+
+      if (onUpdate) {
+        onUpdate();
+      }
     } catch (error) {
-      console.error('Error saving client info:', error);
+      console.error('Error updating client info:', error);
       toast({
         title: "Error",
-        description: "No se pudo guardar la información. Por favor, intenta de nuevo.",
+        description: "No se pudo actualizar la información del cliente.",
         variant: "destructive",
       });
     } finally {
@@ -75,25 +63,45 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="ml-2">
-          <Info className="h-4 w-4 mr-2" />
-          Info
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-colors duration-200"
+        >
+          <Calendar className="h-4 w-4" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[600px] w-[95vw] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[425px] max-h-[80vh] overflow-y-auto dark:bg-gray-900">
         <DialogHeader>
-          <DialogTitle>Información del Cliente</DialogTitle>
-          <DialogDescription>
-            Gestiona la información detallada del cliente, incluyendo notas generales, reuniones y redes sociales.
-          </DialogDescription>
+          <DialogTitle className="text-xl font-bold dark:text-white">
+            Información del Cliente - {client.name}
+          </DialogTitle>
         </DialogHeader>
-        <ClientInfoForm
-          initialInfo={info}
-          onSave={handleSave}
-          isLoading={isLoading}
-        />
+        <div className="space-y-6">
+          <div className="space-y-4">
+            {publications.map((publication) => (
+              <PublicationItem
+                key={publication.id}
+                publication={publication}
+                onDelete={handleDelete}
+                onTogglePublished={handleTogglePublished}
+                onSelect={setSelectedPublication}
+              />
+            ))}
+          </div>
+          
+          {selectedPublication && (
+            <PublicationDescription publication={selectedPublication} />
+          )}
+
+          <PublicationForm 
+            onSubmit={handleSubmit} 
+            isSubmitting={isSubmitting}
+            packageId={packageId}
+          />
+        </div>
       </DialogContent>
     </Dialog>
   );

@@ -78,12 +78,14 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
           console.error('Error fetching designers:', error);
           return [];
         }
-        return data;
+        return data || [];
       } catch (error) {
         console.error('Error fetching designers:', error);
         return [];
       }
     },
+    retry: 3,
+    refetchOnWindowFocus: false,
   });
 
   useEffect(() => {
@@ -153,22 +155,10 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
     return true;
   });
 
-  const daysInMonth = eachDayOfInterval({
-    start: startOfMonth(selectedDate),
-    end: endOfMonth(selectedDate)
-  });
-
-  const toggleDayExpansion = (date: string) => {
-    setExpandedDays(prev => ({
-      ...prev,
-      [date]: !prev[date]
-    }));
-  };
-
   const FilterContent = () => (
     <FilterPanel
       clients={clients}
-      designers={designers}
+      designers={designers || []}
       selectedClient={selectedClient}
       selectedDesigner={selectedDesigner}
       selectedStatus={selectedStatus}
