@@ -41,6 +41,8 @@ export type Database = {
           deleted_at: string | null
           expires_at: string | null
           id: string
+          is_active: boolean | null
+          unique_id: string | null
         }
         Insert: {
           access_token: string
@@ -49,6 +51,8 @@ export type Database = {
           deleted_at?: string | null
           expires_at?: string | null
           id?: string
+          is_active?: boolean | null
+          unique_id?: string | null
         }
         Update: {
           access_token?: string
@@ -57,6 +61,8 @@ export type Database = {
           deleted_at?: string | null
           expires_at?: string | null
           id?: string
+          is_active?: boolean | null
+          unique_id?: string | null
         }
         Relationships: [
           {
