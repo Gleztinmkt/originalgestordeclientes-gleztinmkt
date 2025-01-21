@@ -21,7 +21,7 @@ interface DatabasePackage {
 interface DatabaseClientInfo {
   generalInfo?: string;
   meetings?: Array<{ date: string; notes: string; }>;
-  socialNetworks?: Array<{ platform: string; username: string; }>;
+  socialNetworks?: Array<{ platform: SocialPlatform; username: string; }>;
 }
 
 export const ClientViewer = ({ clientId }: { clientId: string }) => {
@@ -71,7 +71,7 @@ export const ClientViewer = ({ clientId }: { clientId: string }) => {
               meetings: Array.isArray(clientInfo?.meetings) ? clientInfo.meetings : [],
               socialNetworks: Array.isArray(clientInfo?.socialNetworks) 
                 ? clientInfo.socialNetworks.map(network => ({
-                    platform: (network.platform || "instagram") as SocialPlatform,
+                    platform: network.platform || "instagram",
                     username: network.username || ""
                   }))
                 : []
