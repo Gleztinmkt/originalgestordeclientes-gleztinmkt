@@ -13,11 +13,35 @@ import { supabase } from "@/integrations/supabase/client";
 import { PublicationForm } from "./publication/PublicationForm";
 import { PublicationItem } from "./publication/PublicationItem";
 import { PublicationDescription } from "./publication/PublicationDescription";
-import { Publication, PublicationFormValues, PublicationCalendarDialogProps } from "./publication/types";
+import { Publication } from "./publication/types";
+import { Client, ClientInfo } from "../types/client";
 import { useQuery } from "@tanstack/react-query";
+
+interface ClientInfoDialogProps {
+  client: Client;
+  onUpdate?: () => void;
+}
 
 export const ClientInfoDialog = ({ client, onUpdate }: ClientInfoDialogProps) => {
   const [isLoading, setIsLoading] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [selectedPublication, setSelectedPublication] = useState<Publication | null>(null);
+
+  // Fetch publications for this client
+  const { data: publications = [], isLoading: isLoadingPublications } = useQuery({
+    queryKey: ['publications', client.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('publications')
+        .select('*')
+        .eq('client_id', client.id)
+        .is('deleted_at', null)
+        .order('date', { ascending: true });
+
+      if (error) throw error;
+      return data as Publication[];
+    }
+  });
 
   const handleSubmit = async (updatedInfo: ClientInfo) => {
     try {
@@ -62,8 +86,54 @@ export const ClientInfoDialog = ({ client, onUpdate }: ClientInfoDialogProps) =>
     }
   };
 
+  const handleDelete = async (publicationId: string) => {
+    try {
+      const { error } = await supabase
+        .from('publications')
+        .update({ deleted_at: new Date().toISOString() })
+        .eq('id', publicationId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Publicación eliminada",
+        description: "La publicación ha sido eliminada correctamente.",
+      });
+    } catch (error) {
+      console.error('Error deleting publication:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar la publicación.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleTogglePublished = async (publicationId: string, isPublished: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('publications')
+        .update({ is_published: isPublished })
+        .eq('id', publicationId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Estado actualizado",
+        description: "El estado de la publicación ha sido actualizado.",
+      });
+    } catch (error) {
+      console.error('Error updating publication status:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el estado de la publicación.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button
           variant="ghost"
@@ -98,8 +168,8 @@ export const ClientInfoDialog = ({ client, onUpdate }: ClientInfoDialogProps) =>
 
           <PublicationForm 
             onSubmit={handleSubmit} 
-            isSubmitting={isSubmitting}
-            packageId={packageId}
+            isSubmitting={isLoading}
+            packageId={client.packages?.[0]?.id}
           />
         </div>
       </DialogContent>
