@@ -16,12 +16,7 @@ import { InfoIcon, Filter } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
-interface CalendarViewProps {
-  clients: Client[];
-  viewOnly?: boolean;
-}
-
-export const CalendarView = ({ clients, viewOnly = false }: CalendarViewProps) => {
+export const CalendarView = ({ clients }: { clients: Client[] }) => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedClient, setSelectedClient] = useState<string | null>(null);
   const [selectedDesigner, setSelectedDesigner] = useState<string | null>(null);

@@ -2,7 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { useState } from "react";
-import { Task } from "./types/task";
+import { Task } from "./TaskList";
 import {
   Select,
   SelectContent,
