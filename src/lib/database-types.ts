@@ -17,7 +17,7 @@ export interface DatabaseClient {
 export interface DatabaseTask {
   id: string;
   content: string;
-  type: "campaña" | "publicaciones" | "correcciones" | "otros" | null;
+  type: "campaña" | "publicaciones" | "correcciones" | "calendarios" | "cobros" | "otros";
   date: string | null;
   client_id: string | null;
   created_at?: string;
@@ -60,22 +60,22 @@ export const convertClientForDatabase = (client: Client): DatabaseClient => ({
 export const convertDatabaseTask = (task: DatabaseTask): Task => ({
   id: task.id,
   content: task.content,
-  type: task.type || "otros",
-  date: task.date || null,
+  type: task.type,
+  date: task.date,
   clientId: task.client_id,
   completed: task.completed || false,
   executionDate: task.execution_date ? new Date(task.execution_date) : undefined,
   reminderDate: task.reminder_date ? new Date(task.reminder_date) : undefined,
-  reminderFrequency: task.reminder_frequency,
+  reminderFrequency: task.reminder_frequency || undefined,
 });
 
 export const convertTaskForDatabase = (task: Task): DatabaseTask => ({
   id: task.id,
   content: task.content,
   type: task.type,
-  date: task.date || null,
-  client_id: task.clientId || null,
-  completed: task.completed || false,
+  date: task.date,
+  client_id: task.clientId,
+  completed: task.completed,
   execution_date: task.executionDate?.toISOString() || null,
   reminder_date: task.reminderDate?.toISOString() || null,
   reminder_frequency: task.reminderFrequency || null,

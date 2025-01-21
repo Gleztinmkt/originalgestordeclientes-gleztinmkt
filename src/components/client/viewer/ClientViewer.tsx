@@ -25,7 +25,21 @@ export const ClientViewer = ({ clientId }: { clientId: string }) => {
 
         if (clientError) throw clientError;
         if (clientData) {
-          setClient(clientData as Client);
+          setClient({
+            id: clientData.id,
+            name: clientData.name,
+            phone: clientData.phone || "",
+            paymentDay: clientData.payment_day || 1,
+            marketingInfo: clientData.marketing_info || "",
+            instagram: clientData.instagram || "",
+            facebook: clientData.facebook || "",
+            packages: Array.isArray(clientData.packages) ? clientData.packages : [],
+            clientInfo: clientData.client_info || {
+              generalInfo: "",
+              meetings: [],
+              socialNetworks: []
+            }
+          });
         }
 
         const { data: tasksData, error: tasksError } = await supabase
@@ -86,6 +100,7 @@ export const ClientViewer = ({ clientId }: { clientId: string }) => {
                   clientId={client.id}
                   clientName={client.name}
                   packageId={pkg.id}
+                  viewOnly
                 />
               ))}
             </TabsContent>

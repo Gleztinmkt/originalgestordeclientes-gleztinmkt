@@ -2,7 +2,7 @@ import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { Task } from "@/components/types/task";
 import { toast } from "@/hooks/use-toast";
-import { convertTaskForDatabase, convertDatabaseTask, DatabaseTask } from "@/lib/database-types";
+import { convertTaskForDatabase, convertDatabaseTask } from "@/lib/database-types";
 
 export const useTaskManager = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -22,7 +22,7 @@ export const useTaskManager = () => {
 
       if (tasksData) {
         console.log('Tareas cargadas:', tasksData);
-        const formattedTasks = tasksData.map(task => convertDatabaseTask(task as DatabaseTask));
+        const formattedTasks = tasksData.map(task => convertDatabaseTask(task));
         console.log('Tareas formateadas:', formattedTasks);
         setTasks(formattedTasks);
       }
@@ -38,13 +38,14 @@ export const useTaskManager = () => {
     }
   };
 
-  const addTask = async (content: string, clientId?: string, type: string = 'otros', executionDate?: Date, reminderDate?: Date, reminderFrequency?: string) => {
+  const addTask = async (content: string, clientId?: string, type: Task["type"] = 'otros', executionDate?: Date, reminderDate?: Date, reminderFrequency?: string) => {
     try {
       console.log('Agregando tarea:', { content, clientId, type, executionDate, reminderDate, reminderFrequency });
       const newTask: Task = {
         id: crypto.randomUUID(),
         content,
-        type: type as Task['type'],
+        type,
+        date: new Date().toISOString(),
         clientId: clientId || null,
         executionDate,
         reminderDate,
