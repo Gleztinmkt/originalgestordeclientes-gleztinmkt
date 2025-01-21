@@ -87,3 +87,44 @@
     width: 100%;
   }
 }
+
+/* Estilos para diálogos en modo oscuro */
+.dark [role="dialog"] {
+  @apply text-white;
+}
+
+.dark [role="dialog"] input,
+.dark [role="dialog"] textarea,
+.dark [role="dialog"] select {
+  @apply text-white bg-gray-800 border-gray-700;
+}
+
+.dark [role="dialog"] label {
+  @apply text-gray-200;
+}
+
+.dark [role="dialog"] .text-gray-700,
+.dark [role="dialog"] .text-gray-900 {
+  @apply text-gray-200;
+}
+
+.dark [role="dialog"] button:not([class*="bg-"]) {
+  @apply text-gray-200;
+}
+
+.dark [role="dialog"] [class*="text-muted"] {
+  @apply text-gray-400;
+}
+
+.dark [role="dialog"] [class*="text-destructive"] {
+  @apply text-red-400;
+}
+
+.dark [role="dialog"] [class*="bg-white"] {
+  @apply bg-gray-800;
+}
+
+.dark [role="dialog"] [class*="bg-gray-50"],
+.dark [role="dialog"] [class*="bg-gray-100"] {
+  @apply bg-gray-900;
+}
