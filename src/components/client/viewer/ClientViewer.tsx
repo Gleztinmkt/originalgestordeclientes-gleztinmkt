@@ -3,11 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Client } from "@/components/types/client";
 import { Task } from "@/components/TaskList";
-import { Publication } from "@/components/client/publication/types";
 import { supabase } from "@/integrations/supabase/client";
 import { ClientPackage } from "../ClientPackage";
 import { TaskList } from "@/components/TaskList";
 import { CalendarView } from "@/components/calendar/CalendarView";
+import { convertDatabaseClient } from "@/lib/database-types";
 
 export const ClientViewer = ({ clientId }: { clientId: string }) => {
   const [client, setClient] = useState<Client | null>(null);
@@ -25,7 +25,7 @@ export const ClientViewer = ({ clientId }: { clientId: string }) => {
 
         if (clientError) throw clientError;
         if (clientData) {
-          setClient(clientData as Client);
+          setClient(convertDatabaseClient(clientData));
         }
 
         const { data: tasksData, error: tasksError } = await supabase
@@ -37,9 +37,18 @@ export const ClientViewer = ({ clientId }: { clientId: string }) => {
 
         if (tasksError) throw tasksError;
         if (tasksData) {
-          setTasks(tasksData as Task[]);
+          setTasks(tasksData.map(task => ({
+            id: task.id,
+            content: task.content,
+            type: task.type || "otros",
+            date: task.date,
+            clientId: task.client_id,
+            completed: task.completed || false,
+            executionDate: task.execution_date ? new Date(task.execution_date) : undefined,
+            reminderDate: task.reminder_date ? new Date(task.reminder_date) : undefined,
+            reminderFrequency: task.reminder_frequency
+          })));
         }
-
       } catch (error) {
         console.error('Error fetching client data:', error);
       } finally {
@@ -77,9 +86,9 @@ export const ClientViewer = ({ clientId }: { clientId: string }) => {
                   key={pkg.id}
                   client={client}
                   package={pkg}
-                  onUpdatePackage={() => {}}
-                  onEditPackage={() => {}}
-                  onDeletePackage={() => {}}
+                  onUpdatePackage={async () => {}}
+                  onEditPackage={async () => {}}
+                  onDeletePackage={async () => {}}
                   viewOnly
                 />
               ))}
