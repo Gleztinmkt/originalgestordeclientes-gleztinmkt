@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Client } from "@/components/types/client";
+import { Client, SocialPlatform } from "@/components/types/client";
 import { Task } from "@/components/types/task";
 import { supabase } from "@/integrations/supabase/client";
 import { ClientPackage } from "../ClientPackage";
@@ -69,7 +69,12 @@ export const ClientViewer = ({ clientId }: { clientId: string }) => {
             clientInfo: {
               generalInfo: clientInfo?.generalInfo || "",
               meetings: Array.isArray(clientInfo?.meetings) ? clientInfo.meetings : [],
-              socialNetworks: Array.isArray(clientInfo?.socialNetworks) ? clientInfo.socialNetworks : []
+              socialNetworks: Array.isArray(clientInfo?.socialNetworks) 
+                ? clientInfo.socialNetworks.map(network => ({
+                    platform: (network.platform || "instagram") as SocialPlatform,
+                    username: network.username || ""
+                  }))
+                : []
             }
           });
         }
