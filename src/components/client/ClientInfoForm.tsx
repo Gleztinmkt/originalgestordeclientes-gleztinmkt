@@ -1,58 +1,63 @@
 import { useState } from "react";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { ClientInfo } from "../types/client";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { ClientInfo } from "@/components/types/client";
 
-export interface ClientInfoFormProps {
-  initialInfo?: ClientInfo;
+interface ClientInfoFormProps {
   defaultValues?: ClientInfo;
-  onSave?: (info: ClientInfo) => void;
-  onSubmit?: (info: ClientInfo) => void;
-  isLoading?: boolean;
+  onSubmit: (data: ClientInfo) => void;
   isSubmitting?: boolean;
 }
 
-export const ClientInfoForm = ({ 
-  initialInfo,
-  defaultValues,
-  onSave,
-  onSubmit,
-  isLoading = false,
-  isSubmitting = false
-}: ClientInfoFormProps) => {
-  const [info, setInfo] = useState<ClientInfo>(
-    initialInfo || defaultValues || {
-      generalInfo: "",
-      meetings: [],
-      socialNetworks: [],
-    }
-  );
+export const ClientInfoForm = ({ defaultValues, onSubmit, isSubmitting }: ClientInfoFormProps) => {
+  const [info, setInfo] = useState<ClientInfo>(defaultValues || {
+    generalInfo: "",
+    meetings: [],
+    socialNetworks: []
+  });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (onSave) onSave(info);
-    if (onSubmit) onSubmit(info);
+    onSubmit(info);
   };
 
-  const isProcessing = isLoading || isSubmitting;
+  const addMeeting = () => {
+    setInfo(prev => ({
+      ...prev,
+      meetings: [...prev.meetings, { date: new Date().toISOString().split('T')[0], notes: "" }]
+    }));
+  };
+
+  const addSocialNetwork = () => {
+    setInfo(prev => ({
+      ...prev,
+      socialNetworks: [...prev.socialNetworks, { platform: 'instagram', username: '' }]
+    }));
+  };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="generalInfo">Información General</Label>
+        <label htmlFor="generalInfo" className="text-sm font-medium">
+          Información General
+        </label>
         <Textarea
           id="generalInfo"
           value={info.generalInfo}
           onChange={(e) => setInfo(prev => ({ ...prev, generalInfo: e.target.value }))}
           placeholder="Información general del cliente..."
-          className="min-h-[100px]"
+          className="min-h-[200px]"
         />
       </div>
 
-      <div className="space-y-2">
-        <Label>Reuniones</Label>
+      <div className="space-y-4">
+        <div className="flex justify-between items-center">
+          <h3 className="text-lg font-semibold">Reuniones</h3>
+          <Button type="button" onClick={addMeeting} variant="outline" size="sm">
+            Agregar Reunión
+          </Button>
+        </div>
         {info.meetings.map((meeting, index) => (
           <div key={index} className="space-y-2 border p-4 rounded-lg">
             <Input
@@ -73,34 +78,17 @@ export const ClientInfoForm = ({
               }}
               placeholder="Notas de la reunión..."
             />
-            <Button
-              type="button"
-              variant="destructive"
-              onClick={() => {
-                const newMeetings = info.meetings.filter((_, i) => i !== index);
-                setInfo(prev => ({ ...prev, meetings: newMeetings }));
-              }}
-            >
-              Eliminar Reunión
-            </Button>
           </div>
         ))}
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => {
-            setInfo(prev => ({
-              ...prev,
-              meetings: [...prev.meetings, { date: new Date().toISOString().split('T')[0], notes: "" }]
-            }));
-          }}
-        >
-          Agregar Reunión
-        </Button>
       </div>
 
-      <div className="space-y-2">
-        <Label>Redes Sociales</Label>
+      <div className="space-y-4">
+        <div className="flex justify-between items-center">
+          <h3 className="text-lg font-semibold">Redes Sociales</h3>
+          <Button type="button" onClick={addSocialNetwork} variant="outline" size="sm">
+            Agregar Red Social
+          </Button>
+        </div>
         {info.socialNetworks.map((network, index) => (
           <div key={index} className="space-y-2 border p-4 rounded-lg">
             <select
@@ -115,12 +103,12 @@ export const ClientInfoForm = ({
               <option value="instagram">Instagram</option>
               <option value="facebook">Facebook</option>
               <option value="linkedin">LinkedIn</option>
-              <option value="tiktok">TikTok</option>
               <option value="twitter">Twitter</option>
               <option value="youtube">YouTube</option>
+              <option value="tiktok">TikTok</option>
             </select>
             <Input
-              placeholder="Nombre de usuario o URL"
+              placeholder="Usuario o URL"
               value={network.username}
               onChange={(e) => {
                 const newNetworks = [...info.socialNetworks];
@@ -128,34 +116,12 @@ export const ClientInfoForm = ({
                 setInfo(prev => ({ ...prev, socialNetworks: newNetworks }));
               }}
             />
-            <Button
-              type="button"
-              variant="destructive"
-              onClick={() => {
-                const newNetworks = info.socialNetworks.filter((_, i) => i !== index);
-                setInfo(prev => ({ ...prev, socialNetworks: newNetworks }));
-              }}
-            >
-              Eliminar Red Social
-            </Button>
           </div>
         ))}
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => {
-            setInfo(prev => ({
-              ...prev,
-              socialNetworks: [...prev.socialNetworks, { platform: "instagram", username: "" }]
-            }));
-          }}
-        >
-          Agregar Red Social
-        </Button>
       </div>
 
-      <Button type="submit" className="w-full" disabled={isProcessing}>
-        {isProcessing ? "Guardando..." : "Guardar Cambios"}
+      <Button type="submit" className="w-full" disabled={isSubmitting}>
+        {isSubmitting ? "Guardando..." : "Guardar Cambios"}
       </Button>
     </form>
   );

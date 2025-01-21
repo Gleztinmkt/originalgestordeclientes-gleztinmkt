@@ -4,12 +4,12 @@ import { Trash2, X } from "lucide-react";
 import { ClientInfoDialog } from "../ClientInfoDialog";
 import { EditClientDialog } from "../EditClientDialog";
 import { AddPackageDialog } from "../AddPackageDialog";
-import { Client } from "../../types/client";
+import { Client, ClientInfo } from "../../types/client";
 
 interface CardHeaderProps {
   client: Client;
   viewMode: "list" | "grid";
-  onUpdateClientInfo: (clientId: string, info: any) => void;
+  onUpdateClientInfo: (clientId: string, info: ClientInfo) => void;
   onDeleteClient: () => void;
   onUpdateClient: (id: string, data: any) => void;
   onAddPackage: (clientId: string, packageData: any) => void;
@@ -34,8 +34,9 @@ export const ClientCardHeader = ({
       </CardTitle>
       <div className="flex gap-2">
         <ClientInfoDialog
-          client={client}
-          onUpdate={() => onUpdateClientInfo(client.id, client.clientInfo)}
+          clientId={client.id}
+          clientInfo={client.clientInfo}
+          onUpdateInfo={onUpdateClientInfo}
         />
         <EditClientDialog 
           client={client}

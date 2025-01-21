@@ -100,8 +100,8 @@ export const EditClientDialog = ({ client, onUpdateClient }: EditClientDialogPro
           </TabsContent>
           <TabsContent value="additional">
             <ClientInfoForm
-              defaultValues={client.clientInfo}
               onSubmit={handleClientInfoSubmit}
+              defaultValues={client.clientInfo}
               isSubmitting={isSubmitting}
             />
           </TabsContent>

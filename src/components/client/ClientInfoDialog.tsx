@@ -1,90 +1,94 @@
 import { useState } from "react";
-import { Calendar } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Info } from "lucide-react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
 } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import { PublicationForm } from "./publication/PublicationForm";
-import { PublicationItem } from "./publication/PublicationItem";
-import { PublicationDescription } from "./publication/PublicationDescription";
-import { Publication } from "./publication/types";
-import { Client } from "../types/client";
-import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/lib/supabase";
+import { ClientInfo, SocialNetwork, SocialPlatform } from "../types/client";
 
 interface ClientInfoDialogProps {
-  client: Client;
-  onUpdate?: () => void;
+  clientId: string;
+  clientInfo?: ClientInfo;
+  onUpdateInfo: (clientId: string, info: ClientInfo) => void;
 }
 
-export const ClientInfoDialog = ({ client, onUpdate }: ClientInfoDialogProps) => {
+const SOCIAL_PLATFORMS = [
+  { id: 'instagram', label: 'Instagram' },
+  { id: 'facebook', label: 'Facebook' },
+  { id: 'linkedin', label: 'LinkedIn' },
+  { id: 'tiktok', label: 'TikTok' },
+  { id: 'twitter', label: 'Twitter' },
+  { id: 'youtube', label: 'YouTube' },
+] as const;
+
+export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientInfoDialogProps) => {
+  const [info, setInfo] = useState<ClientInfo>(clientInfo || {
+    generalInfo: "",
+    meetings: [],
+    socialNetworks: [],
+  });
   const [isLoading, setIsLoading] = useState(false);
   const [open, setOpen] = useState(false);
-  const [selectedPublication, setSelectedPublication] = useState<Publication | null>(null);
 
-  // Fetch publications for this client
-  const { data: publications = [], refetch } = useQuery({
-    queryKey: ['publications', client?.id],
-    queryFn: async () => {
-      if (!client?.id) return [];
-      
-      const { data, error } = await supabase
-        .from('publications')
-        .select('*')
-        .eq('client_id', client.id)
-        .is('deleted_at', null)
-        .order('date', { ascending: true });
-
-      if (error) throw error;
-      return data as Publication[];
-    },
-    enabled: !!client?.id
-  });
-
-  const handleSubmit = async (values: { 
-    name: string;
-    type: "reel" | "carousel" | "image";
-    date: Date;
-    description: string;
-    copywriting: string;
-  }) => {
+  const handleSave = async () => {
     try {
       setIsLoading(true);
       
-      const { error } = await supabase
-        .from('publications')
-        .insert({
-          client_id: client.id,
-          name: values.name,
-          type: values.type,
-          date: values.date.toISOString(),
-          description: values.description || null,
-          copywriting: values.copywriting || null,
-          package_id: client.packages?.[0]?.id
-        });
+      // Asegurarnos que los datos son serializables
+      const clientInfoData = {
+        generalInfo: info.generalInfo || "",
+        meetings: info.meetings.map(meeting => ({
+          date: meeting.date || "",
+          notes: meeting.notes || ""
+        })),
+        socialNetworks: info.socialNetworks.map(network => ({
+          platform: network.platform || "instagram",
+          username: network.username || ""
+        }))
+      };
 
-      if (error) throw error;
+      console.log('Intentando guardar:', clientInfoData);
 
-      await refetch();
+      const { data, error } = await supabase
+        .from('clients')
+        .update({ client_info: clientInfoData })
+        .eq('id', clientId)
+        .select()
+        .single();
 
-      toast({
-        title: "Publicación creada",
-        description: "La publicación ha sido creada correctamente.",
-      });
-
-      if (onUpdate) {
-        onUpdate();
+      if (error) {
+        console.error('Error al guardar:', error);
+        throw error;
       }
+
+      console.log('Datos guardados exitosamente:', data);
+      
+      onUpdateInfo(clientId, clientInfoData);
+      setOpen(false);
+      toast({
+        title: "Información actualizada",
+        description: "La información del cliente ha sido actualizada correctamente.",
+      });
     } catch (error) {
-      console.error('Error creating publication:', error);
+      console.error('Error saving client info:', error);
       toast({
         title: "Error",
-        description: "No se pudo crear la publicación.",
+        description: "No se pudo guardar la información. Por favor, intenta de nuevo.",
         variant: "destructive",
       });
     } finally {
@@ -92,96 +96,124 @@ export const ClientInfoDialog = ({ client, onUpdate }: ClientInfoDialogProps) =>
     }
   };
 
-  const handleDelete = async (publicationId: string) => {
-    try {
-      const { error } = await supabase
-        .from('publications')
-        .update({ deleted_at: new Date().toISOString() })
-        .eq('id', publicationId);
-
-      if (error) throw error;
-
-      await refetch();
-
-      toast({
-        title: "Publicación eliminada",
-        description: "La publicación ha sido eliminada correctamente.",
-      });
-    } catch (error) {
-      console.error('Error deleting publication:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo eliminar la publicación.",
-        variant: "destructive",
-      });
-    }
+  const addMeeting = () => {
+    setInfo(prev => ({
+      ...prev,
+      meetings: [...prev.meetings, { date: new Date().toISOString().split('T')[0], notes: "" }],
+    }));
   };
 
-  const handleTogglePublished = async (publicationId: string, isPublished: boolean) => {
-    try {
-      const { error } = await supabase
-        .from('publications')
-        .update({ is_published: isPublished })
-        .eq('id', publicationId);
-
-      if (error) throw error;
-
-      await refetch();
-
-      toast({
-        title: "Estado actualizado",
-        description: "El estado de la publicación ha sido actualizado.",
-      });
-    } catch (error) {
-      console.error('Error updating publication status:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo actualizar el estado de la publicación.",
-        variant: "destructive",
-      });
-    }
+  const addSocialNetwork = () => {
+    setInfo(prev => ({
+      ...prev,
+      socialNetworks: [...prev.socialNetworks, { platform: 'instagram' as SocialPlatform, username: '' }],
+    }));
   };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-colors duration-200"
-        >
-          <Calendar className="h-4 w-4" />
+        <Button variant="outline" size="sm" className="ml-2">
+          <Info className="h-4 w-4 mr-2" />
+          Info
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px] max-h-[80vh] overflow-y-auto dark:bg-gray-900">
+      <DialogContent className="sm:max-w-[600px] w-[95vw] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold dark:text-white">
-            Información del Cliente - {client.name}
-          </DialogTitle>
+          <DialogTitle>Información del Cliente</DialogTitle>
+          <DialogDescription>
+            Gestiona la información detallada del cliente, incluyendo notas generales, reuniones y redes sociales.
+          </DialogDescription>
         </DialogHeader>
-        <div className="space-y-6">
-          <div className="space-y-4">
-            {publications.map((publication) => (
-              <PublicationItem
-                key={publication.id}
-                publication={publication}
-                onDelete={handleDelete}
-                onTogglePublished={handleTogglePublished}
-                onSelect={setSelectedPublication}
-              />
-            ))}
-          </div>
+        <Tabs defaultValue="general" className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="general">Información General</TabsTrigger>
+            <TabsTrigger value="meetings">Reuniones</TabsTrigger>
+            <TabsTrigger value="social">Redes Sociales</TabsTrigger>
+          </TabsList>
           
-          {selectedPublication && (
-            <PublicationDescription publication={selectedPublication} />
-          )}
+          <TabsContent value="general">
+            <div className="space-y-4">
+              <Textarea
+                placeholder="Información general del cliente..."
+                value={info.generalInfo}
+                onChange={(e) => setInfo(prev => ({ ...prev, generalInfo: e.target.value }))}
+                className="min-h-[200px]"
+              />
+            </div>
+          </TabsContent>
 
-          <PublicationForm 
-            onSubmit={handleSubmit} 
-            isSubmitting={isLoading}
-            packageId={client.packages?.[0]?.id}
-          />
-        </div>
+          <TabsContent value="meetings">
+            <div className="space-y-4">
+              <Button onClick={addMeeting} variant="outline" size="sm">
+                Agregar Reunión
+              </Button>
+              {info.meetings.map((meeting, index) => (
+                <div key={index} className="space-y-2 border p-4 rounded-lg">
+                  <Input
+                    type="date"
+                    value={meeting.date}
+                    onChange={(e) => {
+                      const newMeetings = [...info.meetings];
+                      newMeetings[index].date = e.target.value;
+                      setInfo(prev => ({ ...prev, meetings: newMeetings }));
+                    }}
+                    className="w-full"
+                  />
+                  <Textarea
+                    placeholder="Notas de la reunión..."
+                    value={meeting.notes}
+                    onChange={(e) => {
+                      const newMeetings = [...info.meetings];
+                      newMeetings[index].notes = e.target.value;
+                      setInfo(prev => ({ ...prev, meetings: newMeetings }));
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="social">
+            <div className="space-y-4">
+              <Button onClick={addSocialNetwork} variant="outline" size="sm">
+                Agregar Red Social
+              </Button>
+              {info.socialNetworks.map((network, index) => (
+                <div key={index} className="space-y-2 border p-4 rounded-lg">
+                  <select
+                    value={network.platform}
+                    onChange={(e) => {
+                      const newNetworks = [...info.socialNetworks];
+                      newNetworks[index].platform = e.target.value as SocialPlatform;
+                      setInfo(prev => ({ ...prev, socialNetworks: newNetworks }));
+                    }}
+                    className="w-full p-2 border rounded-md bg-background"
+                  >
+                    {SOCIAL_PLATFORMS.map(platform => (
+                      <option key={platform.id} value={platform.id}>
+                        {platform.label}
+                      </option>
+                    ))}
+                  </select>
+                  <Input
+                    placeholder="Nombre de usuario o URL"
+                    value={network.username}
+                    onChange={(e) => {
+                      const newNetworks = [...info.socialNetworks];
+                      newNetworks[index].username = e.target.value;
+                      setInfo(prev => ({ ...prev, socialNetworks: newNetworks }));
+                    }}
+                    className="w-full"
+                  />
+                </div>
+              ))}
+            </div>
+          </TabsContent>
+        </Tabs>
+        <Button onClick={handleSave} className="mt-4 w-full" disabled={isLoading}>
+          {isLoading ? "Guardando..." : "Guardar Cambios"}
+        </Button>
       </DialogContent>
     </Dialog>
   );
