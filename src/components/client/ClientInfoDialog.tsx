@@ -14,7 +14,7 @@ import { PublicationForm } from "./publication/PublicationForm";
 import { PublicationItem } from "./publication/PublicationItem";
 import { PublicationDescription } from "./publication/PublicationDescription";
 import { Publication } from "./publication/types";
-import { Client, ClientInfo } from "../types/client";
+import { Client } from "../types/client";
 import { useQuery } from "@tanstack/react-query";
 
 interface ClientInfoDialogProps {
@@ -28,7 +28,7 @@ export const ClientInfoDialog = ({ client, onUpdate }: ClientInfoDialogProps) =>
   const [selectedPublication, setSelectedPublication] = useState<Publication | null>(null);
 
   // Fetch publications for this client
-  const { data: publications = [], isLoading: isLoadingPublications } = useQuery({
+  const { data: publications = [], refetch } = useQuery({
     queryKey: ['publications', client?.id],
     queryFn: async () => {
       if (!client?.id) return [];
@@ -60,11 +60,17 @@ export const ClientInfoDialog = ({ client, onUpdate }: ClientInfoDialogProps) =>
         .from('publications')
         .insert({
           client_id: client.id,
-          ...values,
+          name: values.name,
+          type: values.type,
+          date: values.date.toISOString(),
+          description: values.description || null,
+          copywriting: values.copywriting || null,
           package_id: client.packages?.[0]?.id
         });
 
       if (error) throw error;
+
+      await refetch();
 
       toast({
         title: "Publicación creada",
@@ -95,6 +101,8 @@ export const ClientInfoDialog = ({ client, onUpdate }: ClientInfoDialogProps) =>
 
       if (error) throw error;
 
+      await refetch();
+
       toast({
         title: "Publicación eliminada",
         description: "La publicación ha sido eliminada correctamente.",
@@ -117,6 +125,8 @@ export const ClientInfoDialog = ({ client, onUpdate }: ClientInfoDialogProps) =>
         .eq('id', publicationId);
 
       if (error) throw error;
+
+      await refetch();
 
       toast({
         title: "Estado actualizado",

@@ -1,27 +1,23 @@
 import { useState, useEffect } from "react";
-import { addDays, format, getDaysInMonth, startOfMonth } from "date-fns";
+import { format, getDaysInMonth, startOfMonth } from "date-fns";
 import { es } from "date-fns/locale";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { FilterPanel } from "./FilterPanel";
 import { PublicationCard } from "./PublicationCard";
+import { PublicationDialog } from "./PublicationDialog";
 import { StatusLegend } from "./StatusLegend";
-import { Client } from "../types/client";
-import { Designer } from "./types";
+import { CalendarViewProps } from "./types";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
-interface CalendarViewProps {
-  clients: Client[];
-}
-
-export const CalendarView = ({ clients }: CalendarViewProps) => {
+export const CalendarView = ({ clients = [], publications = [], isLoading }: CalendarViewProps) => {
+  const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedClient, setSelectedClient] = useState("");
   const [selectedDesigner, setSelectedDesigner] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");
   const [selectedType, setSelectedType] = useState("");
   const [selectedPackage, setSelectedPackage] = useState("");
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedPublication, setSelectedPublication] = useState(null);
 
-  // Fetch designers
   const { data: designers = [] } = useQuery({
     queryKey: ['designers'],
     queryFn: async () => {
@@ -31,50 +27,30 @@ export const CalendarView = ({ clients }: CalendarViewProps) => {
         .order('name');
       
       if (error) throw error;
-      return data as Designer[];
-    }
-  });
-
-  // Fetch publications
-  const { data: publications = [] } = useQuery({
-    queryKey: ['publications', selectedClient, selectedDesigner, selectedStatus, selectedType, selectedPackage],
-    queryFn: async () => {
-      let query = supabase
-        .from('publications')
-        .select('*')
-        .is('deleted_at', null);
-
-      if (selectedClient) {
-        query = query.eq('client_id', selectedClient);
-      }
-      if (selectedDesigner) {
-        query = query.eq('designer', selectedDesigner);
-      }
-      if (selectedStatus) {
-        query = query.eq('status', selectedStatus);
-      }
-      if (selectedType) {
-        query = query.eq('type', selectedType);
-      }
-      if (selectedPackage) {
-        query = query.eq('package_id', selectedPackage);
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
       return data;
     }
   });
 
-  const daysInMonth = getDaysInMonth(currentDate);
-  const firstDayOfMonth = startOfMonth(currentDate);
-  const days = Array.from({ length: daysInMonth }, (_, i) => addDays(firstDayOfMonth, i));
+  const daysInCurrentMonth = getDaysInMonth(selectedDate);
+  const firstDayOfMonth = startOfMonth(selectedDate);
+
+  const filteredPublications = publications.filter(publication => {
+    const publicationDate = new Date(publication.date);
+    return (
+      publicationDate.getMonth() === selectedDate.getMonth() &&
+      publicationDate.getFullYear() === selectedDate.getFullYear() &&
+      (selectedClient ? publication.client_id === selectedClient : true) &&
+      (selectedDesigner ? publication.designer === selectedDesigner : true) &&
+      (selectedStatus ? publication.status === selectedStatus : true) &&
+      (selectedType ? publication.type === selectedType : true) &&
+      (selectedPackage ? publication.package_id === selectedPackage : true)
+    );
+  });
 
   return (
     <div className="space-y-4 p-4">
       <FilterPanel
         clients={clients}
-        designers={designers}
         selectedClient={selectedClient}
         selectedDesigner={selectedDesigner}
         selectedStatus={selectedStatus}
@@ -85,32 +61,39 @@ export const CalendarView = ({ clients }: CalendarViewProps) => {
         onStatusChange={setSelectedStatus}
         onTypeChange={setSelectedType}
         onPackageChange={setSelectedPackage}
-        onDesignerAdded={() => {}}
+        designers={designers}
       />
-
-      <StatusLegend />
-
+      
       <div className="grid grid-cols-7 gap-4">
-        {days.map((day) => (
-          <div key={day.toString()} className="p-2 border rounded-lg">
-            <div className="text-sm font-medium mb-2">
-              {format(day, "d 'de' MMMM", { locale: es })}
-            </div>
-            <div className="space-y-2">
-              {publications
-                .filter((pub) => format(new Date(pub.date), 'yyyy-MM-dd') === format(day, 'yyyy-MM-dd'))
-                .map((publication) => (
+        {Array.from({ length: daysInCurrentMonth }, (_, index) => {
+          const day = index + 1;
+          const date = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), day);
+          return (
+            <div key={day} className="border p-2">
+              <h3 className="font-bold">{format(date, 'EEEE', { locale: es })}</h3>
+              <p>{day}</p>
+              {filteredPublications
+                .filter(publication => new Date(publication.date).getDate() === day)
+                .map(publication => (
                   <PublicationCard
                     key={publication.id}
                     publication={publication}
-                    client={clients.find(c => c.id === publication.client_id)}
-                    designer={designers.find(d => d.name === publication.designer)}
+                    onSelect={setSelectedPublication}
                   />
                 ))}
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
+
+      {selectedPublication && (
+        <PublicationDialog
+          publication={selectedPublication}
+          onClose={() => setSelectedPublication(null)}
+        />
+      )}
+
+      <StatusLegend />
     </div>
   );
 };
