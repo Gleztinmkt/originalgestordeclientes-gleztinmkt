@@ -44,8 +44,13 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
         const { data, error } = await query;
 
         if (error) {
-          console.error('Error al cargar publicaciones:', error);
+          console.error('Error en la consulta de publicaciones:', error);
           throw error;
+        }
+
+        if (!data || data.length === 0) {
+          console.log("No se encontraron publicaciones");
+          return [];
         }
 
         console.log("Publicaciones cargadas exitosamente:", data);
@@ -56,7 +61,8 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
       }
     },
     retry: 3,
-    refetchOnWindowFocus: true
+    refetchOnWindowFocus: true,
+    staleTime: 1000 * 60 * 5, // 5 minutos
   });
 
   useEffect(() => {
@@ -69,30 +75,11 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
     }
   }, [isError]);
 
-  const { data: designers = [], refetch: refetchDesigners } = useQuery({
-    queryKey: ['designers'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('designers')
-        .select('*')
-        .order('name', { ascending: true });
-
-      if (error) {
-        console.error('Error fetching designers:', error);
-        return [];
-      }
-      return data;
-    },
-  });
-
   const handleDragEnd = async (result: DropResult) => {
     if (!result.destination) return;
 
     const destinationDate = result.destination.droppableId;
     const publicationId = result.draggableId;
-
-    const publication = publications.find(p => p.id === publicationId);
-    if (!publication) return;
 
     try {
       const adjustedDate = new Date(destinationDate);
@@ -105,7 +92,10 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
         })
         .eq('id', publicationId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error actualizando fecha:', error);
+        throw error;
+      }
 
       setHighlightedPublicationId(publicationId);
       toast({
@@ -157,7 +147,6 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
   const FilterContent = () => (
     <FilterPanel
       clients={clients}
-      designers={designers}
       selectedClient={selectedClient}
       selectedDesigner={selectedDesigner}
       selectedStatus={selectedStatus}
@@ -168,7 +157,6 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
       onStatusChange={setSelectedStatus}
       onTypeChange={setSelectedType}
       onPackageChange={setSelectedPackage}
-      onDesignerAdded={refetchDesigners}
     />
   );
 
