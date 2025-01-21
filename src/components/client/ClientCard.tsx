@@ -25,7 +25,7 @@ import {
   Dialog,
   DialogContent,
 } from "@/components/ui/dialog";
-import { Task } from "../TaskList";
+import { Task } from "../types/task";
 
 interface ClientCardProps {
   client: Client;

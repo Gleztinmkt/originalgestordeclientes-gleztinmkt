@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { Task } from "@/components/TaskList";
+import { Task } from "@/components/types/task";
 import { toast } from "@/hooks/use-toast";
 import { convertTaskForDatabase, convertDatabaseTask, DatabaseTask } from "@/lib/database-types";
 

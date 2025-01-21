@@ -1,5 +1,5 @@
 import { Client } from "../../types/client";
-import { Task } from "../../TaskList";
+import { Task } from "../../types/task";
 
 export interface ClientCardProps {
   client: Client;

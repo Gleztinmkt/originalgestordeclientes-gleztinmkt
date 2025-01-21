@@ -2,7 +2,7 @@ import { useState } from "react";
 import { BulkMessageButton } from "./client/BulkMessageButton";
 import { ClientFilter } from "./client/ClientFilter";
 import { ClientCard } from "./client/ClientCard";
-import { Task } from "./TaskList";
+import { Task } from "./types/task";
 import { Client } from "./types/client";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";

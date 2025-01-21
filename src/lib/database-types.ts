@@ -1,5 +1,5 @@
 import { Client } from "@/components/types/client";
-import { Task } from "@/components/TaskList";
+import { Task } from "@/components/types/task";
 import { Json } from "@/integrations/supabase/types";
 
 export interface DatabaseClient {

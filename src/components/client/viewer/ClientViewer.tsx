@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ClientPackage } from "../ClientPackage";
 import { TaskList } from "@/components/TaskList";
 import { CalendarView } from "@/components/calendar/CalendarView";
-import { convertDatabaseClient } from "@/lib/database-types";
+import { convertDatabaseTask } from "@/lib/database-types";
 
 export const ClientViewer = ({ clientId }: { clientId: string }) => {
   const [client, setClient] = useState<Client | null>(null);
@@ -25,7 +25,7 @@ export const ClientViewer = ({ clientId }: { clientId: string }) => {
 
         if (clientError) throw clientError;
         if (clientData) {
-          setClient(convertDatabaseClient(clientData));
+          setClient(clientData as Client);
         }
 
         const { data: tasksData, error: tasksError } = await supabase
@@ -37,17 +37,7 @@ export const ClientViewer = ({ clientId }: { clientId: string }) => {
 
         if (tasksError) throw tasksError;
         if (tasksData) {
-          setTasks(tasksData.map(task => ({
-            id: task.id,
-            content: task.content,
-            type: task.type || "otros",
-            date: task.date,
-            clientId: task.client_id,
-            completed: task.completed || false,
-            executionDate: task.execution_date ? new Date(task.execution_date) : undefined,
-            reminderDate: task.reminder_date ? new Date(task.reminder_date) : undefined,
-            reminderFrequency: task.reminder_frequency
-          })));
+          setTasks(tasksData.map(task => convertDatabaseTask(task)));
         }
       } catch (error) {
         console.error('Error fetching client data:', error);
@@ -96,7 +86,6 @@ export const ClientViewer = ({ clientId }: { clientId: string }) => {
                   clientId={client.id}
                   clientName={client.name}
                   packageId={pkg.id}
-                  viewOnly
                 />
               ))}
             </TabsContent>
