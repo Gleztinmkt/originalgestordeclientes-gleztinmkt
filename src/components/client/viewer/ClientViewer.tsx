@@ -24,24 +24,64 @@ interface DatabaseClientInfo {
   socialNetworks?: Array<{ platform: SocialPlatform; username: string; }>;
 }
 
-export const ClientViewer = ({ clientId }: { clientId: string }) => {
+export const ClientViewer = () => {
   const [client, setClient] = useState<Client | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchClientData = async () => {
       try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const linkId = urlParams.get('id');
+
+        if (!linkId) {
+          setError('Link inválido');
+          setIsLoading(false);
+          return;
+        }
+
+        // First get the client ID from the link
+        const { data: linkData, error: linkError } = await supabase
+          .from('client_links')
+          .select('client_id')
+          .eq('unique_id', linkId)
+          .eq('is_active', true)
+          .single();
+
+        if (linkError || !linkData?.client_id) {
+          console.error('Error fetching client link:', linkError);
+          setError('Link no encontrado o inactivo');
+          setIsLoading(false);
+          return;
+        }
+
+        // Then fetch the client data
         const { data: clientData, error: clientError } = await supabase
           .from('clients')
           .select('*')
-          .eq('id', clientId)
+          .eq('id', linkData.client_id)
           .single();
 
-        if (clientError) throw clientError;
-        if (clientData) {
-          const packages = Array.isArray(clientData.packages) 
-            ? (clientData.packages as DatabasePackage[]).map(pkg => ({
+        if (clientError || !clientData) {
+          console.error('Error fetching client:', clientError);
+          setError('Cliente no encontrado');
+          setIsLoading(false);
+          return;
+        }
+
+        // Format the client data
+        const formattedClient: Client = {
+          id: clientData.id,
+          name: clientData.name,
+          phone: clientData.phone || "",
+          paymentDay: clientData.payment_day || 1,
+          marketingInfo: clientData.marketing_info || "",
+          instagram: clientData.instagram || "",
+          facebook: clientData.facebook || "",
+          packages: Array.isArray(clientData.packages) 
+            ? clientData.packages.map((pkg: DatabasePackage) => ({
                 id: pkg.id || crypto.randomUUID(),
                 name: pkg.name || "",
                 totalPublications: typeof pkg.totalPublications === 'string' 
@@ -53,41 +93,27 @@ export const ClientViewer = ({ clientId }: { clientId: string }) => {
                 month: pkg.month || "",
                 paid: Boolean(pkg.paid)
               }))
-            : [];
+            : [],
+          clientInfo: clientData.client_info as DatabaseClientInfo || {
+            generalInfo: "",
+            meetings: [],
+            socialNetworks: []
+          }
+        };
 
-          const clientInfo = clientData.client_info as DatabaseClientInfo;
-          
-          setClient({
-            id: clientData.id,
-            name: clientData.name,
-            phone: clientData.phone || "",
-            paymentDay: clientData.payment_day || 1,
-            marketingInfo: clientData.marketing_info || "",
-            instagram: clientData.instagram || "",
-            facebook: clientData.facebook || "",
-            packages,
-            clientInfo: {
-              generalInfo: clientInfo?.generalInfo || "",
-              meetings: Array.isArray(clientInfo?.meetings) ? clientInfo.meetings : [],
-              socialNetworks: Array.isArray(clientInfo?.socialNetworks) 
-                ? clientInfo.socialNetworks.map(network => ({
-                    platform: network.platform || "instagram",
-                    username: network.username || ""
-                  }))
-                : []
-            }
-          });
-        }
+        setClient(formattedClient);
 
+        // Fetch tasks for the client
         const { data: tasksData, error: tasksError } = await supabase
           .from('tasks')
           .select('*')
-          .eq('client_id', clientId)
+          .eq('client_id', linkData.client_id)
           .is('deleted_at', null)
           .eq('completed', false);
 
-        if (tasksError) throw tasksError;
-        if (tasksData) {
+        if (tasksError) {
+          console.error('Error fetching tasks:', tasksError);
+        } else if (tasksData) {
           setTasks(tasksData.map(task => convertDatabaseTask({
             ...task,
             type: task.type as Task["type"]
@@ -95,21 +121,30 @@ export const ClientViewer = ({ clientId }: { clientId: string }) => {
         }
 
       } catch (error) {
-        console.error('Error fetching client data:', error);
+        console.error('Error in client viewer:', error);
+        setError('Error al cargar los datos del cliente');
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchClientData();
-  }, [clientId]);
+  }, []);
 
   if (isLoading) {
-    return <div className="p-8 text-center">Cargando...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-lg">Cargando...</p>
+      </div>
+    );
   }
 
-  if (!client) {
-    return <div className="p-8 text-center">Cliente no encontrado</div>;
+  if (error || !client) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-lg text-red-500">{error || 'Error al cargar el cliente'}</p>
+      </div>
+    );
   }
 
   return (
@@ -141,6 +176,7 @@ export const ClientViewer = ({ clientId }: { clientId: string }) => {
                   clientId={client.id}
                   clientName={client.name}
                   packageId={pkg.id}
+                  viewOnly
                 />
               ))}
             </TabsContent>
