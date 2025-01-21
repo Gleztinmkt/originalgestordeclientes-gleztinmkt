@@ -69,19 +69,35 @@ export const ClientViewer = () => {
           return;
         }
 
-        const packages = Array.isArray(clientData.packages) 
-          ? (clientData.packages as DatabasePackage[]).map(pkg => ({
-              id: pkg.id || crypto.randomUUID(),
-              name: pkg.name || "",
-              totalPublications: pkg.totalPublications || 0,
-              usedPublications: pkg.usedPublications || 0,
-              month: pkg.month || "",
-              paid: Boolean(pkg.paid)
-            }))
-          : [];
+        // Safe type assertion after validation
+        const rawPackages = clientData.packages as Record<string, any>[] || [];
+        const packages: DatabasePackage[] = rawPackages.map(pkg => ({
+          id: String(pkg.id || crypto.randomUUID()),
+          name: String(pkg.name || ""),
+          totalPublications: Number(pkg.totalPublications || 0),
+          usedPublications: Number(pkg.usedPublications || 0),
+          month: String(pkg.month || ""),
+          paid: Boolean(pkg.paid)
+        }));
 
-        const clientInfo = clientData.client_info as DatabaseClientInfo;
-        
+        // Safe type assertion for client info
+        const rawClientInfo = clientData.client_info as Record<string, any> || {};
+        const clientInfo: DatabaseClientInfo = {
+          generalInfo: String(rawClientInfo.generalInfo || ""),
+          meetings: Array.isArray(rawClientInfo.meetings) 
+            ? rawClientInfo.meetings.map((m: any) => ({
+                date: String(m.date || ""),
+                notes: String(m.notes || "")
+              }))
+            : [],
+          socialNetworks: Array.isArray(rawClientInfo.socialNetworks)
+            ? rawClientInfo.socialNetworks.map((s: any) => ({
+                platform: String(s.platform || "instagram") as SocialPlatform,
+                username: String(s.username || "")
+              }))
+            : []
+        };
+
         const formattedClient: Client = {
           id: clientData.id,
           name: clientData.name,
@@ -91,11 +107,7 @@ export const ClientViewer = () => {
           instagram: clientData.instagram || "",
           facebook: clientData.facebook || "",
           packages,
-          clientInfo: {
-            generalInfo: clientInfo?.generalInfo || "",
-            meetings: clientInfo?.meetings || [],
-            socialNetworks: clientInfo?.socialNetworks || []
-          }
+          clientInfo
         };
 
         setClient(formattedClient);
