@@ -10,18 +10,18 @@ import { CalendarView } from "@/components/calendar/CalendarView";
 import { convertDatabaseTask } from "@/lib/database-types";
 
 interface DatabasePackage {
-  id?: string;
-  name?: string;
-  totalPublications?: string | number;
-  usedPublications?: string | number;
-  month?: string;
-  paid?: boolean;
+  id: string;
+  name: string;
+  totalPublications: number;
+  usedPublications: number;
+  month: string;
+  paid: boolean;
 }
 
 interface DatabaseClientInfo {
-  generalInfo?: string;
-  meetings?: Array<{ date: string; notes: string; }>;
-  socialNetworks?: Array<{ platform: SocialPlatform; username: string; }>;
+  generalInfo: string;
+  meetings: Array<{ date: string; notes: string; }>;
+  socialNetworks: Array<{ platform: SocialPlatform; username: string; }>;
 }
 
 export const ClientViewer = () => {
@@ -42,7 +42,6 @@ export const ClientViewer = () => {
           return;
         }
 
-        // First get the client ID from the link
         const { data: linkData, error: linkError } = await supabase
           .from('client_links')
           .select('client_id')
@@ -57,7 +56,6 @@ export const ClientViewer = () => {
           return;
         }
 
-        // Then fetch the client data
         const { data: clientData, error: clientError } = await supabase
           .from('clients')
           .select('*')
@@ -71,7 +69,19 @@ export const ClientViewer = () => {
           return;
         }
 
-        // Format the client data
+        const packages = Array.isArray(clientData.packages) 
+          ? (clientData.packages as DatabasePackage[]).map(pkg => ({
+              id: pkg.id || crypto.randomUUID(),
+              name: pkg.name || "",
+              totalPublications: pkg.totalPublications || 0,
+              usedPublications: pkg.usedPublications || 0,
+              month: pkg.month || "",
+              paid: Boolean(pkg.paid)
+            }))
+          : [];
+
+        const clientInfo = clientData.client_info as DatabaseClientInfo;
+        
         const formattedClient: Client = {
           id: clientData.id,
           name: clientData.name,
@@ -80,30 +90,16 @@ export const ClientViewer = () => {
           marketingInfo: clientData.marketing_info || "",
           instagram: clientData.instagram || "",
           facebook: clientData.facebook || "",
-          packages: Array.isArray(clientData.packages) 
-            ? clientData.packages.map((pkg: DatabasePackage) => ({
-                id: pkg.id || crypto.randomUUID(),
-                name: pkg.name || "",
-                totalPublications: typeof pkg.totalPublications === 'string' 
-                  ? parseInt(pkg.totalPublications) 
-                  : pkg.totalPublications || 0,
-                usedPublications: typeof pkg.usedPublications === 'string'
-                  ? parseInt(pkg.usedPublications)
-                  : pkg.usedPublications || 0,
-                month: pkg.month || "",
-                paid: Boolean(pkg.paid)
-              }))
-            : [],
-          clientInfo: clientData.client_info as DatabaseClientInfo || {
-            generalInfo: "",
-            meetings: [],
-            socialNetworks: []
+          packages,
+          clientInfo: {
+            generalInfo: clientInfo?.generalInfo || "",
+            meetings: clientInfo?.meetings || [],
+            socialNetworks: clientInfo?.socialNetworks || []
           }
         };
 
         setClient(formattedClient);
 
-        // Fetch tasks for the client
         const { data: tasksData, error: tasksError } = await supabase
           .from('tasks')
           .select('*')
@@ -176,7 +172,6 @@ export const ClientViewer = () => {
                   clientId={client.id}
                   clientName={client.name}
                   packageId={pkg.id}
-                  viewOnly
                 />
               ))}
             </TabsContent>

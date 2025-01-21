@@ -33,7 +33,7 @@ const ClientView = () => {
     return <div>Link inválido</div>;
   }
 
-  return <ClientViewer clientId={clientLinkId} />;
+  return <ClientViewer />;
 };
 
 export default ClientView;
