@@ -69,18 +69,16 @@ export const ClientViewer = () => {
           return;
         }
 
-        // Safe type assertion after validation
-        const rawPackages = clientData.packages as Record<string, any>[] || [];
+        const rawPackages = (clientData.packages as any[] || []);
         const packages: DatabasePackage[] = rawPackages.map(pkg => ({
           id: String(pkg.id || crypto.randomUUID()),
           name: String(pkg.name || ""),
           totalPublications: Number(pkg.totalPublications || 0),
           usedPublications: Number(pkg.usedPublications || 0),
           month: String(pkg.month || ""),
-          paid: Boolean(pkg.paid)
+          paid: Boolean(pkg.paid || false)
         }));
 
-        // Safe type assertion for client info
         const rawClientInfo = clientData.client_info as Record<string, any> || {};
         const clientInfo: DatabaseClientInfo = {
           generalInfo: String(rawClientInfo.generalInfo || ""),
