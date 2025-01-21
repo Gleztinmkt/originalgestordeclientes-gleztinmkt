@@ -97,7 +97,7 @@ export const ClientViewer = ({ clientId }: { clientId: string }) => {
             <TabsContent value="calendar">
               <CalendarView clients={[client]} viewOnly />
             </TabsContent>
-          </CardContent>
+          </Tabs>
         </CardContent>
       </Card>
     </div>
