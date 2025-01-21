@@ -3,11 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Client, SocialPlatform } from "@/components/types/client";
 import { Task } from "@/components/types/task";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase";
 import { ClientPackage } from "../ClientPackage";
 import { TaskList } from "@/components/TaskList";
 import { CalendarView } from "@/components/calendar/CalendarView";
 import { convertDatabaseTask } from "@/lib/database-types";
+import { Json } from "@/integrations/supabase/types";
 
 interface DatabasePackage {
   id?: string;
