@@ -289,6 +289,7 @@ export type Database = {
           deleted_at: string | null
           full_name: string | null
           id: string
+          role: Database["public"]["Enums"]["user_role"] | null
         }
         Insert: {
           agency_id?: string | null
@@ -296,6 +297,7 @@ export type Database = {
           deleted_at?: string | null
           full_name?: string | null
           id: string
+          role?: Database["public"]["Enums"]["user_role"] | null
         }
         Update: {
           agency_id?: string | null
@@ -303,6 +305,7 @@ export type Database = {
           deleted_at?: string | null
           full_name?: string | null
           id?: string
+          role?: Database["public"]["Enums"]["user_role"] | null
         }
         Relationships: [
           {
@@ -497,7 +500,7 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      user_role: "designer" | "marketing_agent" | "admin" | "calendar_viewer"
     }
     CompositeTypes: {
       [_ in never]: never
