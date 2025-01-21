@@ -22,7 +22,10 @@ export const useTaskManager = () => {
 
       if (tasksData) {
         console.log('Tareas cargadas:', tasksData);
-        const formattedTasks = tasksData.map(task => convertDatabaseTask(task));
+        const formattedTasks = tasksData.map(task => convertDatabaseTask({
+          ...task,
+          type: task.type as Task["type"]
+        }));
         console.log('Tareas formateadas:', formattedTasks);
         setTasks(formattedTasks);
       }

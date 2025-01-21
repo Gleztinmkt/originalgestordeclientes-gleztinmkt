@@ -33,8 +33,21 @@ export const ClientViewer = ({ clientId }: { clientId: string }) => {
             marketingInfo: clientData.marketing_info || "",
             instagram: clientData.instagram || "",
             facebook: clientData.facebook || "",
-            packages: Array.isArray(clientData.packages) ? clientData.packages : [],
-            clientInfo: clientData.client_info || {
+            packages: Array.isArray(clientData.packages) 
+              ? clientData.packages.map(pkg => ({
+                  id: pkg.id || crypto.randomUUID(),
+                  name: pkg.name || "",
+                  totalPublications: parseInt(pkg.totalPublications) || 0,
+                  usedPublications: parseInt(pkg.usedPublications) || 0,
+                  month: pkg.month || "",
+                  paid: Boolean(pkg.paid)
+                }))
+              : [],
+            clientInfo: typeof clientData.client_info === 'object' ? {
+              generalInfo: clientData.client_info?.generalInfo || "",
+              meetings: Array.isArray(clientData.client_info?.meetings) ? clientData.client_info.meetings : [],
+              socialNetworks: Array.isArray(clientData.client_info?.socialNetworks) ? clientData.client_info.socialNetworks : []
+            } : {
               generalInfo: "",
               meetings: [],
               socialNetworks: []
@@ -51,8 +64,12 @@ export const ClientViewer = ({ clientId }: { clientId: string }) => {
 
         if (tasksError) throw tasksError;
         if (tasksData) {
-          setTasks(tasksData.map(task => convertDatabaseTask(task)));
+          setTasks(tasksData.map(task => convertDatabaseTask({
+            ...task,
+            type: task.type as Task["type"]
+          })));
         }
+
       } catch (error) {
         console.error('Error fetching client data:', error);
       } finally {
@@ -100,7 +117,6 @@ export const ClientViewer = ({ clientId }: { clientId: string }) => {
                   clientId={client.id}
                   clientName={client.name}
                   packageId={pkg.id}
-                  viewOnly
                 />
               ))}
             </TabsContent>
