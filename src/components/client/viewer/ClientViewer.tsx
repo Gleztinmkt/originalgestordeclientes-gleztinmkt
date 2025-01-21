@@ -9,6 +9,21 @@ import { TaskList } from "@/components/TaskList";
 import { CalendarView } from "@/components/calendar/CalendarView";
 import { convertDatabaseTask } from "@/lib/database-types";
 
+interface DatabasePackage {
+  id?: string;
+  name?: string;
+  totalPublications?: string | number;
+  usedPublications?: string | number;
+  month?: string;
+  paid?: boolean;
+}
+
+interface DatabaseClientInfo {
+  generalInfo?: string;
+  meetings?: Array<{ date: string; notes: string; }>;
+  socialNetworks?: Array<{ platform: string; username: string; }>;
+}
+
 export const ClientViewer = ({ clientId }: { clientId: string }) => {
   const [client, setClient] = useState<Client | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -25,6 +40,23 @@ export const ClientViewer = ({ clientId }: { clientId: string }) => {
 
         if (clientError) throw clientError;
         if (clientData) {
+          const packages = Array.isArray(clientData.packages) 
+            ? (clientData.packages as DatabasePackage[]).map(pkg => ({
+                id: pkg.id || crypto.randomUUID(),
+                name: pkg.name || "",
+                totalPublications: typeof pkg.totalPublications === 'string' 
+                  ? parseInt(pkg.totalPublications) 
+                  : pkg.totalPublications || 0,
+                usedPublications: typeof pkg.usedPublications === 'string'
+                  ? parseInt(pkg.usedPublications)
+                  : pkg.usedPublications || 0,
+                month: pkg.month || "",
+                paid: Boolean(pkg.paid)
+              }))
+            : [];
+
+          const clientInfo = clientData.client_info as DatabaseClientInfo;
+          
           setClient({
             id: clientData.id,
             name: clientData.name,
@@ -33,24 +65,11 @@ export const ClientViewer = ({ clientId }: { clientId: string }) => {
             marketingInfo: clientData.marketing_info || "",
             instagram: clientData.instagram || "",
             facebook: clientData.facebook || "",
-            packages: Array.isArray(clientData.packages) 
-              ? clientData.packages.map(pkg => ({
-                  id: pkg.id || crypto.randomUUID(),
-                  name: pkg.name || "",
-                  totalPublications: parseInt(pkg.totalPublications) || 0,
-                  usedPublications: parseInt(pkg.usedPublications) || 0,
-                  month: pkg.month || "",
-                  paid: Boolean(pkg.paid)
-                }))
-              : [],
-            clientInfo: typeof clientData.client_info === 'object' ? {
-              generalInfo: clientData.client_info?.generalInfo || "",
-              meetings: Array.isArray(clientData.client_info?.meetings) ? clientData.client_info.meetings : [],
-              socialNetworks: Array.isArray(clientData.client_info?.socialNetworks) ? clientData.client_info.socialNetworks : []
-            } : {
-              generalInfo: "",
-              meetings: [],
-              socialNetworks: []
+            packages,
+            clientInfo: {
+              generalInfo: clientInfo?.generalInfo || "",
+              meetings: Array.isArray(clientInfo?.meetings) ? clientInfo.meetings : [],
+              socialNetworks: Array.isArray(clientInfo?.socialNetworks) ? clientInfo.socialNetworks : []
             }
           });
         }
