@@ -17,10 +17,6 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { AddPackageForm, PackageFormValues } from "./AddPackageForm";
-import { toast } from "@/hooks/use-toast";
-import { useState, useCallback, useRef } from "react";
-import { PublicationCalendarDialog } from "./PublicationCalendarDialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,6 +27,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { AddPackageForm, PackageFormValues } from "./AddPackageForm";
+import { toast } from "@/hooks/use-toast";
+import { useState, useCallback, useRef, useEffect } from "react";
+import { PublicationCalendarDialog } from "./PublicationCalendarDialog";
 
 interface ClientPackageProps {
   packageName: string;
@@ -64,39 +64,63 @@ export const ClientPackage = ({
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const processingRef = useRef(false);
+  const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const submissionCountRef = useRef(0);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (processingTimeoutRef.current) {
+        clearTimeout(processingTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleEditSubmit = useCallback(async (values: PackageFormValues & { name: string, totalPublications: string }) => {
-    // Prevenir múltiples envíos usando una ref
-    if (processingRef.current || isProcessing) {
-      console.log('Submission already in progress, preventing double submit');
+    const currentSubmissionCount = ++submissionCountRef.current;
+    
+    // Prevenir múltiples envíos
+    if (isProcessing) {
+      console.log('Submission blocked - already processing');
       return;
     }
 
+    console.log(`Starting submission #${currentSubmissionCount}`, {
+      values,
+      isProcessing,
+      currentTime: new Date().toISOString()
+    });
+
     try {
-      console.log('Starting package update process...', values);
       setIsProcessing(true);
-      processingRef.current = true;
+
+      // Agregar un pequeño delay para asegurar que el estado se actualice
+      await new Promise(resolve => setTimeout(resolve, 100));
 
       await onEditPackage(values);
       
-      console.log('Package updated successfully');
-      setIsEditDialogOpen(false);
-      toast({
-        title: "Paquete actualizado",
-        description: "El paquete ha sido actualizado correctamente.",
-      });
+      console.log(`Submission #${currentSubmissionCount} completed successfully`);
+      
+      // Usar timeout para asegurar que el estado se actualice correctamente
+      processingTimeoutRef.current = setTimeout(() => {
+        if (currentSubmissionCount === submissionCountRef.current) {
+          setIsEditDialogOpen(false);
+          setIsProcessing(false);
+          toast({
+            title: "Paquete actualizado",
+            description: "El paquete ha sido actualizado correctamente.",
+          });
+        }
+      }, 300);
+
     } catch (error) {
-      console.error('Error updating package:', error);
+      console.error(`Error in submission #${currentSubmissionCount}:`, error);
       toast({
         title: "Error",
         description: "No se pudo actualizar el paquete. Por favor, intenta de nuevo.",
         variant: "destructive",
       });
-    } finally {
-      console.log('Cleaning up after update attempt');
       setIsProcessing(false);
-      processingRef.current = false;
     }
   }, [onEditPackage, isProcessing]);
 
@@ -108,7 +132,10 @@ export const ClientPackage = ({
 
   const closeEditDialog = () => {
     if (!isProcessing) {
+      console.log('Closing edit dialog - not processing');
       setIsEditDialogOpen(false);
+    } else {
+      console.log('Cannot close dialog - processing in progress');
     }
   };
 
