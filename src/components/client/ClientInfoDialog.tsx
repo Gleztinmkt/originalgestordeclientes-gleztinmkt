@@ -29,8 +29,10 @@ export const ClientInfoDialog = ({ client, onUpdate }: ClientInfoDialogProps) =>
 
   // Fetch publications for this client
   const { data: publications = [], isLoading: isLoadingPublications } = useQuery({
-    queryKey: ['publications', client.id],
+    queryKey: ['publications', client?.id],
     queryFn: async () => {
+      if (!client?.id) return [];
+      
       const { data, error } = await supabase
         .from('publications')
         .select('*')
@@ -40,45 +42,43 @@ export const ClientInfoDialog = ({ client, onUpdate }: ClientInfoDialogProps) =>
 
       if (error) throw error;
       return data as Publication[];
-    }
+    },
+    enabled: !!client?.id
   });
 
-  const handleSubmit = async (updatedInfo: ClientInfo) => {
+  const handleSubmit = async (values: { 
+    name: string;
+    type: "reel" | "carousel" | "image";
+    date: Date;
+    description: string;
+    copywriting: string;
+  }) => {
     try {
       setIsLoading(true);
       
-      // Convert the social networks to a plain object format that matches Json type
-      const clientInfoJson = {
-        generalInfo: updatedInfo.generalInfo,
-        meetings: updatedInfo.meetings,
-        socialNetworks: updatedInfo.socialNetworks.map(network => ({
-          platform: network.platform,
-          username: network.username
-        }))
-      };
-      
-      const { data, error } = await supabase
-        .from('clients')
-        .update({ client_info: clientInfoJson })
-        .eq('id', client.id)
-        .select()
-        .single();
+      const { error } = await supabase
+        .from('publications')
+        .insert({
+          client_id: client.id,
+          ...values,
+          package_id: client.packages?.[0]?.id
+        });
 
       if (error) throw error;
 
       toast({
-        title: "Información actualizada",
-        description: "La información del cliente ha sido actualizada correctamente.",
+        title: "Publicación creada",
+        description: "La publicación ha sido creada correctamente.",
       });
 
       if (onUpdate) {
         onUpdate();
       }
     } catch (error) {
-      console.error('Error updating client info:', error);
+      console.error('Error creating publication:', error);
       toast({
         title: "Error",
-        description: "No se pudo actualizar la información del cliente.",
+        description: "No se pudo crear la publicación.",
         variant: "destructive",
       });
     } finally {
