@@ -5,6 +5,7 @@ import { PackageCounter } from "./PackageCounter";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { Json } from "@/integrations/supabase/types";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,7 +36,6 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Json } from "@/integrations/supabase/types";
 
 interface PackageData {
   id: string;
@@ -134,7 +134,7 @@ export const ClientPackage = ({
             last_update: pkg.last_update ? String(pkg.last_update) : undefined
           })) : [];
         } else if (Array.isArray(clientData?.packages)) {
-          packages = clientData.packages.map(pkg => ({
+          packages = (clientData.packages as any[]).map(pkg => ({
             id: String(pkg.id || ''),
             name: String(pkg.name || ''),
             totalPublications: Number(pkg.totalPublications) || 0,
