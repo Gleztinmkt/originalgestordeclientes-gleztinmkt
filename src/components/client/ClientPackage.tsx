@@ -124,7 +124,7 @@ export const ClientPackage = ({
         let packages: PackageData[] = [];
         if (typeof clientData?.packages === 'string') {
           const parsedPackages = JSON.parse(clientData.packages);
-          packages = Array.isArray(parsedPackages) ? parsedPackages.map(pkg => ({
+          packages = Array.isArray(parsedPackages) ? parsedPackages.map((pkg: any) => ({
             id: String(pkg.id || ''),
             name: String(pkg.name || ''),
             totalPublications: Number(pkg.totalPublications) || 0,
@@ -292,14 +292,12 @@ export const ClientPackage = ({
         />
         
         <div className="mt-4 space-y-4">
-          {/* Last update timestamp */}
           {lastUpdateRef.current && (
             <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
               <span>Últ. Actualización: {format(lastUpdateRef.current, "MMM dd MMMM HH:mm", { locale: es })}</span>
             </div>
           )}
 
-          {/* Next publication */}
           {nextPublication && (
             <div className="flex flex-col gap-1">
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
