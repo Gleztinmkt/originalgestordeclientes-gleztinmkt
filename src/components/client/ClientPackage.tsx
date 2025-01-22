@@ -1,3 +1,4 @@
+import { useState, useCallback, useRef, useEffect } from "react";
 import { Package, Edit, MoreVertical, Trash, Send } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PackageCounter } from "./PackageCounter";
@@ -29,7 +30,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { AddPackageForm, PackageFormValues } from "./AddPackageForm";
 import { toast } from "@/hooks/use-toast";
-import { useState, useCallback, useRef, useEffect } from "react";
 import { PublicationCalendarDialog } from "./PublicationCalendarDialog";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -68,9 +68,9 @@ export const ClientPackage = ({
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [lastUpdateTime, setLastUpdateTime] = useState(new Date());
   const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const submissionCountRef = useRef(0);
+  const lastUpdateRef = useRef<Date | null>(null);
 
   // Fetch next publication
   const { data: nextPublication } = useQuery({
@@ -99,7 +99,10 @@ export const ClientPackage = ({
   }, []);
 
   const handleUpdateUsed = async (newCount: number) => {
-    setLastUpdateTime(new Date());
+    // Solo actualizar el timestamp si estamos decrementando el contador
+    if (newCount < usedPublications) {
+      lastUpdateRef.current = new Date();
+    }
     await onUpdateUsed(newCount);
   };
 
@@ -222,9 +225,11 @@ export const ClientPackage = ({
         
         <div className="mt-4 space-y-4">
           {/* Last update timestamp */}
-          <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-            <span>Últ. Actualización: {format(lastUpdateTime, "MMM dd MMMM HH:mm", { locale: es })}</span>
-          </div>
+          {lastUpdateRef.current && (
+            <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+              <span>Últ. Actualización: {format(lastUpdateRef.current, "MMM dd MMMM HH:mm", { locale: es })}</span>
+            </div>
+          )}
 
           {/* Next publication */}
           {nextPublication && (
