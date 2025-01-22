@@ -31,6 +31,10 @@ import { AddPackageForm, PackageFormValues } from "./AddPackageForm";
 import { toast } from "@/hooks/use-toast";
 import { useState, useCallback, useRef, useEffect } from "react";
 import { PublicationCalendarDialog } from "./PublicationCalendarDialog";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ClientPackageProps {
   packageName: string;
@@ -67,7 +71,24 @@ export const ClientPackage = ({
   const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const submissionCountRef = useRef(0);
 
-  // Cleanup timeout on unmount
+  // Fetch next publication
+  const { data: nextPublication } = useQuery({
+    queryKey: ['nextPublication', clientId, packageId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('publications')
+        .select('*')
+        .eq('client_id', clientId)
+        .eq('package_id', packageId)
+        .gte('date', new Date().toISOString())
+        .order('date', { ascending: true })
+        .limit(1);
+
+      if (error) throw error;
+      return data?.[0] || null;
+    },
+  });
+
   useEffect(() => {
     return () => {
       if (processingTimeoutRef.current) {
@@ -192,22 +213,42 @@ export const ClientPackage = ({
           used={usedPublications}
           onUpdateUsed={onUpdateUsed}
         />
-        <div className="flex gap-2 mt-4">
-          {usedPublications === totalPublications && (
-            <Button 
-              onClick={handleSendCompletionMessage}
-              className="w-full gap-2"
-              variant="outline"
-            >
-              <Send className="h-4 w-4" />
-              Enviar mensaje de completado
-            </Button>
+        
+        <div className="mt-4 space-y-4">
+          {/* Last update timestamp */}
+          <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+            <span>Últ. Actualización: {format(new Date(), "MMM dd MMMM HH:mm", { locale: es })}</span>
+          </div>
+
+          {/* Next publication */}
+          {nextPublication && (
+            <div className="flex flex-col gap-1">
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Próxima publicación
+              </span>
+              <Badge variant="secondary" className="w-fit bg-red-500/10 text-red-500 dark:bg-red-500/20 dark:text-red-400">
+                {nextPublication.name}
+              </Badge>
+            </div>
           )}
-          <PublicationCalendarDialog 
-            clientId={clientId}
-            clientName={clientName}
-            packageId={packageId}
-          />
+
+          <div className="flex gap-2">
+            {usedPublications === totalPublications && (
+              <Button 
+                onClick={handleSendCompletionMessage}
+                className="w-full gap-2"
+                variant="outline"
+              >
+                <Send className="h-4 w-4" />
+                Enviar mensaje de completado
+              </Button>
+            )}
+            <PublicationCalendarDialog 
+              clientId={clientId}
+              clientName={clientName}
+              packageId={packageId}
+            />
+          </div>
         </div>
       </CardContent>
 
