@@ -134,7 +134,7 @@ export const ClientPackage = ({
             last_update: pkg.last_update ? String(pkg.last_update) : undefined
           })) : [];
         } else if (Array.isArray(clientData?.packages)) {
-          packages = (clientData.packages as any[]).map(pkg => ({
+          packages = clientData.packages.map(pkg => ({
             id: String(pkg.id || ''),
             name: String(pkg.name || ''),
             totalPublications: Number(pkg.totalPublications) || 0,
