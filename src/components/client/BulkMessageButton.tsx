@@ -12,23 +12,50 @@ interface Client {
   name: string;
   phone: string;
   paymentDay: number;
+  packages: any[];
 }
 
 interface BulkMessageButtonProps {
   clients: Client[];
   selectedPaymentDay?: number;
+  searchQuery?: string;
+  showPendingPayments?: boolean;
 }
 
-export const BulkMessageButton = ({ clients, selectedPaymentDay }: BulkMessageButtonProps) => {
+export const BulkMessageButton = ({ 
+  clients, 
+  selectedPaymentDay,
+  searchQuery = "",
+  showPendingPayments = false
+}: BulkMessageButtonProps) => {
+  const getFilteredClients = () => {
+    return clients.filter(client => {
+      // Aplicar filtro de día de pago si está seleccionado
+      if (selectedPaymentDay && client.paymentDay !== selectedPaymentDay) {
+        return false;
+      }
+
+      // Aplicar filtro de búsqueda si existe
+      if (searchQuery && !client.name.toLowerCase().includes(searchQuery.toLowerCase())) {
+        return false;
+      }
+
+      // Aplicar filtro de pagos pendientes si está activo
+      if (showPendingPayments && !client.packages.some(pkg => !pkg.paid)) {
+        return false;
+      }
+
+      return true;
+    });
+  };
+
   const sendBulkMessages = () => {
-    const filteredClients = selectedPaymentDay
-      ? clients.filter(client => client.paymentDay === selectedPaymentDay)
-      : clients;
+    const filteredClients = getFilteredClients();
 
     if (filteredClients.length === 0) {
       toast({
         title: "No hay clientes",
-        description: "No hay clientes para enviar mensajes en esta fecha",
+        description: "No hay clientes que cumplan con los filtros seleccionados",
         variant: "destructive",
       });
       return;
@@ -36,7 +63,12 @@ export const BulkMessageButton = ({ clients, selectedPaymentDay }: BulkMessageBu
 
     filteredClients.forEach(client => {
       if (client.phone) {
-        const message = `Buenos días ${client.name}, este es un mensaje automático.\n\nLes recordamos la fecha de pago del día ${client.paymentDay} de cada mes.\n\nMuchas gracias.\n\nEn caso de tener alguna duda o no poder abonarlo dentro de la fecha establecida por favor contáctarnos.\n\nSi los valores no fueron enviados por favor pedirlos.`;
+        const message = `Buenos días ${client.name}, este es un mensaje automático. \n\n` +
+          `Les recordamos la fecha de pago del día 1 de cada mes. Los valores actualizados los vas a encontrar en el *siguiente link*:\n\n` +
+          `https://gleztin.com.ar/index.php/valores-de-redes-sociales/\n\n\n` +
+          `*Contraseña*: Gleztin (Con mayuscula al inicio)\n\n` +
+          `En caso de tener alguna duda o no poder abonarlo dentro de la fecha establecida por favor contáctarnos.\n\n` +
+          `Muchas gracias`;
         const whatsappUrl = `https://wa.me/${client.phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
         window.open(whatsappUrl, '_blank');
       }
@@ -49,12 +81,12 @@ export const BulkMessageButton = ({ clients, selectedPaymentDay }: BulkMessageBu
   };
 
   const sendValuesUpdateMessage = () => {
-    const filteredClients = clients;
+    const filteredClients = getFilteredClients();
 
     if (filteredClients.length === 0) {
       toast({
         title: "No hay clientes",
-        description: "No hay clientes para enviar mensajes",
+        description: "No hay clientes que cumplan con los filtros seleccionados",
         variant: "destructive",
       });
       return;
@@ -62,7 +94,12 @@ export const BulkMessageButton = ({ clients, selectedPaymentDay }: BulkMessageBu
 
     filteredClients.forEach(client => {
       if (client.phone) {
-        const message = `Hola ${client.name}, los valores actualizados los vas a encontrar en el siguiente link:\n\nhttps://gleztin.com.ar/index.php/valores-de-redes-sociales/\n\nContraseña: Gleztin`;
+        const message = `Hola ${client.name}, los valores actualizados los vas a encontrar en el siguiente link: \n\n` +
+          `*Link*: https://gleztin.com.ar/index.php/valores-de-redes-sociales/ \n\n` +
+          `*Contraseña*: Gleztin (con mayúscula al inicio)\n\n` +
+          `Todos los *25 de cada mes* vamos a actualizar los valores \n\n` +
+          `Que tengan un buen dia\n` +
+          `ATTE: Gleztin Marketing Digital`;
         const whatsappUrl = `https://wa.me/${client.phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
         window.open(whatsappUrl, '_blank');
       }

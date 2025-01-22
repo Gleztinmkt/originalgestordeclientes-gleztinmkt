@@ -108,6 +108,8 @@ export const ClientList = ({
           <BulkMessageButton 
             clients={clients}
             selectedPaymentDay={selectedPaymentDay !== "all" ? parseInt(selectedPaymentDay) : undefined}
+            searchQuery={searchQuery}
+            showPendingPayments={showPendingPayments}
           />
         </div>
       </div>
