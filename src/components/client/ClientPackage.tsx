@@ -124,16 +124,24 @@ export const ClientPackage = ({
         let packages: PackageData[] = [];
         if (typeof clientData?.packages === 'string') {
           const parsedPackages = JSON.parse(clientData.packages);
-          packages = Array.isArray(parsedPackages) ? parsedPackages : [];
-        } else if (Array.isArray(clientData?.packages)) {
-          packages = (clientData.packages as any[]).map(pkg => ({
-            id: pkg.id || '',
-            name: pkg.name || '',
+          packages = Array.isArray(parsedPackages) ? parsedPackages.map(pkg => ({
+            id: String(pkg.id || ''),
+            name: String(pkg.name || ''),
             totalPublications: Number(pkg.totalPublications) || 0,
             usedPublications: Number(pkg.usedPublications) || 0,
-            month: pkg.month || '',
+            month: String(pkg.month || ''),
             paid: Boolean(pkg.paid),
-            last_update: pkg.last_update
+            last_update: pkg.last_update ? String(pkg.last_update) : undefined
+          })) : [];
+        } else if (Array.isArray(clientData?.packages)) {
+          packages = (clientData.packages as any[]).map(pkg => ({
+            id: String(pkg.id || ''),
+            name: String(pkg.name || ''),
+            totalPublications: Number(pkg.totalPublications) || 0,
+            usedPublications: Number(pkg.usedPublications) || 0,
+            month: String(pkg.month || ''),
+            paid: Boolean(pkg.paid),
+            last_update: pkg.last_update ? String(pkg.last_update) : undefined
           }));
         }
 
