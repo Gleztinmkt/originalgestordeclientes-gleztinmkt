@@ -117,20 +117,27 @@ export const ClientPackage = ({
 
         if (error) throw error;
 
-        if (clientData?.packages && Array.isArray(clientData.packages)) {
-          const updatedPackages = (clientData.packages as PackageData[]).map(pkg =>
-            pkg.id === packageId
-              ? { ...pkg, last_update: timestamp }
-              : pkg
-          );
-
-          const { error: updateError } = await supabase
-            .from('clients')
-            .update({ packages: updatedPackages })
-            .eq('id', clientId);
-
-          if (updateError) throw updateError;
+        let packages: PackageData[];
+        if (typeof clientData?.packages === 'string') {
+          packages = JSON.parse(clientData.packages);
+        } else if (Array.isArray(clientData?.packages)) {
+          packages = clientData.packages;
+        } else {
+          packages = [];
         }
+
+        const updatedPackages = packages.map(pkg =>
+          pkg.id === packageId
+            ? { ...pkg, last_update: timestamp }
+            : pkg
+        );
+
+        const { error: updateError } = await supabase
+          .from('clients')
+          .update({ packages: updatedPackages })
+          .eq('id', clientId);
+
+        if (updateError) throw updateError;
       }
 
       await onUpdateUsed(newCount);
