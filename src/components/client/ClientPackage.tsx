@@ -51,6 +51,12 @@ interface ClientPackageProps {
   packageId: string;
 }
 
+interface PackageData {
+  id: string;
+  last_update?: string;
+  [key: string]: any;
+}
+
 export const ClientPackage = ({
   packageName,
   totalPublications,
@@ -103,23 +109,27 @@ export const ClientPackage = ({
       // Solo actualizar el timestamp si estamos incrementando el contador
       if (newCount > usedPublications) {
         const timestamp = new Date().toISOString();
-        const { data: client } = await supabase
+        const { data: clientData, error } = await supabase
           .from('clients')
           .select('packages')
           .eq('id', clientId)
           .single();
 
-        if (client?.packages && Array.isArray(client.packages)) {
-          const updatedPackages = client.packages.map((pkg: any) =>
+        if (error) throw error;
+
+        if (clientData?.packages && Array.isArray(clientData.packages)) {
+          const updatedPackages = (clientData.packages as PackageData[]).map(pkg =>
             pkg.id === packageId
               ? { ...pkg, last_update: timestamp }
               : pkg
           );
 
-          await supabase
+          const { error: updateError } = await supabase
             .from('clients')
             .update({ packages: updatedPackages })
             .eq('id', clientId);
+
+          if (updateError) throw updateError;
         }
       }
 
