@@ -5,7 +5,6 @@ import { PackageCounter } from "./PackageCounter";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { Json } from "@/integrations/supabase/types";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,16 +36,6 @@ import { es } from "date-fns/locale";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
-interface PackageData {
-  id: string;
-  name: string;
-  totalPublications: number;
-  usedPublications: number;
-  month: string;
-  paid: boolean;
-  last_update?: string;
-}
-
 interface ClientPackageProps {
   packageName: string;
   totalPublications: number;
@@ -60,6 +49,12 @@ interface ClientPackageProps {
   clientId: string;
   clientName: string;
   packageId: string;
+}
+
+interface PackageData {
+  id: string;
+  last_update?: string;
+  [key: string]: any;
 }
 
 export const ClientPackage = ({
@@ -81,51 +76,9 @@ export const ClientPackage = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const submissionCountRef = useRef(0);
+  const lastUpdateRef = useRef<Date | null>(null);
 
-  const { data: packageData } = useQuery({
-    queryKey: ['package', clientId, packageId],
-    queryFn: async () => {
-      const { data: clientData, error } = await supabase
-        .from('clients')
-        .select('packages')
-        .eq('id', clientId)
-        .single();
-
-      if (error) throw error;
-
-      let packages: PackageData[] = [];
-      if (typeof clientData?.packages === 'string') {
-        try {
-          const parsedPackages = JSON.parse(clientData.packages);
-          packages = Array.isArray(parsedPackages) ? parsedPackages.map(pkg => ({
-            id: String(pkg.id || ''),
-            name: String(pkg.name || ''),
-            totalPublications: Number(pkg.totalPublications) || 0,
-            usedPublications: Number(pkg.usedPublications) || 0,
-            month: String(pkg.month || ''),
-            paid: Boolean(pkg.paid),
-            last_update: pkg.last_update ? String(pkg.last_update) : undefined
-          })) : [];
-        } catch (e) {
-          console.error('Error parsing packages:', e);
-          return null;
-        }
-      } else if (Array.isArray(clientData?.packages)) {
-        packages = (clientData.packages as any[]).map(pkg => ({
-          id: String(pkg.id || ''),
-          name: String(pkg.name || ''),
-          totalPublications: Number(pkg.totalPublications) || 0,
-          usedPublications: Number(pkg.usedPublications) || 0,
-          month: String(pkg.month || ''),
-          paid: Boolean(pkg.paid),
-          last_update: pkg.last_update ? String(pkg.last_update) : undefined
-        }));
-      }
-
-      return packages.find(pkg => pkg.id === packageId) || null;
-    },
-  });
-
+  // Fetch next publication
   const { data: nextPublication } = useQuery({
     queryKey: ['nextPublication', clientId, packageId],
     queryFn: async () => {
@@ -143,8 +96,17 @@ export const ClientPackage = ({
     },
   });
 
+  useEffect(() => {
+    return () => {
+      if (processingTimeoutRef.current) {
+        clearTimeout(processingTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const handleUpdateUsed = async (newCount: number) => {
     try {
+      // Solo actualizar el timestamp si estamos incrementando el contador
       if (newCount > usedPublications) {
         const timestamp = new Date().toISOString();
         const { data: clientData, error } = await supabase
@@ -155,33 +117,13 @@ export const ClientPackage = ({
 
         if (error) throw error;
 
-        let packages: PackageData[] = [];
+        let packages: PackageData[];
         if (typeof clientData?.packages === 'string') {
-          try {
-            const parsedPackages = JSON.parse(clientData.packages);
-            packages = Array.isArray(parsedPackages) ? parsedPackages.map(pkg => ({
-              id: String(pkg.id || ''),
-              name: String(pkg.name || ''),
-              totalPublications: Number(pkg.totalPublications) || 0,
-              usedPublications: Number(pkg.usedPublications) || 0,
-              month: String(pkg.month || ''),
-              paid: Boolean(pkg.paid),
-              last_update: pkg.last_update ? String(pkg.last_update) : undefined
-            })) : [];
-          } catch (e) {
-            console.error('Error parsing packages:', e);
-            throw new Error('Invalid package data');
-          }
+          packages = JSON.parse(clientData.packages);
         } else if (Array.isArray(clientData?.packages)) {
-          packages = (clientData.packages as any[]).map(pkg => ({
-            id: String(pkg.id || ''),
-            name: String(pkg.name || ''),
-            totalPublications: Number(pkg.totalPublications) || 0,
-            usedPublications: Number(pkg.usedPublications) || 0,
-            month: String(pkg.month || ''),
-            paid: Boolean(pkg.paid),
-            last_update: pkg.last_update ? String(pkg.last_update) : undefined
-          }));
+          packages = clientData.packages;
+        } else {
+          packages = [];
         }
 
         const updatedPackages = packages.map(pkg =>
@@ -192,9 +134,7 @@ export const ClientPackage = ({
 
         const { error: updateError } = await supabase
           .from('clients')
-          .update({ 
-            packages: updatedPackages as unknown as Json[]
-          })
+          .update({ packages: updatedPackages })
           .eq('id', clientId);
 
         if (updateError) throw updateError;
@@ -214,6 +154,7 @@ export const ClientPackage = ({
   const handleEditSubmit = useCallback(async (values: PackageFormValues & { name: string, totalPublications: string }) => {
     const currentSubmissionCount = ++submissionCountRef.current;
     
+    // Prevenir múltiples envíos
     if (isProcessing) {
       console.log('Submission blocked - already processing');
       return;
@@ -228,12 +169,14 @@ export const ClientPackage = ({
     try {
       setIsProcessing(true);
 
+      // Agregar un pequeño delay para asegurar que el estado se actualice
       await new Promise(resolve => setTimeout(resolve, 100));
 
       await onEditPackage(values);
       
       console.log(`Submission #${currentSubmissionCount} completed successfully`);
       
+      // Usar timeout para asegurar que el estado se actualice correctamente
       processingTimeoutRef.current = setTimeout(() => {
         if (currentSubmissionCount === submissionCountRef.current) {
           setIsEditDialogOpen(false);
@@ -326,12 +269,14 @@ export const ClientPackage = ({
         />
         
         <div className="mt-4 space-y-4">
-          {packageData?.last_update && (
+          {/* Last update timestamp */}
+          {lastUpdateRef.current && (
             <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-              <span>Últ. Actualización: {format(new Date(packageData.last_update), "dd 'de' MMMM 'a las' HH:mm", { locale: es })}</span>
+              <span>Últ. Actualización: {format(lastUpdateRef.current, "MMM dd MMMM HH:mm", { locale: es })}</span>
             </div>
           )}
 
+          {/* Next publication */}
           {nextPublication && (
             <div className="flex flex-col gap-1">
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
