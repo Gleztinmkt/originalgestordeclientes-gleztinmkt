@@ -99,11 +99,39 @@ export const ClientPackage = ({
   }, []);
 
   const handleUpdateUsed = async (newCount: number) => {
-    // Solo actualizar el timestamp si estamos incrementando el contador
-    if (newCount > usedPublications) {
-      lastUpdateRef.current = new Date();
+    try {
+      // Solo actualizar el timestamp si estamos incrementando el contador
+      if (newCount > usedPublications) {
+        const timestamp = new Date().toISOString();
+        const { data: client } = await supabase
+          .from('clients')
+          .select('packages')
+          .eq('id', clientId)
+          .single();
+
+        if (client?.packages) {
+          const updatedPackages = client.packages.map((pkg: any) =>
+            pkg.id === packageId
+              ? { ...pkg, last_update: timestamp }
+              : pkg
+          );
+
+          await supabase
+            .from('clients')
+            .update({ packages: updatedPackages })
+            .eq('id', clientId);
+        }
+      }
+
+      await onUpdateUsed(newCount);
+    } catch (error) {
+      console.error('Error updating package:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el paquete",
+        variant: "destructive",
+      });
     }
-    await onUpdateUsed(newCount);
   };
 
   const handleEditSubmit = useCallback(async (values: PackageFormValues & { name: string, totalPublications: string }) => {

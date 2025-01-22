@@ -71,7 +71,12 @@ const Index = () => {
 
   if (isLoading) {
     return (
-      <div className="loading-screen">
+      <div className="loading-screen" style={{
+        backgroundImage: 'url(https://i.imgur.com/w73iJfK.png)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat'
+      }}>
         <div className="content">
           <h1>Gestor de clientes</h1>
           <img 
