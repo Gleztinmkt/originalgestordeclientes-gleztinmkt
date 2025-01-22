@@ -121,7 +121,7 @@ export const ClientPackage = ({
         if (typeof clientData?.packages === 'string') {
           packages = JSON.parse(clientData.packages);
         } else if (Array.isArray(clientData?.packages)) {
-          packages = clientData.packages;
+          packages = clientData.packages as PackageData[];
         } else {
           packages = [];
         }
@@ -138,6 +138,9 @@ export const ClientPackage = ({
           .eq('id', clientId);
 
         if (updateError) throw updateError;
+
+        // Update the local reference for display
+        lastUpdateRef.current = new Date(timestamp);
       }
 
       await onUpdateUsed(newCount);
