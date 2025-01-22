@@ -36,6 +36,16 @@ import { es } from "date-fns/locale";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
+interface PackageData {
+  id: string;
+  name: string;
+  totalPublications: number;
+  usedPublications: number;
+  month: string;
+  paid: boolean;
+  last_update?: string;
+}
+
 interface ClientPackageProps {
   packageName: string;
   totalPublications: number;
@@ -49,12 +59,6 @@ interface ClientPackageProps {
   clientId: string;
   clientName: string;
   packageId: string;
-}
-
-interface PackageData {
-  id: string;
-  last_update?: string;
-  [key: string]: any;
 }
 
 export const ClientPackage = ({
@@ -117,13 +121,19 @@ export const ClientPackage = ({
 
         if (error) throw error;
 
-        let packages: PackageData[];
+        let packages: PackageData[] = [];
         if (typeof clientData?.packages === 'string') {
-          packages = JSON.parse(clientData.packages);
+          packages = JSON.parse(clientData.packages) as PackageData[];
         } else if (Array.isArray(clientData?.packages)) {
-          packages = clientData.packages as PackageData[];
-        } else {
-          packages = [];
+          packages = (clientData.packages as any[]).map(pkg => ({
+            id: pkg.id,
+            name: pkg.name,
+            totalPublications: pkg.totalPublications,
+            usedPublications: pkg.usedPublications,
+            month: pkg.month,
+            paid: pkg.paid,
+            last_update: pkg.last_update
+          }));
         }
 
         const updatedPackages = packages.map(pkg =>
