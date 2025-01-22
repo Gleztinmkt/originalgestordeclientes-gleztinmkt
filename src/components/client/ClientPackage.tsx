@@ -124,7 +124,7 @@ export const ClientPackage = ({
         let packages: PackageData[] = [];
         if (typeof clientData?.packages === 'string') {
           const parsedPackages = JSON.parse(clientData.packages);
-          packages = Array.isArray(parsedPackages) ? parsedPackages.map((pkg: any) => ({
+          packages = Array.isArray(parsedPackages) ? (parsedPackages as any[]).map(pkg => ({
             id: String(pkg.id || ''),
             name: String(pkg.name || ''),
             totalPublications: Number(pkg.totalPublications) || 0,
