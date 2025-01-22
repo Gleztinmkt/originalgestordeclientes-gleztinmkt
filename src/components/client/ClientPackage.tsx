@@ -35,6 +35,7 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { Json } from "@/integrations/supabase/types";
 
 interface PackageData {
   id: string;
@@ -110,7 +111,6 @@ export const ClientPackage = ({
 
   const handleUpdateUsed = async (newCount: number) => {
     try {
-      // Solo actualizar el timestamp si estamos incrementando el contador
       if (newCount > usedPublications) {
         const timestamp = new Date().toISOString();
         const { data: clientData, error } = await supabase
@@ -123,15 +123,16 @@ export const ClientPackage = ({
 
         let packages: PackageData[] = [];
         if (typeof clientData?.packages === 'string') {
-          packages = JSON.parse(clientData.packages) as PackageData[];
+          const parsedPackages = JSON.parse(clientData.packages);
+          packages = Array.isArray(parsedPackages) ? parsedPackages : [];
         } else if (Array.isArray(clientData?.packages)) {
           packages = (clientData.packages as any[]).map(pkg => ({
-            id: pkg.id,
-            name: pkg.name,
-            totalPublications: pkg.totalPublications,
-            usedPublications: pkg.usedPublications,
-            month: pkg.month,
-            paid: pkg.paid,
+            id: pkg.id || '',
+            name: pkg.name || '',
+            totalPublications: Number(pkg.totalPublications) || 0,
+            usedPublications: Number(pkg.usedPublications) || 0,
+            month: pkg.month || '',
+            paid: Boolean(pkg.paid),
             last_update: pkg.last_update
           }));
         }
@@ -144,12 +145,13 @@ export const ClientPackage = ({
 
         const { error: updateError } = await supabase
           .from('clients')
-          .update({ packages: updatedPackages })
+          .update({ 
+            packages: updatedPackages as unknown as Json[]
+          })
           .eq('id', clientId);
 
         if (updateError) throw updateError;
 
-        // Update the local reference for display
         lastUpdateRef.current = new Date(timestamp);
       }
 
