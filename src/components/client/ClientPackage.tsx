@@ -99,8 +99,8 @@ export const ClientPackage = ({
   }, []);
 
   const handleUpdateUsed = async (newCount: number) => {
-    // Solo actualizar el timestamp si estamos decrementando el contador
-    if (newCount < usedPublications) {
+    // Solo actualizar el timestamp si estamos incrementando el contador
+    if (newCount > usedPublications) {
       lastUpdateRef.current = new Date();
     }
     await onUpdateUsed(newCount);
