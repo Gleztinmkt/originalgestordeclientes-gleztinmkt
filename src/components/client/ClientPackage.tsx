@@ -79,11 +79,10 @@ export const ClientPackage = ({
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [lastUpdate, setLastUpdate] = useState<string | null>(null);
   const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const submissionCountRef = useRef(0);
 
-  // Fetch next publication and last update
+  // Fetch package data including last_update
   const { data: packageData } = useQuery({
     queryKey: ['package', clientId, packageId],
     queryFn: async () => {
@@ -97,37 +96,16 @@ export const ClientPackage = ({
 
       let packages: PackageData[] = [];
       if (typeof clientData?.packages === 'string') {
-        const parsedPackages = JSON.parse(clientData.packages);
-        packages = Array.isArray(parsedPackages) ? (parsedPackages as any[]).map(pkg => ({
-          id: String(pkg.id || ''),
-          name: String(pkg.name || ''),
-          totalPublications: Number(pkg.totalPublications) || 0,
-          usedPublications: Number(pkg.usedPublications) || 0,
-          month: String(pkg.month || ''),
-          paid: Boolean(pkg.paid),
-          last_update: pkg.last_update ? String(pkg.last_update) : undefined
-        })) : [];
+        packages = JSON.parse(clientData.packages);
       } else if (Array.isArray(clientData?.packages)) {
-        packages = (clientData.packages as any[]).map(pkg => ({
-          id: String(pkg.id || ''),
-          name: String(pkg.name || ''),
-          totalPublications: Number(pkg.totalPublications) || 0,
-          usedPublications: Number(pkg.usedPublications) || 0,
-          month: String(pkg.month || ''),
-          paid: Boolean(pkg.paid),
-          last_update: pkg.last_update ? String(pkg.last_update) : undefined
-        }));
+        packages = clientData.packages as PackageData[];
       }
 
-      const currentPackage = packages.find(pkg => pkg.id === packageId);
-      if (currentPackage?.last_update) {
-        setLastUpdate(currentPackage.last_update);
-      }
-
-      return currentPackage;
+      return packages.find(pkg => pkg.id === packageId);
     },
   });
 
+  // Fetch next publication
   const { data: nextPublication } = useQuery({
     queryKey: ['nextPublication', clientId, packageId],
     queryFn: async () => {
@@ -145,14 +123,6 @@ export const ClientPackage = ({
     },
   });
 
-  useEffect(() => {
-    return () => {
-      if (processingTimeoutRef.current) {
-        clearTimeout(processingTimeoutRef.current);
-      }
-    };
-  }, []);
-
   const handleUpdateUsed = async (newCount: number) => {
     try {
       if (newCount > usedPublications) {
@@ -167,26 +137,9 @@ export const ClientPackage = ({
 
         let packages: PackageData[] = [];
         if (typeof clientData?.packages === 'string') {
-          const parsedPackages = JSON.parse(clientData.packages);
-          packages = Array.isArray(parsedPackages) ? (parsedPackages as any[]).map(pkg => ({
-            id: String(pkg.id || ''),
-            name: String(pkg.name || ''),
-            totalPublications: Number(pkg.totalPublications) || 0,
-            usedPublications: Number(pkg.usedPublications) || 0,
-            month: String(pkg.month || ''),
-            paid: Boolean(pkg.paid),
-            last_update: pkg.last_update ? String(pkg.last_update) : undefined
-          })) : [];
+          packages = JSON.parse(clientData.packages);
         } else if (Array.isArray(clientData?.packages)) {
-          packages = (clientData.packages as any[]).map(pkg => ({
-            id: String(pkg.id || ''),
-            name: String(pkg.name || ''),
-            totalPublications: Number(pkg.totalPublications) || 0,
-            usedPublications: Number(pkg.usedPublications) || 0,
-            month: String(pkg.month || ''),
-            paid: Boolean(pkg.paid),
-            last_update: pkg.last_update ? String(pkg.last_update) : undefined
-          }));
+          packages = clientData.packages;
         }
 
         const updatedPackages = packages.map(pkg =>
@@ -203,8 +156,6 @@ export const ClientPackage = ({
           .eq('id', clientId);
 
         if (updateError) throw updateError;
-
-        setLastUpdate(timestamp);
       }
 
       await onUpdateUsed(newCount);
@@ -336,9 +287,9 @@ export const ClientPackage = ({
         />
         
         <div className="mt-4 space-y-4">
-          {lastUpdate && (
+          {packageData?.last_update && (
             <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-              <span>Últ. Actualización: {format(new Date(lastUpdate), "dd 'de' MMMM 'a las' HH:mm", { locale: es })}</span>
+              <span>Últ. Actualización: {format(new Date(packageData.last_update), "dd 'de' MMMM 'a las' HH:mm", { locale: es })}</span>
             </div>
           )}
 
