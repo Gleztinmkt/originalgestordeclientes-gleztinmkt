@@ -79,11 +79,55 @@ export const ClientPackage = ({
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [lastUpdate, setLastUpdate] = useState<string | null>(null);
   const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const submissionCountRef = useRef(0);
-  const lastUpdateRef = useRef<Date | null>(null);
 
-  // Fetch next publication
+  // Fetch next publication and last update
+  const { data: packageData } = useQuery({
+    queryKey: ['package', clientId, packageId],
+    queryFn: async () => {
+      const { data: clientData, error } = await supabase
+        .from('clients')
+        .select('packages')
+        .eq('id', clientId)
+        .single();
+
+      if (error) throw error;
+
+      let packages: PackageData[] = [];
+      if (typeof clientData?.packages === 'string') {
+        const parsedPackages = JSON.parse(clientData.packages);
+        packages = Array.isArray(parsedPackages) ? (parsedPackages as any[]).map(pkg => ({
+          id: String(pkg.id || ''),
+          name: String(pkg.name || ''),
+          totalPublications: Number(pkg.totalPublications) || 0,
+          usedPublications: Number(pkg.usedPublications) || 0,
+          month: String(pkg.month || ''),
+          paid: Boolean(pkg.paid),
+          last_update: pkg.last_update ? String(pkg.last_update) : undefined
+        })) : [];
+      } else if (Array.isArray(clientData?.packages)) {
+        packages = (clientData.packages as any[]).map(pkg => ({
+          id: String(pkg.id || ''),
+          name: String(pkg.name || ''),
+          totalPublications: Number(pkg.totalPublications) || 0,
+          usedPublications: Number(pkg.usedPublications) || 0,
+          month: String(pkg.month || ''),
+          paid: Boolean(pkg.paid),
+          last_update: pkg.last_update ? String(pkg.last_update) : undefined
+        }));
+      }
+
+      const currentPackage = packages.find(pkg => pkg.id === packageId);
+      if (currentPackage?.last_update) {
+        setLastUpdate(currentPackage.last_update);
+      }
+
+      return currentPackage;
+    },
+  });
+
   const { data: nextPublication } = useQuery({
     queryKey: ['nextPublication', clientId, packageId],
     queryFn: async () => {
@@ -160,7 +204,7 @@ export const ClientPackage = ({
 
         if (updateError) throw updateError;
 
-        lastUpdateRef.current = new Date(timestamp);
+        setLastUpdate(timestamp);
       }
 
       await onUpdateUsed(newCount);
@@ -292,9 +336,9 @@ export const ClientPackage = ({
         />
         
         <div className="mt-4 space-y-4">
-          {lastUpdateRef.current && (
+          {lastUpdate && (
             <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-              <span>Últ. Actualización: {format(lastUpdateRef.current, "MMM dd MMMM HH:mm", { locale: es })}</span>
+              <span>Últ. Actualización: {format(new Date(lastUpdate), "dd 'de' MMMM 'a las' HH:mm", { locale: es })}</span>
             </div>
           )}
 
