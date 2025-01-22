@@ -78,7 +78,7 @@ const Index = () => {
         backgroundRepeat: 'no-repeat'
       }}>
         <div className="content">
-          <h1>Gestor de clientes</h1>
+          <h1 className="text-white">Gestor de clientes</h1>
           <img 
             src="https://i.imgur.com/YvEDrAv.png" 
             alt="Gleztin Marketing Digital" 
