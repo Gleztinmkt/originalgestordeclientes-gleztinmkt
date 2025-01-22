@@ -68,6 +68,7 @@ export const ClientPackage = ({
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [lastUpdateTime, setLastUpdateTime] = useState(new Date());
   const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const submissionCountRef = useRef(0);
 
@@ -96,6 +97,11 @@ export const ClientPackage = ({
       }
     };
   }, []);
+
+  const handleUpdateUsed = async (newCount: number) => {
+    setLastUpdateTime(new Date());
+    await onUpdateUsed(newCount);
+  };
 
   const handleEditSubmit = useCallback(async (values: PackageFormValues & { name: string, totalPublications: string }) => {
     const currentSubmissionCount = ++submissionCountRef.current;
@@ -211,13 +217,13 @@ export const ClientPackage = ({
         <PackageCounter
           total={totalPublications}
           used={usedPublications}
-          onUpdateUsed={onUpdateUsed}
+          onUpdateUsed={handleUpdateUsed}
         />
         
         <div className="mt-4 space-y-4">
           {/* Last update timestamp */}
           <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-            <span>Últ. Actualización: {format(new Date(), "MMM dd MMMM HH:mm", { locale: es })}</span>
+            <span>Últ. Actualización: {format(lastUpdateTime, "MMM dd MMMM HH:mm", { locale: es })}</span>
           </div>
 
           {/* Next publication */}
