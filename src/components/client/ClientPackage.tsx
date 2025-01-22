@@ -109,7 +109,7 @@ export const ClientPackage = ({
           .eq('id', clientId)
           .single();
 
-        if (client?.packages) {
+        if (client?.packages && Array.isArray(client.packages)) {
           const updatedPackages = client.packages.map((pkg: any) =>
             pkg.id === packageId
               ? { ...pkg, last_update: timestamp }
