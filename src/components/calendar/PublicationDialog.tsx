@@ -39,6 +39,7 @@ export const PublicationDialog = ({
   const [description, setDescription] = useState(publication.description || "");
   const [copywriting, setCopywriting] = useState(publication.copywriting || "");
   const [designer, setDesigner] = useState(publication.designer || "no_designer");
+  const [status, setStatus] = useState(publication.status || "pending");
   const [links, setLinks] = useState<Array<{ label: string; url: string }>>(() => {
     if (!publication.links) return [];
     try {
@@ -63,6 +64,7 @@ export const PublicationDialog = ({
           copywriting,
           designer: designer === "no_designer" ? null : designer,
           links: JSON.stringify(links),
+          status
         })
         .eq('id', publication.id);
 
@@ -155,6 +157,25 @@ export const PublicationDialog = ({
                     <SelectItem value="reel">Reel</SelectItem>
                     <SelectItem value="carousel">Carrusel</SelectItem>
                     <SelectItem value="image">Imagen</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Estado</Label>
+                <Select 
+                  value={status} 
+                  onValueChange={setStatus}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar estado" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">Pendiente</SelectItem>
+                    <SelectItem value="in_progress">En progreso</SelectItem>
+                    <SelectItem value="review">En revisión</SelectItem>
+                    <SelectItem value="approved">Aprobado</SelectItem>
+                    <SelectItem value="published">Publicado</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
