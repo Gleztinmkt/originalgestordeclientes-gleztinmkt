@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef } from "react";
 import { Package, Edit, MoreVertical, Trash, Send } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PackageCounter } from "./PackageCounter";
@@ -97,9 +97,9 @@ export const ClientPackage = ({
 
       let packages: PackageData[] = [];
       if (typeof clientData?.packages === 'string') {
-        packages = JSON.parse(clientData.packages);
+        packages = JSON.parse(clientData.packages) as unknown as PackageData[];
       } else if (Array.isArray(clientData?.packages)) {
-        packages = clientData.packages as PackageData[];
+        packages = clientData.packages as unknown as PackageData[];
       }
 
       const currentPackage = packages.find(pkg => pkg.id === packageId);
@@ -125,9 +125,9 @@ export const ClientPackage = ({
 
         let packages: PackageData[] = [];
         if (typeof clientData?.packages === 'string') {
-          packages = JSON.parse(clientData.packages);
+          packages = JSON.parse(clientData.packages) as unknown as PackageData[];
         } else if (Array.isArray(clientData?.packages)) {
-          packages = clientData.packages as PackageData[];
+          packages = clientData.packages as unknown as PackageData[];
         }
 
         const updatedPackages = packages.map(pkg =>
@@ -278,17 +278,6 @@ export const ClientPackage = ({
           {lastUpdate && (
             <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
               <span>Últ. Actualización: {format(new Date(lastUpdate), "dd 'de' MMMM 'a las' HH:mm", { locale: es })}</span>
-            </div>
-          )}
-
-          {nextPublication && (
-            <div className="flex flex-col gap-1">
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Próxima publicación
-              </span>
-              <Badge variant="secondary" className="w-fit bg-red-500/10 text-red-500 dark:bg-red-500/20 dark:text-red-400">
-                {nextPublication.name}
-              </Badge>
             </div>
           )}
 
