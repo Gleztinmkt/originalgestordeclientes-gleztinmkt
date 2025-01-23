@@ -53,8 +53,12 @@ interface ClientPackageProps {
 
 interface PackageData {
   id: string;
+  name: string;
+  totalPublications: number;
+  usedPublications: number;
+  month: string;
+  paid: boolean;
   last_update?: string;
-  [key: string]: any;
 }
 
 export const ClientPackage = ({
@@ -76,7 +80,7 @@ export const ClientPackage = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const submissionCountRef = useRef(0);
-  const lastUpdateRef = useRef<Date | null>(null);
+  const [lastUpdate, setLastUpdate] = useState<string | null>(null);
 
   // Fetch next publication
   const { data: nextPublication } = useQuery({
@@ -95,6 +99,30 @@ export const ClientPackage = ({
       return data?.[0] || null;
     },
   });
+
+  // Fetch last update timestamp
+  const { data: packageData } = useQuery({
+    queryKey: ['packageLastUpdate', clientId, packageId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('clients')
+        .select('packages')
+        .eq('id', clientId)
+        .single();
+
+      if (error) throw error;
+
+      const packages = data?.packages as PackageData[];
+      const currentPackage = packages?.find(pkg => pkg.id === packageId);
+      return currentPackage?.last_update || null;
+    },
+  });
+
+  useEffect(() => {
+    if (packageData) {
+      setLastUpdate(packageData);
+    }
+  }, [packageData]);
 
   useEffect(() => {
     return () => {
@@ -117,15 +145,7 @@ export const ClientPackage = ({
 
         if (error) throw error;
 
-        let packages: PackageData[];
-        if (typeof clientData?.packages === 'string') {
-          packages = JSON.parse(clientData.packages);
-        } else if (Array.isArray(clientData?.packages)) {
-          packages = clientData.packages;
-        } else {
-          packages = [];
-        }
-
+        const packages = clientData?.packages as PackageData[];
         const updatedPackages = packages.map(pkg =>
           pkg.id === packageId
             ? { ...pkg, last_update: timestamp }
@@ -138,6 +158,7 @@ export const ClientPackage = ({
           .eq('id', clientId);
 
         if (updateError) throw updateError;
+        setLastUpdate(timestamp);
       }
 
       await onUpdateUsed(newCount);
@@ -270,9 +291,9 @@ export const ClientPackage = ({
         
         <div className="mt-4 space-y-4">
           {/* Last update timestamp */}
-          {lastUpdateRef.current && (
-            <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-              <span>Últ. Actualización: {format(lastUpdateRef.current, "MMM dd MMMM HH:mm", { locale: es })}</span>
+          {lastUpdate && (
+            <div className="text-sm text-gray-600 dark:text-gray-400">
+              Últ. Actualización: {format(new Date(lastUpdate), "dd MMM HH:mm", { locale: es })}
             </div>
           )}
 
