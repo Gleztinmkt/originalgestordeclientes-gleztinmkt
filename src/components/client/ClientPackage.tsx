@@ -160,7 +160,6 @@ export const ClientPackage = ({
   const handleEditSubmit = useCallback(async (values: PackageFormValues & { name: string, totalPublications: string }) => {
     const currentSubmissionCount = ++submissionCountRef.current;
     
-    // Prevenir múltiples envíos
     if (isProcessing) {
       console.log('Submission blocked - already processing');
       return;
@@ -174,15 +173,10 @@ export const ClientPackage = ({
 
     try {
       setIsProcessing(true);
-
-      // Agregar un pequeño delay para asegurar que el estado se actualice
       await new Promise(resolve => setTimeout(resolve, 100));
-
       await onEditPackage(values);
-      
       console.log(`Submission #${currentSubmissionCount} completed successfully`);
       
-      // Usar timeout para asegurar que el estado se actualice correctamente
       processingTimeoutRef.current = setTimeout(() => {
         if (currentSubmissionCount === submissionCountRef.current) {
           setIsEditDialogOpen(false);
