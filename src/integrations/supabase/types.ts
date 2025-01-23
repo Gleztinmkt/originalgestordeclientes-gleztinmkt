@@ -118,6 +118,7 @@ export type Database = {
           facebook: string | null
           id: string
           instagram: string | null
+          last_post: string | null
           marketing_info: string | null
           name: string
           packages: Json | null
@@ -133,6 +134,7 @@ export type Database = {
           facebook?: string | null
           id?: string
           instagram?: string | null
+          last_post?: string | null
           marketing_info?: string | null
           name: string
           packages?: Json | null
@@ -148,6 +150,7 @@ export type Database = {
           facebook?: string | null
           id?: string
           instagram?: string | null
+          last_post?: string | null
           marketing_info?: string | null
           name?: string
           packages?: Json | null

@@ -5,6 +5,8 @@ import { PackageCounter } from "./PackageCounter";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Json } from "@/integrations/supabase/types";
 import {
   DropdownMenu,
@@ -32,9 +34,6 @@ import {
 import { AddPackageForm, PackageFormValues } from "./AddPackageForm";
 import { toast } from "@/hooks/use-toast";
 import { PublicationCalendarDialog } from "./PublicationCalendarDialog";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
-import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 interface PackageData {
@@ -44,7 +43,6 @@ interface PackageData {
   usedPublications: number;
   month: string;
   paid: boolean;
-  last_update?: string;
 }
 
 interface ClientPackageProps {
@@ -79,140 +77,42 @@ export const ClientPackage = ({
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [lastUpdate, setLastUpdate] = useState<string | null>(null);
+  const [lastPost, setLastPost] = useState<string>("");
   const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const submissionCountRef = useRef(0);
 
-  // Fetch next publication and last update
-  const { data: packageData } = useQuery({
-    queryKey: ['package', clientId, packageId],
-    queryFn: async () => {
+  // Fetch last post on component mount
+  useEffect(() => {
+    const fetchLastPost = async () => {
       const { data: clientData, error } = await supabase
         .from('clients')
-        .select('packages')
+        .select('last_post')
         .eq('id', clientId)
         .single();
 
-      if (error) throw error;
-
-      let packages: PackageData[] = [];
-      if (typeof clientData?.packages === 'string') {
-        const parsedPackages = JSON.parse(clientData.packages);
-        packages = Array.isArray(parsedPackages) ? (parsedPackages as any[]).map(pkg => ({
-          id: String(pkg.id || ''),
-          name: String(pkg.name || ''),
-          totalPublications: Number(pkg.totalPublications) || 0,
-          usedPublications: Number(pkg.usedPublications) || 0,
-          month: String(pkg.month || ''),
-          paid: Boolean(pkg.paid),
-          last_update: pkg.last_update ? String(pkg.last_update) : undefined
-        })) : [];
-      } else if (Array.isArray(clientData?.packages)) {
-        packages = (clientData.packages as any[]).map(pkg => ({
-          id: String(pkg.id || ''),
-          name: String(pkg.name || ''),
-          totalPublications: Number(pkg.totalPublications) || 0,
-          usedPublications: Number(pkg.usedPublications) || 0,
-          month: String(pkg.month || ''),
-          paid: Boolean(pkg.paid),
-          last_update: pkg.last_update ? String(pkg.last_update) : undefined
-        }));
-      }
-
-      const currentPackage = packages.find(pkg => pkg.id === packageId);
-      if (currentPackage?.last_update) {
-        setLastUpdate(currentPackage.last_update);
-      }
-
-      return currentPackage;
-    },
-  });
-
-  const { data: nextPublication } = useQuery({
-    queryKey: ['nextPublication', clientId, packageId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('publications')
-        .select('*')
-        .eq('client_id', clientId)
-        .eq('package_id', packageId)
-        .gte('date', new Date().toISOString())
-        .order('date', { ascending: true })
-        .limit(1);
-
-      if (error) throw error;
-      return data?.[0] || null;
-    },
-  });
-
-  useEffect(() => {
-    return () => {
-      if (processingTimeoutRef.current) {
-        clearTimeout(processingTimeoutRef.current);
+      if (!error && clientData) {
+        setLastPost(clientData.last_post || "");
       }
     };
-  }, []);
 
-  const handleUpdateUsed = async (newCount: number) => {
+    fetchLastPost();
+  }, [clientId]);
+
+  // Update last post in database
+  const handleLastPostChange = async (value: string) => {
+    setLastPost(value);
     try {
-      if (newCount > usedPublications) {
-        const timestamp = new Date().toISOString();
-        const { data: clientData, error } = await supabase
-          .from('clients')
-          .select('packages')
-          .eq('id', clientId)
-          .single();
+      const { error } = await supabase
+        .from('clients')
+        .update({ last_post: value })
+        .eq('id', clientId);
 
-        if (error) throw error;
-
-        let packages: PackageData[] = [];
-        if (typeof clientData?.packages === 'string') {
-          const parsedPackages = JSON.parse(clientData.packages);
-          packages = Array.isArray(parsedPackages) ? (parsedPackages as any[]).map(pkg => ({
-            id: String(pkg.id || ''),
-            name: String(pkg.name || ''),
-            totalPublications: Number(pkg.totalPublications) || 0,
-            usedPublications: Number(pkg.usedPublications) || 0,
-            month: String(pkg.month || ''),
-            paid: Boolean(pkg.paid),
-            last_update: pkg.last_update ? String(pkg.last_update) : undefined
-          })) : [];
-        } else if (Array.isArray(clientData?.packages)) {
-          packages = (clientData.packages as any[]).map(pkg => ({
-            id: String(pkg.id || ''),
-            name: String(pkg.name || ''),
-            totalPublications: Number(pkg.totalPublications) || 0,
-            usedPublications: Number(pkg.usedPublications) || 0,
-            month: String(pkg.month || ''),
-            paid: Boolean(pkg.paid),
-            last_update: pkg.last_update ? String(pkg.last_update) : undefined
-          }));
-        }
-
-        const updatedPackages = packages.map(pkg =>
-          pkg.id === packageId
-            ? { ...pkg, last_update: timestamp }
-            : pkg
-        );
-
-        const { error: updateError } = await supabase
-          .from('clients')
-          .update({ 
-            packages: updatedPackages as unknown as Json[]
-          })
-          .eq('id', clientId);
-
-        if (updateError) throw updateError;
-
-        setLastUpdate(timestamp);
-      }
-
-      await onUpdateUsed(newCount);
+      if (error) throw error;
     } catch (error) {
-      console.error('Error updating package:', error);
+      console.error('Error updating last post:', error);
       toast({
         title: "Error",
-        description: "No se pudo actualizar el paquete",
+        description: "No se pudo actualizar el último post",
         variant: "destructive",
       });
     }
@@ -221,7 +121,6 @@ export const ClientPackage = ({
   const handleEditSubmit = useCallback(async (values: PackageFormValues & { name: string, totalPublications: string }) => {
     const currentSubmissionCount = ++submissionCountRef.current;
     
-    // Prevenir múltiples envíos
     if (isProcessing) {
       console.log('Submission blocked - already processing');
       return;
@@ -235,15 +134,11 @@ export const ClientPackage = ({
 
     try {
       setIsProcessing(true);
-
-      // Agregar un pequeño delay para asegurar que el estado se actualice
       await new Promise(resolve => setTimeout(resolve, 100));
-
       await onEditPackage(values);
       
       console.log(`Submission #${currentSubmissionCount} completed successfully`);
       
-      // Usar timeout para asegurar que el estado se actualice correctamente
       processingTimeoutRef.current = setTimeout(() => {
         if (currentSubmissionCount === submissionCountRef.current) {
           setIsEditDialogOpen(false);
@@ -332,26 +227,22 @@ export const ClientPackage = ({
         <PackageCounter
           total={totalPublications}
           used={usedPublications}
-          onUpdateUsed={handleUpdateUsed}
+          onUpdateUsed={onUpdateUsed}
         />
         
         <div className="mt-4 space-y-4">
-          {lastUpdate && (
-            <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-              <span>Últ. Actualización: {format(new Date(lastUpdate), "dd 'de' MMMM 'a las' HH:mm", { locale: es })}</span>
-            </div>
-          )}
-
-          {nextPublication && (
-            <div className="flex flex-col gap-1">
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Próxima publicación
-              </span>
-              <Badge variant="secondary" className="w-fit bg-red-500/10 text-red-500 dark:bg-red-500/20 dark:text-red-400">
-                {nextPublication.name}
-              </Badge>
-            </div>
-          )}
+          <div className="space-y-2">
+            <Label htmlFor="lastPost" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              Último Post:
+            </Label>
+            <Input
+              id="lastPost"
+              value={lastPost}
+              onChange={(e) => handleLastPostChange(e.target.value)}
+              className="w-full"
+              placeholder="Ingrese el último post..."
+            />
+          </div>
 
           <div className="flex gap-2">
             {usedPublications === totalPublications && (
