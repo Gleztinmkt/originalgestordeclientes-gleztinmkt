@@ -39,7 +39,7 @@ export const PublicationDialog = ({
   const [description, setDescription] = useState(publication.description || "");
   const [copywriting, setCopywriting] = useState(publication.copywriting || "");
   const [designer, setDesigner] = useState(publication.designer || "no_designer");
-  const [status, setStatus] = useState(publication.status || "pending");
+  const [status, setStatus] = useState(publication.status || "needs_recording");
   const [links, setLinks] = useState<Array<{ label: string; url: string }>>(() => {
     if (!publication.links) return [];
     try {
@@ -171,9 +171,10 @@ export const PublicationDialog = ({
                     <SelectValue placeholder="Seleccionar estado" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="pending">Pendiente</SelectItem>
-                    <SelectItem value="in_progress">En progreso</SelectItem>
-                    <SelectItem value="review">En revisión</SelectItem>
+                    <SelectItem value="needs_recording">Falta grabar</SelectItem>
+                    <SelectItem value="needs_editing">Falta editar</SelectItem>
+                    <SelectItem value="in_editing">En edición</SelectItem>
+                    <SelectItem value="in_review">En revisión</SelectItem>
                     <SelectItem value="approved">Aprobado</SelectItem>
                     <SelectItem value="published">Publicado</SelectItem>
                   </SelectContent>
