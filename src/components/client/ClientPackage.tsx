@@ -83,7 +83,7 @@ export const ClientPackage = ({
   const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const submissionCountRef = useRef(0);
 
-  // Fetch next publication and last update
+  // Fetch package data including last_update
   const { data: packageData } = useQuery({
     queryKey: ['package', clientId, packageId],
     queryFn: async () => {
@@ -97,26 +97,9 @@ export const ClientPackage = ({
 
       let packages: PackageData[] = [];
       if (typeof clientData?.packages === 'string') {
-        const parsedPackages = JSON.parse(clientData.packages);
-        packages = Array.isArray(parsedPackages) ? (parsedPackages as any[]).map(pkg => ({
-          id: String(pkg.id || ''),
-          name: String(pkg.name || ''),
-          totalPublications: Number(pkg.totalPublications) || 0,
-          usedPublications: Number(pkg.usedPublications) || 0,
-          month: String(pkg.month || ''),
-          paid: Boolean(pkg.paid),
-          last_update: pkg.last_update ? String(pkg.last_update) : undefined
-        })) : [];
+        packages = JSON.parse(clientData.packages);
       } else if (Array.isArray(clientData?.packages)) {
-        packages = (clientData.packages as any[]).map(pkg => ({
-          id: String(pkg.id || ''),
-          name: String(pkg.name || ''),
-          totalPublications: Number(pkg.totalPublications) || 0,
-          usedPublications: Number(pkg.usedPublications) || 0,
-          month: String(pkg.month || ''),
-          paid: Boolean(pkg.paid),
-          last_update: pkg.last_update ? String(pkg.last_update) : undefined
-        }));
+        packages = clientData.packages as PackageData[];
       }
 
       const currentPackage = packages.find(pkg => pkg.id === packageId);
@@ -127,31 +110,6 @@ export const ClientPackage = ({
       return currentPackage;
     },
   });
-
-  const { data: nextPublication } = useQuery({
-    queryKey: ['nextPublication', clientId, packageId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('publications')
-        .select('*')
-        .eq('client_id', clientId)
-        .eq('package_id', packageId)
-        .gte('date', new Date().toISOString())
-        .order('date', { ascending: true })
-        .limit(1);
-
-      if (error) throw error;
-      return data?.[0] || null;
-    },
-  });
-
-  useEffect(() => {
-    return () => {
-      if (processingTimeoutRef.current) {
-        clearTimeout(processingTimeoutRef.current);
-      }
-    };
-  }, []);
 
   const handleUpdateUsed = async (newCount: number) => {
     try {
@@ -167,26 +125,9 @@ export const ClientPackage = ({
 
         let packages: PackageData[] = [];
         if (typeof clientData?.packages === 'string') {
-          const parsedPackages = JSON.parse(clientData.packages);
-          packages = Array.isArray(parsedPackages) ? (parsedPackages as any[]).map(pkg => ({
-            id: String(pkg.id || ''),
-            name: String(pkg.name || ''),
-            totalPublications: Number(pkg.totalPublications) || 0,
-            usedPublications: Number(pkg.usedPublications) || 0,
-            month: String(pkg.month || ''),
-            paid: Boolean(pkg.paid),
-            last_update: pkg.last_update ? String(pkg.last_update) : undefined
-          })) : [];
+          packages = JSON.parse(clientData.packages);
         } else if (Array.isArray(clientData?.packages)) {
-          packages = (clientData.packages as any[]).map(pkg => ({
-            id: String(pkg.id || ''),
-            name: String(pkg.name || ''),
-            totalPublications: Number(pkg.totalPublications) || 0,
-            usedPublications: Number(pkg.usedPublications) || 0,
-            month: String(pkg.month || ''),
-            paid: Boolean(pkg.paid),
-            last_update: pkg.last_update ? String(pkg.last_update) : undefined
-          }));
+          packages = clientData.packages as PackageData[];
         }
 
         const updatedPackages = packages.map(pkg =>
@@ -197,9 +138,7 @@ export const ClientPackage = ({
 
         const { error: updateError } = await supabase
           .from('clients')
-          .update({ 
-            packages: updatedPackages as unknown as Json[]
-          })
+          .update({ packages: updatedPackages as unknown as Json })
           .eq('id', clientId);
 
         if (updateError) throw updateError;
