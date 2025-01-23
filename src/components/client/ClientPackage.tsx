@@ -83,7 +83,6 @@ export const ClientPackage = ({
   const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const submissionCountRef = useRef(0);
 
-  // Fetch package data including last_update
   const { data: packageData } = useQuery({
     queryKey: ['package', clientId, packageId],
     queryFn: async () => {
