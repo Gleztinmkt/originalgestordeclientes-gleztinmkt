@@ -35,6 +35,7 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { Json } from "@/integrations/supabase/types";
 
 interface ClientPackageProps {
   packageName: string;
@@ -43,7 +44,7 @@ interface ClientPackageProps {
   month: string;
   paid: boolean;
   onUpdateUsed: (newCount: number) => void;
-  onUpdatePaid: (paid: boolean) => void;
+  onUpdatePaid: (paid: boolean) => Promise<void>;
   onEditPackage: (values: PackageFormValues & { name: string, totalPublications: string }) => Promise<void>;
   onDeletePackage?: () => void;
   clientId: string;
@@ -112,8 +113,8 @@ export const ClientPackage = ({
 
       if (error) throw error;
 
-      const packages = data?.packages as PackageData[];
-      const currentPackage = packages?.find(pkg => pkg.id === packageId);
+      const packages = (data?.packages as unknown as PackageData[]) || [];
+      const currentPackage = packages.find(pkg => pkg.id === packageId);
       return currentPackage?.last_update || null;
     },
   });
@@ -145,7 +146,7 @@ export const ClientPackage = ({
 
         if (error) throw error;
 
-        const packages = clientData?.packages as PackageData[];
+        const packages = (clientData?.packages as unknown as PackageData[]) || [];
         const updatedPackages = packages.map(pkg =>
           pkg.id === packageId
             ? { ...pkg, last_update: timestamp }
@@ -154,7 +155,7 @@ export const ClientPackage = ({
 
         const { error: updateError } = await supabase
           .from('clients')
-          .update({ packages: updatedPackages })
+          .update({ packages: updatedPackages as unknown as Json })
           .eq('id', clientId);
 
         if (updateError) throw updateError;
