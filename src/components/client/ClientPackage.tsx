@@ -37,6 +37,16 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Json } from "@/integrations/supabase/types";
 
+interface PackageData {
+  id: string;
+  name: string;
+  totalPublications: number;
+  usedPublications: number;
+  month: string;
+  paid: boolean;
+  last_update?: string | null;
+}
+
 interface ClientPackageProps {
   packageName: string;
   totalPublications: number;
@@ -50,16 +60,6 @@ interface ClientPackageProps {
   clientId: string;
   clientName: string;
   packageId: string;
-}
-
-interface PackageData {
-  id: string;
-  name: string;
-  totalPublications: number;
-  usedPublications: number;
-  month: string;
-  paid: boolean;
-  last_update?: string;
 }
 
 export const ClientPackage = ({
