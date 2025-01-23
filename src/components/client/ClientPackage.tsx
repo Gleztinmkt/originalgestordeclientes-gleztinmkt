@@ -146,7 +146,7 @@ export const ClientPackage = ({
 
         if (error) throw error;
 
-        const packages = (clientData?.packages as unknown as PackageData[]) || [];
+        const packages = ((clientData?.packages as unknown) as PackageData[]) || [];
         const updatedPackages = packages.map(pkg =>
           pkg.id === packageId
             ? { ...pkg, last_update: timestamp }
@@ -155,7 +155,7 @@ export const ClientPackage = ({
 
         const { error: updateError } = await supabase
           .from('clients')
-          .update({ packages: updatedPackages as unknown as Json })
+          .update({ packages: (updatedPackages as unknown) as Json })
           .eq('id', clientId);
 
         if (updateError) throw updateError;
