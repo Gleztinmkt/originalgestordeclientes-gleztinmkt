@@ -14,6 +14,10 @@ import { useClientManager } from "@/features/clients/useClientManager";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "@/hooks/use-toast";
 import { CalendarView } from "@/components/calendar/CalendarView";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { LogOut } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const Index = () => {
   const { tasks, loadTasks, addTask, deleteTask, updateTask, completeTask } = useTaskManager();
@@ -31,6 +35,25 @@ const Index = () => {
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const isMobile = useIsMobile();
+
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      toast({
+        title: "Sesión cerrada",
+        description: "Has cerrado sesión exitosamente"
+      });
+      navigate("/login");
+    } catch (error: any) {
+      toast({
+        title: "Error al cerrar sesión",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  };
 
   useEffect(() => {
     const init = async () => {
@@ -112,6 +135,14 @@ const Index = () => {
             />
           </div>
           <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleLogout}
+              className="hover:bg-gray-200 dark:hover:bg-gray-800"
+            >
+              <LogOut className="h-5 w-5" />
+            </Button>
             <ThemeToggle />
           </div>
         </div>

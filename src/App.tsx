@@ -3,14 +3,40 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { GoogleOAuthProvider } from '@react-oauth/google';
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { useEffect, useState } from 'react';
+import { supabase } from "@/integrations/supabase/client";
 import Index from "./pages/Index";
-import React from 'react';
+import Login from "./pages/Login";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <React.StrictMode>
+const App = () => {
+  const [session, setSession] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setLoading(false);
+    });
+
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  if (loading) {
+    return null;
+  }
+
+  return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <TooltipProvider>
@@ -18,13 +44,20 @@ const App = () => (
             <Toaster />
             <Sonner />
             <Routes>
-              <Route path="/" element={<Index />} />
+              <Route
+                path="/login"
+                element={session ? <Navigate to="/" replace /> : <Login />}
+              />
+              <Route
+                path="/"
+                element={session ? <Index /> : <Navigate to="/login" replace />}
+              />
             </Routes>
           </GoogleOAuthProvider>
         </TooltipProvider>
       </BrowserRouter>
     </QueryClientProvider>
-  </React.StrictMode>
-);
+  );
+};
 
 export default App;
