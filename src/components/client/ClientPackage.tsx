@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { Package, Edit, MoreVertical, Trash, Send } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PackageCounter } from "./PackageCounter";
@@ -83,6 +83,7 @@ export const ClientPackage = ({
   const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const submissionCountRef = useRef(0);
 
+  // Fetch next publication and last update
   const { data: packageData } = useQuery({
     queryKey: ['package', clientId, packageId],
     queryFn: async () => {
@@ -96,9 +97,26 @@ export const ClientPackage = ({
 
       let packages: PackageData[] = [];
       if (typeof clientData?.packages === 'string') {
-        packages = JSON.parse(clientData.packages) as unknown as PackageData[];
+        const parsedPackages = JSON.parse(clientData.packages);
+        packages = Array.isArray(parsedPackages) ? (parsedPackages as any[]).map(pkg => ({
+          id: String(pkg.id || ''),
+          name: String(pkg.name || ''),
+          totalPublications: Number(pkg.totalPublications) || 0,
+          usedPublications: Number(pkg.usedPublications) || 0,
+          month: String(pkg.month || ''),
+          paid: Boolean(pkg.paid),
+          last_update: pkg.last_update ? String(pkg.last_update) : undefined
+        })) : [];
       } else if (Array.isArray(clientData?.packages)) {
-        packages = clientData.packages as unknown as PackageData[];
+        packages = (clientData.packages as any[]).map(pkg => ({
+          id: String(pkg.id || ''),
+          name: String(pkg.name || ''),
+          totalPublications: Number(pkg.totalPublications) || 0,
+          usedPublications: Number(pkg.usedPublications) || 0,
+          month: String(pkg.month || ''),
+          paid: Boolean(pkg.paid),
+          last_update: pkg.last_update ? String(pkg.last_update) : undefined
+        }));
       }
 
       const currentPackage = packages.find(pkg => pkg.id === packageId);
@@ -109,6 +127,31 @@ export const ClientPackage = ({
       return currentPackage;
     },
   });
+
+  const { data: nextPublication } = useQuery({
+    queryKey: ['nextPublication', clientId, packageId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('publications')
+        .select('*')
+        .eq('client_id', clientId)
+        .eq('package_id', packageId)
+        .gte('date', new Date().toISOString())
+        .order('date', { ascending: true })
+        .limit(1);
+
+      if (error) throw error;
+      return data?.[0] || null;
+    },
+  });
+
+  useEffect(() => {
+    return () => {
+      if (processingTimeoutRef.current) {
+        clearTimeout(processingTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleUpdateUsed = async (newCount: number) => {
     try {
@@ -124,9 +167,26 @@ export const ClientPackage = ({
 
         let packages: PackageData[] = [];
         if (typeof clientData?.packages === 'string') {
-          packages = JSON.parse(clientData.packages) as unknown as PackageData[];
+          const parsedPackages = JSON.parse(clientData.packages);
+          packages = Array.isArray(parsedPackages) ? (parsedPackages as any[]).map(pkg => ({
+            id: String(pkg.id || ''),
+            name: String(pkg.name || ''),
+            totalPublications: Number(pkg.totalPublications) || 0,
+            usedPublications: Number(pkg.usedPublications) || 0,
+            month: String(pkg.month || ''),
+            paid: Boolean(pkg.paid),
+            last_update: pkg.last_update ? String(pkg.last_update) : undefined
+          })) : [];
         } else if (Array.isArray(clientData?.packages)) {
-          packages = clientData.packages as unknown as PackageData[];
+          packages = (clientData.packages as any[]).map(pkg => ({
+            id: String(pkg.id || ''),
+            name: String(pkg.name || ''),
+            totalPublications: Number(pkg.totalPublications) || 0,
+            usedPublications: Number(pkg.usedPublications) || 0,
+            month: String(pkg.month || ''),
+            paid: Boolean(pkg.paid),
+            last_update: pkg.last_update ? String(pkg.last_update) : undefined
+          }));
         }
 
         const updatedPackages = packages.map(pkg =>
@@ -137,7 +197,9 @@ export const ClientPackage = ({
 
         const { error: updateError } = await supabase
           .from('clients')
-          .update({ packages: updatedPackages as unknown as Json })
+          .update({ 
+            packages: updatedPackages as unknown as Json[]
+          })
           .eq('id', clientId);
 
         if (updateError) throw updateError;
@@ -159,6 +221,7 @@ export const ClientPackage = ({
   const handleEditSubmit = useCallback(async (values: PackageFormValues & { name: string, totalPublications: string }) => {
     const currentSubmissionCount = ++submissionCountRef.current;
     
+    // Prevenir múltiples envíos
     if (isProcessing) {
       console.log('Submission blocked - already processing');
       return;
@@ -172,10 +235,15 @@ export const ClientPackage = ({
 
     try {
       setIsProcessing(true);
+
+      // Agregar un pequeño delay para asegurar que el estado se actualice
       await new Promise(resolve => setTimeout(resolve, 100));
+
       await onEditPackage(values);
+      
       console.log(`Submission #${currentSubmissionCount} completed successfully`);
       
+      // Usar timeout para asegurar que el estado se actualice correctamente
       processingTimeoutRef.current = setTimeout(() => {
         if (currentSubmissionCount === submissionCountRef.current) {
           setIsEditDialogOpen(false);
@@ -271,6 +339,17 @@ export const ClientPackage = ({
           {lastUpdate && (
             <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
               <span>Últ. Actualización: {format(new Date(lastUpdate), "dd 'de' MMMM 'a las' HH:mm", { locale: es })}</span>
+            </div>
+          )}
+
+          {nextPublication && (
+            <div className="flex flex-col gap-1">
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Próxima publicación
+              </span>
+              <Badge variant="secondary" className="w-fit bg-red-500/10 text-red-500 dark:bg-red-500/20 dark:text-red-400">
+                {nextPublication.name}
+              </Badge>
             </div>
           )}
 
