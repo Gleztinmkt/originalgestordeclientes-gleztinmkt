@@ -54,6 +54,7 @@ interface Notification {
   task_id?: string;
   actions?: NotificationAction[];
   clients?: NotificationClient;
+  read?: boolean;
 }
 
 interface NotificationCenterProps {
@@ -93,6 +94,27 @@ export const NotificationCenter = ({
     setupRealtimeSubscription();
     setupTaskReminders();
   }, []);
+
+  useEffect(() => {
+    if (isOpen) {
+      markNotificationsAsRead();
+    }
+  }, [isOpen]);
+
+  const markNotificationsAsRead = async () => {
+    try {
+      const { error } = await supabase
+        .from('notifications')
+        .update({ read: true })
+        .is('deleted_at', null)
+        .is('read', false);
+
+      if (error) throw error;
+      refetch();
+    } catch (error) {
+      console.error('Error marking notifications as read:', error);
+    }
+  };
 
   const setupRealtimeSubscription = () => {
     const channel = supabase
@@ -291,7 +313,6 @@ export const NotificationCenter = ({
     }
   };
 
-  // Group notifications by date
   const groupedNotifications = notifications.reduce((groups, notification) => {
     const date = format(notification.date, 'yyyy-MM-dd');
     if (!groups[date]) {
@@ -301,7 +322,7 @@ export const NotificationCenter = ({
     return groups;
   }, {} as Record<string, Notification[]>);
 
-  const unreadCount = notifications.length;
+  const unreadCount = notifications.filter(notification => !notification.read).length;
 
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
