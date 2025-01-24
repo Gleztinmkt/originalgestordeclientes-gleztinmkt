@@ -94,11 +94,12 @@ export const BulkMessageButton = ({
 
     filteredClients.forEach(client => {
       if (client.phone) {
-        const message = `Hola ${client.name}, los valores actualizados los vas a encontrar en el siguiente link: \n\n` +
-          `*Link*: https://gleztin.com.ar/index.php/valores-de-redes-sociales/ \n\n` +
+        const message = `Hola ${client.name}, a partir de mañana 25 van a entrar en vigencia los valores actualizados. Los mismos los vas a encontrar en el siguiente link:\n\n` +
+          `*Link*: https://gleztin.com.ar/index.php/valores-de-redes-sociales/\n\n` +
           `*Contraseña*: Gleztin (con mayúscula al inicio)\n\n` +
-          `Todos los *25 de cada mes* vamos a actualizar los valores \n\n` +
-          `Que tengan un buen dia\n` +
+          `*En caso de no haber abonado el paquete anterior se cobrará con los valores actuales.*\n\n` +
+          `Todos los *25 de cada mes* vamos a actualizar los valores en este mismo link.\n\n` +
+          `Que tengas un buen día\n\n` +
           `ATTE: Gleztin Marketing Digital`;
         const whatsappUrl = `https://wa.me/${client.phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
         window.open(whatsappUrl, '_blank');
