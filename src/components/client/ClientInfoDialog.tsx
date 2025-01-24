@@ -41,6 +41,7 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
     generalInfo: "",
     meetings: [],
     socialNetworks: [],
+    branding: "", // Inicializado el nuevo campo
   });
   const [isLoading, setIsLoading] = useState(false);
   const [open, setOpen] = useState(false);
@@ -59,7 +60,8 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
         socialNetworks: info.socialNetworks.map(network => ({
           platform: network.platform || "instagram",
           username: network.username || ""
-        }))
+        })),
+        branding: info.branding || "", // Agregado el nuevo campo
       };
 
       console.log('Intentando guardar:', clientInfoData);

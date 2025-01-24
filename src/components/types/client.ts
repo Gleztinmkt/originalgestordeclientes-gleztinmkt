@@ -12,6 +12,7 @@ export interface ClientInfo {
     notes: string;
   }>;
   socialNetworks: SocialNetwork[];
+  branding?: string; // Nuevo campo agregado
 }
 
 export interface Client {

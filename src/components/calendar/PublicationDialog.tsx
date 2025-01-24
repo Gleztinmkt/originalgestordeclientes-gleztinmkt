@@ -1,119 +1,61 @@
+import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Card, CardContent } from "@/components/ui/card";
-import { ExternalLink, Link as LinkIcon, Plus, Trash2, Instagram } from "lucide-react";
-import { useState } from "react";
-import { Publication } from "../client/publication/types";
-import { Client } from "../types/client";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { z } from "zod";
+import { Publication, PublicationFormValues } from "./types";
 
 interface PublicationDialogProps {
-  publication: Publication;
-  client?: Client;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  publication: Publication;
+  client: any; // Replace with actual client type
   onUpdate: () => void;
-  onDelete?: () => void;
+  onDelete: () => void;
   designers?: any[];
 }
 
+const formSchema = z.object({
+  name: z.string().min(1, "El nombre es requerido"),
+  type: z.enum(['reel', 'carousel', 'image']),
+  date: z.date(),
+  description: z.string().optional(),
+  links: z.string().optional(),
+});
+
 export const PublicationDialog = ({ 
-  publication, 
+  open,
+  onOpenChange,
+  publication,
   client,
-  open, 
-  onOpenChange, 
   onUpdate,
   onDelete,
   designers = []
 }: PublicationDialogProps) => {
-  const [name, setName] = useState(publication.name);
-  const [type, setType] = useState<'reel' | 'carousel' | 'image'>(publication.type as 'reel' | 'carousel' | 'image');
-  const [description, setDescription] = useState(publication.description || "");
-  const [copywriting, setCopywriting] = useState(publication.copywriting || "");
-  const [designer, setDesigner] = useState(publication.designer || "no_designer");
-  const [status, setStatus] = useState(
-    publication.needs_recording ? 'needs_recording' :
-    publication.needs_editing ? 'needs_editing' :
-    publication.in_editing ? 'in_editing' :
-    publication.in_review ? 'in_review' :
-    publication.approved ? 'approved' :
-    publication.is_published ? 'published' : 'needs_recording'
-  );
-  const [links, setLinks] = useState<Array<{ label: string; url: string }>>(() => {
-    if (!publication.links) return [];
-    try {
-      return JSON.parse(publication.links);
-    } catch (e) {
-      console.error('Error parsing links:', e);
-      return [];
-    }
-  });
-  const [newLinkLabel, setNewLinkLabel] = useState("");
-  const [newLinkUrl, setNewLinkUrl] = useState("");
-
-  const { data: userRole } = useQuery({
-    queryKey: ['userRole'],
-    queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return null;
-
-      const { data: roleData } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .single();
-
-      return roleData?.role || null;
-    },
+  const [form, setForm] = useState({
+    name: publication.name,
+    type: publication.type,
+    date: new Date(publication.date),
+    description: publication.description || "",
+    links: publication.links || "",
   });
 
-  const isDesigner = userRole === 'designer';
-
-  const handleAddLink = () => {
-    if (newLinkLabel && newLinkUrl) {
-      setLinks([...links, { label: newLinkLabel, url: newLinkUrl }]);
-      setNewLinkLabel("");
-      setNewLinkUrl("");
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
-      const updates: any = {};
-      
-      if (isDesigner) {
-        updates.needs_recording = status === 'needs_recording';
-        updates.needs_editing = status === 'needs_editing';
-        updates.in_editing = status === 'in_editing';
-        updates.in_review = status === 'in_review';
-        updates.approved = status === 'approved';
-        updates.is_published = status === 'published';
-      } else {
-        updates.name = name;
-        updates.type = type;
-        updates.description = description;
-        updates.copywriting = copywriting;
-        updates.designer = designer === "no_designer" ? null : designer;
-        updates.links = JSON.stringify(links);
-        updates.needs_recording = status === 'needs_recording';
-        updates.needs_editing = status === 'needs_editing';
-        updates.in_editing = status === 'in_editing';
-        updates.in_review = status === 'in_review';
-        updates.approved = status === 'approved';
-        updates.is_published = status === 'published';
-      }
+      const autoLinks = getAutoLinks();
+      const combinedLinks = values.links 
+        ? `${autoLinks}\n${values.links}` 
+        : autoLinks;
 
       const { error } = await supabase
         .from('publications')
-        .update(updates)
+        .update({
+          ...values,
+          links: combinedLinks,
+        })
         .eq('id', publication.id);
 
       if (error) throw error;
@@ -124,218 +66,127 @@ export const PublicationDialog = ({
       });
 
       onUpdate();
+      onOpenChange(false);
     } catch (error) {
       console.error('Error updating publication:', error);
       toast({
         title: "Error",
-        description: "No se pudo actualizar la publicación. Por favor, intenta de nuevo.",
+        description: "No se pudo actualizar la publicación.",
         variant: "destructive",
       });
     }
   };
 
+  const getAutoLinks = () => {
+    const links: string[] = [];
+    
+    // Agregar Instagram si existe
+    if (client?.instagram) {
+      links.push(`Instagram: ${client.instagram}`);
+    }
+    
+    // Agregar Branding si existe
+    if (client?.clientInfo?.branding) {
+      links.push(`Branding: ${client.clientInfo.branding}`);
+    }
+    
+    return links.join('\n');
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange} modal={false}>
-      <DialogContent className="max-w-[600px] max-h-[80vh]">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>Editar Publicación</DialogTitle>
         </DialogHeader>
-        <ScrollArea className="h-[calc(80vh-120px)] pr-4">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Nombre de la publicación</Label>
-              <Input
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                disabled={isDesigner}
-                readOnly={isDesigner}
-              />
-            </div>
-
-            {client?.instagram && (
-              <div className="space-y-2">
-                <Label>Perfil de Instagram</Label>
-                <div className="flex items-center gap-2 bg-secondary p-2 rounded">
-                  <Instagram className="h-4 w-4 text-pink-500" />
-                  <span className="flex-1">{client.instagram}</span>
-                  <a
-                    href={`https://instagram.com/${client.instagram.replace('@', '')}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-500 hover:text-blue-700"
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                  </a>
-                </div>
-              </div>
+        <Form onSubmit={handleSubmit} className="space-y-4">
+          <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Nombre</FormLabel>
+                <FormControl>
+                  <Textarea {...field} placeholder="Nombre de la publicación" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
             )}
-
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label>Tipo de contenido</Label>
-                <Select 
-                  value={type} 
-                  onValueChange={(value: 'reel' | 'carousel' | 'image') => setType(value)}
-                  disabled={isDesigner}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar tipo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="reel">Reel</SelectItem>
-                    <SelectItem value="carousel">Carrusel</SelectItem>
-                    <SelectItem value="image">Imagen</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Estado</Label>
-                <Select 
-                  value={status} 
-                  onValueChange={setStatus}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar estado" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="needs_recording">Falta grabar</SelectItem>
-                    <SelectItem value="needs_editing">Falta editar</SelectItem>
-                    <SelectItem value="in_editing">En edición</SelectItem>
-                    <SelectItem value="in_review">En revisión</SelectItem>
-                    <SelectItem value="approved">Aprobado</SelectItem>
-                    <SelectItem value="published">Publicado</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Diseñador asignado</Label>
-                <Select 
-                  value={designer} 
-                  onValueChange={setDesigner}
-                  disabled={isDesigner}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar diseñador" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="no_designer">Sin diseñador</SelectItem>
-                    {designers.map((d) => (
-                      <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Links</Label>
-              <Card>
-                <CardContent className="p-4 space-y-4">
-                  {!isDesigner && (
-                    <div className="flex gap-2">
-                      <div className="flex-1">
-                        <Input
-                          placeholder="Etiqueta"
-                          value={newLinkLabel}
-                          onChange={(e) => setNewLinkLabel(e.target.value)}
-                        />
+          />
+          <FormField
+            control={form.control}
+            name="type"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Tipo</FormLabel>
+                <FormControl>
+                  <select {...field}>
+                    <option value="reel">Reel</option>
+                    <option value="carousel">Carrusel</option>
+                    <option value="image">Imagen</option>
+                  </select>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="date"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Fecha</FormLabel>
+                <FormControl>
+                  <input type="date" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="description"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Descripción</FormLabel>
+                <FormControl>
+                  <Textarea {...field} placeholder="Descripción de la publicación" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="links"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Links</FormLabel>
+                <FormControl>
+                  <div className="space-y-2">
+                    {client?.instagram && (
+                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                        Instagram: {client.instagram}
                       </div>
-                      <div className="flex-1">
-                        <Input
-                          placeholder="URL"
-                          value={newLinkUrl}
-                          onChange={(e) => setNewLinkUrl(e.target.value)}
-                        />
+                    )}
+                    {client?.clientInfo?.branding && (
+                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                        Branding: {client.clientInfo.branding}
                       </div>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={handleAddLink}
-                      >
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  )}
-                  <ScrollArea className="h-[100px]">
-                    <div className="space-y-2">
-                      {links.map((link, index) => (
-                        <div key={index} className="flex items-center gap-2 bg-secondary p-2 rounded">
-                          {!isDesigner && (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                const newLinks = [...links];
-                                newLinks.splice(index, 1);
-                                setLinks(newLinks);
-                              }}
-                              className="text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
-                          <span className="flex-1 truncate">{link.label}</span>
-                          <a
-                            href={link.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-500 hover:text-blue-700"
-                          >
-                            <ExternalLink className="h-4 w-4" />
-                          </a>
-                        </div>
-                      ))}
-                    </div>
-                  </ScrollArea>
-                </CardContent>
-              </Card>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="copywriting">Copywriting</Label>
-              <Textarea
-                id="copywriting"
-                value={copywriting}
-                onChange={(e) => setCopywriting(e.target.value)}
-                className="min-h-[150px]"
-                disabled={isDesigner}
-                readOnly={isDesigner}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="description">Descripción</Label>
-              <Textarea
-                id="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                className="min-h-[200px]"
-                disabled={isDesigner}
-                readOnly={isDesigner}
-              />
-            </div>
-
-            <div className="flex justify-end gap-2 pt-4">
-              {onDelete && !isDesigner && (
-                <Button 
-                  type="button"
-                  variant="destructive"
-                  onClick={onDelete}
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Eliminar
-                </Button>
-              )}
-              <Button type="submit">
-                Guardar cambios
-              </Button>
-            </div>
-          </form>
-        </ScrollArea>
+                    )}
+                    <Textarea
+                      {...field}
+                      placeholder="Enlaces adicionales..."
+                      className="min-h-[100px]"
+                    />
+                  </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <Button type="submit">Guardar</Button>
+        </Form>
       </DialogContent>
     </Dialog>
   );
