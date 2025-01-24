@@ -13,6 +13,7 @@ import {
   Clock,
   User
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import {
   ContextMenu,
   ContextMenuContent,
