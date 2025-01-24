@@ -41,6 +41,7 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
     generalInfo: "",
     meetings: [],
     socialNetworks: [],
+    branding: "", // Añadimos el campo branding
   });
   const [isLoading, setIsLoading] = useState(false);
   const [open, setOpen] = useState(false);
@@ -49,7 +50,6 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
     try {
       setIsLoading(true);
       
-      // Asegurarnos que los datos son serializables
       const clientInfoData = {
         generalInfo: info.generalInfo || "",
         meetings: info.meetings.map(meeting => ({
@@ -59,7 +59,8 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
         socialNetworks: info.socialNetworks.map(network => ({
           platform: network.platform || "instagram",
           username: network.username || ""
-        }))
+        })),
+        branding: info.branding || "", // Incluimos branding en los datos a guardar
       };
 
       console.log('Intentando guardar:', clientInfoData);
@@ -118,7 +119,7 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
           Info
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[600px] w-[95vw] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[600px] w-[95vw] max-h-[90vh] overflow-y-auto dark:bg-gray-800 dark:text-white">
         <DialogHeader>
           <DialogTitle>Información del Cliente</DialogTitle>
           <DialogDescription>
@@ -138,8 +139,17 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
                 placeholder="Información general del cliente..."
                 value={info.generalInfo}
                 onChange={(e) => setInfo(prev => ({ ...prev, generalInfo: e.target.value }))}
-                className="min-h-[200px]"
+                className="min-h-[200px] dark:bg-gray-700 dark:text-white"
               />
+              <div className="space-y-2">
+                <label className="text-sm font-medium dark:text-gray-200">Branding</label>
+                <Input
+                  placeholder="URL del branding..."
+                  value={info.branding}
+                  onChange={(e) => setInfo(prev => ({ ...prev, branding: e.target.value }))}
+                  className="dark:bg-gray-700 dark:text-white"
+                />
+              </div>
             </div>
           </TabsContent>
 
@@ -210,6 +220,7 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
               ))}
             </div>
           </TabsContent>
+
         </Tabs>
         <Button onClick={handleSave} className="mt-4 w-full" disabled={isLoading}>
           {isLoading ? "Guardando..." : "Guardar Cambios"}

@@ -12,6 +12,7 @@ export interface ClientInfo {
     notes: string;
   }>;
   socialNetworks: SocialNetwork[];
+  branding?: string; // Añadimos el campo branding como opcional
 }
 
 export interface Client {
