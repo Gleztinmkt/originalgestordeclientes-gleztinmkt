@@ -36,12 +36,12 @@ export const UserManagement = () => {
 
       const { data: profiles } = await supabase
         .from('profiles')
-        .select('id, full_name, email');
+        .select('id, full_name');
 
       return roles?.map(roleData => ({
         id: roleData.user_id,
         role: roleData.role,
-        email: profiles?.find(p => p.id === roleData.user_id)?.email || 'No email'
+        email: roleData.user_id // We'll use the user_id as a placeholder since we can't get the email directly
       })) || [];
     },
   });
@@ -55,7 +55,10 @@ export const UserManagement = () => {
         email,
         password,
         options: {
-          emailRedirect: window.location.origin
+          emailRedirectTo: window.location.origin,
+          data: {
+            full_name: email.split('@')[0] // Use part of email as initial name
+          }
         }
       });
 
