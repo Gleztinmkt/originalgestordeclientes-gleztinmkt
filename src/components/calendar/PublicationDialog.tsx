@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
-import { ExternalLink, Link as LinkIcon, Plus, Trash2 } from "lucide-react";
+import { ExternalLink, Link as LinkIcon, Plus, Trash2, Instagram } from "lucide-react";
 import { useState } from "react";
 import { Publication } from "../client/publication/types";
 import { Client } from "../types/client";
@@ -152,6 +152,24 @@ export const PublicationDialog = ({
                 readOnly={isDesigner}
               />
             </div>
+
+            {client?.instagram && (
+              <div className="space-y-2">
+                <Label>Perfil de Instagram</Label>
+                <div className="flex items-center gap-2 bg-secondary p-2 rounded">
+                  <Instagram className="h-4 w-4 text-pink-500" />
+                  <span className="flex-1">{client.instagram}</span>
+                  <a
+                    href={`https://instagram.com/${client.instagram.replace('@', '')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-500 hover:text-blue-700"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                  </a>
+                </div>
+              </div>
+            )}
 
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
