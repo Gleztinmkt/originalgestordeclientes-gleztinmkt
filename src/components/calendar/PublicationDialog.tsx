@@ -12,6 +12,7 @@ import { Publication } from "../client/publication/types";
 import { Client } from "../types/client";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 
 type PublicationType = "reel" | "carousel" | "image";
 
@@ -52,20 +53,57 @@ export const PublicationDialog = ({
   const [newLinkLabel, setNewLinkLabel] = useState("");
   const [newLinkUrl, setNewLinkUrl] = useState("");
 
+  // Fetch user role
+  const { data: userRole } = useQuery({
+    queryKey: ['userRole'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+
+      const { data: roleData } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .single();
+
+      return roleData?.role || null;
+    },
+  });
+
+  const isDesigner = userRole === 'designer';
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const updates: any = {};
+      
+      // Designers can only update status-related fields
+      if (isDesigner) {
+        updates.needs_recording = status === 'needs_recording';
+        updates.needs_editing = status === 'needs_editing';
+        updates.in_editing = status === 'in_editing';
+        updates.in_review = status === 'in_review';
+        updates.approved = status === 'approved';
+        updates.is_published = status === 'published';
+      } else {
+        // Admins can update all fields
+        updates.name = name;
+        updates.type = type;
+        updates.description = description;
+        updates.copywriting = copywriting;
+        updates.designer = designer === "no_designer" ? null : designer;
+        updates.links = JSON.stringify(links);
+        updates.needs_recording = status === 'needs_recording';
+        updates.needs_editing = status === 'needs_editing';
+        updates.in_editing = status === 'in_editing';
+        updates.in_review = status === 'in_review';
+        updates.approved = status === 'approved';
+        updates.is_published = status === 'published';
+      }
+
       const { error } = await supabase
         .from('publications')
-        .update({
-          name,
-          type,
-          description,
-          copywriting,
-          designer: designer === "no_designer" ? null : designer,
-          links: JSON.stringify(links),
-          status
-        })
+        .update(updates)
         .eq('id', publication.id);
 
       if (error) throw error;
@@ -86,46 +124,6 @@ export const PublicationDialog = ({
     }
   };
 
-  const addLink = () => {
-    if (newLinkUrl && newLinkLabel) {
-      setLinks([...links, { label: newLinkLabel, url: newLinkUrl }]);
-      setNewLinkLabel("");
-      setNewLinkUrl("");
-    }
-  };
-
-  const removeLink = (index: number) => {
-    const newLinks = [...links];
-    newLinks.splice(index, 1);
-    setLinks(newLinks);
-  };
-
-  const handleDesignerRemove = async () => {
-    try {
-      const { error } = await supabase
-        .from('publications')
-        .update({ designer: null })
-        .eq('id', publication.id);
-
-      if (error) throw error;
-
-      setDesigner("no_designer");
-      onUpdate();
-      
-      toast({
-        title: "Diseñador removido",
-        description: "El diseñador ha sido removido de la publicación.",
-      });
-    } catch (error) {
-      console.error('Error removing designer:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo remover el diseñador.",
-        variant: "destructive",
-      });
-    }
-  };
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[600px] max-h-[80vh]">
@@ -140,6 +138,7 @@ export const PublicationDialog = ({
                 id="name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                disabled={isDesigner}
               />
             </div>
 
@@ -149,6 +148,7 @@ export const PublicationDialog = ({
                 <Select 
                   value={type} 
                   onValueChange={(value: PublicationType) => setType(value)}
+                  disabled={isDesigner}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Seleccionar tipo" />
@@ -187,6 +187,7 @@ export const PublicationDialog = ({
                   <Select 
                     value={designer} 
                     onValueChange={setDesigner}
+                    disabled={isDesigner}
                   >
                     <SelectTrigger className="flex-1">
                       <SelectValue placeholder="Seleccionar diseñador" />
@@ -198,91 +199,98 @@ export const PublicationDialog = ({
                       ))}
                     </SelectContent>
                   </Select>
-                  {designer !== "no_designer" && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={handleDesignerRemove}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  )}
                 </div>
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label>Links</Label>
-              <Card>
-                <CardContent className="p-4 space-y-4">
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Etiqueta del link"
-                      value={newLinkLabel}
-                      onChange={(e) => setNewLinkLabel(e.target.value)}
-                    />
-                    <Input
-                      placeholder="URL"
-                      value={newLinkUrl}
-                      onChange={(e) => setNewLinkUrl(e.target.value)}
-                    />
-                    <Button type="button" onClick={addLink}>
-                      <LinkIcon className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <ScrollArea className="h-[100px]">
-                    <div className="space-y-2">
-                      {links.map((link, index) => (
-                        <div key={index} className="flex items-center gap-2 bg-secondary p-2 rounded">
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeLink(index)}
-                            className="text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                          <span className="flex-1 truncate">{link.label}</span>
-                          <a
-                            href={link.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-500 hover:text-blue-700"
-                          >
-                            <ExternalLink className="h-4 w-4" />
-                          </a>
+            {!isDesigner && (
+              <>
+                <div className="space-y-2">
+                  <Label>Links</Label>
+                  <Card>
+                    <CardContent className="p-4 space-y-4">
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="Etiqueta del link"
+                          value={newLinkLabel}
+                          onChange={(e) => setNewLinkLabel(e.target.value)}
+                        />
+                        <Input
+                          placeholder="URL"
+                          value={newLinkUrl}
+                          onChange={(e) => setNewLinkUrl(e.target.value)}
+                        />
+                        <Button 
+                          type="button" 
+                          onClick={() => {
+                            if (newLinkUrl && newLinkLabel) {
+                              setLinks([...links, { label: newLinkLabel, url: newLinkUrl }]);
+                              setNewLinkLabel("");
+                              setNewLinkUrl("");
+                            }
+                          }}
+                        >
+                          <LinkIcon className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <ScrollArea className="h-[100px]">
+                        <div className="space-y-2">
+                          {links.map((link, index) => (
+                            <div key={index} className="flex items-center gap-2 bg-secondary p-2 rounded">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  const newLinks = [...links];
+                                  newLinks.splice(index, 1);
+                                  setLinks(newLinks);
+                                }}
+                                className="text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                              <span className="flex-1 truncate">{link.label}</span>
+                              <a
+                                href={link.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-500 hover:text-blue-700"
+                              >
+                                <ExternalLink className="h-4 w-4" />
+                              </a>
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
-                  </ScrollArea>
-                </CardContent>
-              </Card>
-            </div>
+                      </ScrollArea>
+                    </CardContent>
+                  </Card>
+                </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="copywriting">Copywriting</Label>
-              <Textarea
-                id="copywriting"
-                value={copywriting}
-                onChange={(e) => setCopywriting(e.target.value)}
-                className="min-h-[150px]"
-              />
-            </div>
+                <div className="space-y-2">
+                  <Label htmlFor="copywriting">Copywriting</Label>
+                  <Textarea
+                    id="copywriting"
+                    value={copywriting}
+                    onChange={(e) => setCopywriting(e.target.value)}
+                    className="min-h-[150px]"
+                  />
+                </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="description">Descripción</Label>
-              <Textarea
-                id="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                className="min-h-[200px]"
-              />
-            </div>
+                <div className="space-y-2">
+                  <Label htmlFor="description">Descripción</Label>
+                  <Textarea
+                    id="description"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    className="min-h-[200px]"
+                  />
+                </div>
+              </>
+            )}
 
             <div className="flex justify-end gap-2 pt-4">
-              {onDelete && (
+              {onDelete && !isDesigner && (
                 <Button 
                   type="button"
                   variant="destructive"
