@@ -6,15 +6,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
-import { ExternalLink, Link as LinkIcon, Trash2 } from "lucide-react";
+import { ExternalLink, Link as LinkIcon, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Publication } from "../client/publication/types";
 import { Client } from "../types/client";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-
-type PublicationType = "reel" | "carousel" | "image";
 
 interface PublicationDialogProps {
   publication: Publication;
@@ -36,11 +34,18 @@ export const PublicationDialog = ({
   designers = []
 }: PublicationDialogProps) => {
   const [name, setName] = useState(publication.name);
-  const [type, setType] = useState<PublicationType>(publication.type as PublicationType);
+  const [type, setType] = useState(publication.type);
   const [description, setDescription] = useState(publication.description || "");
   const [copywriting, setCopywriting] = useState(publication.copywriting || "");
   const [designer, setDesigner] = useState(publication.designer || "no_designer");
-  const [status, setStatus] = useState(publication.status || "needs_recording");
+  const [status, setStatus] = useState(
+    publication.needs_recording ? 'needs_recording' :
+    publication.needs_editing ? 'needs_editing' :
+    publication.in_editing ? 'in_editing' :
+    publication.in_review ? 'in_review' :
+    publication.approved ? 'approved' :
+    publication.is_published ? 'published' : 'needs_recording'
+  );
   const [links, setLinks] = useState<Array<{ label: string; url: string }>>(() => {
     if (!publication.links) return [];
     try {
@@ -50,8 +55,9 @@ export const PublicationDialog = ({
       return [];
     }
   });
+  const [newLinkLabel, setNewLinkLabel] = useState("");
+  const [newLinkUrl, setNewLinkUrl] = useState("");
 
-  // Fetch user role
   const { data: userRole } = useQuery({
     queryKey: ['userRole'],
     queryFn: async () => {
@@ -70,12 +76,19 @@ export const PublicationDialog = ({
 
   const isDesigner = userRole === 'designer';
 
+  const handleAddLink = () => {
+    if (newLinkLabel && newLinkUrl) {
+      setLinks([...links, { label: newLinkLabel, url: newLinkUrl }]);
+      setNewLinkLabel("");
+      setNewLinkUrl("");
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       const updates: any = {};
       
-      // Designers can only update status-related fields
       if (isDesigner) {
         updates.needs_recording = status === 'needs_recording';
         updates.needs_editing = status === 'needs_editing';
@@ -84,7 +97,6 @@ export const PublicationDialog = ({
         updates.approved = status === 'approved';
         updates.is_published = status === 'published';
       } else {
-        // Admins can update all fields
         updates.name = name;
         updates.type = type;
         updates.description = description;
@@ -146,7 +158,7 @@ export const PublicationDialog = ({
                 <Label>Tipo de contenido</Label>
                 <Select 
                   value={type} 
-                  onValueChange={(value: PublicationType) => setType(value)}
+                  onValueChange={setType}
                   disabled={isDesigner}
                 >
                   <SelectTrigger>
@@ -182,23 +194,21 @@ export const PublicationDialog = ({
 
               <div className="space-y-2">
                 <Label>Diseñador asignado</Label>
-                <div className="flex gap-2">
-                  <Select 
-                    value={designer} 
-                    onValueChange={setDesigner}
-                    disabled={isDesigner}
-                  >
-                    <SelectTrigger className="flex-1">
-                      <SelectValue placeholder="Seleccionar diseñador" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="no_designer">Sin diseñador</SelectItem>
-                      {designers.map((d) => (
-                        <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                <Select 
+                  value={designer} 
+                  onValueChange={setDesigner}
+                  disabled={isDesigner}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar diseñador" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="no_designer">Sin diseñador</SelectItem>
+                    {designers.map((d) => (
+                      <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
@@ -206,6 +216,31 @@ export const PublicationDialog = ({
               <Label>Links</Label>
               <Card>
                 <CardContent className="p-4 space-y-4">
+                  {!isDesigner && (
+                    <div className="flex gap-2">
+                      <div className="flex-1">
+                        <Input
+                          placeholder="Etiqueta"
+                          value={newLinkLabel}
+                          onChange={(e) => setNewLinkLabel(e.target.value)}
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <Input
+                          placeholder="URL"
+                          value={newLinkUrl}
+                          onChange={(e) => setNewLinkUrl(e.target.value)}
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleAddLink}
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
                   <ScrollArea className="h-[100px]">
                     <div className="space-y-2">
                       {links.map((link, index) => (
