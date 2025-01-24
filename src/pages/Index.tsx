@@ -8,6 +8,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { TrashDialog } from "@/components/trash/TrashDialog";
 import { NotificationCenter } from "@/components/NotificationCenter";
+import { UserManagement } from "@/components/UserManagement";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTaskManager } from "@/features/tasks/useTaskManager";
 import { useClientManager } from "@/features/clients/useClientManager";
@@ -18,6 +19,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 
 const Index = () => {
   const { tasks, loadTasks, addTask, deleteTask, updateTask, completeTask } = useTaskManager();
@@ -35,8 +37,24 @@ const Index = () => {
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const isMobile = useIsMobile();
-
   const navigate = useNavigate();
+
+  // Fetch user role
+  const { data: userRole } = useQuery({
+    queryKey: ['userRole'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+
+      const { data: roleData } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .single();
+
+      return roleData?.role || null;
+    },
+  });
 
   const handleLogout = async () => {
     try {
@@ -58,7 +76,6 @@ const Index = () => {
   useEffect(() => {
     const init = async () => {
       await Promise.all([loadClients(), loadTasks()]);
-      // Simulate minimum loading time for better UX
       setTimeout(() => setIsLoading(false), 1000);
     };
     init();
@@ -123,11 +140,15 @@ const Index = () => {
       <div className="min-h-screen p-4 md:p-8 space-y-6 md:space-y-8 dark:bg-gray-900 dark:text-white transition-colors duration-200">
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-2">
-            <TrashDialog />
-            <NotificationCenter 
-              onSendPaymentReminders={() => {}}
-              onCompleteTask={() => {}}
-            />
+            {userRole === 'admin' && (
+              <>
+                <TrashDialog />
+                <NotificationCenter 
+                  onSendPaymentReminders={() => {}}
+                  onCompleteTask={() => {}}
+                />
+              </>
+            )}
             <img 
               src="https://i.imgur.com/YvEDrAv.png" 
               alt="Gleztin Marketing Digital" 
@@ -135,6 +156,7 @@ const Index = () => {
             />
           </div>
           <div className="flex items-center gap-2">
+            {userRole === 'admin' && <UserManagement />}
             <Button
               variant="ghost"
               size="icon"
@@ -156,51 +178,59 @@ const Index = () => {
           </p>
         </div>
         
-        <Tabs defaultValue="clients" className="w-full max-w-[1200px] mx-auto">
-          <TabsList className={`grid w-full grid-cols-3 rounded-2xl p-1 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm ${isMobile ? 'sticky top-2 z-10' : ''}`}>
-            <TabsTrigger value="clients" className="rounded-xl data-[state=active]:bg-black data-[state=active]:text-white dark:data-[state=active]:bg-white dark:data-[state=active]:text-black">
-              Clientes
-            </TabsTrigger>
-            <TabsTrigger value="tasks" className="rounded-xl data-[state=active]:bg-black data-[state=active]:text-white dark:data-[state=active]:bg-white dark:data-[state=active]:text-black">
-              Tareas
-            </TabsTrigger>
+        <Tabs defaultValue={userRole === 'admin' ? "clients" : "calendar"} className="w-full max-w-[1200px] mx-auto">
+          <TabsList className={`grid w-full ${userRole === 'admin' ? 'grid-cols-3' : 'grid-cols-1'} rounded-2xl p-1 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm ${isMobile ? 'sticky top-2 z-10' : ''}`}>
+            {userRole === 'admin' && (
+              <>
+                <TabsTrigger value="clients" className="rounded-xl data-[state=active]:bg-black data-[state=active]:text-white dark:data-[state=active]:bg-white dark:data-[state=active]:text-black">
+                  Clientes
+                </TabsTrigger>
+                <TabsTrigger value="tasks" className="rounded-xl data-[state=active]:bg-black data-[state=active]:text-white dark:data-[state=active]:bg-white dark:data-[state=active]:text-black">
+                  Tareas
+                </TabsTrigger>
+              </>
+            )}
             <TabsTrigger value="calendar" className="rounded-xl data-[state=active]:bg-black data-[state=active]:text-white dark:data-[state=active]:bg-white dark:data-[state=active]:text-black">
               Calendario
             </TabsTrigger>
           </TabsList>
           <div className="section-container mt-6">
-            <TabsContent value="clients" className="space-y-4">
-              <ClientForm onAddClient={addClient} />
-              <ClientList 
-                clients={clients} 
-                onDeleteClient={deleteClient}
-                onUpdateClient={updateClient}
-                onUpdatePackage={updatePackage}
-                onAddPackage={addPackage}
-                tasks={tasks}
-                onAddTask={addTask}
-                onDeleteTask={deleteTask}
-                onCompleteTask={handleCompleteTask}
-                onUpdateTask={updateTask}
-              />
-            </TabsContent>
-            <TabsContent value="tasks" className="space-y-4">
-              <TaskFilter 
-                clients={clients}
-                onFilterChange={handleFilterChange}
-              />
-              <TaskInput 
-                onAddTask={addTask}
-                clients={clients}
-              />
-              <TaskList 
-                tasks={filteredTasks}
-                onDeleteTask={deleteTask}
-                onCompleteTask={handleCompleteTask}
-                onUpdateTask={updateTask}
-                clients={clients}
-              />
-            </TabsContent>
+            {userRole === 'admin' && (
+              <>
+                <TabsContent value="clients" className="space-y-4">
+                  <ClientForm onAddClient={addClient} />
+                  <ClientList 
+                    clients={clients} 
+                    onDeleteClient={deleteClient}
+                    onUpdateClient={updateClient}
+                    onUpdatePackage={updatePackage}
+                    onAddPackage={addPackage}
+                    tasks={tasks}
+                    onAddTask={addTask}
+                    onDeleteTask={deleteTask}
+                    onCompleteTask={handleCompleteTask}
+                    onUpdateTask={updateTask}
+                  />
+                </TabsContent>
+                <TabsContent value="tasks" className="space-y-4">
+                  <TaskFilter 
+                    clients={clients}
+                    onFilterChange={handleFilterChange}
+                  />
+                  <TaskInput 
+                    onAddTask={addTask}
+                    clients={clients}
+                  />
+                  <TaskList 
+                    tasks={filteredTasks}
+                    onDeleteTask={deleteTask}
+                    onCompleteTask={handleCompleteTask}
+                    onUpdateTask={updateTask}
+                    clients={clients}
+                  />
+                </TabsContent>
+              </>
+            )}
             <TabsContent value="calendar">
               <CalendarView clients={clients} />
             </TabsContent>
