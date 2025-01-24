@@ -96,7 +96,7 @@
 .dark [role="dialog"] input,
 .dark [role="dialog"] textarea,
 .dark [role="dialog"] select {
-  @apply text-white bg-gray-800 border-gray-700;
+  @apply text-white;
 }
 
 .dark [role="dialog"] label {
