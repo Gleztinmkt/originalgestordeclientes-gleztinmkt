@@ -20,6 +20,8 @@ interface PublicationDialogProps {
   publication?: Publication;
   client?: Client;
   onUpdate?: () => void;
+  onDelete?: () => Promise<void>;
+  designers?: any[];
 }
 
 interface FormValues {
@@ -30,12 +32,28 @@ interface FormValues {
   links: string;
 }
 
+const getAutoLinks = (client?: Client) => {
+  const links: string[] = [];
+  
+  if (client?.instagram) {
+    links.push(`Instagram: ${client.instagram}`);
+  }
+  
+  if (client?.clientInfo?.branding) {
+    links.push(`Branding: ${client.clientInfo.branding}`);
+  }
+  
+  return links.join('\n');
+};
+
 export const PublicationDialog = ({
   open,
   onOpenChange,
   publication,
   client,
-  onUpdate
+  onUpdate,
+  onDelete,
+  designers
 }: PublicationDialogProps) => {
   const form = useForm<FormValues>({
     defaultValues: {
@@ -43,23 +61,9 @@ export const PublicationDialog = ({
       type: publication?.type as 'reel' | 'carousel' | 'image' || "image",
       date: publication?.date ? new Date(publication.date) : new Date(),
       description: publication?.description || "",
-      links: publication?.links || getAutoLinks()
+      links: publication?.links || getAutoLinks(client)
     }
   });
-
-  const getAutoLinks = () => {
-    const links: string[] = [];
-    
-    if (client?.instagram) {
-      links.push(`Instagram: ${client.instagram}`);
-    }
-    
-    if (client?.clientInfo?.branding) {
-      links.push(`Branding: ${client.clientInfo.branding}`);
-    }
-    
-    return links.join('\n');
-  };
 
   const onSubmit = async (values: FormValues) => {
     try {
@@ -197,7 +201,14 @@ export const PublicationDialog = ({
               )}
             />
 
-            <Button type="submit">Guardar cambios</Button>
+            <div className="flex justify-between">
+              <Button type="submit">Guardar cambios</Button>
+              {onDelete && (
+                <Button type="button" variant="destructive" onClick={onDelete}>
+                  Eliminar
+                </Button>
+              )}
+            </div>
           </form>
         </Form>
       </DialogContent>
