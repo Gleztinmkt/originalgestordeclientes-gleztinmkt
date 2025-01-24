@@ -34,7 +34,7 @@ export const PublicationDialog = ({
   designers = []
 }: PublicationDialogProps) => {
   const [name, setName] = useState(publication.name);
-  const [type, setType] = useState(publication.type);
+  const [type, setType] = useState<'reel' | 'carousel' | 'image'>(publication.type as 'reel' | 'carousel' | 'image');
   const [description, setDescription] = useState(publication.description || "");
   const [copywriting, setCopywriting] = useState(publication.copywriting || "");
   const [designer, setDesigner] = useState(publication.designer || "no_designer");
@@ -158,7 +158,7 @@ export const PublicationDialog = ({
                 <Label>Tipo de contenido</Label>
                 <Select 
                   value={type} 
-                  onValueChange={setType}
+                  onValueChange={(value: 'reel' | 'carousel' | 'image') => setType(value)}
                   disabled={isDesigner}
                 >
                   <SelectTrigger>
