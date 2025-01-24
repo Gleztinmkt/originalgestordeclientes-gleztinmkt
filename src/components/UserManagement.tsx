@@ -30,17 +30,19 @@ export const UserManagement = () => {
   const { data: users = [], refetch } = useQuery({
     queryKey: ['users'],
     queryFn: async () => {
-      const { data: { users }, error } = await supabase.auth.admin.listUsers();
-      if (error) throw error;
-
       const { data: roles } = await supabase
         .from('user_roles')
-        .select('*');
+        .select('user_id, role');
 
-      return users.map(user => ({
-        ...user,
-        role: roles?.find(r => r.user_id === user.id)?.role || 'designer'
-      }));
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, full_name, email');
+
+      return roles?.map(roleData => ({
+        id: roleData.user_id,
+        role: roleData.role,
+        email: profiles?.find(p => p.id === roleData.user_id)?.email || 'No email'
+      })) || [];
     },
   });
 
@@ -49,13 +51,15 @@ export const UserManagement = () => {
       setIsLoading(true);
       
       // Create user in Supabase Auth
-      const { data: { user }, error: authError } = await supabase.auth.admin.createUser({
+      const { data: { user }, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
-        email_confirm: true
+        options: {
+          emailRedirect: window.location.origin
+        }
       });
 
-      if (authError) throw authError;
+      if (signUpError) throw signUpError;
 
       // Assign role
       if (user) {
