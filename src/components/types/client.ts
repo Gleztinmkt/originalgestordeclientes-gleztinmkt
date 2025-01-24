@@ -1,4 +1,4 @@
-export type SocialPlatform = "instagram" | "facebook" | "linkedin" | "tiktok" | "twitter" | "youtube";
+export type SocialPlatform = 'instagram' | 'facebook' | 'linkedin' | 'tiktok' | 'twitter' | 'youtube';
 
 export interface SocialNetwork {
   platform: SocialPlatform;
@@ -12,7 +12,7 @@ export interface ClientInfo {
     notes: string;
   }>;
   socialNetworks: SocialNetwork[];
-  branding?: string; // Añadimos el campo branding como opcional
+  branding?: string;
 }
 
 export interface Client {
@@ -21,8 +21,8 @@ export interface Client {
   phone: string;
   paymentDay: number;
   marketingInfo: string;
-  instagram?: string;
-  facebook?: string;
+  instagram: string;
+  facebook: string;
   packages: Array<{
     id: string;
     name: string;
