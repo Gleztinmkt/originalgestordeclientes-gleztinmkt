@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
-import { ExternalLink, Link as LinkIcon, Trash2, X } from "lucide-react";
+import { ExternalLink, Link as LinkIcon, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Publication } from "../client/publication/types";
 import { Client } from "../types/client";
@@ -50,8 +50,6 @@ export const PublicationDialog = ({
       return [];
     }
   });
-  const [newLinkLabel, setNewLinkLabel] = useState("");
-  const [newLinkUrl, setNewLinkUrl] = useState("");
 
   // Fetch user role
   const { data: userRole } = useQuery({
@@ -139,6 +137,7 @@ export const PublicationDialog = ({
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 disabled={isDesigner}
+                readOnly={isDesigner}
               />
             </div>
 
@@ -203,91 +202,69 @@ export const PublicationDialog = ({
               </div>
             </div>
 
-            {!isDesigner && (
-              <>
-                <div className="space-y-2">
-                  <Label>Links</Label>
-                  <Card>
-                    <CardContent className="p-4 space-y-4">
-                      <div className="flex gap-2">
-                        <Input
-                          placeholder="Etiqueta del link"
-                          value={newLinkLabel}
-                          onChange={(e) => setNewLinkLabel(e.target.value)}
-                        />
-                        <Input
-                          placeholder="URL"
-                          value={newLinkUrl}
-                          onChange={(e) => setNewLinkUrl(e.target.value)}
-                        />
-                        <Button 
-                          type="button" 
-                          onClick={() => {
-                            if (newLinkUrl && newLinkLabel) {
-                              setLinks([...links, { label: newLinkLabel, url: newLinkUrl }]);
-                              setNewLinkLabel("");
-                              setNewLinkUrl("");
-                            }
-                          }}
-                        >
-                          <LinkIcon className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      <ScrollArea className="h-[100px]">
-                        <div className="space-y-2">
-                          {links.map((link, index) => (
-                            <div key={index} className="flex items-center gap-2 bg-secondary p-2 rounded">
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => {
-                                  const newLinks = [...links];
-                                  newLinks.splice(index, 1);
-                                  setLinks(newLinks);
-                                }}
-                                className="text-destructive"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                              <span className="flex-1 truncate">{link.label}</span>
-                              <a
-                                href={link.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-blue-500 hover:text-blue-700"
-                              >
-                                <ExternalLink className="h-4 w-4" />
-                              </a>
-                            </div>
-                          ))}
+            <div className="space-y-2">
+              <Label>Links</Label>
+              <Card>
+                <CardContent className="p-4 space-y-4">
+                  <ScrollArea className="h-[100px]">
+                    <div className="space-y-2">
+                      {links.map((link, index) => (
+                        <div key={index} className="flex items-center gap-2 bg-secondary p-2 rounded">
+                          {!isDesigner && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                const newLinks = [...links];
+                                newLinks.splice(index, 1);
+                                setLinks(newLinks);
+                              }}
+                              className="text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                          <span className="flex-1 truncate">{link.label}</span>
+                          <a
+                            href={link.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-500 hover:text-blue-700"
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                          </a>
                         </div>
-                      </ScrollArea>
-                    </CardContent>
-                  </Card>
-                </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+            </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="copywriting">Copywriting</Label>
-                  <Textarea
-                    id="copywriting"
-                    value={copywriting}
-                    onChange={(e) => setCopywriting(e.target.value)}
-                    className="min-h-[150px]"
-                  />
-                </div>
+            <div className="space-y-2">
+              <Label htmlFor="copywriting">Copywriting</Label>
+              <Textarea
+                id="copywriting"
+                value={copywriting}
+                onChange={(e) => setCopywriting(e.target.value)}
+                className="min-h-[150px]"
+                disabled={isDesigner}
+                readOnly={isDesigner}
+              />
+            </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="description">Descripción</Label>
-                  <Textarea
-                    id="description"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    className="min-h-[200px]"
-                  />
-                </div>
-              </>
-            )}
+            <div className="space-y-2">
+              <Label htmlFor="description">Descripción</Label>
+              <Textarea
+                id="description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="min-h-[200px]"
+                disabled={isDesigner}
+                readOnly={isDesigner}
+              />
+            </div>
 
             <div className="flex justify-end gap-2 pt-4">
               {onDelete && !isDesigner && (
