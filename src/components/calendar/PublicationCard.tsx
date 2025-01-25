@@ -81,10 +81,11 @@ export const PublicationCard = ({
   };
 
   const getStatusIcon = () => {
-    if (publication.is_published) return <CheckCircle2 className="h-3 w-3" />;
-    if (publication.approved) return <Upload className="h-3 w-3" />;
+    if (publication.is_published) return <Upload className="h-3 w-3" />;
+    if (publication.approved) return <CheckCircle2 className="h-3 w-3" />;
     if (publication.in_review) return <AlertCircle className="h-3 w-3" />;
     if (publication.in_editing) return <Edit className="h-3 w-3" />;
+    if (publication.needs_editing) return <Edit className="h-3 w-3" />;
     if (publication.needs_recording) return <Video className="h-3 w-3" />;
     return <Clock className="h-3 w-3" />;
   };
