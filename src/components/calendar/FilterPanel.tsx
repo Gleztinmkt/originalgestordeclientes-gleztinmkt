@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/popover";
 
 interface FilterPanelProps {
-  clients: Array<{ id: string; name: string; packages?: any[] }>;
+  clients: Array<{ id: string; name: string }>;
   designers: any[];
   selectedClient: string | null;
   selectedDesigner: string | null;
@@ -52,16 +52,11 @@ export const FilterPanel = ({
 }: FilterPanelProps) => {
   const [showDesignerDialog, setShowDesignerDialog] = useState(false);
   const isMobile = useIsMobile();
-  
-  // Obtener los paquetes del cliente seleccionado
-  const selectedClientPackages = selectedClient 
-    ? clients.find(client => client.id === selectedClient)?.packages || []
-    : [];
 
   return (
-    <div className={`flex items-center gap-4 ${isMobile ? 'flex-col w-full' : 'flex-row flex-wrap'}`}>
+    <div className={`flex items-center gap-4 ${isMobile ? 'flex-col w-full' : 'flex-row'}`}>
       <Select value={selectedClient || "all_clients"} onValueChange={(value) => onClientChange(value === "all_clients" ? null : value)}>
-        <SelectTrigger className="min-w-[180px]">
+        <SelectTrigger className="min-w-[200px]">
           <SelectValue placeholder="Todos los clientes" />
         </SelectTrigger>
         <SelectContent>
@@ -74,25 +69,9 @@ export const FilterPanel = ({
         </SelectContent>
       </Select>
 
-      {selectedClient && (
-        <Select value={selectedPackage || "all_packages"} onValueChange={(value) => onPackageChange(value === "all_packages" ? null : value)}>
-          <SelectTrigger className="min-w-[180px]">
-            <SelectValue placeholder="Todos los paquetes" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all_packages">Todos los paquetes</SelectItem>
-            {selectedClientPackages.map((pkg: any) => (
-              <SelectItem key={pkg.id} value={pkg.id}>
-                {pkg.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      )}
-
       <div className="flex items-center gap-2">
         <Select value={selectedDesigner || "all_designers"} onValueChange={(value) => onDesignerChange(value === "all_designers" ? null : value)}>
-          <SelectTrigger className="min-w-[180px]">
+          <SelectTrigger className="min-w-[200px]">
             <SelectValue placeholder="Todos los diseñadores" />
           </SelectTrigger>
           <SelectContent>
@@ -115,7 +94,7 @@ export const FilterPanel = ({
       </div>
 
       <Select value={selectedStatus || "all_status"} onValueChange={(value) => onStatusChange(value === "all_status" ? null : value)}>
-        <SelectTrigger className="min-w-[180px]">
+        <SelectTrigger className="min-w-[200px]">
           <SelectValue placeholder="Todos los estados" />
         </SelectTrigger>
         <SelectContent>
@@ -130,7 +109,7 @@ export const FilterPanel = ({
       </Select>
 
       <Select value={selectedType || "all_types"} onValueChange={(value) => onTypeChange(value === "all_types" ? null : value)}>
-        <SelectTrigger className="min-w-[180px]">
+        <SelectTrigger className="min-w-[200px]">
           <SelectValue placeholder="Todos los tipos" />
         </SelectTrigger>
         <SelectContent>
