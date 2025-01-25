@@ -41,7 +41,7 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
     generalInfo: "",
     meetings: [],
     socialNetworks: [],
-    branding: "",
+    branding: "", // Añadimos el campo branding
   });
   const [isLoading, setIsLoading] = useState(false);
   const [open, setOpen] = useState(false);
@@ -49,7 +49,6 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
   const handleSave = async () => {
     try {
       setIsLoading(true);
-      console.log('Guardando información del cliente:', info);
       
       const clientInfoData = {
         generalInfo: info.generalInfo || "",
@@ -61,8 +60,10 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
           platform: network.platform || "instagram",
           username: network.username || ""
         })),
-        branding: info.branding || "",
+        branding: info.branding || "", // Incluimos branding en los datos a guardar
       };
+
+      console.log('Intentando guardar:', clientInfoData);
 
       const { data, error } = await supabase
         .from('clients')
@@ -76,7 +77,7 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
         throw error;
       }
 
-      console.log('Información guardada exitosamente:', data);
+      console.log('Datos guardados exitosamente:', data);
       
       onUpdateInfo(clientId, clientInfoData);
       setOpen(false);

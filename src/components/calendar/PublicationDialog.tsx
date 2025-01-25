@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
-import { ExternalLink, Link as LinkIcon, Plus, Trash2, Instagram } from "lucide-react";
+import { ExternalLink, Link as LinkIcon, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Publication } from "../client/publication/types";
 import { Client } from "../types/client";
@@ -142,21 +142,6 @@ export const PublicationDialog = ({
         </DialogHeader>
         <ScrollArea className="h-[calc(80vh-120px)] pr-4">
           <form onSubmit={handleSubmit} className="space-y-4">
-            {client?.instagram && (
-              <div className="flex items-center gap-2 bg-secondary p-2 rounded">
-                <Instagram className="h-4 w-4" />
-                <span className="text-sm">Perfil:</span>
-                <a
-                  href={`https://instagram.com/${client.instagram}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-500 hover:text-blue-700 text-sm truncate"
-                >
-                  @{client.instagram}
-                </a>
-              </div>
-            )}
-            
             <div className="space-y-2">
               <Label htmlFor="name">Nombre de la publicación</Label>
               <Input
