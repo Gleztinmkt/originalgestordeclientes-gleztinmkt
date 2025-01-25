@@ -49,6 +49,7 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
   const handleSave = async () => {
     try {
       setIsLoading(true);
+      console.log('Guardando información del cliente:', info);
       
       const clientInfoData = {
         generalInfo: info.generalInfo || "",
@@ -62,8 +63,6 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
         })),
         branding: info.branding || "",
       };
-
-      console.log('Guardando información:', clientInfoData);
 
       const { data, error } = await supabase
         .from('clients')
