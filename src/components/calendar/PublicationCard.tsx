@@ -13,16 +13,19 @@ import {
   Clock,
   User
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuSeparator,
+  ContextMenuSub,
+  ContextMenuSubContent,
+  ContextMenuSubTrigger,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { useQuery } from "@tanstack/react-query";
 
 interface PublicationCardProps {
   publication: Publication;
@@ -44,23 +47,6 @@ export const PublicationCard = ({
   const [showDialog, setShowDialog] = useState(false);
   const [touchCount, setTouchCount] = useState(0);
   const [touchTimer, setTouchTimer] = useState<NodeJS.Timeout | null>(null);
-
-  // Query to check if user is admin
-  const { data: isAdmin } = useQuery({
-    queryKey: ['userRole'],
-    queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return false;
-
-      const { data: roleData } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .single();
-
-      return roleData?.role === 'admin';
-    },
-  });
 
   const handleTouch = () => {
     if (isMobile) {
@@ -140,16 +126,32 @@ export const PublicationCard = ({
     }
   };
 
-  const handleDelete = async () => {
-    if (!isAdmin) {
+  const handleDesignerAssign = async (designerName: string) => {
+    try {
+      const { error } = await supabase
+        .from('publications')
+        .update({ designer: designerName })
+        .eq('id', publication.id);
+
+      if (error) throw error;
+
       toast({
-        title: "Acceso denegado",
-        description: "No tienes permisos para eliminar publicaciones.",
+        title: "Diseñador asignado",
+        description: "El diseñador ha sido asignado correctamente.",
+      });
+
+      onUpdate();
+    } catch (error) {
+      console.error('Error assigning designer:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo asignar el diseñador.",
         variant: "destructive",
       });
-      return;
     }
+  };
 
+  const handleDelete = async () => {
     try {
       const { error } = await supabase
         .from('publications')
@@ -205,6 +207,29 @@ export const PublicationCard = ({
       </ContextMenuTrigger>
 
       <ContextMenuContent className="w-64">
+        <ContextMenuSub>
+          <ContextMenuSubTrigger>
+            <User className="mr-2 h-4 w-4" />
+            <span>Asignar diseñador</span>
+          </ContextMenuSubTrigger>
+          <ContextMenuSubContent className="w-48">
+            <ContextMenuItem onClick={() => handleDesignerAssign("")}>
+              Sin diseñador
+            </ContextMenuItem>
+            <ContextMenuSeparator />
+            {designers.map((designer) => (
+              <ContextMenuItem
+                key={designer.id}
+                onClick={() => handleDesignerAssign(designer.name)}
+              >
+                {designer.name}
+              </ContextMenuItem>
+            ))}
+          </ContextMenuSubContent>
+        </ContextMenuSub>
+
+        <ContextMenuSeparator />
+
         <ContextMenuItem onClick={() => handleStatusChange("needs_recording")}>
           <Video className="mr-2 h-4 w-4" />
           <span>Falta grabar</span>
@@ -237,7 +262,7 @@ export const PublicationCard = ({
         publication={publication}
         client={client}
         onUpdate={onUpdate}
-        onDelete={isAdmin ? handleDelete : undefined}
+        onDelete={handleDelete}
         designers={designers}
       />
     </ContextMenu>
