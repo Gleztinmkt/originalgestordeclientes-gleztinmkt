@@ -170,6 +170,15 @@ export const PublicationCard = ({
   };
 
   const handleDelete = async () => {
+    if (!isAdmin) {
+      toast({
+        title: "Acceso denegado",
+        description: "No tienes permisos para eliminar publicaciones.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('publications')
@@ -194,6 +203,8 @@ export const PublicationCard = ({
       });
     }
   };
+
+  // ... keep existing code (render JSX)
 
   return (
     <ContextMenu>
@@ -282,7 +293,7 @@ export const PublicationCard = ({
         publication={publication}
         client={client}
         onUpdate={onUpdate}
-        onDelete={handleDelete}
+        onDelete={isAdmin ? handleDelete : undefined}
         designers={designers}
       />
     </ContextMenu>
