@@ -1,6 +1,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
+import { Textarea } from "./ui/textarea";
 import { useState } from "react";
 import { Task } from "./TaskList";
 import {
@@ -26,6 +27,7 @@ interface TaskEditDialogProps {
 
 export const TaskEditDialog = ({ task, onClose, onSave, clients }: TaskEditDialogProps) => {
   const [content, setContent] = useState(task.content);
+  const [description, setDescription] = useState(task.description || "");
   const [type, setType] = useState<Task["type"]>(task.type);
   const [clientId, setClientId] = useState(task.clientId || "no_client");
   const [executionDate, setExecutionDate] = useState<Date | undefined>(
@@ -40,6 +42,7 @@ export const TaskEditDialog = ({ task, onClose, onSave, clients }: TaskEditDialo
   const handleSave = () => {
     onSave({
       content,
+      description: description.trim() || undefined,
       type,
       clientId: clientId === "no_client" ? null : clientId,
       executionDate,
@@ -60,6 +63,15 @@ export const TaskEditDialog = ({ task, onClose, onSave, clients }: TaskEditDialo
             <Input
               value={content}
               onChange={(e) => setContent(e.target.value)}
+              className="col-span-3"
+            />
+          </div>
+          
+          <div className="grid gap-2">
+            <Label>Descripción (opcional)</Label>
+            <Textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
               className="col-span-3"
             />
           </div>

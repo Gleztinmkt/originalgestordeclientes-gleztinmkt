@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Mic, Send, Calendar, Bell } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
+import { Textarea } from "./ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import {
   Select,
@@ -17,12 +18,13 @@ import { Switch } from "./ui/switch";
 import { Label } from "./ui/label";
 
 interface TaskInputProps {
-  onAddTask: (task: string, clientId?: string, type?: string, executionDate?: Date, reminderDate?: Date, reminderFrequency?: string) => void;
+  onAddTask: (task: string, clientId?: string, type?: string, executionDate?: Date, reminderDate?: Date, reminderFrequency?: string, description?: string) => void;
   clients: Array<{ id: string; name: string }>;
 }
 
 export const TaskInput = ({ onAddTask, clients }: TaskInputProps) => {
   const [input, setInput] = useState("");
+  const [description, setDescription] = useState("");
   const [selectedClient, setSelectedClient] = useState<string>("no_client");
   const [selectedType, setSelectedType] = useState<string>("otros");
   const [isListening, setIsListening] = useState(false);
@@ -40,9 +42,11 @@ export const TaskInput = ({ onAddTask, clients }: TaskInputProps) => {
         selectedType, 
         executionDate,
         enableReminder ? reminderDate : undefined,
-        enableReminder ? reminderFrequency : undefined
+        enableReminder ? reminderFrequency : undefined,
+        description.trim() || undefined
       );
       setInput("");
+      setDescription("");
       setSelectedClient("no_client");
       setSelectedType("otros");
       setExecutionDate(undefined);
@@ -120,6 +124,13 @@ export const TaskInput = ({ onAddTask, clients }: TaskInputProps) => {
           <Send className="h-4 w-4" />
         </Button>
       </div>
+
+      <Textarea
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
+        placeholder="Descripción (opcional)"
+        className="dark:bg-gray-800 dark:text-white"
+      />
       
       <div className="flex flex-wrap gap-2">
         <Select value={selectedClient} onValueChange={setSelectedClient}>

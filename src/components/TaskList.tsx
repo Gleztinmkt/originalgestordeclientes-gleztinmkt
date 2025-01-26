@@ -22,6 +22,7 @@ export interface Task {
   reminderDate?: Date;
   reminderFrequency?: string;
   completed?: boolean;
+  description?: string;
 }
 
 interface TaskListProps {
@@ -125,7 +126,13 @@ export const TaskList = ({ tasks, onDeleteTask, onCompleteTask, onUpdateTask, cl
                       </Button>
                     </div>
                   </CardHeader>
-                  <CardContent className="flex flex-wrap items-center gap-2">
+                  <CardContent className="space-y-2">
+                    {task.description && (
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {task.description}
+                      </p>
+                    )}
+                    <div className="flex flex-wrap items-center gap-2">
                     <Badge variant="secondary" className={getTaskColor(task.type)}>
                       <span className="flex items-center gap-1">
                         {getTaskIcon(task.type)}
@@ -145,6 +152,7 @@ export const TaskList = ({ tasks, onDeleteTask, onCompleteTask, onUpdateTask, cl
                         {task.reminderFrequency && ` (${task.reminderFrequency})`}
                       </Badge>
                     )}
+                    </div>
                   </CardContent>
                 </Card>
               ))}

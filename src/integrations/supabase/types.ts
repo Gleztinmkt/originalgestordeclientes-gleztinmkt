@@ -417,6 +417,7 @@ export type Database = {
           created_at: string
           date: string | null
           deleted_at: string | null
+          description: string | null
           execution_date: string | null
           id: string
           reminder_date: string | null
@@ -430,6 +431,7 @@ export type Database = {
           created_at?: string
           date?: string | null
           deleted_at?: string | null
+          description?: string | null
           execution_date?: string | null
           id?: string
           reminder_date?: string | null
@@ -443,6 +445,7 @@ export type Database = {
           created_at?: string
           date?: string | null
           deleted_at?: string | null
+          description?: string | null
           execution_date?: string | null
           id?: string
           reminder_date?: string | null
