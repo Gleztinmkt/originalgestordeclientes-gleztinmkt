@@ -155,7 +155,7 @@ export const FilterPanel = ({
         </PopoverContent>
       </Popover>
 
-      {isAdmin && (
+      {isAdmin && showDesignerDialog && (
         <DesignerDialog
           open={showDesignerDialog}
           onOpenChange={setShowDesignerDialog}

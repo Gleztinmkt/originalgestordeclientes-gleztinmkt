@@ -13,15 +13,11 @@ import {
   Clock,
   User
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuSeparator,
-  ContextMenuSub,
-  ContextMenuSubContent,
-  ContextMenuSubTrigger,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import { supabase } from "@/integrations/supabase/client";
@@ -144,31 +140,6 @@ export const PublicationCard = ({
     }
   };
 
-  const handleDesignerAssign = async (designerName: string) => {
-    try {
-      const { error } = await supabase
-        .from('publications')
-        .update({ designer: designerName })
-        .eq('id', publication.id);
-
-      if (error) throw error;
-
-      toast({
-        title: "Diseñador asignado",
-        description: "El diseñador ha sido asignado correctamente.",
-      });
-
-      onUpdate();
-    } catch (error) {
-      console.error('Error assigning designer:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo asignar el diseñador.",
-        variant: "destructive",
-      });
-    }
-  };
-
   const handleDelete = async () => {
     if (!isAdmin) {
       toast({
@@ -204,8 +175,6 @@ export const PublicationCard = ({
     }
   };
 
-  // ... keep existing code (render JSX)
-
   return (
     <ContextMenu>
       <ContextMenuTrigger>
@@ -236,31 +205,6 @@ export const PublicationCard = ({
       </ContextMenuTrigger>
 
       <ContextMenuContent className="w-64">
-        {isAdmin && (
-          <ContextMenuSub>
-            <ContextMenuSubTrigger>
-              <User className="mr-2 h-4 w-4" />
-              <span>Asignar diseñador</span>
-            </ContextMenuSubTrigger>
-            <ContextMenuSubContent className="w-48">
-              <ContextMenuItem onClick={() => handleDesignerAssign("")}>
-                Sin diseñador
-              </ContextMenuItem>
-              <ContextMenuSeparator />
-              {designers.map((designer) => (
-                <ContextMenuItem
-                  key={designer.id}
-                  onClick={() => handleDesignerAssign(designer.name)}
-                >
-                  {designer.name}
-                </ContextMenuItem>
-              ))}
-            </ContextMenuSubContent>
-          </ContextMenuSub>
-        )}
-
-        {isAdmin && <ContextMenuSeparator />}
-
         <ContextMenuItem onClick={() => handleStatusChange("needs_recording")}>
           <Video className="mr-2 h-4 w-4" />
           <span>Falta grabar</span>
