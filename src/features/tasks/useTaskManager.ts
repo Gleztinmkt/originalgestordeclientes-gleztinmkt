@@ -38,9 +38,9 @@ export const useTaskManager = () => {
     }
   };
 
-  const addTask = async (content: string, clientId?: string, type: string = 'otros', executionDate?: Date, reminderDate?: Date, reminderFrequency?: string) => {
+  const addTask = async (content: string, clientId?: string, type: string = 'otros', executionDate?: Date, reminderDate?: Date, reminderFrequency?: string, description?: string) => {
     try {
-      console.log('Agregando tarea:', { content, clientId, type, executionDate, reminderDate, reminderFrequency });
+      console.log('Agregando tarea:', { content, clientId, type, executionDate, reminderDate, reminderFrequency, description });
       const newTask: Task = {
         id: crypto.randomUUID(),
         content,
@@ -49,6 +49,7 @@ export const useTaskManager = () => {
         executionDate,
         reminderDate,
         reminderFrequency,
+        description,
         completed: false,
       };
 
