@@ -11,9 +11,7 @@ import {
   Upload, 
   AlertCircle,
   Clock,
-  User,
-  Link as LinkIcon,
-  Instagram
+  User
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -201,34 +199,6 @@ export const PublicationCard = ({
                 <div className="flex items-center gap-1">
                   <User className="h-3 w-3" />
                   <span className="text-xs truncate">{publication.designer}</span>
-                </div>
-              )}
-              {client && (
-                <div className="flex flex-col gap-1 mt-1">
-                  {client.clientInfo?.branding && (
-                    <a 
-                      href={client.clientInfo.branding}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <LinkIcon className="h-3 w-3" />
-                      <span className="truncate">Branding</span>
-                    </a>
-                  )}
-                  {client.instagram && (
-                    <a 
-                      href={`https://instagram.com/${client.instagram}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1 text-xs text-pink-600 hover:text-pink-800 dark:text-pink-400 dark:hover:text-pink-300"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <Instagram className="h-3 w-3" />
-                      <span className="truncate">@{client.instagram}</span>
-                    </a>
-                  )}
                 </div>
               )}
             </div>
