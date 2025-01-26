@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
-import { ExternalLink, Link as LinkIcon, Plus, Trash2 } from "lucide-react";
+import { ExternalLink, Link as LinkIcon, Plus, Trash2, Instagram } from "lucide-react";
 import { useState } from "react";
 import { Publication } from "../client/publication/types";
 import { Client } from "../types/client";
@@ -142,6 +142,33 @@ export const PublicationDialog = ({
         </DialogHeader>
         <ScrollArea className="h-[calc(80vh-120px)] pr-4">
           <form onSubmit={handleSubmit} className="space-y-4">
+            {client && (
+              <div className="space-y-2 mb-4">
+                {client.clientInfo?.branding && (
+                  <a 
+                    href={client.clientInfo.branding}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                  >
+                    <LinkIcon className="h-4 w-4" />
+                    <span className="truncate">Branding</span>
+                  </a>
+                )}
+                {client.instagram && (
+                  <a 
+                    href={`https://instagram.com/${client.instagram}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 text-sm text-pink-600 hover:text-pink-800 dark:text-pink-400 dark:hover:text-pink-300"
+                  >
+                    <Instagram className="h-4 w-4" />
+                    <span className="truncate">@{client.instagram}</span>
+                  </a>
+                )}
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label htmlFor="name">Nombre de la publicación</Label>
               <Input

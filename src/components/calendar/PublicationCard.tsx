@@ -11,9 +11,7 @@ import {
   Upload, 
   AlertCircle,
   Clock,
-  User,
-  Link as LinkIcon,
-  Instagram
+  User
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
