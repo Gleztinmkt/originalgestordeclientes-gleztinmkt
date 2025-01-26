@@ -33,6 +33,7 @@ interface FilterPanelProps {
   onTypeChange: (value: string | null) => void;
   onPackageChange: (value: string | null) => void;
   onDesignerAdded: () => void;
+  isDesigner?: boolean;
   children?: React.ReactNode;
 }
 
@@ -50,29 +51,11 @@ export const FilterPanel = ({
   onTypeChange,
   onPackageChange,
   onDesignerAdded,
+  isDesigner = false,
   children,
 }: FilterPanelProps) => {
   const [showDesignerDialog, setShowDesignerDialog] = useState(false);
   const isMobile = useIsMobile();
-
-  // Verificar si el usuario es administrador
-  const { data: userRole } = useQuery({
-    queryKey: ['userRole'],
-    queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return null;
-
-      const { data: roleData } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .single();
-
-      return roleData?.role || null;
-    },
-  });
-
-  const isAdmin = userRole === 'admin';
 
   return (
     <div className={`flex items-center gap-4 ${isMobile ? 'flex-col w-full' : 'flex-row'}`}>
@@ -104,7 +87,7 @@ export const FilterPanel = ({
             ))}
           </SelectContent>
         </Select>
-        {isAdmin && (
+        {!isDesigner && (
           <Button
             variant="outline"
             size="icon"
@@ -157,7 +140,7 @@ export const FilterPanel = ({
         </PopoverContent>
       </Popover>
 
-      {isAdmin && (
+      {!isDesigner && (
         <DesignerDialog
           open={showDesignerDialog}
           onOpenChange={setShowDesignerDialog}
