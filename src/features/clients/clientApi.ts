@@ -44,6 +44,11 @@ export const updateClient = async (id: string, clientData: Partial<Client>) => {
   const formattedData = formatClientForDatabase(clientData);
   console.log('Formatted data for database:', formattedData);
 
+  // Asegurarnos de que el campo branding se incluya en client_info
+  if (clientData.clientInfo?.branding !== undefined) {
+    console.log('Updating branding URL:', clientData.clientInfo.branding);
+  }
+
   const { data, error } = await supabase
     .from('clients')
     .update(formattedData)

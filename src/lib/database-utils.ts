@@ -26,16 +26,19 @@ export const formatClientForDatabase = (client: Partial<Client>) => {
   let formattedClientInfo: Json = null;
   if (client.clientInfo) {
     // Convertir explícitamente las redes sociales a un formato JSON válido
-    const formattedSocialNetworks = client.clientInfo.socialNetworks.map(network => ({
+    const formattedSocialNetworks = client.clientInfo.socialNetworks?.map(network => ({
       platform: network.platform,
       username: network.username
-    }));
+    })) || [];
 
     formattedClientInfo = {
       generalInfo: client.clientInfo.generalInfo || '',
       meetings: client.clientInfo.meetings || [],
-      socialNetworks: formattedSocialNetworks
+      socialNetworks: formattedSocialNetworks,
+      branding: client.clientInfo.branding || '' // Aseguramos que el branding se incluya
     } as Json;
+
+    console.log('Formatted client info:', formattedClientInfo);
   }
 
   const formatted = {
@@ -55,6 +58,13 @@ export const formatClientForDatabase = (client: Partial<Client>) => {
 
 export const formatDatabaseClient = (dbClient: any): Client => {
   console.log('Formatting database client:', dbClient);
+  const clientInfo = dbClient.client_info || {
+    generalInfo: "",
+    meetings: [],
+    socialNetworks: [],
+    branding: "" // Aseguramos que el branding se incluya al formatear desde la base de datos
+  };
+
   const formatted = {
     id: dbClient.id,
     name: dbClient.name,
@@ -64,11 +74,7 @@ export const formatDatabaseClient = (dbClient: any): Client => {
     instagram: dbClient.instagram || "",
     facebook: dbClient.facebook || "",
     packages: parsePackages(dbClient.packages),
-    clientInfo: dbClient.client_info || {
-      generalInfo: "",
-      meetings: [],
-      socialNetworks: []
-    }
+    clientInfo: clientInfo
   };
   console.log('Formatted client:', formatted);
   return formatted;
