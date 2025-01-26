@@ -26,6 +26,7 @@ export interface DatabaseTask {
   reminder_date?: string | null;
   reminder_frequency?: string | null;
   deleted_at?: string | null;
+  description?: string | null;
 }
 
 export const convertDatabaseClient = (client: DatabaseClient): Client => ({
@@ -67,6 +68,7 @@ export const convertDatabaseTask = (task: DatabaseTask): Task => ({
   executionDate: task.execution_date ? new Date(task.execution_date) : undefined,
   reminderDate: task.reminder_date ? new Date(task.reminder_date) : undefined,
   reminderFrequency: task.reminder_frequency,
+  description: task.description || undefined,
 });
 
 export const convertTaskForDatabase = (task: Task): DatabaseTask => ({
@@ -79,4 +81,5 @@ export const convertTaskForDatabase = (task: Task): DatabaseTask => ({
   execution_date: task.executionDate?.toISOString() || null,
   reminder_date: task.reminderDate?.toISOString() || null,
   reminder_frequency: task.reminderFrequency || null,
+  description: task.description || null,
 });

@@ -55,9 +55,13 @@ export const useTaskManager = () => {
 
       const dbTask = convertTaskForDatabase(newTask);
       console.log('Tarea formateada para la base de datos:', dbTask);
+      
       const { error } = await supabase
         .from('tasks')
-        .insert(dbTask);
+        .insert({
+          ...dbTask,
+          description: description // Aseguramos que la descripción se envíe explícitamente
+        });
       
       if (error) throw error;
 
@@ -84,7 +88,10 @@ export const useTaskManager = () => {
       
       const { error } = await supabase
         .from('tasks')
-        .update(dbUpdates)
+        .update({
+          ...dbUpdates,
+          description: updates.description // Aseguramos que la descripción se actualice explícitamente
+        })
         .eq('id', id);
       
       if (error) throw error;
@@ -104,7 +111,6 @@ export const useTaskManager = () => {
         description: "No se pudo actualizar la tarea. Por favor, intenta de nuevo.",
         variant: "destructive",
       });
-      // Recargar las tareas para asegurar consistencia
       await loadTasks();
     }
   };
@@ -131,7 +137,6 @@ export const useTaskManager = () => {
         description: "No se pudo eliminar la tarea. Por favor, intenta de nuevo.",
         variant: "destructive",
       });
-      // Recargar las tareas para asegurar consistencia
       await loadTasks();
     }
   };
@@ -167,7 +172,6 @@ export const useTaskManager = () => {
         description: "No se pudo actualizar el estado de la tarea. Por favor, intenta de nuevo.",
         variant: "destructive",
       });
-      // Recargar las tareas para asegurar consistencia
       await loadTasks();
     }
   };
