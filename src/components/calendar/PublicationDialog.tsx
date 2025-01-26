@@ -143,7 +143,7 @@ export const PublicationDialog = ({
         <ScrollArea className="h-[calc(80vh-120px)] pr-4">
           <form onSubmit={handleSubmit} className="space-y-4">
             {client && (
-              <div className="space-y-2 mb-4">
+              <div className="space-y-2 mb-4 border-b pb-4">
                 {client.clientInfo?.branding && (
                   <a 
                     href={client.clientInfo.branding}
