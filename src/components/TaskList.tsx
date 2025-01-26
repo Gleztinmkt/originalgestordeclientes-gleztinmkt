@@ -15,7 +15,7 @@ import { TaskEditDialog } from "./TaskEditDialog";
 export interface Task {
   id: string;
   content: string;
-  type: "campaña" | "publicaciones" | "correcciones" | "otros";
+  type: "campaña" | "publicaciones" | "correcciones" | "otros" | "calendarios" | "cobros";
   date?: string;
   clientId?: string | null;
   executionDate?: Date;
@@ -47,6 +47,10 @@ export const TaskList = ({ tasks, onDeleteTask, onCompleteTask, onUpdateTask, cl
         return <Check className="h-4 w-4" />;
       case "correcciones":
         return <Clock className="h-4 w-4" />;
+      case "calendarios":
+        return <Clock className="h-4 w-4" />;
+      case "cobros":
+        return <Clock className="h-4 w-4" />;
       default:
         return <Check className="h-4 w-4" />;
     }
@@ -60,6 +64,10 @@ export const TaskList = ({ tasks, onDeleteTask, onCompleteTask, onUpdateTask, cl
         return "bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100";
       case "correcciones":
         return "bg-purple-100 text-purple-800 dark:bg-purple-800 dark:text-purple-100";
+      case "calendarios":
+        return "bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100";
+      case "cobros":
+        return "bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100";
       default:
         return "bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100";
     }
