@@ -67,6 +67,18 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
   });
 
   const handleDragEnd = async (result: DropResult) => {
+    const { data: userRole } = await supabase.auth.getUser();
+    const isAdmin = userRole?.role === 'admin';
+
+    if (!isAdmin) {
+      toast({
+        title: "Acceso denegado",
+        description: "Solo los administradores pueden modificar las fechas de las publicaciones.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!result.destination) return;
 
     const destinationDate = result.destination.droppableId;
