@@ -27,6 +27,23 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
   const [highlightedPublicationId, setHighlightedPublicationId] = useState<string | null>(null);
   const isMobile = useIsMobile();
 
+  // Query to get user role
+  const { data: userRole } = useQuery({
+    queryKey: ['userRole'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+
+      const { data: roleData } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .single();
+
+      return roleData?.role || null;
+    },
+  });
+
   const { data: publications = [], refetch } = useQuery({
     queryKey: ['publications', selectedClient],
     queryFn: async () => {
@@ -67,10 +84,8 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
   });
 
   const handleDragEnd = async (result: DropResult) => {
-    const { data: userRole } = await supabase.auth.getUser();
-    const isAdmin = userRole?.role === 'admin';
-
-    if (!isAdmin) {
+    // Only allow drag and drop for admin users
+    if (userRole !== 'admin') {
       toast({
         title: "Acceso denegado",
         description: "Solo los administradores pueden modificar las fechas de las publicaciones.",
@@ -171,6 +186,7 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
       onTypeChange={setSelectedType}
       onPackageChange={setSelectedPackage}
       onDesignerAdded={refetchDesigners}
+      isDesigner={userRole === 'designer'}
     />
   );
 
