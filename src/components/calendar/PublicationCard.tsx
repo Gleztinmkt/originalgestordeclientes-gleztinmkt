@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/context-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { useQuery } from "@tanstack/react-query";
 
 interface PublicationCardProps {
   publication: Publication;
@@ -47,6 +48,23 @@ export const PublicationCard = ({
   const [showDialog, setShowDialog] = useState(false);
   const [touchCount, setTouchCount] = useState(0);
   const [touchTimer, setTouchTimer] = useState<NodeJS.Timeout | null>(null);
+
+  // Query to check if user is admin
+  const { data: isAdmin } = useQuery({
+    queryKey: ['userRole'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return false;
+
+      const { data: roleData } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .single();
+
+      return roleData?.role === 'admin';
+    },
+  });
 
   const handleTouch = () => {
     if (isMobile) {
@@ -207,28 +225,30 @@ export const PublicationCard = ({
       </ContextMenuTrigger>
 
       <ContextMenuContent className="w-64">
-        <ContextMenuSub>
-          <ContextMenuSubTrigger>
-            <User className="mr-2 h-4 w-4" />
-            <span>Asignar diseñador</span>
-          </ContextMenuSubTrigger>
-          <ContextMenuSubContent className="w-48">
-            <ContextMenuItem onClick={() => handleDesignerAssign("")}>
-              Sin diseñador
-            </ContextMenuItem>
-            <ContextMenuSeparator />
-            {designers.map((designer) => (
-              <ContextMenuItem
-                key={designer.id}
-                onClick={() => handleDesignerAssign(designer.name)}
-              >
-                {designer.name}
+        {isAdmin && (
+          <ContextMenuSub>
+            <ContextMenuSubTrigger>
+              <User className="mr-2 h-4 w-4" />
+              <span>Asignar diseñador</span>
+            </ContextMenuSubTrigger>
+            <ContextMenuSubContent className="w-48">
+              <ContextMenuItem onClick={() => handleDesignerAssign("")}>
+                Sin diseñador
               </ContextMenuItem>
-            ))}
-          </ContextMenuSubContent>
-        </ContextMenuSub>
+              <ContextMenuSeparator />
+              {designers.map((designer) => (
+                <ContextMenuItem
+                  key={designer.id}
+                  onClick={() => handleDesignerAssign(designer.name)}
+                >
+                  {designer.name}
+                </ContextMenuItem>
+              ))}
+            </ContextMenuSubContent>
+          </ContextMenuSub>
+        )}
 
-        <ContextMenuSeparator />
+        {isAdmin && <ContextMenuSeparator />}
 
         <ContextMenuItem onClick={() => handleStatusChange("needs_recording")}>
           <Video className="mr-2 h-4 w-4" />

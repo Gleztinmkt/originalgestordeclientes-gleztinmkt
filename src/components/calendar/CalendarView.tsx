@@ -66,7 +66,32 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
     },
   });
 
+  const { data: isAdmin } = useQuery({
+    queryKey: ['userRole'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return false;
+
+      const { data: roleData } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .single();
+
+      return roleData?.role === 'admin';
+    },
+  });
+
   const handleDragEnd = async (result: DropResult) => {
+    if (!isAdmin) {
+      toast({
+        title: "Acceso denegado",
+        description: "Solo los administradores pueden modificar las fechas de las publicaciones.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!result.destination) return;
 
     const destinationDate = result.destination.droppableId;

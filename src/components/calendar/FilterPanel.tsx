@@ -16,6 +16,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 interface FilterPanelProps {
   clients: Array<{ id: string; name: string }>;
@@ -53,6 +55,23 @@ export const FilterPanel = ({
   const [showDesignerDialog, setShowDesignerDialog] = useState(false);
   const isMobile = useIsMobile();
 
+  // Query to check if user is admin
+  const { data: isAdmin } = useQuery({
+    queryKey: ['userRole'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return false;
+
+      const { data: roleData } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .single();
+
+      return roleData?.role === 'admin';
+    },
+  });
+
   return (
     <div className={`flex items-center gap-4 ${isMobile ? 'flex-col w-full' : 'flex-row'}`}>
       <Select value={selectedClient || "all_clients"} onValueChange={(value) => onClientChange(value === "all_clients" ? null : value)}>
@@ -83,14 +102,16 @@ export const FilterPanel = ({
             ))}
           </SelectContent>
         </Select>
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => setShowDesignerDialog(true)}
-          className="flex-shrink-0"
-        >
-          <Plus className="h-4 w-4" />
-        </Button>
+        {isAdmin && (
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setShowDesignerDialog(true)}
+            className="flex-shrink-0"
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
+        )}
       </div>
 
       <Select value={selectedStatus || "all_status"} onValueChange={(value) => onStatusChange(value === "all_status" ? null : value)}>
@@ -134,12 +155,14 @@ export const FilterPanel = ({
         </PopoverContent>
       </Popover>
 
-      <DesignerDialog
-        open={showDesignerDialog}
-        onOpenChange={setShowDesignerDialog}
-        onDesignerAdded={onDesignerAdded}
-        onDesignerDeleted={onDesignerAdded}
-      />
+      {isAdmin && (
+        <DesignerDialog
+          open={showDesignerDialog}
+          onOpenChange={setShowDesignerDialog}
+          onDesignerAdded={onDesignerAdded}
+          onDesignerDeleted={onDesignerAdded}
+        />
+      )}
     </div>
   );
 };
