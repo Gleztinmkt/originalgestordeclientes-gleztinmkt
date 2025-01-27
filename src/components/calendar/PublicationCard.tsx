@@ -11,7 +11,8 @@ import {
   Upload, 
   AlertCircle,
   Clock,
-  User
+  User,
+  Instagram
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -178,7 +179,6 @@ export const PublicationCard = ({
     }
   };
 
-  // Verificar si el usuario es administrador
   const { data: userRole } = useQuery({
     queryKey: ['userRole'],
     queryFn: async () => {
@@ -215,12 +215,26 @@ export const PublicationCard = ({
                   {displayTitle}
                 </p>
               </div>
-              {publication.designer && (
-                <div className="flex items-center gap-1">
-                  <User className="h-3 w-3" />
-                  <span className="text-xs truncate">{publication.designer}</span>
-                </div>
-              )}
+              <div className="flex flex-col gap-1">
+                {publication.designer && (
+                  <div className="flex items-center gap-1">
+                    <User className="h-3 w-3" />
+                    <span className="text-xs truncate">{publication.designer}</span>
+                  </div>
+                )}
+                {client?.instagram && (
+                  <a 
+                    href={`https://instagram.com/${client.instagram}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-pink-600 hover:text-pink-700 dark:text-pink-400 dark:hover:text-pink-300"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Instagram className="h-3 w-3" />
+                    <span className="text-xs truncate">@{client.instagram}</span>
+                  </a>
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>
