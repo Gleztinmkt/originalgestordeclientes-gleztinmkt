@@ -11,7 +11,7 @@ interface TaskFilterProps {
   onFilterChange: (type: string | null, clientId: string | null) => void;
 }
 
-export const TaskFilter = ({ clients, onFilterChange }: TaskFilterProps) => {
+export const TaskFilter = ({ clients = [], onFilterChange }: TaskFilterProps) => {
   return (
     <div className="flex gap-4 mb-4">
       <Select

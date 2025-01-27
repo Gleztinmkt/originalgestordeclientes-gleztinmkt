@@ -16,7 +16,6 @@ import { Calendar as CalendarComponent } from "./ui/calendar";
 import { format } from "date-fns";
 import { Switch } from "./ui/switch";
 import { Label } from "./ui/label";
-import { Command, CommandInput, CommandEmpty, CommandGroup, CommandItem } from "./ui/command";
 
 interface TaskInputProps {
   onAddTask: (task: string, clientId?: string, type?: string, executionDate?: Date, reminderDate?: Date, reminderFrequency?: string, description?: string) => void;
@@ -34,7 +33,6 @@ export const TaskInput = ({ onAddTask, clients = [] }: TaskInputProps) => {
   const [enableReminder, setEnableReminder] = useState(false);
   const [reminderFrequency, setReminderFrequency] = useState<string>("once");
   const [clientSearch, setClientSearch] = useState("");
-  const [openClientSearch, setOpenClientSearch] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -141,53 +139,27 @@ export const TaskInput = ({ onAddTask, clients = [] }: TaskInputProps) => {
       
       <div className="flex flex-wrap gap-2">
         <div className="flex-1 min-w-[200px]">
-          <Popover open={openClientSearch} onOpenChange={setOpenClientSearch}>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                role="combobox"
-                className="w-full justify-between dark:bg-gray-800 dark:text-white"
-              >
-                {selectedClient === "no_client" 
-                  ? "Sin cliente" 
-                  : clients.find(c => c.id === selectedClient)?.name || "Seleccionar cliente"}
-                <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-[200px] p-0">
-              <Command>
-                <CommandInput
+          <Select value={selectedClient} onValueChange={setSelectedClient}>
+            <SelectTrigger className="w-full dark:bg-gray-800 dark:text-white">
+              <SelectValue placeholder="Seleccionar cliente" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="no_client">Sin cliente</SelectItem>
+              <div className="px-2 py-1">
+                <Input
                   placeholder="Buscar cliente..."
                   value={clientSearch}
-                  onValueChange={setClientSearch}
+                  onChange={(e) => setClientSearch(e.target.value)}
+                  className="mb-2"
                 />
-                <CommandEmpty>No se encontraron clientes</CommandEmpty>
-                <CommandGroup>
-                  <CommandItem
-                    value="no_client"
-                    onSelect={() => {
-                      setSelectedClient("no_client");
-                      setOpenClientSearch(false);
-                    }}
-                  >
-                    Sin cliente
-                  </CommandItem>
-                  {filteredClients.map((client) => (
-                    <CommandItem
-                      key={client.id}
-                      value={client.id}
-                      onSelect={() => {
-                        setSelectedClient(client.id);
-                        setOpenClientSearch(false);
-                      }}
-                    >
-                      {client.name}
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              </Command>
-            </PopoverContent>
-          </Popover>
+              </div>
+              {filteredClients.map((client) => (
+                <SelectItem key={client.id} value={client.id}>
+                  {client.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         <Select value={selectedType} onValueChange={setSelectedType}>
