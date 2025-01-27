@@ -101,6 +101,7 @@ export const TaskList = ({ tasks, onDeleteTask, onCompleteTask, onUpdateTask, cl
               {clientTasks.map((task) => (
                 <Card
                   key={task.id}
+                  data-task-id={task.id}
                   className={`animate-fade-in hover:shadow-md transition-shadow dark:bg-gray-800 ${
                     task.completed ? 'opacity-50' : ''
                   }`}
