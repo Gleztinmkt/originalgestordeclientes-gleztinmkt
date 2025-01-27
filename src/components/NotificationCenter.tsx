@@ -16,7 +16,7 @@ export const NotificationCenter = ({ onSendPaymentReminders, onCompleteTask }: N
       const { data, error } = await supabase
         .from('notifications')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('date', { ascending: false });
 
       if (error) {
         toast({
