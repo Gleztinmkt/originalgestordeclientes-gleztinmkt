@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
-const NotificationCenter = () => {
+export const NotificationCenter = () => {
   const [notifications, setNotifications] = useState([]);
 
   useEffect(() => {
@@ -77,5 +77,3 @@ const NotificationCenter = () => {
     </div>
   );
 };
-
-export default NotificationCenter;
