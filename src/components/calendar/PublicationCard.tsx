@@ -201,7 +201,6 @@ export const PublicationCard = ({
     <ContextMenu>
       <ContextMenuTrigger>
         <Card 
-          data-publication-id={publication.id}
           className={cn(
             "mb-1 hover:shadow-md transition-shadow cursor-pointer group",
             getStatusColor()
