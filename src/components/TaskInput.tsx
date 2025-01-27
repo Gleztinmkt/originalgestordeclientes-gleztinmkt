@@ -23,7 +23,7 @@ interface TaskInputProps {
   clients: Array<{ id: string; name: string }>;
 }
 
-export const TaskInput = ({ onAddTask, clients }: TaskInputProps) => {
+export const TaskInput = ({ onAddTask, clients = [] }: TaskInputProps) => {
   const [input, setInput] = useState("");
   const [description, setDescription] = useState("");
   const [selectedClient, setSelectedClient] = useState<string>("no_client");
@@ -162,7 +162,7 @@ export const TaskInput = ({ onAddTask, clients }: TaskInputProps) => {
                 >
                   Sin cliente
                 </CommandItem>
-                {clients.map((client) => (
+                {Array.isArray(clients) && clients.map((client) => (
                   <CommandItem
                     key={client.id}
                     onSelect={() => {
