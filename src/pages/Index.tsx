@@ -143,10 +143,7 @@ const Index = () => {
             {userRole === 'admin' && (
               <>
                 <TrashDialog />
-                <NotificationCenter 
-                  onSendPaymentReminders={() => {}}
-                  onCompleteTask={() => {}}
-                />
+                <NotificationCenter />
               </>
             )}
             <img 
