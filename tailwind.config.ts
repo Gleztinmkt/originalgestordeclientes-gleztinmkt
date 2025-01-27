@@ -30,12 +30,17 @@ export default {
           '0%': { backgroundColor: 'transparent' },
           '50%': { backgroundColor: 'rgb(254 240 138)' },
           '100%': { backgroundColor: 'transparent' },
+        },
+        progress: {
+          '0%': { width: '0%' },
+          '100%': { width: '100%' }
         }
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "highlight": "highlight 2s ease-in-out",
+        "progress": "progress 2s ease-in-out"
       },
     },
   },
