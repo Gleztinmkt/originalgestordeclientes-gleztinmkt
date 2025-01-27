@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Mic, Send, Calendar, Bell } from "lucide-react";
+import { Mic, Send, Calendar, Bell, Search } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
@@ -16,13 +16,14 @@ import { Calendar as CalendarComponent } from "./ui/calendar";
 import { format } from "date-fns";
 import { Switch } from "./ui/switch";
 import { Label } from "./ui/label";
+import { Command, CommandInput, CommandEmpty, CommandGroup, CommandItem } from "./ui/command";
 
 interface TaskInputProps {
   onAddTask: (task: string, clientId?: string, type?: string, executionDate?: Date, reminderDate?: Date, reminderFrequency?: string, description?: string) => void;
   clients: Array<{ id: string; name: string }>;
 }
 
-export const TaskInput = ({ onAddTask, clients }: TaskInputProps) => {
+export const TaskInput = ({ onAddTask, clients = [] }: TaskInputProps) => {
   const [input, setInput] = useState("");
   const [description, setDescription] = useState("");
   const [selectedClient, setSelectedClient] = useState<string>("no_client");
@@ -32,6 +33,8 @@ export const TaskInput = ({ onAddTask, clients }: TaskInputProps) => {
   const [reminderDate, setReminderDate] = useState<Date>();
   const [enableReminder, setEnableReminder] = useState(false);
   const [reminderFrequency, setReminderFrequency] = useState<string>("once");
+  const [clientSearch, setClientSearch] = useState("");
+  const [openClientSearch, setOpenClientSearch] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -99,6 +102,10 @@ export const TaskInput = ({ onAddTask, clients }: TaskInputProps) => {
     recognition.start();
   };
 
+  const filteredClients = clients.filter(client =>
+    client.name.toLowerCase().includes(clientSearch.toLowerCase())
+  );
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4 w-full max-w-2xl mx-auto">
       <div className="flex gap-2">
@@ -133,19 +140,55 @@ export const TaskInput = ({ onAddTask, clients }: TaskInputProps) => {
       />
       
       <div className="flex flex-wrap gap-2">
-        <Select value={selectedClient} onValueChange={setSelectedClient}>
-          <SelectTrigger className="flex-1 min-w-[200px] dark:bg-gray-800 dark:text-white">
-            <SelectValue placeholder="Seleccionar cliente" />
-          </SelectTrigger>
-          <SelectContent className="dark:bg-gray-800">
-            <SelectItem value="no_client">Sin cliente</SelectItem>
-            {clients.map((client) => (
-              <SelectItem key={client.id} value={client.id}>
-                {client.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex-1 min-w-[200px]">
+          <Popover open={openClientSearch} onOpenChange={setOpenClientSearch}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                className="w-full justify-between dark:bg-gray-800 dark:text-white"
+              >
+                {selectedClient === "no_client" 
+                  ? "Sin cliente" 
+                  : clients.find(c => c.id === selectedClient)?.name || "Seleccionar cliente"}
+                <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[200px] p-0">
+              <Command>
+                <CommandInput
+                  placeholder="Buscar cliente..."
+                  value={clientSearch}
+                  onValueChange={setClientSearch}
+                />
+                <CommandEmpty>No se encontraron clientes</CommandEmpty>
+                <CommandGroup>
+                  <CommandItem
+                    value="no_client"
+                    onSelect={() => {
+                      setSelectedClient("no_client");
+                      setOpenClientSearch(false);
+                    }}
+                  >
+                    Sin cliente
+                  </CommandItem>
+                  {filteredClients.map((client) => (
+                    <CommandItem
+                      key={client.id}
+                      value={client.id}
+                      onSelect={() => {
+                        setSelectedClient(client.id);
+                        setOpenClientSearch(false);
+                      }}
+                    >
+                      {client.name}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </Command>
+            </PopoverContent>
+          </Popover>
+        </div>
 
         <Select value={selectedType} onValueChange={setSelectedType}>
           <SelectTrigger className="flex-1 min-w-[200px] dark:bg-gray-800 dark:text-white">
@@ -157,6 +200,7 @@ export const TaskInput = ({ onAddTask, clients }: TaskInputProps) => {
             <SelectItem value="correcciones">Correcciones</SelectItem>
             <SelectItem value="calendarios">Calendarios</SelectItem>
             <SelectItem value="cobros">Cobros</SelectItem>
+            <SelectItem value="paginas web">Páginas Web</SelectItem>
             <SelectItem value="otros">Otros</SelectItem>
           </SelectContent>
         </Select>
