@@ -71,7 +71,8 @@
   }
 
   .loading-screen .progress-bar div {
-    @apply h-full bg-blue-500 dark:bg-blue-400 animate-progress;
+    @apply h-full bg-blue-500 dark:bg-blue-400;
+    animation: progress 2s ease-in-out;
   }
 
   .loading-screen .copyright {
