@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Mic, Send, Calendar, Bell } from "lucide-react";
+import { Mic, Send, Calendar, Bell, Search } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
@@ -16,6 +16,7 @@ import { Calendar as CalendarComponent } from "./ui/calendar";
 import { format } from "date-fns";
 import { Switch } from "./ui/switch";
 import { Label } from "./ui/label";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "./ui/command";
 
 interface TaskInputProps {
   onAddTask: (task: string, clientId?: string, type?: string, executionDate?: Date, reminderDate?: Date, reminderFrequency?: string, description?: string) => void;
@@ -32,6 +33,7 @@ export const TaskInput = ({ onAddTask, clients }: TaskInputProps) => {
   const [reminderDate, setReminderDate] = useState<Date>();
   const [enableReminder, setEnableReminder] = useState(false);
   const [reminderFrequency, setReminderFrequency] = useState<string>("once");
+  const [openClientSearch, setOpenClientSearch] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -133,19 +135,48 @@ export const TaskInput = ({ onAddTask, clients }: TaskInputProps) => {
       />
       
       <div className="flex flex-wrap gap-2">
-        <Select value={selectedClient} onValueChange={setSelectedClient}>
-          <SelectTrigger className="flex-1 min-w-[200px] dark:bg-gray-800 dark:text-white">
-            <SelectValue placeholder="Seleccionar cliente" />
-          </SelectTrigger>
-          <SelectContent className="dark:bg-gray-800">
-            <SelectItem value="no_client">Sin cliente</SelectItem>
-            {clients.map((client) => (
-              <SelectItem key={client.id} value={client.id}>
-                {client.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Popover open={openClientSearch} onOpenChange={setOpenClientSearch}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={openClientSearch}
+              className="flex-1 min-w-[200px] justify-between dark:bg-gray-800 dark:text-white"
+            >
+              {selectedClient === "no_client" 
+                ? "Sin cliente" 
+                : clients.find((client) => client.id === selectedClient)?.name || "Seleccionar cliente"}
+              <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[200px] p-0">
+            <Command>
+              <CommandInput placeholder="Buscar cliente..." />
+              <CommandEmpty>No se encontraron clientes.</CommandEmpty>
+              <CommandGroup>
+                <CommandItem
+                  onSelect={() => {
+                    setSelectedClient("no_client");
+                    setOpenClientSearch(false);
+                  }}
+                >
+                  Sin cliente
+                </CommandItem>
+                {clients.map((client) => (
+                  <CommandItem
+                    key={client.id}
+                    onSelect={() => {
+                      setSelectedClient(client.id);
+                      setOpenClientSearch(false);
+                    }}
+                  >
+                    {client.name}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </Command>
+          </PopoverContent>
+        </Popover>
 
         <Select value={selectedType} onValueChange={setSelectedType}>
           <SelectTrigger className="flex-1 min-w-[200px] dark:bg-gray-800 dark:text-white">
@@ -157,6 +188,7 @@ export const TaskInput = ({ onAddTask, clients }: TaskInputProps) => {
             <SelectItem value="correcciones">Correcciones</SelectItem>
             <SelectItem value="calendarios">Calendarios</SelectItem>
             <SelectItem value="cobros">Cobros</SelectItem>
+            <SelectItem value="paginas web">Páginas Web</SelectItem>
             <SelectItem value="otros">Otros</SelectItem>
           </SelectContent>
         </Select>
