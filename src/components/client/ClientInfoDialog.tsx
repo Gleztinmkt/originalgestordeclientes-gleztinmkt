@@ -20,6 +20,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
 import { ClientInfo, SocialNetwork, SocialPlatform, PublicationSchedule } from "../types/client";
+import { Json } from "@/integrations/supabase/types";
+
+interface ClientInfoDialogProps {
+  clientId: string;
+  clientInfo?: ClientInfo;
+  onUpdateInfo: (clientId: string, info: ClientInfo) => void;
+}
 
 const SOCIAL_PLATFORMS = [
   { id: 'instagram', label: 'Instagram' },
@@ -55,11 +62,23 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
     try {
       setIsLoading(true);
       
-      // Create a clean copy of the data for saving
+      // Create a clean copy of the data for saving that conforms to Json type
       const clientInfoData = {
-        ...info,
-        publicationSchedule: info.publicationSchedule || []
-      };
+        generalInfo: info.generalInfo || "",
+        meetings: info.meetings.map(meeting => ({
+          date: meeting.date || "",
+          notes: meeting.notes || ""
+        })),
+        socialNetworks: info.socialNetworks.map(network => ({
+          platform: network.platform || "instagram",
+          username: network.username || ""
+        })),
+        branding: info.branding || "",
+        publicationSchedule: (info.publicationSchedule || []).map(schedule => ({
+          day: schedule.day || "monday",
+          time: schedule.time || "09:00"
+        }))
+      } as Json;
 
       console.log('Saving client info:', clientInfoData);
 
@@ -79,7 +98,7 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
 
       console.log('Save successful:', data);
       
-      onUpdateInfo(clientId, clientInfoData);
+      onUpdateInfo(clientId, info);
       setOpen(false);
       toast({
         title: "Información actualizada",
