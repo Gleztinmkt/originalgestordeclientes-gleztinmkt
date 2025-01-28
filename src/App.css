@@ -30,8 +30,9 @@
 }
 
 .loading-screen img {
-  height: 80px;
   width: auto;
+  max-height: 80px;
+  object-fit: contain;
   filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
   animation: pulse 2s infinite;
 }
