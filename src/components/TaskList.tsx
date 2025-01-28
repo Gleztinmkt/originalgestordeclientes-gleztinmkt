@@ -15,7 +15,7 @@ import { TaskEditDialog } from "./TaskEditDialog";
 export interface Task {
   id: string;
   content: string;
-  type: "campaña" | "publicaciones" | "correcciones" | "otros" | "calendarios" | "cobros";
+  type: "campaña" | "publicaciones" | "correcciones" | "otros" | "calendarios" | "cobros" | "pagina web";
   date?: string;
   clientId?: string | null;
   executionDate?: Date;

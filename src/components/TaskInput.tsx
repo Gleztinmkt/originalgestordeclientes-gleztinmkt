@@ -172,7 +172,7 @@ export const TaskInput = ({ onAddTask, clients = [] }: TaskInputProps) => {
             <SelectItem value="correcciones">Correcciones</SelectItem>
             <SelectItem value="calendarios">Calendarios</SelectItem>
             <SelectItem value="cobros">Cobros</SelectItem>
-            <SelectItem value="paginas web">Páginas Web</SelectItem>
+            <SelectItem value="pagina web">Página Web</SelectItem>
             <SelectItem value="otros">Otros</SelectItem>
           </SelectContent>
         </Select>
