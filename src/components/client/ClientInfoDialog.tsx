@@ -19,7 +19,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
-import { ClientInfo, SocialNetwork, SocialPlatform } from "../types/client";
+import { ClientInfo, SocialNetwork, SocialPlatform, PublicationSchedule } from "../types/client";
 
 interface ClientInfoDialogProps {
   clientId: string;
@@ -36,12 +36,23 @@ const SOCIAL_PLATFORMS = [
   { id: 'youtube', label: 'YouTube' },
 ] as const;
 
+const DAYS_OF_WEEK = [
+  { value: 'monday', label: 'Lunes' },
+  { value: 'tuesday', label: 'Martes' },
+  { value: 'wednesday', label: 'Miércoles' },
+  { value: 'thursday', label: 'Jueves' },
+  { value: 'friday', label: 'Viernes' },
+  { value: 'saturday', label: 'Sábado' },
+  { value: 'sunday', label: 'Domingo' },
+];
+
 export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientInfoDialogProps) => {
   const [info, setInfo] = useState<ClientInfo>(clientInfo || {
     generalInfo: "",
     meetings: [],
     socialNetworks: [],
-    branding: "", // Añadimos el campo branding
+    branding: "",
+    publicationSchedule: [],
   });
   const [isLoading, setIsLoading] = useState(false);
   const [open, setOpen] = useState(false);
@@ -60,7 +71,8 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
           platform: network.platform || "instagram",
           username: network.username || ""
         })),
-        branding: info.branding || "", // Incluimos branding en los datos a guardar
+        branding: info.branding || "",
+        publicationSchedule: info.publicationSchedule || [],
       };
 
       console.log('Intentando guardar:', clientInfoData);
@@ -111,6 +123,13 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
     }));
   };
 
+  const addSchedule = () => {
+    setInfo(prev => ({
+      ...prev,
+      publicationSchedule: [...prev.publicationSchedule, { day: 'monday', time: '09:00' }],
+    }));
+  };
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -127,10 +146,11 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
           </DialogDescription>
         </DialogHeader>
         <Tabs defaultValue="general" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="general">Información General</TabsTrigger>
             <TabsTrigger value="meetings">Reuniones</TabsTrigger>
             <TabsTrigger value="social">Redes Sociales</TabsTrigger>
+            <TabsTrigger value="schedule">Horarios</TabsTrigger>
           </TabsList>
           
           <TabsContent value="general">
@@ -216,6 +236,53 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
                     }}
                     className="w-full"
                   />
+                </div>
+              ))}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="schedule">
+            <div className="space-y-4">
+              <Button onClick={addSchedule} variant="outline" size="sm">
+                Agregar Horario
+              </Button>
+              {info.publicationSchedule.map((schedule, index) => (
+                <div key={index} className="space-y-2 border p-4 rounded-lg">
+                  <select
+                    value={schedule.day}
+                    onChange={(e) => {
+                      const newSchedule = [...info.publicationSchedule];
+                      newSchedule[index].day = e.target.value;
+                      setInfo(prev => ({ ...prev, publicationSchedule: newSchedule }));
+                    }}
+                    className="w-full p-2 border rounded-md bg-background"
+                  >
+                    {DAYS_OF_WEEK.map(day => (
+                      <option key={day.value} value={day.value}>
+                        {day.label}
+                      </option>
+                    ))}
+                  </select>
+                  <Input
+                    type="time"
+                    value={schedule.time}
+                    onChange={(e) => {
+                      const newSchedule = [...info.publicationSchedule];
+                      newSchedule[index].time = e.target.value;
+                      setInfo(prev => ({ ...prev, publicationSchedule: newSchedule }));
+                    }}
+                    className="w-full"
+                  />
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => {
+                      const newSchedule = info.publicationSchedule.filter((_, i) => i !== index);
+                      setInfo(prev => ({ ...prev, publicationSchedule: newSchedule }));
+                    }}
+                  >
+                    Eliminar
+                  </Button>
                 </div>
               ))}
             </div>

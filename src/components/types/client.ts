@@ -5,6 +5,11 @@ export interface SocialNetwork {
   username: string;
 }
 
+export interface PublicationSchedule {
+  day: string;
+  time: string;
+}
+
 export interface ClientInfo {
   generalInfo: string;
   meetings: Array<{
@@ -12,7 +17,8 @@ export interface ClientInfo {
     notes: string;
   }>;
   socialNetworks: SocialNetwork[];
-  branding?: string; // Añadimos el campo branding como opcional
+  branding?: string;
+  publicationSchedule: PublicationSchedule[];
 }
 
 export interface Client {
