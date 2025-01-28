@@ -62,6 +62,12 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
     try {
       setIsLoading(true);
       
+      // Ensure publicationSchedule is properly formatted
+      const formattedSchedule = (info.publicationSchedule || []).map(schedule => ({
+        day: schedule.day,
+        time: schedule.time
+      }));
+
       // Create a clean copy of the data for saving that conforms to Json type
       const clientInfoData = {
         generalInfo: info.generalInfo || "",
@@ -74,13 +80,10 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
           username: network.username || ""
         })),
         branding: info.branding || "",
-        publicationSchedule: (info.publicationSchedule || []).map(schedule => ({
-          day: schedule.day || "monday",
-          time: schedule.time || "09:00"
-        }))
+        publicationSchedule: formattedSchedule
       } as Json;
 
-      console.log('Saving client info:', clientInfoData);
+      console.log('Saving client info with schedule:', clientInfoData);
 
       const { data, error } = await supabase
         .from('clients')
@@ -141,6 +144,8 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
       publicationSchedule: [...(prev.publicationSchedule || []), newSchedule]
     }));
   };
+
+  // ... keep existing code (Dialog, Tabs, and form rendering)
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
