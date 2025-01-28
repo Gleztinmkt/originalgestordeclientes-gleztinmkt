@@ -21,12 +21,6 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
 import { ClientInfo, SocialNetwork, SocialPlatform, PublicationSchedule } from "../types/client";
 
-interface ClientInfoDialogProps {
-  clientId: string;
-  clientInfo?: ClientInfo;
-  onUpdateInfo: (clientId: string, info: ClientInfo) => void;
-}
-
 const SOCIAL_PLATFORMS = [
   { id: 'instagram', label: 'Instagram' },
   { id: 'facebook', label: 'Facebook' },
@@ -52,7 +46,7 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
     meetings: [],
     socialNetworks: [],
     branding: "",
-    publicationSchedule: [] // Initialize as empty array
+    publicationSchedule: []
   });
   const [isLoading, setIsLoading] = useState(false);
   const [open, setOpen] = useState(false);
@@ -61,38 +55,29 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
     try {
       setIsLoading(true);
       
+      // Create a clean copy of the data for saving
       const clientInfoData = {
-        generalInfo: info.generalInfo || "",
-        meetings: info.meetings.map(meeting => ({
-          date: meeting.date || "",
-          notes: meeting.notes || ""
-        })),
-        socialNetworks: info.socialNetworks.map(network => ({
-          platform: network.platform || "instagram",
-          username: network.username || ""
-        })),
-        branding: info.branding || "",
-        publicationSchedule: (info.publicationSchedule || []).map(schedule => ({
-          day: schedule.day || "monday",
-          time: schedule.time || "09:00"
-        }))
+        ...info,
+        publicationSchedule: info.publicationSchedule || []
       };
 
-      console.log('Intentando guardar:', clientInfoData);
+      console.log('Saving client info:', clientInfoData);
 
       const { data, error } = await supabase
         .from('clients')
-        .update({ client_info: clientInfoData })
+        .update({ 
+          client_info: clientInfoData 
+        })
         .eq('id', clientId)
         .select()
         .single();
 
       if (error) {
-        console.error('Error al guardar:', error);
+        console.error('Error saving:', error);
         throw error;
       }
 
-      console.log('Datos guardados exitosamente:', data);
+      console.log('Save successful:', data);
       
       onUpdateInfo(clientId, clientInfoData);
       setOpen(false);
@@ -127,9 +112,14 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
   };
 
   const addSchedule = () => {
+    const newSchedule = {
+      day: 'monday',
+      time: '09:00'
+    };
+    
     setInfo(prev => ({
       ...prev,
-      publicationSchedule: [...(prev.publicationSchedule || []), { day: 'monday', time: '09:00' }],
+      publicationSchedule: [...(prev.publicationSchedule || []), newSchedule]
     }));
   };
 
@@ -255,7 +245,7 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
                     value={schedule.day}
                     onChange={(e) => {
                       const newSchedule = [...(info.publicationSchedule || [])];
-                      newSchedule[index].day = e.target.value;
+                      newSchedule[index] = { ...newSchedule[index], day: e.target.value };
                       setInfo(prev => ({ ...prev, publicationSchedule: newSchedule }));
                     }}
                     className="w-full p-2 border rounded-md bg-background"
@@ -271,7 +261,7 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
                     value={schedule.time}
                     onChange={(e) => {
                       const newSchedule = [...(info.publicationSchedule || [])];
-                      newSchedule[index].time = e.target.value;
+                      newSchedule[index] = { ...newSchedule[index], time: e.target.value };
                       setInfo(prev => ({ ...prev, publicationSchedule: newSchedule }));
                     }}
                     className="w-full"
@@ -280,7 +270,7 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
                     variant="destructive"
                     size="sm"
                     onClick={() => {
-                      const newSchedule = (info.publicationSchedule || []).filter((_, i) => i !== index);
+                      const newSchedule = info.publicationSchedule.filter((_, i) => i !== index);
                       setInfo(prev => ({ ...prev, publicationSchedule: newSchedule }));
                     }}
                   >
