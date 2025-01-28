@@ -52,7 +52,7 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
     meetings: [],
     socialNetworks: [],
     branding: "",
-    publicationSchedule: [] // Ensure this is initialized as an empty array
+    publicationSchedule: [] // Initialize as empty array
   });
   const [isLoading, setIsLoading] = useState(false);
   const [open, setOpen] = useState(false);
