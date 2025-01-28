@@ -72,7 +72,10 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
           username: network.username || ""
         })),
         branding: info.branding || "",
-        publicationSchedule: info.publicationSchedule || [],
+        publicationSchedule: info.publicationSchedule.map(schedule => ({
+          day: schedule.day || "monday",
+          time: schedule.time || "09:00"
+        }))
       };
 
       console.log('Intentando guardar:', clientInfoData);

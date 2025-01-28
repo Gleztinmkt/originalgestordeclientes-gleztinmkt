@@ -14,7 +14,9 @@ export const ClientInfoForm = ({ defaultValues, onSubmit, isSubmitting }: Client
   const [info, setInfo] = useState<ClientInfo>(defaultValues || {
     generalInfo: "",
     meetings: [],
-    socialNetworks: []
+    socialNetworks: [],
+    branding: "",
+    publicationSchedule: []
   });
 
   const handleSubmit = (e: React.FormEvent) => {
