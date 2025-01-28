@@ -52,7 +52,7 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
     meetings: [],
     socialNetworks: [],
     branding: "",
-    publicationSchedule: [],
+    publicationSchedule: [] // Ensure this is initialized as an empty array
   });
   const [isLoading, setIsLoading] = useState(false);
   const [open, setOpen] = useState(false);
@@ -72,7 +72,7 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
           username: network.username || ""
         })),
         branding: info.branding || "",
-        publicationSchedule: info.publicationSchedule.map(schedule => ({
+        publicationSchedule: (info.publicationSchedule || []).map(schedule => ({
           day: schedule.day || "monday",
           time: schedule.time || "09:00"
         }))
@@ -129,7 +129,7 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
   const addSchedule = () => {
     setInfo(prev => ({
       ...prev,
-      publicationSchedule: [...prev.publicationSchedule, { day: 'monday', time: '09:00' }],
+      publicationSchedule: [...(prev.publicationSchedule || []), { day: 'monday', time: '09:00' }],
     }));
   };
 
@@ -249,12 +249,12 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
               <Button onClick={addSchedule} variant="outline" size="sm">
                 Agregar Horario
               </Button>
-              {info.publicationSchedule.map((schedule, index) => (
+              {(info.publicationSchedule || []).map((schedule, index) => (
                 <div key={index} className="space-y-2 border p-4 rounded-lg">
                   <select
                     value={schedule.day}
                     onChange={(e) => {
-                      const newSchedule = [...info.publicationSchedule];
+                      const newSchedule = [...(info.publicationSchedule || [])];
                       newSchedule[index].day = e.target.value;
                       setInfo(prev => ({ ...prev, publicationSchedule: newSchedule }));
                     }}
@@ -270,7 +270,7 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
                     type="time"
                     value={schedule.time}
                     onChange={(e) => {
-                      const newSchedule = [...info.publicationSchedule];
+                      const newSchedule = [...(info.publicationSchedule || [])];
                       newSchedule[index].time = e.target.value;
                       setInfo(prev => ({ ...prev, publicationSchedule: newSchedule }));
                     }}
@@ -280,7 +280,7 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
                     variant="destructive"
                     size="sm"
                     onClick={() => {
-                      const newSchedule = info.publicationSchedule.filter((_, i) => i !== index);
+                      const newSchedule = (info.publicationSchedule || []).filter((_, i) => i !== index);
                       setInfo(prev => ({ ...prev, publicationSchedule: newSchedule }));
                     }}
                   >
@@ -290,7 +290,6 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
               ))}
             </div>
           </TabsContent>
-
         </Tabs>
         <Button onClick={handleSave} className="mt-4 w-full" disabled={isLoading}>
           {isLoading ? "Guardando..." : "Guardar Cambios"}
