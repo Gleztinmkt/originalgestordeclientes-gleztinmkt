@@ -88,6 +88,7 @@ export const TaskEditDialog = ({ task, onClose, onSave, clients }: TaskEditDialo
                 <SelectItem value="correcciones">Correcciones</SelectItem>
                 <SelectItem value="calendarios">Calendarios</SelectItem>
                 <SelectItem value="cobros">Cobros</SelectItem>
+                <SelectItem value="pagina web">Página Web</SelectItem>
                 <SelectItem value="otros">Otros</SelectItem>
               </SelectContent>
             </Select>
@@ -187,6 +188,7 @@ export const TaskEditDialog = ({ task, onClose, onSave, clients }: TaskEditDialo
               </div>
             </>
           )}
+
         </div>
 
         <div className="flex justify-end space-x-2">
