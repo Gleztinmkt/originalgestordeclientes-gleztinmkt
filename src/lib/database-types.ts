@@ -17,7 +17,7 @@ export interface DatabaseClient {
 export interface DatabaseTask {
   id: string;
   content: string;
-  type: "campaña" | "publicaciones" | "correcciones" | "otros" | "calendarios" | "cobros" | null;
+  type: "campaña" | "publicaciones" | "correcciones" | "otros" | "calendarios" | "cobros" | "pagina web" | null;
   date: string | null;
   client_id: string | null;
   created_at?: string;
