@@ -32,15 +32,16 @@ export const TaskEditDialog = ({ task, onClose, onSave, clients }: TaskEditDialo
   const [type, setType] = useState<Task["type"]>(task.type);
   const [clientId, setClientId] = useState(task.clientId || "no_client");
   const [executionDate, setExecutionDate] = useState<Date | undefined>(
-    task.executionDate ? new Date(task.executionDate) : undefined
+    task.executionDate instanceof Date ? task.executionDate : undefined
   );
   const [enableReminder, setEnableReminder] = useState(!!task.reminderDate);
   const [reminderDate, setReminderDate] = useState<Date | undefined>(
-    task.reminderDate ? new Date(task.reminderDate) : undefined
+    task.reminderDate instanceof Date ? task.reminderDate : undefined
   );
   const [reminderFrequency, setReminderFrequency] = useState(task.reminderFrequency || "once");
 
   const handleSave = () => {
+    console.log("Guardando tarea con fecha:", executionDate);
     onSave({
       content,
       description: description.trim() || undefined,
@@ -133,9 +134,8 @@ export const TaskEditDialog = ({ task, onClose, onSave, clients }: TaskEditDialo
                 </Button>
               </PopoverTrigger>
               <PopoverContent 
-                className="w-auto p-0 bg-white dark:bg-gray-800 z-50" 
+                className="w-auto p-0 bg-white dark:bg-gray-800" 
                 align="start"
-                onClick={(e) => e.stopPropagation()}
               >
                 <Calendar
                   mode="single"
@@ -144,7 +144,6 @@ export const TaskEditDialog = ({ task, onClose, onSave, clients }: TaskEditDialo
                   initialFocus
                   className="rounded-md border"
                   locale={es}
-                  defaultMonth={new Date(2025, 0, 29)}
                 />
               </PopoverContent>
             </Popover>
@@ -177,9 +176,8 @@ export const TaskEditDialog = ({ task, onClose, onSave, clients }: TaskEditDialo
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent 
-                    className="w-auto p-0 bg-white dark:bg-gray-800 z-50" 
+                    className="w-auto p-0 bg-white dark:bg-gray-800" 
                     align="start"
-                    onClick={(e) => e.stopPropagation()}
                   >
                     <Calendar
                       mode="single"
@@ -188,7 +186,6 @@ export const TaskEditDialog = ({ task, onClose, onSave, clients }: TaskEditDialo
                       initialFocus
                       className="rounded-md border"
                       locale={es}
-                      defaultMonth={new Date(2025, 0, 29)}
                     />
                   </PopoverContent>
                 </Popover>
