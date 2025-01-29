@@ -166,6 +166,11 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
     end: endOfMonth(selectedDate)
   });
 
+  // Ajustar el grid para empezar en el día correcto de la semana
+  const startDay = startOfMonth(selectedDate).getDay();
+  const emptyDays = Array(startDay).fill(null);
+  const allDays = [...emptyDays, ...daysInMonth];
+
   const toggleDayExpansion = (date: string) => {
     setExpandedDays(prev => ({
       ...prev,
@@ -270,7 +275,11 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
             </div>
           ))}
 
-          {daysInMonth.map((date) => {
+          {allDays.map((date, index) => {
+            if (!date) {
+              return <div key={`empty-${index}`} className="min-h-[120px] border rounded-lg p-1 relative bg-gray-50 dark:bg-gray-900/50" />;
+            }
+
             const dateStr = format(date, 'yyyy-MM-dd');
             const dayPublications = filteredPublications.filter(
               pub => format(new Date(pub.date), 'yyyy-MM-dd') === dateStr
