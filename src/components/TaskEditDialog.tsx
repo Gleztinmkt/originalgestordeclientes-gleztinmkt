@@ -117,7 +117,7 @@ export const TaskEditDialog = ({ task, onClose, onSave, clients }: TaskEditDialo
               <PopoverTrigger asChild>
                 <Button
                   variant={"outline"}
-                  className={`justify-start text-left font-normal ${
+                  className={`w-full justify-start text-left font-normal ${
                     !executionDate && "text-muted-foreground"
                   }`}
                 >
@@ -129,7 +129,7 @@ export const TaskEditDialog = ({ task, onClose, onSave, clients }: TaskEditDialo
                 <Calendar
                   mode="single"
                   selected={executionDate}
-                  onSelect={setExecutionDate}
+                  onSelect={(date) => setExecutionDate(date)}
                   initialFocus
                 />
               </PopoverContent>
@@ -153,7 +153,7 @@ export const TaskEditDialog = ({ task, onClose, onSave, clients }: TaskEditDialo
                   <PopoverTrigger asChild>
                     <Button
                       variant={"outline"}
-                      className={`justify-start text-left font-normal ${
+                      className={`w-full justify-start text-left font-normal ${
                         !reminderDate && "text-muted-foreground"
                       }`}
                     >
@@ -165,7 +165,7 @@ export const TaskEditDialog = ({ task, onClose, onSave, clients }: TaskEditDialo
                     <Calendar
                       mode="single"
                       selected={reminderDate}
-                      onSelect={setReminderDate}
+                      onSelect={(date) => setReminderDate(date)}
                       initialFocus
                     />
                   </PopoverContent>
@@ -188,7 +188,6 @@ export const TaskEditDialog = ({ task, onClose, onSave, clients }: TaskEditDialo
               </div>
             </>
           )}
-
         </div>
 
         <div className="flex justify-end space-x-2">
