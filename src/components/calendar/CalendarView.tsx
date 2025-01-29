@@ -6,7 +6,7 @@ import { PublicationCard } from "./PublicationCard";
 import { FilterPanel } from "./FilterPanel";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { format, addDays, startOfMonth, endOfMonth, eachDayOfInterval } from "date-fns";
+import { format, addDays, startOfMonth, endOfMonth, eachDayOfInterval, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 import { toast } from "@/hooks/use-toast";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
@@ -17,7 +17,9 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 export const CalendarView = ({ clients }: { clients: Client[] }) => {
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  // Establecer la fecha inicial como 29 de enero de 2025
+  const initialDate = new Date(2025, 0, 29); // Mes 0 = enero
+  const [selectedDate, setSelectedDate] = useState<Date>(initialDate);
   const [selectedClient, setSelectedClient] = useState<string | null>(null);
   const [selectedDesigner, setSelectedDesigner] = useState<string | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
@@ -38,7 +40,7 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
         .from('user_roles')
         .select('role')
         .eq('user_id', user.id)
-        .maybeSingle();  // Cambiado de .single() a .maybeSingle()
+        .maybeSingle();
 
       return roleData?.role || null;
     },
@@ -342,7 +344,7 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setSelectedDate(new Date())}
+                onClick={() => setSelectedDate(initialDate)}
               >
                 Hoy
               </Button>
@@ -397,7 +399,7 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setSelectedDate(new Date())}
+                  onClick={() => setSelectedDate(initialDate)}
                 >
                   Hoy
                 </Button>
