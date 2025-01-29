@@ -131,12 +131,17 @@ export const TaskEditDialog = ({ task, onClose, onSave, clients }: TaskEditDialo
                   {executionDate ? format(executionDate, "PPP") : "Seleccionar fecha"}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
+              <PopoverContent 
+                className="w-auto p-0 bg-white dark:bg-gray-800 z-50" 
+                align="start"
+                onClick={(e) => e.stopPropagation()}
+              >
                 <Calendar
                   mode="single"
                   selected={executionDate}
                   onSelect={handleDateSelect}
                   initialFocus
+                  className="rounded-md border"
                 />
               </PopoverContent>
             </Popover>
@@ -168,12 +173,17 @@ export const TaskEditDialog = ({ task, onClose, onSave, clients }: TaskEditDialo
                       {reminderDate ? format(reminderDate, "PPP") : "Seleccionar fecha"}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
+                  <PopoverContent 
+                    className="w-auto p-0 bg-white dark:bg-gray-800 z-50" 
+                    align="start"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <Calendar
                       mode="single"
                       selected={reminderDate}
                       onSelect={(date) => setReminderDate(date)}
                       initialFocus
+                      className="rounded-md border"
                     />
                   </PopoverContent>
                 </Popover>
