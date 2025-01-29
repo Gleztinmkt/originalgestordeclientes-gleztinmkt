@@ -38,7 +38,7 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
         .from('user_roles')
         .select('role')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();  // Cambiado de .single() a .maybeSingle()
 
       return roleData?.role || null;
     },
