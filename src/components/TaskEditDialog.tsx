@@ -51,6 +51,11 @@ export const TaskEditDialog = ({ task, onClose, onSave, clients }: TaskEditDialo
     });
   };
 
+  const handleDateSelect = (date: Date | undefined) => {
+    console.log("Fecha seleccionada:", date);
+    setExecutionDate(date);
+  };
+
   return (
     <Dialog open={true} onOpenChange={() => onClose()}>
       <DialogContent className="sm:max-w-[425px]">
@@ -116,7 +121,8 @@ export const TaskEditDialog = ({ task, onClose, onSave, clients }: TaskEditDialo
             <Popover>
               <PopoverTrigger asChild>
                 <Button
-                  variant={"outline"}
+                  type="button"
+                  variant="outline"
                   className={`w-full justify-start text-left font-normal ${
                     !executionDate && "text-muted-foreground"
                   }`}
@@ -129,7 +135,7 @@ export const TaskEditDialog = ({ task, onClose, onSave, clients }: TaskEditDialo
                 <Calendar
                   mode="single"
                   selected={executionDate}
-                  onSelect={(date) => setExecutionDate(date)}
+                  onSelect={handleDateSelect}
                   initialFocus
                 />
               </PopoverContent>
@@ -152,7 +158,8 @@ export const TaskEditDialog = ({ task, onClose, onSave, clients }: TaskEditDialo
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
-                      variant={"outline"}
+                      type="button"
+                      variant="outline"
                       className={`w-full justify-start text-left font-normal ${
                         !reminderDate && "text-muted-foreground"
                       }`}
