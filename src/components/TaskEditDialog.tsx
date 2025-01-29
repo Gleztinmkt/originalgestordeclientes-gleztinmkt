@@ -13,6 +13,7 @@ import {
 } from "./ui/select";
 import { Calendar } from "./ui/calendar";
 import { format } from "date-fns";
+import { es } from "date-fns/locale";
 import { Calendar as CalendarIcon, Bell } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Switch } from "./ui/switch";
@@ -128,7 +129,7 @@ export const TaskEditDialog = ({ task, onClose, onSave, clients }: TaskEditDialo
                   }`}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {executionDate ? format(executionDate, "PPP") : "Seleccionar fecha"}
+                  {executionDate ? format(executionDate, "PPP", { locale: es }) : "Seleccionar fecha"}
                 </Button>
               </PopoverTrigger>
               <PopoverContent 
@@ -142,6 +143,7 @@ export const TaskEditDialog = ({ task, onClose, onSave, clients }: TaskEditDialo
                   onSelect={handleDateSelect}
                   initialFocus
                   className="rounded-md border"
+                  locale={es}
                 />
               </PopoverContent>
             </Popover>
@@ -170,7 +172,7 @@ export const TaskEditDialog = ({ task, onClose, onSave, clients }: TaskEditDialo
                       }`}
                     >
                       <Bell className="mr-2 h-4 w-4" />
-                      {reminderDate ? format(reminderDate, "PPP") : "Seleccionar fecha"}
+                      {reminderDate ? format(reminderDate, "PPP", { locale: es }) : "Seleccionar fecha"}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent 
@@ -184,6 +186,7 @@ export const TaskEditDialog = ({ task, onClose, onSave, clients }: TaskEditDialo
                       onSelect={(date) => setReminderDate(date)}
                       initialFocus
                       className="rounded-md border"
+                      locale={es}
                     />
                   </PopoverContent>
                 </Popover>
