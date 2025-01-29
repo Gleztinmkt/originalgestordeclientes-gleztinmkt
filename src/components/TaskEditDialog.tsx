@@ -144,8 +144,7 @@ export const TaskEditDialog = ({ task, onClose, onSave, clients }: TaskEditDialo
                   initialFocus
                   className="rounded-md border"
                   locale={es}
-                  fromDate={new Date(2025, 0, 1)} // Enero 2025
-                  defaultMonth={new Date(2025, 0, 1)} // Enero 2025
+                  defaultMonth={new Date(2025, 0, 29)}
                 />
               </PopoverContent>
             </Popover>
@@ -189,8 +188,7 @@ export const TaskEditDialog = ({ task, onClose, onSave, clients }: TaskEditDialo
                       initialFocus
                       className="rounded-md border"
                       locale={es}
-                      fromDate={new Date(2025, 0, 1)} // Enero 2025
-                      defaultMonth={new Date(2025, 0, 1)} // Enero 2025
+                      defaultMonth={new Date(2025, 0, 29)}
                     />
                   </PopoverContent>
                 </Popover>
