@@ -40,7 +40,7 @@ export const InvoiceManager = () => {
         .select(`
           *,
           client:clients(name),
-          tax_info:client_tax_info(id, client_id, tax_id_type, tax_id)
+          tax_info:client_tax_info(id, client_id, tax_id_type, tax_id, created_at, updated_at)
         `)
         .is('deleted_at', null);
 
