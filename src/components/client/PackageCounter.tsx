@@ -1,19 +1,27 @@
 import { MinusCircle, PlusCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
 
 interface PackageCounterProps {
   total: number;
   used: number;
   onUpdateUsed: (newCount: number) => void;
+  onUpdateLastUsed?: (date: string) => void;
 }
 
-export const PackageCounter = ({ total, used, onUpdateUsed }: PackageCounterProps) => {
+export const PackageCounter = ({ total, used, onUpdateUsed, onUpdateLastUsed }: PackageCounterProps) => {
   const remaining = total - used;
 
   const handleIncrease = () => {
     if (used < total) {
       onUpdateUsed(used + 1);
+      if (onUpdateLastUsed) {
+        const now = new Date();
+        const formattedDate = format(now, "d 'de' MMMM, yyyy", { locale: es });
+        onUpdateLastUsed(formattedDate);
+      }
     }
   };
 

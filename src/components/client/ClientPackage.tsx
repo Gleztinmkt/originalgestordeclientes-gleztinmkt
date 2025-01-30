@@ -228,6 +228,7 @@ export const ClientPackage = ({
           total={totalPublications}
           used={usedPublications}
           onUpdateUsed={onUpdateUsed}
+          onUpdateLastUsed={handleLastPostChange}
         />
         
         <div className="mt-4 space-y-4">
