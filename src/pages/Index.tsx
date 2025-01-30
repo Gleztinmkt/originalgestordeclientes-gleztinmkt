@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { BillingModule } from "@/components/billing/BillingModule";
 
 const Index = () => {
   const { tasks, loadTasks, addTask, deleteTask, updateTask, completeTask } = useTaskManager();
@@ -147,6 +148,7 @@ const Index = () => {
                   onSendPaymentReminders={() => {}}
                   onCompleteTask={() => {}}
                 />
+                <BillingModule />
               </>
             )}
             <img 
