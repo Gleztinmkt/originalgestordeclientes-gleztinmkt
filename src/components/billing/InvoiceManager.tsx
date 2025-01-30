@@ -67,10 +67,13 @@ export const InvoiceManager = () => {
         ...invoice,
         tax_info: Array.isArray(invoice.tax_info) && invoice.tax_info.length > 0 
           ? {
-              tax_id_type: invoice.tax_info[0].tax_id_type,
-              tax_id: invoice.tax_info[0].tax_id
+              tax_id_type: invoice.tax_info[0].tax_id_type || 'Consumidor Final',
+              tax_id: invoice.tax_info[0].tax_id || null
             }
-          : null
+          : {
+              tax_id_type: 'Consumidor Final',
+              tax_id: null
+            }
       })) as Invoice[];
     },
   });
