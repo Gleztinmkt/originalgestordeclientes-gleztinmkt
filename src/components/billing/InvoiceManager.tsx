@@ -20,22 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-
-interface Invoice {
-  id: string;
-  client_id: string;
-  amount: number;
-  invoice_date: string;
-  status: string;
-  is_split_payment: boolean;
-  client?: {
-    name: string;
-  };
-  tax_info?: {
-    tax_id_type: string;
-    tax_id: string;
-  };
-}
+import { Invoice } from "@/components/types/billing";
 
 export const InvoiceManager = () => {
   const [filters, setFilters] = useState({
@@ -73,7 +58,7 @@ export const InvoiceManager = () => {
       }
 
       const { data } = await query.order('invoice_date', { ascending: false });
-      return data || [];
+      return (data || []) as Invoice[];
     },
   });
 
@@ -188,7 +173,7 @@ export const InvoiceManager = () => {
                   onValueChange={(value) => {
                     updateMutation.mutate({
                       id: invoice.id,
-                      updates: { status: value },
+                      updates: { status: value as 'pending' | 'completed' },
                     });
                   }}>
                   <SelectTrigger>

@@ -34,5 +34,5 @@ export interface Invoice {
   tax_info?: {
     tax_id_type: string;
     tax_id: string;
-  };
+  } | null;
 }
