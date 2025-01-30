@@ -40,7 +40,7 @@ export const InvoiceManager = () => {
         .select(`
           *,
           client:clients(name),
-          tax_info:client_tax_info(id, client_id, tax_id_type, tax_id, created_at, updated_at)
+          tax_info:client_tax_info(tax_id_type, tax_id)
         `)
         .is('deleted_at', null);
 
@@ -63,10 +63,13 @@ export const InvoiceManager = () => {
         throw error;
       }
 
-      return (data || []).map(invoice => ({
+      return data.map((invoice: any) => ({
         ...invoice,
         tax_info: Array.isArray(invoice.tax_info) && invoice.tax_info.length > 0 
-          ? invoice.tax_info[0] 
+          ? {
+              tax_id_type: invoice.tax_info[0].tax_id_type,
+              tax_id: invoice.tax_info[0].tax_id
+            }
           : null
       })) as Invoice[];
     },

@@ -8,12 +8,8 @@ export interface PackagePrice {
 }
 
 export interface ClientTaxInfo {
-  id: string;
-  client_id: string;
   tax_id_type: 'CUIT' | 'Consumidor Final';
   tax_id: string | null;
-  created_at?: string;
-  updated_at?: string;
 }
 
 export interface Invoice {
