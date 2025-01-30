@@ -31,8 +31,5 @@ export interface Invoice {
   client?: {
     name: string;
   };
-  tax_info?: {
-    tax_id_type: string;
-    tax_id: string;
-  } | null;
+  tax_info?: ClientTaxInfo | null;
 }

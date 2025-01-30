@@ -57,8 +57,16 @@ export const InvoiceManager = () => {
         query = query.lte('invoice_date', filters.dateTo);
       }
 
-      const { data } = await query.order('invoice_date', { ascending: false });
-      return (data || []) as Invoice[];
+      const { data, error } = await query.order('invoice_date', { ascending: false });
+      
+      if (error) {
+        throw error;
+      }
+
+      return (data || []).map(invoice => ({
+        ...invoice,
+        tax_info: invoice.tax_info?.[0] || null
+      })) as Invoice[];
     },
   });
 
