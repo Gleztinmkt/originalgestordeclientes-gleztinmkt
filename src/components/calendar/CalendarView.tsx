@@ -6,7 +6,7 @@ import { PublicationCard } from "./PublicationCard";
 import { FilterPanel } from "./FilterPanel";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { format, addDays, startOfMonth, endOfMonth, eachDayOfInterval, parseISO } from "date-fns";
+import { format, addMonths, startOfMonth, endOfMonth, eachDayOfInterval } from "date-fns";
 import { es } from "date-fns/locale";
 import { toast } from "@/hooks/use-toast";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
@@ -29,7 +29,6 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
   const [highlightedPublicationId, setHighlightedPublicationId] = useState<string | null>(null);
   const isMobile = useIsMobile();
 
-  // Query to get user role
   const { data: userRole } = useQuery({
     queryKey: ['userRole'],
     queryFn: async () => {
@@ -362,9 +361,7 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
                   variant="outline"
                   size="icon"
                   onClick={() => {
-                    const newDate = new Date(selectedDate);
-                    newDate.setMonth(newDate.getMonth() - 1);
-                    setSelectedDate(newDate);
+                    setSelectedDate(addMonths(selectedDate, -1));
                   }}
                 >
                   &lt;
@@ -373,9 +370,7 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
                   variant="outline"
                   size="icon"
                   onClick={() => {
-                    const newDate = new Date(selectedDate);
-                    newDate.setMonth(newDate.getMonth() + 1);
-                    setSelectedDate(newDate);
+                    setSelectedDate(addMonths(selectedDate, 1));
                   }}
                 >
                   &gt;
@@ -417,9 +412,7 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
                     variant="outline"
                     size="icon"
                     onClick={() => {
-                      const newDate = new Date(selectedDate);
-                      newDate.setMonth(newDate.getMonth() - 1);
-                      setSelectedDate(newDate);
+                      setSelectedDate(addMonths(selectedDate, -1));
                     }}
                   >
                     &lt;
@@ -428,9 +421,7 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
                     variant="outline"
                     size="icon"
                     onClick={() => {
-                      const newDate = new Date(selectedDate);
-                      newDate.setMonth(newDate.getMonth() + 1);
-                      setSelectedDate(newDate);
+                      setSelectedDate(addMonths(selectedDate, 1));
                     }}
                   >
                     &gt;
