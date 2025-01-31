@@ -8,6 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Json } from "@/integrations/supabase/types";
+import html2canvas from 'html2canvas';
 import {
   DropdownMenu,
   DropdownMenuContent,
