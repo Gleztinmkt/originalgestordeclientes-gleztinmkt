@@ -9,6 +9,40 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Json } from "@/integrations/supabase/types";
 import html2canvas from 'html2canvas';
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { AddPackageForm } from "./AddPackageForm";
+import { PublicationCalendarDialog } from "./PublicationCalendarDialog";
+
+interface PackageFormValues {
+  name: string;
+  totalPublications: string;
+  month: string;
+  paid: boolean;
+}
 
 interface PackageData {
   id: string;
