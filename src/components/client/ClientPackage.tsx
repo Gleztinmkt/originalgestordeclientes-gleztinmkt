@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from "react";
-import { Package, Edit, MoreVertical, Trash, Send } from "lucide-react";
+import { Package, Edit, MoreVertical, Trash, Send, Download } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PackageCounter } from "./PackageCounter";
 import { Badge } from "@/components/ui/badge";
@@ -176,6 +176,109 @@ export const ClientPackage = ({
     }
   };
 
+  const generateCalendarImage = async () => {
+    const calendarElement = document.createElement('div');
+    calendarElement.className = 'p-8 bg-white text-black min-w-[800px]';
+    
+    // Header
+    const header = document.createElement('div');
+    header.className = 'text-center mb-8';
+    header.innerHTML = `
+      <h1 class="text-3xl font-bold mb-2">Calendario de Publicaciones</h1>
+      <h2 class="text-xl text-gray-600">${clientName} - ${packageName}</h2>
+      <p class="text-sm text-gray-500">Generado el ${new Date().toLocaleDateString('es-ES', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      })}</p>
+    `;
+    calendarElement.appendChild(header);
+
+    try {
+      const { data: publications = [] } = await supabase
+        .from('publications')
+        .select('*')
+        .eq('client_id', clientId)
+        .eq('package_id', packageId)
+        .is('deleted_at', null)
+        .order('date', { ascending: true });
+
+      // Publications list
+      const list = document.createElement('div');
+      list.className = 'space-y-4';
+      
+      publications.forEach(pub => {
+        const item = document.createElement('div');
+        item.className = 'p-4 border rounded-lg';
+        item.innerHTML = `
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="font-semibold">${pub.name}</h3>
+              <p class="text-sm text-gray-600">
+                ${new Date(pub.date).toLocaleDateString('es-ES', { 
+                  weekday: 'long',
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric' 
+                })}
+              </p>
+            </div>
+            <span class="px-3 py-1 rounded-full text-sm ${
+              pub.type === 'reel' ? 'bg-blue-100 text-blue-800' :
+              pub.type === 'carousel' ? 'bg-green-100 text-green-800' :
+              'bg-purple-100 text-purple-800'
+            }">
+              ${pub.type}
+            </span>
+          </div>
+          ${pub.description ? `<p class="mt-2 text-sm text-gray-600">${pub.description}</p>` : ''}
+        `;
+        list.appendChild(item);
+      });
+      
+      calendarElement.appendChild(list);
+
+      // Footer
+      const footer = document.createElement('div');
+      footer.className = 'mt-8 text-center text-sm text-gray-500';
+      footer.innerHTML = 'Gestor de clientes Gleztin Marketing Digital';
+      calendarElement.appendChild(footer);
+
+      // Add to document temporarily
+      document.body.appendChild(calendarElement);
+
+      const canvas = await html2canvas(calendarElement, {
+        scale: 2,
+        backgroundColor: '#ffffff',
+        logging: false,
+      });
+
+      // Convert to image and download
+      const image = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.download = `calendario-${clientName.toLowerCase().replace(/\s+/g, '-')}-${packageName.toLowerCase().replace(/\s+/g, '-')}.png`;
+      link.href = image;
+      link.click();
+
+      toast({
+        title: "Calendario generado",
+        description: "La imagen se ha descargado correctamente.",
+      });
+    } catch (error) {
+      console.error('Error generating calendar image:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo generar la imagen del calendario.",
+        variant: "destructive",
+      });
+    } finally {
+      // Clean up
+      if (document.body.contains(calendarElement)) {
+        document.body.removeChild(calendarElement);
+      }
+    }
+  };
+
   return (
     <Card className="bg-white dark:bg-gray-800 border dark:border-gray-700">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -208,6 +311,13 @@ export const ClientPackage = ({
               >
                 <Edit className="mr-2 h-4 w-4" />
                 Editar paquete
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={generateCalendarImage}
+                disabled={isProcessing}
+              >
+                <Download className="mr-2 h-4 w-4" />
+                Descargar calendario
               </DropdownMenuItem>
               {onDeletePackage && (
                 <DropdownMenuItem
