@@ -9,33 +9,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Json } from "@/integrations/supabase/types";
 import html2canvas from 'html2canvas';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { AddPackageForm, PackageFormValues } from "./AddPackageForm";
-import { toast } from "@/hooks/use-toast";
-import { PublicationCalendarDialog } from "./PublicationCalendarDialog";
-import { supabase } from "@/integrations/supabase/client";
 
 interface PackageData {
   id: string;
@@ -179,15 +152,17 @@ export const ClientPackage = ({
 
   const generateCalendarImage = async () => {
     const calendarElement = document.createElement('div');
-    calendarElement.className = 'p-8 bg-white text-black min-w-[800px]';
+    calendarElement.className = 'p-8 bg-gradient-to-br from-[#F2FCE2] to-[#E5DEFF] min-w-[800px]';
     
-    // Header
+    // Header with modern styling
     const header = document.createElement('div');
-    header.className = 'text-center mb-8';
+    header.className = 'text-center mb-8 bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-lg';
     header.innerHTML = `
-      <h1 class="text-3xl font-bold mb-2">Calendario de Publicaciones</h1>
-      <h2 class="text-xl text-gray-600">${clientName} - ${packageName}</h2>
-      <p class="text-sm text-gray-500">Generado el ${new Date().toLocaleDateString('es-ES', { 
+      <div class="inline-block p-2 bg-[#9b87f5] text-white rounded-lg mb-4">
+        <h1 class="text-2xl font-bold">Calendario de Publicaciones</h1>
+      </div>
+      <h2 class="text-xl text-[#221F26] font-semibold mb-2">${clientName} - ${packageName}</h2>
+      <p class="text-[#8E9196]">Generado el ${new Date().toLocaleDateString('es-ES', { 
         year: 'numeric', 
         month: 'long', 
         day: 'numeric' 
@@ -204,18 +179,27 @@ export const ClientPackage = ({
         .is('deleted_at', null)
         .order('date', { ascending: true });
 
-      // Publications list
+      // Publications list with modern cards
       const list = document.createElement('div');
       list.className = 'space-y-4';
       
       publications.forEach(pub => {
         const item = document.createElement('div');
-        item.className = 'p-4 border rounded-lg';
+        item.className = 'bg-white/90 backdrop-blur-sm rounded-xl p-6 shadow-md transition-all hover:shadow-lg';
+        
+        const typeColors = {
+          reel: { bg: '#D3E4FD', text: '#0EA5E9' },
+          carousel: { bg: '#FDE1D3', text: '#F97316' },
+          image: { bg: '#E5DEFF', text: '#8B5CF6' }
+        };
+        
+        const typeColor = typeColors[pub.type as keyof typeof typeColors] || typeColors.image;
+        
         item.innerHTML = `
           <div class="flex items-center justify-between">
-            <div>
-              <h3 class="font-semibold">${pub.name}</h3>
-              <p class="text-sm text-gray-600">
+            <div class="flex-1">
+              <h3 class="text-lg font-semibold text-[#221F26] mb-1">${pub.name}</h3>
+              <p class="text-[#8E9196] text-sm">
                 ${new Date(pub.date).toLocaleDateString('es-ES', { 
                   weekday: 'long',
                   year: 'numeric', 
@@ -224,25 +208,30 @@ export const ClientPackage = ({
                 })}
               </p>
             </div>
-            <span class="px-3 py-1 rounded-full text-sm ${
-              pub.type === 'reel' ? 'bg-blue-100 text-blue-800' :
-              pub.type === 'carousel' ? 'bg-green-100 text-green-800' :
-              'bg-purple-100 text-purple-800'
-            }">
-              ${pub.type}
+            <span class="px-4 py-2 rounded-full text-sm font-medium" style="background-color: ${typeColor.bg}; color: ${typeColor.text}">
+              ${pub.type.charAt(0).toUpperCase() + pub.type.slice(1)}
             </span>
           </div>
-          ${pub.description ? `<p class="mt-2 text-sm text-gray-600">${pub.description}</p>` : ''}
+          ${pub.description ? `
+            <div class="mt-3 pt-3 border-t border-gray-100">
+              <p class="text-sm text-[#8E9196]">${pub.description}</p>
+            </div>
+          ` : ''}
         `;
         list.appendChild(item);
       });
       
       calendarElement.appendChild(list);
 
-      // Footer
+      // Footer with modern styling
       const footer = document.createElement('div');
-      footer.className = 'mt-8 text-center text-sm text-gray-500';
-      footer.innerHTML = 'Gestor de clientes Gleztin Marketing Digital';
+      footer.className = 'mt-8 text-center p-4 bg-white/80 backdrop-blur-sm rounded-xl';
+      footer.innerHTML = `
+        <div class="text-sm text-[#8E9196] flex items-center justify-center gap-2">
+          <span class="font-medium">Gestor de clientes</span>
+          <span class="text-[#9b87f5] font-bold">Gleztin Marketing Digital</span>
+        </div>
+      `;
       calendarElement.appendChild(footer);
 
       // Add to document temporarily
@@ -250,7 +239,7 @@ export const ClientPackage = ({
 
       const canvas = await html2canvas(calendarElement, {
         scale: 2,
-        backgroundColor: '#ffffff',
+        backgroundColor: null,
         logging: false,
       });
 
