@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Calendar as CalendarIcon } from "lucide-react";
+import { Calendar as CalendarIcon, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -17,6 +17,9 @@ import { PublicationItem } from "./PublicationItem";
 import { PublicationDescription } from "./PublicationDescription";
 import { Publication, PublicationFormValues, PublicationCalendarDialogProps } from "./types";
 import { useQuery } from "@tanstack/react-query";
+import html2canvas from "html2canvas";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
 
 export const PublicationCalendarDialog = ({ 
   clientId, 
@@ -145,6 +148,89 @@ export const PublicationCalendarDialog = ({
     }
   };
 
+  const generateCalendarImage = async () => {
+    const calendarElement = document.createElement('div');
+    calendarElement.className = 'p-8 bg-white text-black min-w-[800px]';
+    
+    // Header
+    const header = document.createElement('div');
+    header.className = 'text-center mb-8';
+    header.innerHTML = `
+      <h1 class="text-3xl font-bold mb-2">Calendario de Publicaciones</h1>
+      <h2 class="text-xl text-gray-600">${clientName}</h2>
+      <p class="text-sm text-gray-500">Generado el ${format(new Date(), "d 'de' MMMM 'de' yyyy", { locale: es })}</p>
+    `;
+    calendarElement.appendChild(header);
+
+    // Publications list
+    const list = document.createElement('div');
+    list.className = 'space-y-4';
+    
+    publications.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+      .forEach(pub => {
+        const item = document.createElement('div');
+        item.className = 'p-4 border rounded-lg';
+        item.innerHTML = `
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="font-semibold">${pub.name}</h3>
+              <p class="text-sm text-gray-600">
+                ${format(new Date(pub.date), "EEEE d 'de' MMMM 'de' yyyy", { locale: es })}
+              </p>
+            </div>
+            <span class="px-3 py-1 rounded-full text-sm ${
+              pub.type === 'reel' ? 'bg-blue-100 text-blue-800' :
+              pub.type === 'carousel' ? 'bg-green-100 text-green-800' :
+              'bg-purple-100 text-purple-800'
+            }">
+              ${pub.type}
+            </span>
+          </div>
+        `;
+        list.appendChild(item);
+      });
+    
+    calendarElement.appendChild(list);
+
+    // Footer
+    const footer = document.createElement('div');
+    footer.className = 'mt-8 text-center text-sm text-gray-500';
+    footer.innerHTML = 'Gestor de clientes Gleztin Marketing Digital';
+    calendarElement.appendChild(footer);
+
+    // Add to document temporarily
+    document.body.appendChild(calendarElement);
+
+    try {
+      const canvas = await html2canvas(calendarElement, {
+        scale: 2, // Higher resolution
+        backgroundColor: '#ffffff',
+        logging: false,
+      });
+
+      // Convert to image and download
+      const image = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.download = `calendario-${clientName.toLowerCase().replace(/\s+/g, '-')}.png`;
+      link.href = image;
+      link.click();
+
+      toast({
+        title: "Calendario generado",
+        description: "La imagen se ha descargado correctamente.",
+      });
+    } catch (error) {
+      console.error('Error generating calendar image:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo generar la imagen del calendario.",
+        variant: "destructive",
+      });
+    } finally {
+      document.body.removeChild(calendarElement);
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
@@ -158,10 +244,22 @@ export const PublicationCalendarDialog = ({
       </DialogTrigger>
       <DialogContent className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto dark:bg-gray-900">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold dark:text-white">
-            Calendario de publicaciones - {clientName}
-          </DialogTitle>
+          <div className="flex items-center justify-between">
+            <DialogTitle className="text-xl font-bold dark:text-white">
+              Calendario de publicaciones - {clientName}
+            </DialogTitle>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={generateCalendarImage}
+              className="flex items-center gap-2"
+            >
+              <Download className="h-4 w-4" />
+              Descargar Calendario
+            </Button>
+          </div>
         </DialogHeader>
+        
         <div className="space-y-6">
           <div className="space-y-4">
             {publications.map((publication) => (

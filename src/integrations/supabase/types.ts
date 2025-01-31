@@ -109,6 +109,41 @@ export type Database = {
           },
         ]
       }
+      client_tax_info: {
+        Row: {
+          client_id: string | null
+          created_at: string
+          id: string
+          tax_id: string | null
+          tax_id_type: Database["public"]["Enums"]["tax_id_type"]
+          updated_at: string
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string
+          id?: string
+          tax_id?: string | null
+          tax_id_type?: Database["public"]["Enums"]["tax_id_type"]
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string
+          id?: string
+          tax_id?: string | null
+          tax_id_type?: Database["public"]["Enums"]["tax_id_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_tax_info_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           agency_id: string | null
@@ -185,6 +220,56 @@ export type Database = {
           name?: string
         }
         Relationships: []
+      }
+      invoices: {
+        Row: {
+          amount: number
+          client_id: string | null
+          created_at: string
+          deleted_at: string | null
+          id: string
+          invoice_date: string
+          is_split_payment: boolean | null
+          original_amount: number
+          package_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          client_id?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          invoice_date: string
+          is_split_payment?: boolean | null
+          original_amount: number
+          package_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          client_id?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          invoice_date?: string
+          is_split_payment?: boolean | null
+          original_amount?: number
+          package_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       note_replies: {
         Row: {
@@ -290,6 +375,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      package_prices: {
+        Row: {
+          created_at: string
+          deleted_at: string | null
+          id: string
+          name: string
+          price: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          name: string
+          price: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          name?: string
+          price?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -530,6 +642,7 @@ export type Database = {
       }
     }
     Enums: {
+      tax_id_type: "CUIT" | "Consumidor Final"
       user_role: "admin" | "designer"
     }
     CompositeTypes: {
