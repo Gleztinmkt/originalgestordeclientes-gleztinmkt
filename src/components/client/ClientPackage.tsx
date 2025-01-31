@@ -188,12 +188,12 @@ export const ClientPackage = ({
     const calendarElement = document.createElement('div');
     calendarElement.className = 'p-8 bg-gradient-to-br from-[#F2FCE2] to-[#E5DEFF] min-w-[800px]';
     
-    // Header with modern styling
+    // Header with modern styling and system logo
     const header = document.createElement('div');
     header.className = 'text-center mb-8 bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-lg';
     header.innerHTML = `
-      <div class="inline-block p-2 bg-[#9b87f5] text-white rounded-lg mb-4">
-        <h1 class="text-2xl font-bold">Calendario de Publicaciones</h1>
+      <div class="flex items-center justify-center gap-4 mb-4">
+        <img src="https://i.imgur.com/YvEDrAv.png" alt="Gleztin Marketing Digital" class="h-12 w-auto object-contain" />
       </div>
       <h2 class="text-xl text-[#221F26] font-semibold mb-2">${clientName} - ${packageName}</h2>
       <p class="text-[#8E9196]">Generado el ${new Date().toLocaleDateString('es-ES', { 
