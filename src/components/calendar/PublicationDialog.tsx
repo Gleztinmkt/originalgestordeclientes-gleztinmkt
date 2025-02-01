@@ -96,17 +96,32 @@ export const PublicationDialog = ({
   }, [name, type, description, copywriting, designer, status, links, publication]);
 
   useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') {
-        return;
+    const handleVisibilityChange = (e: Event) => {
+      e.preventDefault();
+      // Prevent dialog from closing when tab loses focus
+      if (document.visibilityState === 'hidden' && open) {
+        e.stopPropagation();
       }
     };
 
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    const handleFocus = (e: Event) => {
+      e.preventDefault();
+      // Prevent dialog from closing when window regains focus
+      if (open) {
+        e.stopPropagation();
+      }
     };
-  }, []);
+
+    document.addEventListener('visibilitychange', handleVisibilityChange, true);
+    window.addEventListener('focus', handleFocus, true);
+    window.addEventListener('blur', handleFocus, true);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange, true);
+      window.removeEventListener('focus', handleFocus, true);
+      window.removeEventListener('blur', handleFocus, true);
+    };
+  }, [open]);
 
   const handleOpenChange = (open: boolean) => {
     if (!open && hasChanges()) {
@@ -197,6 +212,9 @@ export const PublicationDialog = ({
             if (hasChanges()) {
               setShowConfirmDialog(true);
             }
+          }}
+          onFocusOutside={(e) => {
+            e.preventDefault();
           }}
         >
           <DialogHeader>
