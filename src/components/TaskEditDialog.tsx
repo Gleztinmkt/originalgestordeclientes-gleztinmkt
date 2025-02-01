@@ -2,7 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Task } from "./TaskList";
 import {
   Select,
@@ -18,6 +18,7 @@ import { Calendar as CalendarIcon, Bell } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Switch } from "./ui/switch";
 import { Label } from "./ui/label";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "./ui/alert-dialog";
 
 interface TaskEditDialogProps {
   task: Task;
@@ -39,6 +40,26 @@ export const TaskEditDialog = ({ task, onClose, onSave, clients }: TaskEditDialo
     task.reminderDate instanceof Date ? task.reminderDate : undefined
   );
   const [reminderFrequency, setReminderFrequency] = useState(task.reminderFrequency || "once");
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+
+  const hasChanges = useCallback(() => {
+    return content !== task.content ||
+      description !== (task.description || "") ||
+      type !== task.type ||
+      clientId !== (task.clientId || "no_client") ||
+      executionDate?.getTime() !== (task.executionDate instanceof Date ? task.executionDate.getTime() : undefined) ||
+      enableReminder !== !!task.reminderDate ||
+      reminderDate?.getTime() !== (task.reminderDate instanceof Date ? task.reminderDate.getTime() : undefined) ||
+      reminderFrequency !== (task.reminderFrequency || "once");
+  }, [content, description, type, clientId, executionDate, enableReminder, reminderDate, reminderFrequency, task]);
+
+  const handleClose = () => {
+    if (hasChanges()) {
+      setShowConfirmDialog(true);
+    } else {
+      onClose();
+    }
+  };
 
   const handleSave = () => {
     console.log("Guardando tarea con fecha:", executionDate);
@@ -59,11 +80,12 @@ export const TaskEditDialog = ({ task, onClose, onSave, clients }: TaskEditDialo
   };
 
   return (
-    <Dialog open={true} onOpenChange={() => onClose()}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>Editar tarea</DialogTitle>
-        </DialogHeader>
+    <>
+      <Dialog open={true} onOpenChange={handleClose}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Editar tarea</DialogTitle>
+          </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
             <Label>Contenido</Label>
@@ -208,14 +230,39 @@ export const TaskEditDialog = ({ task, onClose, onSave, clients }: TaskEditDialo
             </>
           )}
         </div>
+          <div className="flex justify-end space-x-2">
+            <Button variant="outline" onClick={handleClose}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSave}>Guardar</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
-        <div className="flex justify-end space-x-2">
-          <Button variant="outline" onClick={onClose}>
-            Cancelar
-          </Button>
-          <Button onClick={handleSave}>Guardar</Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Guardar cambios?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Has realizado cambios en esta tarea. ¿Quieres guardarlos antes de salir?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setShowConfirmDialog(false);
+              onClose();
+            }}>
+              Descartar
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+              handleSave();
+              setShowConfirmDialog(false);
+            }}>
+              Guardar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };
