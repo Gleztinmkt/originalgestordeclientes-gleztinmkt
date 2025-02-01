@@ -17,7 +17,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 export const CalendarView = ({ clients }: { clients: Client[] }) => {
-  const initialDate = new Date(2025, 0, 29);
+  const initialDate = new Date();
   const [selectedDate, setSelectedDate] = useState<Date>(initialDate);
   const [selectedClient, setSelectedClient] = useState<string | null>(null);
   const [selectedDesigner, setSelectedDesigner] = useState<string | null>(null);
