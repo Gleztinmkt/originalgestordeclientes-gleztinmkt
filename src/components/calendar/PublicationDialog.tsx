@@ -392,7 +392,8 @@ export const PublicationDialog = ({
               Descartar
             </AlertDialogCancel>
             <AlertDialogAction onClick={() => {
-              handleSubmit(new Event('submit') as React.FormEvent);
+              const fakeEvent = { preventDefault: () => {} } as React.FormEvent;
+              handleSubmit(fakeEvent);
               setShowConfirmDialog(false);
             }}>
               Guardar
