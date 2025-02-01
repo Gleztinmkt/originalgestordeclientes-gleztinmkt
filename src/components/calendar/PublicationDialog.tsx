@@ -163,8 +163,8 @@ export const PublicationDialog = ({
 
   return (
     <>
-      <Dialog open={open} onOpenChange={handleOpenChange} modal={false}>
-        <DialogContent className="max-w-[600px] max-h-[80vh]">
+      <Dialog open={open} onOpenChange={handleOpenChange} modal={true}>
+        <DialogContent className="max-w-[600px] max-h-[80vh]" onPointerDownOutside={(e) => e.preventDefault()}>
           <DialogHeader>
             <DialogTitle>Editar Publicación</DialogTitle>
           </DialogHeader>
