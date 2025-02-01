@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
 import { ExternalLink, Link as LinkIcon, Plus, Trash2, Instagram } from "lucide-react";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Publication } from "../client/publication/types";
 import { Client } from "../types/client";
 import { toast } from "@/hooks/use-toast";
@@ -95,6 +95,20 @@ export const PublicationDialog = ({
       JSON.stringify(links) !== (publication.links || "[]");
   }, [name, type, description, copywriting, designer, status, links, publication]);
 
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        // Prevent the dialog from closing when tab/window loses focus
+        return;
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
   const handleOpenChange = (open: boolean) => {
     if (!open && hasChanges()) {
       setShowConfirmDialog(true);
@@ -163,8 +177,32 @@ export const PublicationDialog = ({
 
   return (
     <>
-      <Dialog open={open} onOpenChange={handleOpenChange} modal={true}>
-        <DialogContent className="max-w-[600px] max-h-[80vh]" onPointerDownOutside={(e) => e.preventDefault()}>
+      <Dialog 
+        open={open} 
+        onOpenChange={handleOpenChange} 
+        modal={true}
+        onEscapeKeyDown={(e) => {
+          // Prevent closing with Escape key if there are changes
+          if (hasChanges()) {
+            e.preventDefault();
+            setShowConfirmDialog(true);
+          }
+        }}
+      >
+        <DialogContent 
+          className="max-w-[600px] max-h-[80vh]" 
+          onPointerDownOutside={(e) => {
+            // Prevent closing when clicking outside if there are changes
+            e.preventDefault();
+            if (hasChanges()) {
+              setShowConfirmDialog(true);
+            }
+          }}
+          onInteractOutside={(e) => {
+            // Prevent any interaction outside the dialog
+            e.preventDefault();
+          }}
+        >
           <DialogHeader>
             <DialogTitle>Editar Publicación</DialogTitle>
           </DialogHeader>
