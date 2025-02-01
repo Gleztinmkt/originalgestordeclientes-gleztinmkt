@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -98,7 +98,6 @@ export const PublicationDialog = ({
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'hidden') {
-        // Prevent the dialog from closing when tab/window loses focus
         return;
       }
     };
@@ -181,26 +180,23 @@ export const PublicationDialog = ({
         open={open} 
         onOpenChange={handleOpenChange} 
         modal={true}
-        onEscapeKeyDown={(e) => {
-          // Prevent closing with Escape key if there are changes
-          if (hasChanges()) {
-            e.preventDefault();
-            setShowConfirmDialog(true);
-          }
-        }}
       >
         <DialogContent 
           className="max-w-[600px] max-h-[80vh]" 
           onPointerDownOutside={(e) => {
-            // Prevent closing when clicking outside if there are changes
             e.preventDefault();
             if (hasChanges()) {
               setShowConfirmDialog(true);
             }
           }}
           onInteractOutside={(e) => {
-            // Prevent any interaction outside the dialog
             e.preventDefault();
+          }}
+          onEscapeKeyDown={(e) => {
+            e.preventDefault();
+            if (hasChanges()) {
+              setShowConfirmDialog(true);
+            }
           }}
         >
           <DialogHeader>
