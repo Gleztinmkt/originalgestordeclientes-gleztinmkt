@@ -6,7 +6,7 @@ import { PublicationCard } from "./PublicationCard";
 import { FilterPanel } from "./FilterPanel";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { format, addMonths, startOfMonth, endOfMonth, eachDayOfInterval } from "date-fns";
+import { format, addMonths, startOfMonth, endOfMonth, eachDayOfInterval, isToday } from "date-fns";
 import { es } from "date-fns/locale";
 import { toast } from "@/hooks/use-toast";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
@@ -17,8 +17,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 export const CalendarView = ({ clients }: { clients: Client[] }) => {
-  // Establecer la fecha inicial como 29 de enero de 2025
-  const initialDate = new Date(2025, 0, 29); // Mes 0 = enero
+  const initialDate = new Date(2025, 0, 29);
   const [selectedDate, setSelectedDate] = useState<Date>(initialDate);
   const [selectedClient, setSelectedClient] = useState<string | null>(null);
   const [selectedDesigner, setSelectedDesigner] = useState<string | null>(null);
@@ -85,7 +84,6 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
   });
 
   const handleDragEnd = async (result: DropResult) => {
-    // Only allow drag and drop for admin users
     if (userRole !== 'admin') {
       toast({
         title: "Acceso denegado",
@@ -137,7 +135,7 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
     if (highlightedPublicationId) {
       const timer = setTimeout(() => {
         setHighlightedPublicationId(null);
-      }, 2000); // Clear highlight after 2 seconds
+      }, 2000);
       return () => clearTimeout(timer);
     }
   }, [highlightedPublicationId]);
@@ -165,7 +163,6 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
     end: endOfMonth(selectedDate)
   });
 
-  // Ajustar el grid para empezar en el día correcto de la semana
   const startDay = startOfMonth(selectedDate).getDay();
   const emptyDays = Array(startDay).fill(null);
   const allDays = [...emptyDays, ...daysInMonth];
@@ -208,15 +205,17 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
 
             if (dayPublications.length === 0) return null;
 
+            const isCurrentDay = isToday(date);
+
             return (
               <Droppable key={dateStr} droppableId={dateStr}>
                 {(provided) => (
                   <div
                     ref={provided.innerRef}
                     {...provided.droppableProps}
-                    className="calendar-day-card"
+                    className={`calendar-day-card ${isCurrentDay ? 'ring-2 ring-blue-500 dark:ring-blue-400' : ''}`}
                   >
-                    <div className="calendar-day-header">
+                    <div className={`calendar-day-header ${isCurrentDay ? 'font-bold text-blue-500 dark:text-blue-400' : ''}`}>
                       <h3 className="calendar-day-title">
                         {format(date, 'EEEE d', { locale: es })}
                       </h3>
@@ -284,15 +283,21 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
               pub => format(new Date(pub.date), 'yyyy-MM-dd') === dateStr
             );
 
+            const isCurrentDay = isToday(date);
+
             return (
               <Droppable key={dateStr} droppableId={dateStr}>
                 {(provided) => (
                   <div
                     ref={provided.innerRef}
                     {...provided.droppableProps}
-                    className="min-h-[120px] border rounded-lg p-1 relative bg-white/50 dark:bg-gray-800/50"
+                    className={`min-h-[120px] border rounded-lg p-1 relative bg-white/50 dark:bg-gray-800/50 ${
+                      isCurrentDay ? 'ring-2 ring-blue-500 dark:ring-blue-400' : ''
+                    }`}
                   >
-                    <div className="text-right text-sm mb-1 px-1">
+                    <div className={`text-right text-sm mb-1 px-1 ${
+                      isCurrentDay ? 'font-bold text-blue-500 dark:text-blue-400' : ''
+                    }`}>
                       {format(date, 'd')}
                     </div>
                     <ScrollArea className={`h-full ${isMobile ? 'touch-pan-y' : ''}`}>
