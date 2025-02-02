@@ -1,4 +1,3 @@
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useState, useCallback, useRef, useEffect } from "react";
 import { Package, Edit, MoreVertical, Trash, Send, Download } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -59,7 +58,7 @@ interface ClientPackageProps {
   onUpdateUsed: (newCount: number) => void;
   onUpdatePaid: (paid: boolean) => Promise<void>;
   onUpdateSplitPayment?: (firstHalfPaid: boolean, secondHalfPaid: boolean) => Promise<void>;
-  onEditPackage: (values: Partial<PackageFormValues>) => Promise<void>;
+  onEditPackage: (values: Partial<PackageFormValues & { name: string }>) => Promise<void>;
   onDeletePackage?: () => void;
   clientId: string;
   clientName: string;
@@ -107,7 +106,6 @@ export const ClientPackage = ({
     fetchLastPost();
   }, [clientId]);
 
-  // Update last post with debounce
   const handleLastPostChange = async (value: string) => {
     setLastPost(value);
     
@@ -148,7 +146,10 @@ export const ClientPackage = ({
         isSplitPayment: values.isSplitPayment,
         firstHalfPaid: values.firstHalfPaid,
         secondHalfPaid: values.secondHalfPaid,
-        customPublications: values.customPublications
+        customPublications: values.customPublications,
+        name: values.packageType === "personalizado" 
+          ? `Paquete Personalizado (${values.customPublications} publicaciones)`
+          : packageName
       });
       
       toast({
@@ -170,7 +171,7 @@ export const ClientPackage = ({
       });
       setIsProcessing(false);
     }
-  }, [onEditPackage, isProcessing]);
+  }, [onEditPackage, isProcessing, packageName]);
 
   const handleUpdateSplitPayment = async (isFirst: boolean, value: boolean) => {
     if (!onUpdateSplitPayment || isProcessing) return;
@@ -208,7 +209,6 @@ export const ClientPackage = ({
     const calendarElement = document.createElement('div');
     calendarElement.className = 'p-8 bg-gradient-to-br from-[#F2FCE2] to-[#E5DEFF] min-w-[800px]';
     
-    // Header with modern styling and company name
     const header = document.createElement('div');
     header.className = 'text-center mb-8 bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-lg';
     header.innerHTML = `
@@ -233,7 +233,6 @@ export const ClientPackage = ({
         .is('deleted_at', null)
         .order('date', { ascending: true });
 
-      // Publications list with modern cards
       const list = document.createElement('div');
       list.className = 'space-y-4';
       
@@ -277,7 +276,6 @@ export const ClientPackage = ({
       
       calendarElement.appendChild(list);
 
-      // Footer with modern styling
       const footer = document.createElement('div');
       footer.className = 'mt-8 text-center p-4 bg-white/80 backdrop-blur-sm rounded-xl';
       footer.innerHTML = `
@@ -288,7 +286,6 @@ export const ClientPackage = ({
       `;
       calendarElement.appendChild(footer);
 
-      // Add to document temporarily
       document.body.appendChild(calendarElement);
 
       const canvas = await html2canvas(calendarElement, {
@@ -297,7 +294,6 @@ export const ClientPackage = ({
         logging: false,
       });
 
-      // Convert to image and download
       const image = canvas.toDataURL('image/png');
       const link = document.createElement('a');
       link.download = `calendario-${clientName.toLowerCase().replace(/\s+/g, '-')}-${packageName.toLowerCase().replace(/\s+/g, '-')}.png`;
@@ -316,7 +312,6 @@ export const ClientPackage = ({
         variant: "destructive",
       });
     } finally {
-      // Clean up
       if (document.body.contains(calendarElement)) {
         document.body.removeChild(calendarElement);
       }
