@@ -122,12 +122,9 @@ export const ClientPackage = ({
     }, 500);
   };
 
-  const handleEditSubmit = useCallback(async (values: PackageFormValues) => {
-    if (isProcessing) {
-      console.log('Submission blocked - already processing');
-      return;
-    }
-
+  const handleEditSubmit = async (values: PackageFormValues) => {
+    if (isProcessing) return;
+    
     try {
       setIsProcessing(true);
       await onEditPackage({
@@ -156,7 +153,7 @@ export const ClientPackage = ({
       });
       setIsProcessing(false);
     }
-  }, [onEditPackage, isProcessing, packageName]);
+  };
 
   const handleUpdateSplitPayment = async (isFirst: boolean, value: boolean) => {
     if (!onUpdateSplitPayment || isProcessing) return;
