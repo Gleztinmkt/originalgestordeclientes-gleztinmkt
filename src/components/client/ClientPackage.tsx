@@ -48,7 +48,7 @@ interface ClientPackageProps {
   onUpdateUsed: (newCount: number) => void;
   onUpdatePaid: (paid: boolean) => Promise<void>;
   onUpdateSplitPayment?: (firstHalfPaid: boolean, secondHalfPaid: boolean) => Promise<void>;
-  onEditPackage: (values: PackageFormValues & { name: string }) => Promise<void>;
+  onEditPackage: (values: PackageFormValues & { name: string, totalPublications: string }) => Promise<void>;
   onDeletePackage?: () => void;
   clientId: string;
   clientName: string;
@@ -131,7 +131,10 @@ export const ClientPackage = ({
         ...values,
         name: values.packageType === "personalizado" 
           ? `Paquete Personalizado (${values.customPublications} publicaciones)`
-          : packageName
+          : packageName,
+        totalPublications: values.packageType === "personalizado"
+          ? values.customPublications || "0"
+          : totalPublications.toString()
       });
       
       toast({
