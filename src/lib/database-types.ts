@@ -58,7 +58,7 @@ export const convertClientForDatabase = (client: Client): DatabaseClient => ({
   marketing_info: client.marketingInfo || null,
   instagram: client.instagram || null,
   facebook: client.facebook || null,
-  packages: client.packages as Json,
+  packages: client.packages as unknown as Json,
 });
 
 export const convertDatabaseTask = (task: DatabaseTask): Task => ({

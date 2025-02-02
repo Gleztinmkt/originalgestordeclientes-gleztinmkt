@@ -1,3 +1,4 @@
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useState, useCallback, useRef, useEffect } from "react";
 import { Package, Edit, MoreVertical, Trash, Send, Download } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,9 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import html2canvas from 'html2canvas';
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/hooks/use-toast";
 import {
   Dialog,
   DialogContent,
@@ -33,8 +31,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { toast } from "@/hooks/use-toast";
 import { AddPackageForm } from "./AddPackageForm";
 import { PublicationCalendarDialog } from "./PublicationCalendarDialog";
+import html2canvas from 'html2canvas';
+import { supabase } from "@/integrations/supabase/client";
 
 interface PackageFormValues {
   packageType: "basico" | "avanzado" | "premium" | "personalizado";
@@ -58,7 +59,7 @@ interface ClientPackageProps {
   onUpdateUsed: (newCount: number) => void;
   onUpdatePaid: (paid: boolean) => Promise<void>;
   onUpdateSplitPayment?: (firstHalfPaid: boolean, secondHalfPaid: boolean) => Promise<void>;
-  onEditPackage: (values: PackageFormValues) => Promise<void>;
+  onEditPackage: (values: Partial<PackageFormValues>) => Promise<void>;
   onDeletePackage?: () => void;
   clientId: string;
   clientName: string;
@@ -147,7 +148,7 @@ export const ClientPackage = ({
         isSplitPayment: values.isSplitPayment,
         firstHalfPaid: values.firstHalfPaid,
         secondHalfPaid: values.secondHalfPaid,
-        totalPublications: values.customPublications || totalPublications.toString()
+        customPublications: values.customPublications
       });
       
       toast({
@@ -169,7 +170,7 @@ export const ClientPackage = ({
       });
       setIsProcessing(false);
     }
-  }, [onEditPackage, isProcessing, totalPublications]);
+  }, [onEditPackage, isProcessing]);
 
   const handleUpdateSplitPayment = async (isFirst: boolean, value: boolean) => {
     if (!onUpdateSplitPayment || isProcessing) return;
