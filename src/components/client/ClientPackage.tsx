@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Json } from "@/integrations/supabase/types";
 import html2canvas from 'html2canvas';
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -47,18 +46,6 @@ interface PackageFormValues {
   secondHalfPaid: boolean;
 }
 
-interface PackageData {
-  id: string;
-  name: string;
-  totalPublications: number;
-  usedPublications: number;
-  month: string;
-  paid: boolean;
-  isSplitPayment: boolean;
-  firstHalfPaid: boolean;
-  secondHalfPaid: boolean;
-}
-
 interface ClientPackageProps {
   packageName: string;
   totalPublications: number;
@@ -66,7 +53,7 @@ interface ClientPackageProps {
   month: string;
   paid: boolean;
   onUpdateUsed: (newCount: number) => void;
-  onUpdatePaid: (paid: boolean) => void;
+  onUpdatePaid: (paid: boolean) => Promise<void>;
   onEditPackage: (values: PackageFormValues & { name: string, totalPublications: string }) => Promise<void>;
   onDeletePackage?: () => void;
   clientId: string;
@@ -92,8 +79,8 @@ export const ClientPackage = ({
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [lastPost, setLastPost] = useState<string>("");
+  const updateTimeoutRef = useRef<NodeJS.Timeout>();
   const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const submissionCountRef = useRef(0);
 
   // Fetch last post on component mount
   useEffect(() => {
@@ -112,60 +99,56 @@ export const ClientPackage = ({
     fetchLastPost();
   }, [clientId]);
 
-  // Update last post in database
+  // Update last post with debounce
   const handleLastPostChange = async (value: string) => {
     setLastPost(value);
-    try {
-      const { error } = await supabase
-        .from('clients')
-        .update({ last_post: value })
-        .eq('id', clientId);
-
-      if (error) throw error;
-    } catch (error) {
-      console.error('Error updating last post:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo actualizar el último post",
-        variant: "destructive",
-      });
+    
+    if (updateTimeoutRef.current) {
+      clearTimeout(updateTimeoutRef.current);
     }
+
+    updateTimeoutRef.current = setTimeout(async () => {
+      try {
+        const { error } = await supabase
+          .from('clients')
+          .update({ last_post: value })
+          .eq('id', clientId);
+
+        if (error) throw error;
+      } catch (error) {
+        console.error('Error updating last post:', error);
+        toast({
+          title: "Error",
+          description: "No se pudo actualizar el último post",
+          variant: "destructive",
+        });
+      }
+    }, 500);
   };
 
   const handleEditSubmit = useCallback(async (values: PackageFormValues & { name: string, totalPublications: string }) => {
-    const currentSubmissionCount = ++submissionCountRef.current;
-    
     if (isProcessing) {
       console.log('Submission blocked - already processing');
       return;
     }
 
-    console.log(`Starting submission #${currentSubmissionCount}`, {
-      values,
-      isProcessing,
-      currentTime: new Date().toISOString()
-    });
-
     try {
       setIsProcessing(true);
-      await new Promise(resolve => setTimeout(resolve, 100));
       await onEditPackage(values);
       
-      console.log(`Submission #${currentSubmissionCount} completed successfully`);
-      
-      processingTimeoutRef.current = setTimeout(() => {
-        if (currentSubmissionCount === submissionCountRef.current) {
-          setIsEditDialogOpen(false);
-          setIsProcessing(false);
-          toast({
-            title: "Paquete actualizado",
-            description: "El paquete ha sido actualizado correctamente.",
-          });
-        }
-      }, 300);
+      toast({
+        title: "Paquete actualizado",
+        description: "El paquete ha sido actualizado correctamente.",
+      });
+
+      // Cerrar el diálogo después de un breve retraso
+      setTimeout(() => {
+        setIsEditDialogOpen(false);
+        setIsProcessing(false);
+      }, 500);
 
     } catch (error) {
-      console.error(`Error in submission #${currentSubmissionCount}:`, error);
+      console.error('Error updating package:', error);
       toast({
         title: "Error",
         description: "No se pudo actualizar el paquete. Por favor, intenta de nuevo.",
@@ -179,15 +162,6 @@ export const ClientPackage = ({
     const message = `*Reporte de Paquete - ${clientName}*\n\n*Nombre:* ${packageName}\n*Mes:* ${month}\n*Estado:* Completado\n*Publicaciones:* ${usedPublications}/${totalPublications}\n\n*Gracias por confiar en Gleztin Marketing Digital*`;
     const whatsappUrl = `https://wa.me/${clientId}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
-  };
-
-  const closeEditDialog = () => {
-    if (!isProcessing) {
-      console.log('Closing edit dialog - not processing');
-      setIsEditDialogOpen(false);
-    } else {
-      console.log('Cannot close dialog - processing in progress');
-    }
   };
 
   const generateCalendarImage = async () => {
@@ -405,7 +379,7 @@ export const ClientPackage = ({
         </div>
       </CardContent>
 
-      <Dialog open={isEditDialogOpen} onOpenChange={closeEditDialog}>
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>Editar Paquete</DialogTitle>
