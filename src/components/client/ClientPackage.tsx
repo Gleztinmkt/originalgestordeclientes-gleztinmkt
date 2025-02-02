@@ -31,20 +31,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "@/hooks/use-toast";
-import { AddPackageForm } from "./AddPackageForm";
+import { AddPackageForm, PackageFormValues } from "./AddPackageForm";
 import { PublicationCalendarDialog } from "./PublicationCalendarDialog";
 import html2canvas from 'html2canvas';
 import { supabase } from "@/integrations/supabase/client";
-
-interface PackageFormValues {
-  packageType: "basico" | "avanzado" | "premium" | "personalizado";
-  month: string;
-  paid: boolean;
-  customPublications?: string;
-  isSplitPayment: boolean;
-  firstHalfPaid: boolean;
-  secondHalfPaid: boolean;
-}
 
 interface ClientPackageProps {
   packageName: string;
@@ -58,7 +48,7 @@ interface ClientPackageProps {
   onUpdateUsed: (newCount: number) => void;
   onUpdatePaid: (paid: boolean) => Promise<void>;
   onUpdateSplitPayment?: (firstHalfPaid: boolean, secondHalfPaid: boolean) => Promise<void>;
-  onEditPackage: (values: Partial<PackageFormValues & { name: string }>) => Promise<void>;
+  onEditPackage: (values: PackageFormValues & { name: string }) => Promise<void>;
   onDeletePackage?: () => void;
   clientId: string;
   clientName: string;
@@ -141,12 +131,7 @@ export const ClientPackage = ({
     try {
       setIsProcessing(true);
       await onEditPackage({
-        month: values.month,
-        paid: values.paid,
-        isSplitPayment: values.isSplitPayment,
-        firstHalfPaid: values.firstHalfPaid,
-        secondHalfPaid: values.secondHalfPaid,
-        customPublications: values.customPublications,
+        ...values,
         name: values.packageType === "personalizado" 
           ? `Paquete Personalizado (${values.customPublications} publicaciones)`
           : packageName
