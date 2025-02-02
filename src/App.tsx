@@ -16,7 +16,9 @@ const App = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Obtener la sesión inicial
+    // Clear any potentially invalid session data
+    supabase.auth.signOut();
+
     const getInitialSession = async () => {
       try {
         const { data: { session: initialSession } } = await supabase.auth.getSession();
@@ -30,8 +32,8 @@ const App = () => {
 
     getInitialSession();
 
-    // Escuchar cambios en la autenticación
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      console.log("Auth state changed:", _event, session);
       setSession(session);
     });
 
