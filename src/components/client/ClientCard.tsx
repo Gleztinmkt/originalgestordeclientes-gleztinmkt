@@ -156,6 +156,27 @@ export const ClientCard = ({
     }
   };
 
+  const handleUpdateSplitPayment = async (packageId: string, firstHalfPaid: boolean, secondHalfPaid: boolean) => {
+    if (isUpdating) return;
+    
+    try {
+      setIsUpdating(true);
+      const updatedPackages = client.packages.map(pkg =>
+        pkg.id === packageId ? { ...pkg, firstHalfPaid, secondHalfPaid } : pkg
+      );
+      await onUpdateClient(client.id, { ...client, packages: updatedPackages });
+    } catch (error) {
+      console.error('Error updating split payment status:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el estado del pago.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   const content = (
     <>
       <ClientCardHeader
@@ -180,6 +201,7 @@ export const ClientCard = ({
           isCapturing={isCapturing}
           onUpdatePackage={onUpdatePackage}
           onUpdatePaid={handleUpdatePackagePaid}
+          onUpdateSplitPayment={handleUpdateSplitPayment}
           onEditPackage={handleEditPackage}
           onDeletePackage={handleDeletePackage}
           onCaptureStart={() => setIsCapturing(true)}

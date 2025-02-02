@@ -21,6 +21,18 @@ export interface ClientInfo {
   publicationSchedule: PublicationSchedule[];
 }
 
+export interface Package {
+  id: string;
+  name: string;
+  totalPublications: number;
+  usedPublications: number;
+  month: string;
+  paid: boolean;
+  isSplitPayment?: boolean;
+  firstHalfPaid?: boolean;
+  secondHalfPaid?: boolean;
+}
+
 export interface Client {
   id: string;
   name: string;
@@ -29,13 +41,6 @@ export interface Client {
   marketingInfo: string;
   instagram?: string;
   facebook?: string;
-  packages: Array<{
-    id: string;
-    name: string;
-    totalPublications: number;
-    usedPublications: number;
-    month: string;
-    paid: boolean;
-  }>;
+  packages: Package[];
   clientInfo?: ClientInfo;
 }
