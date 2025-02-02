@@ -37,10 +37,10 @@ import { AddPackageForm } from "./AddPackageForm";
 import { PublicationCalendarDialog } from "./PublicationCalendarDialog";
 
 interface PackageFormValues {
-  name: string;
-  totalPublications: string;
+  packageType: "basico" | "avanzado" | "premium" | "personalizado";
   month: string;
   paid: boolean;
+  customPublications?: string;
   isSplitPayment: boolean;
   firstHalfPaid: boolean;
   secondHalfPaid: boolean;
@@ -142,10 +142,12 @@ export const ClientPackage = ({
     try {
       setIsProcessing(true);
       await onEditPackage({
-        ...values,
-        isSplitPayment: values.isSplitPayment || false,
-        firstHalfPaid: values.firstHalfPaid || false,
-        secondHalfPaid: values.secondHalfPaid || false
+        month: values.month,
+        paid: values.paid,
+        isSplitPayment: values.isSplitPayment,
+        firstHalfPaid: values.firstHalfPaid,
+        secondHalfPaid: values.secondHalfPaid,
+        totalPublications: values.customPublications || totalPublications.toString()
       });
       
       toast({
@@ -167,7 +169,7 @@ export const ClientPackage = ({
       });
       setIsProcessing(false);
     }
-  }, [onEditPackage, isProcessing]);
+  }, [onEditPackage, isProcessing, totalPublications]);
 
   const handleUpdateSplitPayment = async (isFirst: boolean, value: boolean) => {
     if (!onUpdateSplitPayment || isProcessing) return;
@@ -452,13 +454,13 @@ export const ClientPackage = ({
           <AddPackageForm
             onSubmit={handleEditSubmit}
             defaultValues={{
-              name: packageName,
-              totalPublications: totalPublications.toString(),
+              packageType: "basico",
               month: month,
               paid: paid,
               isSplitPayment: isSplitPayment,
               firstHalfPaid: firstHalfPaid,
               secondHalfPaid: secondHalfPaid,
+              customPublications: totalPublications.toString()
             }}
             isSubmitting={isProcessing}
           />
