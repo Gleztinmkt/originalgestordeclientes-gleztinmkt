@@ -52,9 +52,13 @@ interface ClientPackageProps {
   usedPublications: number;
   month: string;
   paid: boolean;
+  isSplitPayment?: boolean;
+  firstHalfPaid?: boolean;
+  secondHalfPaid?: boolean;
   onUpdateUsed: (newCount: number) => void;
   onUpdatePaid: (paid: boolean) => Promise<void>;
-  onEditPackage: (values: PackageFormValues & { name: string, totalPublications: string }) => Promise<void>;
+  onUpdateSplitPayment?: (firstHalfPaid: boolean, secondHalfPaid: boolean) => Promise<void>;
+  onEditPackage: (values: PackageFormValues) => Promise<void>;
   onDeletePackage?: () => void;
   clientId: string;
   clientName: string;
@@ -67,8 +71,12 @@ export const ClientPackage = ({
   usedPublications,
   month,
   paid,
+  isSplitPayment = false,
+  firstHalfPaid = false,
+  secondHalfPaid = false,
   onUpdateUsed,
   onUpdatePaid,
+  onUpdateSplitPayment,
   onEditPackage,
   onDeletePackage,
   clientId,
@@ -82,7 +90,6 @@ export const ClientPackage = ({
   const updateTimeoutRef = useRef<NodeJS.Timeout>();
   const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Fetch last post on component mount
   useEffect(() => {
     const fetchLastPost = async () => {
       const { data: clientData, error } = await supabase
@@ -126,7 +133,7 @@ export const ClientPackage = ({
     }, 500);
   };
 
-  const handleEditSubmit = useCallback(async (values: PackageFormValues & { name: string, totalPublications: string }) => {
+  const handleEditSubmit = useCallback(async (values: PackageFormValues) => {
     if (isProcessing) {
       console.log('Submission blocked - already processing');
       return;
@@ -134,14 +141,18 @@ export const ClientPackage = ({
 
     try {
       setIsProcessing(true);
-      await onEditPackage(values);
+      await onEditPackage({
+        ...values,
+        isSplitPayment: values.isSplitPayment || false,
+        firstHalfPaid: values.firstHalfPaid || false,
+        secondHalfPaid: values.secondHalfPaid || false
+      });
       
       toast({
         title: "Paquete actualizado",
         description: "El paquete ha sido actualizado correctamente.",
       });
 
-      // Cerrar el diálogo después de un breve retraso
       setTimeout(() => {
         setIsEditDialogOpen(false);
         setIsProcessing(false);
@@ -157,6 +168,32 @@ export const ClientPackage = ({
       setIsProcessing(false);
     }
   }, [onEditPackage, isProcessing]);
+
+  const handleUpdateSplitPayment = async (isFirst: boolean, value: boolean) => {
+    if (!onUpdateSplitPayment || isProcessing) return;
+
+    try {
+      setIsProcessing(true);
+      await onUpdateSplitPayment(
+        isFirst ? value : firstHalfPaid,
+        isFirst ? secondHalfPaid : value
+      );
+      
+      toast({
+        title: "Pago actualizado",
+        description: `${isFirst ? 'Primera' : 'Segunda'} quincena actualizada correctamente.`,
+      });
+    } catch (error) {
+      console.error('Error updating split payment:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el estado del pago.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   const handleSendCompletionMessage = () => {
     const message = `*Reporte de Paquete - ${clientName}*\n\n*Nombre:* ${packageName}\n*Mes:* ${month}\n*Estado:* Completado\n*Publicaciones:* ${usedPublications}/${totalPublications}\n\n*Gracias por confiar en Gleztin Marketing Digital*`;
@@ -292,16 +329,41 @@ export const ClientPackage = ({
         </CardTitle>
         <div className="flex items-center gap-4">
           <Badge>{month}</Badge>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600 dark:text-gray-300">
-              {paid ? "Pagado" : "Pendiente"}
-            </span>
-            <Switch 
-              checked={paid} 
-              onCheckedChange={onUpdatePaid}
-              disabled={isProcessing}
-            />
-          </div>
+          {isSplitPayment ? (
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600 dark:text-gray-300">
+                  1ra Quincena
+                </span>
+                <Switch 
+                  checked={firstHalfPaid} 
+                  onCheckedChange={(value) => handleUpdateSplitPayment(true, value)}
+                  disabled={isProcessing}
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600 dark:text-gray-300">
+                  2da Quincena
+                </span>
+                <Switch 
+                  checked={secondHalfPaid} 
+                  onCheckedChange={(value) => handleUpdateSplitPayment(false, value)}
+                  disabled={isProcessing}
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600 dark:text-gray-300">
+                {paid ? "Pagado" : "Pendiente"}
+              </span>
+              <Switch 
+                checked={paid} 
+                onCheckedChange={onUpdatePaid}
+                disabled={isProcessing}
+              />
+            </div>
+          )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -390,12 +452,13 @@ export const ClientPackage = ({
           <AddPackageForm
             onSubmit={handleEditSubmit}
             defaultValues={{
-              packageType: "basico",
+              name: packageName,
+              totalPublications: totalPublications.toString(),
               month: month,
               paid: paid,
-              isSplitPayment: false,
-              firstHalfPaid: false,
-              secondHalfPaid: false,
+              isSplitPayment: isSplitPayment,
+              firstHalfPaid: firstHalfPaid,
+              secondHalfPaid: secondHalfPaid,
             }}
             isSubmitting={isProcessing}
           />
