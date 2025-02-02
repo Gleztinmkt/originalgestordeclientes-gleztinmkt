@@ -42,6 +42,9 @@ interface PackageFormValues {
   totalPublications: string;
   month: string;
   paid: boolean;
+  isSplitPayment: boolean;
+  firstHalfPaid: boolean;
+  secondHalfPaid: boolean;
 }
 
 interface PackageData {
@@ -51,6 +54,9 @@ interface PackageData {
   usedPublications: number;
   month: string;
   paid: boolean;
+  isSplitPayment: boolean;
+  firstHalfPaid: boolean;
+  secondHalfPaid: boolean;
 }
 
 interface ClientPackageProps {
@@ -413,6 +419,9 @@ export const ClientPackage = ({
               packageType: "basico",
               month: month,
               paid: paid,
+              isSplitPayment: false,
+              firstHalfPaid: false,
+              secondHalfPaid: false,
             }}
             isSubmitting={isProcessing}
           />

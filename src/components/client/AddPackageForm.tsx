@@ -40,6 +40,9 @@ const packageFormSchema = z.object({
   month: z.string().min(1, "Selecciona el mes del paquete"),
   paid: z.boolean().default(false),
   customPublications: z.string().optional(),
+  isSplitPayment: z.boolean().default(false),
+  firstHalfPaid: z.boolean().default(false),
+  secondHalfPaid: z.boolean().default(false),
 });
 
 export type PackageFormValues = z.infer<typeof packageFormSchema>;
@@ -63,6 +66,9 @@ export const AddPackageForm = ({ onSubmit, defaultValues, isSubmitting = false }
       month: defaultValues?.month || "",
       paid: defaultValues?.paid || false,
       customPublications: defaultValues?.customPublications || "",
+      isSplitPayment: defaultValues?.isSplitPayment || false,
+      firstHalfPaid: defaultValues?.firstHalfPaid || false,
+      secondHalfPaid: defaultValues?.secondHalfPaid || false,
     },
   });
 
@@ -97,6 +103,7 @@ export const AddPackageForm = ({ onSubmit, defaultValues, isSubmitting = false }
     }
   };
 
+  const isSplitPayment = form.watch("isSplitPayment");
   const disabled = isSubmitting || isProcessing;
 
   return (
@@ -177,16 +184,16 @@ export const AddPackageForm = ({ onSubmit, defaultValues, isSubmitting = false }
             </FormItem>
           )}
         />
-        
+
         <FormField
           control={form.control}
-          name="paid"
+          name="isSplitPayment"
           render={({ field }) => (
             <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
               <div className="space-y-0.5">
-                <FormLabel className="text-base">Estado de Pago</FormLabel>
+                <FormLabel className="text-base">Pago en dos partes</FormLabel>
                 <FormDescription>
-                  ¿El paquete ya está pagado?
+                  Dividir el pago en dos quincenas
                 </FormDescription>
               </div>
               <FormControl>
@@ -199,6 +206,78 @@ export const AddPackageForm = ({ onSubmit, defaultValues, isSubmitting = false }
             </FormItem>
           )}
         />
+
+        {!isSplitPayment && (
+          <FormField
+            control={form.control}
+            name="paid"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                <div className="space-y-0.5">
+                  <FormLabel className="text-base">Estado de Pago</FormLabel>
+                  <FormDescription>
+                    ¿El paquete ya está pagado?
+                  </FormDescription>
+                </div>
+                <FormControl>
+                  <Switch
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                    disabled={disabled}
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+        )}
+
+        {isSplitPayment && (
+          <>
+            <FormField
+              control={form.control}
+              name="firstHalfPaid"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                  <div className="space-y-0.5">
+                    <FormLabel className="text-base">Primera Quincena</FormLabel>
+                    <FormDescription>
+                      ¿La primera parte está pagada?
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                      disabled={disabled}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="secondHalfPaid"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                  <div className="space-y-0.5">
+                    <FormLabel className="text-base">Segunda Quincena</FormLabel>
+                    <FormDescription>
+                      ¿La segunda parte está pagada?
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                      disabled={disabled}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+          </>
+        )}
         
         <Button 
           type="submit" 
