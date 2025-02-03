@@ -182,26 +182,26 @@ const Index = () => {
           <TabsList className={`grid w-full ${userRole === 'admin' ? 'grid-cols-4' : 'grid-cols-1'} rounded-2xl p-1 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm ${isMobile ? 'sticky top-2 z-10' : ''}`}>
             {userRole === 'admin' && (
               <>
-                <TabsTrigger value="clients" className="rounded-xl data-[state=active]:bg-black data-[state=active]:text-white dark:data-[state=active]:bg-white dark:data-[state=active]:text-black">
+                <TabsTrigger value="clients">
                   Clientes
                 </TabsTrigger>
-                <TabsTrigger value="tasks" className="rounded-xl data-[state=active]:bg-black data-[state=active]:text-white dark:data-[state=active]:bg-white dark:data-[state=active]:text-black">
+                <TabsTrigger value="tasks">
                   Tareas
                 </TabsTrigger>
-                <TabsTrigger value="planning" className="rounded-xl data-[state=active]:bg-black data-[state=active]:text-white dark:data-[state=active]:bg-white dark:data-[state=active]:text-black">
+                <TabsTrigger value="planning">
                   Planificación
                 </TabsTrigger>
               </>
             )}
-            <TabsTrigger value="calendar" className="rounded-xl data-[state=active]:bg-black data-[state=active]:text-white dark:data-[state=active]:bg-white dark:data-[state=active]:text-black">
+            <TabsTrigger value="calendar">
               Calendario
             </TabsTrigger>
           </TabsList>
+
           <div className="section-container mt-6">
             {userRole === 'admin' && (
               <>
-                <TabsContent value="clients" className="space-y-4">
-                  <ClientForm onAddClient={addClient} />
+                <TabsContent value="clients">
                   <ClientList 
                     clients={clients} 
                     onDeleteClient={deleteClient}
@@ -215,7 +215,7 @@ const Index = () => {
                     onUpdateTask={updateTask}
                   />
                 </TabsContent>
-                <TabsContent value="tasks" className="space-y-4">
+                <TabsContent value="tasks">
                   <TaskFilter 
                     clients={clients}
                     onFilterChange={handleFilterChange}
@@ -232,13 +232,25 @@ const Index = () => {
                     clients={clients}
                   />
                 </TabsContent>
-                <TabsContent value="planning" className="space-y-4">
+                <TabsContent value="planning">
                   <CalendarView clients={clients} />
                 </TabsContent>
               </>
             )}
             <TabsContent value="calendar">
-              <CalendarView clients={clients} />
+              <ClientList 
+                clients={clients} 
+                onDeleteClient={deleteClient}
+                onUpdateClient={updateClient}
+                onUpdatePackage={updatePackage}
+                onAddPackage={addPackage}
+                tasks={tasks}
+                onAddTask={addTask}
+                onDeleteTask={deleteTask}
+                onCompleteTask={handleCompleteTask}
+                onUpdateTask={updateTask}
+                viewMode="calendar"
+              />
             </TabsContent>
           </div>
         </Tabs>
