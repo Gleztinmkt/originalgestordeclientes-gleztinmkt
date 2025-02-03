@@ -15,6 +15,7 @@ import { useClientManager } from "@/features/clients/useClientManager";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "@/hooks/use-toast";
 import { CalendarView } from "@/components/calendar/CalendarView";
+import { PlanningCalendar } from "@/components/planning/PlanningCalendar";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
@@ -179,7 +180,7 @@ const Index = () => {
         </div>
         
         <Tabs defaultValue={userRole === 'admin' ? "clients" : "calendar"} className="w-full max-w-[1200px] mx-auto">
-          <TabsList className={`grid w-full ${userRole === 'admin' ? 'grid-cols-3' : 'grid-cols-1'} rounded-2xl p-1 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm ${isMobile ? 'sticky top-2 z-10' : ''}`}>
+          <TabsList className={`grid w-full ${userRole === 'admin' ? 'grid-cols-4' : 'grid-cols-1'} rounded-2xl p-1 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm ${isMobile ? 'sticky top-2 z-10' : ''}`}>
             {userRole === 'admin' && (
               <>
                 <TabsTrigger value="clients" className="rounded-xl data-[state=active]:bg-black data-[state=active]:text-white dark:data-[state=active]:bg-white dark:data-[state=active]:text-black">
@@ -187,6 +188,9 @@ const Index = () => {
                 </TabsTrigger>
                 <TabsTrigger value="tasks" className="rounded-xl data-[state=active]:bg-black data-[state=active]:text-white dark:data-[state=active]:bg-white dark:data-[state=active]:text-black">
                   Tareas
+                </TabsTrigger>
+                <TabsTrigger value="planning" className="rounded-xl data-[state=active]:bg-black data-[state=active]:text-white dark:data-[state=active]:bg-white dark:data-[state=active]:text-black">
+                  Planificación
                 </TabsTrigger>
               </>
             )}
@@ -228,6 +232,9 @@ const Index = () => {
                     onUpdateTask={updateTask}
                     clients={clients}
                   />
+                </TabsContent>
+                <TabsContent value="planning">
+                  <PlanningCalendar clients={clients} />
                 </TabsContent>
               </>
             )}

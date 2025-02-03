@@ -440,6 +440,7 @@ export type Database = {
           client_id: string | null
           created_at: string
           deleted_at: string | null
+          description: string | null
           id: string
           month: string
           status: string | null
@@ -449,6 +450,7 @@ export type Database = {
           client_id?: string | null
           created_at?: string
           deleted_at?: string | null
+          description?: string | null
           id?: string
           month: string
           status?: string | null
@@ -458,6 +460,7 @@ export type Database = {
           client_id?: string | null
           created_at?: string
           deleted_at?: string | null
+          description?: string | null
           id?: string
           month?: string
           status?: string | null
