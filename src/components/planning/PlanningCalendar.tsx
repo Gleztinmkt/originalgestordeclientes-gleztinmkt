@@ -93,13 +93,13 @@ export const PlanningCalendar = ({ clients }: PlanningCalendarProps) => {
             description: planningData[clientId]?.description || ''
           },
           {
-            onConflict: 'client_id,month'
+            onConflict: 'client_id,month',
+            ignoreDuplicates: false
           }
-        )
-        .select()
-        .single();
+        );
 
       if (error) {
+        console.error('Error updating planning status:', error);
         toast({
           title: "Error",
           description: "No se pudo actualizar el estado",
@@ -108,16 +108,8 @@ export const PlanningCalendar = ({ clients }: PlanningCalendarProps) => {
         return;
       }
 
-      setPlanningData(prev => ({
-        ...prev,
-        [clientId]: {
-          id: data.id,
-          client_id: data.client_id,
-          month: data.month,
-          status: data.status as 'hacer' | 'no_hacer' | 'consultar',
-          description: data.description
-        }
-      }));
+      // Refresh the planning data
+      fetchPlanningData();
 
       toast({
         title: "Estado actualizado",
@@ -149,11 +141,13 @@ export const PlanningCalendar = ({ clients }: PlanningCalendarProps) => {
             description
           },
           {
-            onConflict: 'client_id,month'
+            onConflict: 'client_id,month',
+            ignoreDuplicates: false
           }
         );
 
       if (error) {
+        console.error('Error saving description:', error);
         toast({
           title: "Error",
           description: "No se pudo guardar la descripción",
@@ -161,6 +155,9 @@ export const PlanningCalendar = ({ clients }: PlanningCalendarProps) => {
         });
         return;
       }
+
+      // Refresh the planning data
+      fetchPlanningData();
 
       toast({
         title: "Descripción guardada",
