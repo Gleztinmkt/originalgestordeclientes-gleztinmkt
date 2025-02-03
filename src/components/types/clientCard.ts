@@ -1,4 +1,4 @@
-import { Client } from "./client";
+import { Client, ClientInfo } from "../types/client";
 import { Task } from "../TaskList";
 
 export interface ClientCardProps {
@@ -14,4 +14,15 @@ export interface ClientCardProps {
   onUpdateTask: (id: string, task: Partial<Task>) => void;
   viewMode: "list" | "grid" | "calendar";
   index: number;
+}
+
+export interface CardHeaderProps {
+  client: Client;
+  viewMode: "list" | "grid" | "calendar";
+  onUpdateClientInfo: (clientId: string, info: ClientInfo) => void;
+  onDeleteClient: () => void;
+  onUpdateClient: (id: string, data: any) => void;
+  onAddPackage: (clientId: string, packageData: any) => void;
+  isExpanded?: boolean;
+  onClose?: () => void;
 }
