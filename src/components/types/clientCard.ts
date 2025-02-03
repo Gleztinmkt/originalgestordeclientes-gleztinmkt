@@ -1,4 +1,4 @@
-import { Client } from "../types/client";
+import { Client } from "./client";
 import { Task } from "../TaskList";
 
 export interface ClientCardProps {
@@ -13,4 +13,5 @@ export interface ClientCardProps {
   onCompleteTask: (id: string) => void;
   onUpdateTask: (id: string, task: Partial<Task>) => void;
   viewMode: "list" | "grid" | "calendar";
+  index: number;
 }
