@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { Calendar } from "@/components/ui/calendar";
 import { Client } from "@/components/types/client";
 import {
   DropdownMenu,
@@ -14,6 +13,10 @@ import { toast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { MonthSelector } from "./MonthSelector";
+import { StatusLegend } from "./StatusLegend";
+import { Card } from "@/components/ui/card";
+import { CalendarIcon, Clock } from "lucide-react";
 
 interface PlanningCalendarProps {
   clients: Client[];
@@ -40,8 +43,7 @@ export const PlanningCalendar = ({ clients }: PlanningCalendarProps) => {
       .from('publication_planning')
       .select('*')
       .is('deleted_at', null)
-      .gte('month', startOfMonth.toISOString())
-      .lte('month', new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 0).toISOString());
+      .eq('month', startOfMonth.toISOString());
 
     if (error) {
       console.error('Error fetching planning data:', error);
@@ -152,63 +154,89 @@ export const PlanningCalendar = ({ clients }: PlanningCalendarProps) => {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">
-          Planificación: {format(selectedDate, 'MMMM yyyy', { locale: es })}
-        </h2>
-      </div>
+    <div className="space-y-6 p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+      <MonthSelector selectedDate={selectedDate} onDateChange={setSelectedDate} />
+      <StatusLegend getStatusColor={getStatusColor} />
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {clients.map(client => (
-          <div
-            key={client.id}
-            className="p-4 rounded-lg border bg-card text-card-foreground shadow-sm"
-            onContextMenu={(e) => {
-              e.preventDefault();
-              const status = planningData[client.id]?.status || 'consultar';
-              const nextStatus = status === 'hacer' ? 'no_hacer' : 
-                               status === 'no_hacer' ? 'consultar' : 'hacer';
-              handleStatusChange(client.id, nextStatus);
-            }}
-          >
-            <div className="flex justify-between items-center">
-              <span className="font-medium">{client.name}</span>
-              <div className="flex gap-2">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <div className={`w-4 h-4 rounded-full cursor-pointer ${getStatusColor(planningData[client.id]?.status || 'consultar')}`} />
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    <DropdownMenuItem onClick={() => handleStatusChange(client.id, 'hacer')}>
-                      <div className="w-4 h-4 rounded-full bg-green-500 mr-2" />
-                      Hacer
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleStatusChange(client.id, 'no_hacer')}>
-                      <div className="w-4 h-4 rounded-full bg-red-500 mr-2" />
-                      No hacer
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleStatusChange(client.id, 'consultar')}>
-                      <div className="w-4 h-4 rounded-full bg-yellow-500 mr-2" />
-                      Consultar
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setSelectedClient(client.id);
-                    setDescription(planningData[client.id]?.description || '');
-                    setIsDialogOpen(true);
-                  }}
-                >
-                  Descripción
-                </Button>
+        {clients.map(client => {
+          const planningEntry = planningData[client.id];
+          const paymentDay = client.paymentDay || 1;
+          const currentMonth = selectedDate.getMonth();
+          const currentYear = selectedDate.getFullYear();
+          const paymentDate = new Date(currentYear, currentMonth, paymentDay);
+          const creationDate = new Date(currentYear, currentMonth, Math.max(1, paymentDay - 7));
+
+          return (
+            <Card
+              key={client.id}
+              className="p-4 hover:shadow-lg transition-shadow duration-200"
+              onContextMenu={(e) => {
+                e.preventDefault();
+                const status = planningData[client.id]?.status || 'consultar';
+                const nextStatus = status === 'hacer' ? 'no_hacer' : 
+                                 status === 'no_hacer' ? 'consultar' : 'hacer';
+                handleStatusChange(client.id, nextStatus);
+              }}
+            >
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h3 className="font-semibold text-lg">{client.name}</h3>
+                  <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                    <CalendarIcon className="h-4 w-4" />
+                    <span>Pago: {format(paymentDate, 'd MMMM', { locale: es })}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                    <Clock className="h-4 w-4" />
+                    <span>Creación: {format(creationDate, 'd MMMM', { locale: es })}</span>
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <div className={`w-4 h-4 rounded-full cursor-pointer ${getStatusColor(planningEntry?.status || 'consultar')}`} />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      <DropdownMenuItem onClick={() => handleStatusChange(client.id, 'hacer')}>
+                        <div className="w-4 h-4 rounded-full bg-green-500 mr-2" />
+                        Hacer
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleStatusChange(client.id, 'no_hacer')}>
+                        <div className="w-4 h-4 rounded-full bg-red-500 mr-2" />
+                        No hacer
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleStatusChange(client.id, 'consultar')}>
+                        <div className="w-4 h-4 rounded-full bg-yellow-500 mr-2" />
+                        Consultar
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               </div>
-            </div>
-          </div>
-        ))}
+
+              <Button
+                variant="ghost"
+                className="w-full text-left justify-start h-auto py-2 px-3"
+                onClick={() => {
+                  setSelectedClient(client.id);
+                  setDescription(planningData[client.id]?.description || '');
+                  setIsDialogOpen(true);
+                }}
+              >
+                {planningData[client.id]?.description ? (
+                  <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
+                    {planningData[client.id].description}
+                  </p>
+                ) : (
+                  <p className="text-sm text-gray-400 dark:text-gray-600">
+                    Agregar descripción...
+                  </p>
+                )}
+              </Button>
+            </Card>
+          );
+        })}
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -232,16 +260,6 @@ export const PlanningCalendar = ({ clients }: PlanningCalendarProps) => {
           </div>
         </DialogContent>
       </Dialog>
-
-      <div className="mt-4">
-        <Calendar
-          mode="single"
-          selected={selectedDate}
-          onSelect={(date) => date && setSelectedDate(date)}
-          className="rounded-md border"
-          locale={es}
-        />
-      </div>
     </div>
   );
 };
