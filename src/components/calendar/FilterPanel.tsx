@@ -1,25 +1,19 @@
-import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import { useState } from "react";
 
-export const FilterPanel = ({ onMonthChange }: { onMonthChange: (date: Date) => void }) => {
-  const [date, setDate] = useState<Date>(new Date());
+interface FilterPanelProps {
+  onMonthChange: (date: Date) => void;
+}
 
-  const handleSelect = (date: Date | undefined) => {
-    if (date) {
-      setDate(date);
-      onMonthChange(date);
-    }
-  };
-
+export const FilterPanel = ({ onMonthChange }: FilterPanelProps) => {
   return (
     <div className="space-y-4">
-      <Calendar
-        mode="single"
-        selected={date}
-        onSelect={handleSelect}
-        className="rounded-md border"
-      />
+      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
+        <Calendar
+          mode="single"
+          onSelect={(date) => date && onMonthChange(date)}
+          className="rounded-md"
+        />
+      </div>
     </div>
   );
 };
