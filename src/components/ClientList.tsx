@@ -19,6 +19,7 @@ interface ClientListProps {
   onDeleteTask: (id: string) => void;
   onCompleteTask: (id: string) => void;
   onUpdateTask: (id: string, task: Partial<Task>) => void;
+  viewMode?: "list" | "grid" | "calendar";
 }
 
 export const ClientList = ({ 
@@ -31,11 +32,12 @@ export const ClientList = ({
   onAddTask,
   onDeleteTask,
   onCompleteTask,
-  onUpdateTask
+  onUpdateTask,
+  viewMode: initialViewMode = "list"
 }: ClientListProps) => {
   const [selectedPaymentDay, setSelectedPaymentDay] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [viewMode, setViewMode] = useState<"list" | "grid">("list");
+  const [viewMode, setViewMode] = useState<"list" | "grid" | "calendar">(initialViewMode);
   const [showPendingPayments, setShowPendingPayments] = useState(false);
 
   const getSubtleGradient = (index: number) => {
@@ -87,24 +89,26 @@ export const ClientList = ({
           </Button>
         </div>
         <div className="flex items-center gap-2">
-          <div className="flex items-center bg-background border border-input rounded-lg p-1">
-            <Button
-              variant={viewMode === "list" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setViewMode("list")}
-              className="h-8 w-8 p-0"
-            >
-              <List className="h-4 w-4" />
-            </Button>
-            <Button
-              variant={viewMode === "grid" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setViewMode("grid")}
-              className="h-8 w-8 p-0"
-            >
-              <Grid3x3 className="h-4 w-4" />
-            </Button>
-          </div>
+          {viewMode !== "calendar" && (
+            <div className="flex items-center bg-background border border-input rounded-lg p-1">
+              <Button
+                variant={viewMode === "list" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setViewMode("list")}
+                className="h-8 w-8 p-0"
+              >
+                <List className="h-4 w-4" />
+              </Button>
+              <Button
+                variant={viewMode === "grid" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setViewMode("grid")}
+                className="h-8 w-8 p-0"
+              >
+                <Grid3x3 className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
           <BulkMessageButton 
             clients={clients}
             selectedPaymentDay={selectedPaymentDay !== "all" ? parseInt(selectedPaymentDay) : undefined}
