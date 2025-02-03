@@ -50,7 +50,13 @@ export const PlanningCalendar = ({ clients }: PlanningCalendarProps) => {
 
     const planningMap: Record<string, PlanningEntry> = {};
     data?.forEach(entry => {
-      planningMap[entry.client_id] = entry;
+      planningMap[entry.client_id] = {
+        id: entry.id,
+        client_id: entry.client_id,
+        month: entry.month,
+        status: (entry.status || 'consultar') as 'hacer' | 'no_hacer' | 'consultar',
+        description: entry.description
+      };
     });
     setPlanningData(planningMap);
   };
@@ -59,7 +65,7 @@ export const PlanningCalendar = ({ clients }: PlanningCalendarProps) => {
     fetchPlanningData();
   }, [selectedDate]);
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: 'hacer' | 'no_hacer' | 'consultar') => {
     switch (status) {
       case 'hacer':
         return 'bg-green-500';
@@ -98,7 +104,13 @@ export const PlanningCalendar = ({ clients }: PlanningCalendarProps) => {
 
     setPlanningData(prev => ({
       ...prev,
-      [clientId]: data
+      [clientId]: {
+        id: data.id,
+        client_id: data.client_id,
+        month: data.month,
+        status: data.status as 'hacer' | 'no_hacer' | 'consultar',
+        description: data.description
+      }
     }));
 
     toast({
