@@ -11,7 +11,6 @@ interface PackageSectionProps {
   isCapturing: boolean;
   onUpdatePackage: (clientId: string, packageId: string, usedPublications: number) => void;
   onUpdatePaid: (packageId: string, paid: boolean) => Promise<void>;
-  onUpdateSplitPayment: (packageId: string, firstHalfPaid: boolean, secondHalfPaid: boolean) => Promise<void>;
   onEditPackage: (packageId: string, values: any) => Promise<void>;
   onDeletePackage: (packageId: string) => Promise<void>;
   onCaptureStart: () => void;
@@ -23,13 +22,12 @@ export const PackageSection = ({
   isCapturing,
   onUpdatePackage,
   onUpdatePaid,
-  onUpdateSplitPayment,
   onEditPackage,
   onDeletePackage,
   onCaptureStart,
   onCaptureEnd,
 }: PackageSectionProps) => {
-  const sendPackageReport = async () => {
+  const sendPackageReport = async (): Promise<void> => {
     if (!client.phone) {
       toast({
         title: "Error",
@@ -73,14 +71,8 @@ export const PackageSection = ({
             usedPublications={pkg.usedPublications}
             month={pkg.month}
             paid={pkg.paid}
-            isSplitPayment={pkg.isSplitPayment}
-            firstHalfPaid={pkg.firstHalfPaid}
-            secondHalfPaid={pkg.secondHalfPaid}
             onUpdateUsed={(newCount) => onUpdatePackage(client.id, pkg.id, newCount)}
             onUpdatePaid={(paid) => onUpdatePaid(pkg.id, paid)}
-            onUpdateSplitPayment={(firstHalf, secondHalf) => 
-              onUpdateSplitPayment(pkg.id, firstHalf, secondHalf)
-            }
             onEditPackage={(values) => onEditPackage(pkg.id, values)}
             onDeletePackage={() => onDeletePackage(pkg.id)}
             clientId={client.id}

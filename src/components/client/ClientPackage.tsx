@@ -7,6 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Json } from "@/integrations/supabase/types";
+import html2canvas from 'html2canvas';
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 import {
   Dialog,
   DialogContent,
@@ -30,11 +34,24 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { toast } from "@/hooks/use-toast";
-import { AddPackageForm, PackageFormValues } from "./AddPackageForm";
+import { AddPackageForm } from "./AddPackageForm";
 import { PublicationCalendarDialog } from "./PublicationCalendarDialog";
-import html2canvas from 'html2canvas';
-import { supabase } from "@/integrations/supabase/client";
+
+interface PackageFormValues {
+  name: string;
+  totalPublications: string;
+  month: string;
+  paid: boolean;
+}
+
+interface PackageData {
+  id: string;
+  name: string;
+  totalPublications: number;
+  usedPublications: number;
+  month: string;
+  paid: boolean;
+}
 
 interface ClientPackageProps {
   packageName: string;
@@ -42,12 +59,8 @@ interface ClientPackageProps {
   usedPublications: number;
   month: string;
   paid: boolean;
-  isSplitPayment?: boolean;
-  firstHalfPaid?: boolean;
-  secondHalfPaid?: boolean;
   onUpdateUsed: (newCount: number) => void;
-  onUpdatePaid: (paid: boolean) => Promise<void>;
-  onUpdateSplitPayment?: (firstHalfPaid: boolean, secondHalfPaid: boolean) => Promise<void>;
+  onUpdatePaid: (paid: boolean) => void;
   onEditPackage: (values: PackageFormValues & { name: string, totalPublications: string }) => Promise<void>;
   onDeletePackage?: () => void;
   clientId: string;
@@ -61,12 +74,8 @@ export const ClientPackage = ({
   usedPublications,
   month,
   paid,
-  isSplitPayment = false,
-  firstHalfPaid = false,
-  secondHalfPaid = false,
   onUpdateUsed,
   onUpdatePaid,
-  onUpdateSplitPayment,
   onEditPackage,
   onDeletePackage,
   clientId,
@@ -77,9 +86,10 @@ export const ClientPackage = ({
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [lastPost, setLastPost] = useState<string>("");
-  const updateTimeoutRef = useRef<NodeJS.Timeout>();
   const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const submissionCountRef = useRef(0);
 
+  // Fetch last post on component mount
   useEffect(() => {
     const fetchLastPost = async () => {
       const { data: clientData, error } = await supabase
@@ -96,59 +106,60 @@ export const ClientPackage = ({
     fetchLastPost();
   }, [clientId]);
 
+  // Update last post in database
   const handleLastPostChange = async (value: string) => {
     setLastPost(value);
-    
-    if (updateTimeoutRef.current) {
-      clearTimeout(updateTimeoutRef.current);
+    try {
+      const { error } = await supabase
+        .from('clients')
+        .update({ last_post: value })
+        .eq('id', clientId);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error updating last post:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el último post",
+        variant: "destructive",
+      });
     }
-
-    updateTimeoutRef.current = setTimeout(async () => {
-      try {
-        const { error } = await supabase
-          .from('clients')
-          .update({ last_post: value })
-          .eq('id', clientId);
-
-        if (error) throw error;
-      } catch (error) {
-        console.error('Error updating last post:', error);
-        toast({
-          title: "Error",
-          description: "No se pudo actualizar el último post",
-          variant: "destructive",
-        });
-      }
-    }, 500);
   };
 
-  const handleEditSubmit = async (values: PackageFormValues) => {
-    if (isProcessing) return;
+  const handleEditSubmit = useCallback(async (values: PackageFormValues & { name: string, totalPublications: string }) => {
+    const currentSubmissionCount = ++submissionCountRef.current;
     
+    if (isProcessing) {
+      console.log('Submission blocked - already processing');
+      return;
+    }
+
+    console.log(`Starting submission #${currentSubmissionCount}`, {
+      values,
+      isProcessing,
+      currentTime: new Date().toISOString()
+    });
+
     try {
       setIsProcessing(true);
-      await onEditPackage({
-        ...values,
-        name: values.packageType === "personalizado" 
-          ? `Paquete Personalizado (${values.customPublications} publicaciones)`
-          : packageName,
-        totalPublications: values.packageType === "personalizado"
-          ? values.customPublications || "0"
-          : totalPublications.toString()
-      });
+      await new Promise(resolve => setTimeout(resolve, 100));
+      await onEditPackage(values);
       
-      toast({
-        title: "Paquete actualizado",
-        description: "El paquete ha sido actualizado correctamente.",
-      });
-
-      setTimeout(() => {
-        setIsEditDialogOpen(false);
-        setIsProcessing(false);
-      }, 500);
+      console.log(`Submission #${currentSubmissionCount} completed successfully`);
+      
+      processingTimeoutRef.current = setTimeout(() => {
+        if (currentSubmissionCount === submissionCountRef.current) {
+          setIsEditDialogOpen(false);
+          setIsProcessing(false);
+          toast({
+            title: "Paquete actualizado",
+            description: "El paquete ha sido actualizado correctamente.",
+          });
+        }
+      }, 300);
 
     } catch (error) {
-      console.error('Error updating package:', error);
+      console.error(`Error in submission #${currentSubmissionCount}:`, error);
       toast({
         title: "Error",
         description: "No se pudo actualizar el paquete. Por favor, intenta de nuevo.",
@@ -156,33 +167,7 @@ export const ClientPackage = ({
       });
       setIsProcessing(false);
     }
-  };
-
-  const handleUpdateSplitPayment = async (isFirst: boolean, value: boolean) => {
-    if (!onUpdateSplitPayment || isProcessing) return;
-
-    try {
-      setIsProcessing(true);
-      await onUpdateSplitPayment(
-        isFirst ? value : firstHalfPaid,
-        isFirst ? secondHalfPaid : value
-      );
-      
-      toast({
-        title: "Pago actualizado",
-        description: `${isFirst ? 'Primera' : 'Segunda'} quincena actualizada correctamente.`,
-      });
-    } catch (error) {
-      console.error('Error updating split payment:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo actualizar el estado del pago.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsProcessing(false);
-    }
-  };
+  }, [onEditPackage, isProcessing]);
 
   const handleSendCompletionMessage = () => {
     const message = `*Reporte de Paquete - ${clientName}*\n\n*Nombre:* ${packageName}\n*Mes:* ${month}\n*Estado:* Completado\n*Publicaciones:* ${usedPublications}/${totalPublications}\n\n*Gracias por confiar en Gleztin Marketing Digital*`;
@@ -190,10 +175,20 @@ export const ClientPackage = ({
     window.open(whatsappUrl, '_blank');
   };
 
+  const closeEditDialog = () => {
+    if (!isProcessing) {
+      console.log('Closing edit dialog - not processing');
+      setIsEditDialogOpen(false);
+    } else {
+      console.log('Cannot close dialog - processing in progress');
+    }
+  };
+
   const generateCalendarImage = async () => {
     const calendarElement = document.createElement('div');
     calendarElement.className = 'p-8 bg-gradient-to-br from-[#F2FCE2] to-[#E5DEFF] min-w-[800px]';
     
+    // Header with modern styling and company name
     const header = document.createElement('div');
     header.className = 'text-center mb-8 bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-lg';
     header.innerHTML = `
@@ -218,6 +213,7 @@ export const ClientPackage = ({
         .is('deleted_at', null)
         .order('date', { ascending: true });
 
+      // Publications list with modern cards
       const list = document.createElement('div');
       list.className = 'space-y-4';
       
@@ -261,6 +257,7 @@ export const ClientPackage = ({
       
       calendarElement.appendChild(list);
 
+      // Footer with modern styling
       const footer = document.createElement('div');
       footer.className = 'mt-8 text-center p-4 bg-white/80 backdrop-blur-sm rounded-xl';
       footer.innerHTML = `
@@ -271,6 +268,7 @@ export const ClientPackage = ({
       `;
       calendarElement.appendChild(footer);
 
+      // Add to document temporarily
       document.body.appendChild(calendarElement);
 
       const canvas = await html2canvas(calendarElement, {
@@ -279,6 +277,7 @@ export const ClientPackage = ({
         logging: false,
       });
 
+      // Convert to image and download
       const image = canvas.toDataURL('image/png');
       const link = document.createElement('a');
       link.download = `calendario-${clientName.toLowerCase().replace(/\s+/g, '-')}-${packageName.toLowerCase().replace(/\s+/g, '-')}.png`;
@@ -297,6 +296,7 @@ export const ClientPackage = ({
         variant: "destructive",
       });
     } finally {
+      // Clean up
       if (document.body.contains(calendarElement)) {
         document.body.removeChild(calendarElement);
       }
@@ -312,41 +312,16 @@ export const ClientPackage = ({
         </CardTitle>
         <div className="flex items-center gap-4">
           <Badge>{month}</Badge>
-          {isSplitPayment ? (
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-600 dark:text-gray-300">
-                  1ra Quincena
-                </span>
-                <Switch 
-                  checked={firstHalfPaid} 
-                  onCheckedChange={(value) => handleUpdateSplitPayment(true, value)}
-                  disabled={isProcessing}
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-600 dark:text-gray-300">
-                  2da Quincena
-                </span>
-                <Switch 
-                  checked={secondHalfPaid} 
-                  onCheckedChange={(value) => handleUpdateSplitPayment(false, value)}
-                  disabled={isProcessing}
-                />
-              </div>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600 dark:text-gray-300">
-                {paid ? "Pagado" : "Pendiente"}
-              </span>
-              <Switch 
-                checked={paid} 
-                onCheckedChange={onUpdatePaid}
-                disabled={isProcessing}
-              />
-            </div>
-          )}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-600 dark:text-gray-300">
+              {paid ? "Pagado" : "Pendiente"}
+            </span>
+            <Switch 
+              checked={paid} 
+              onCheckedChange={onUpdatePaid}
+              disabled={isProcessing}
+            />
+          </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -424,7 +399,7 @@ export const ClientPackage = ({
         </div>
       </CardContent>
 
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+      <Dialog open={isEditDialogOpen} onOpenChange={closeEditDialog}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>Editar Paquete</DialogTitle>
@@ -438,10 +413,6 @@ export const ClientPackage = ({
               packageType: "basico",
               month: month,
               paid: paid,
-              isSplitPayment: isSplitPayment,
-              firstHalfPaid: firstHalfPaid,
-              secondHalfPaid: secondHalfPaid,
-              customPublications: totalPublications.toString()
             }}
             isSubmitting={isProcessing}
           />

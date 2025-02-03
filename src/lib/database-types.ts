@@ -43,10 +43,7 @@ export const convertDatabaseClient = (client: DatabaseClient): Client => ({
     totalPublications: pkg.totalPublications || 0,
     usedPublications: pkg.usedPublications || 0,
     month: pkg.month || "",
-    paid: pkg.paid || false,
-    isSplitPayment: pkg.isSplitPayment || false,
-    firstHalfPaid: pkg.firstHalfPaid || false,
-    secondHalfPaid: pkg.secondHalfPaid || false
+    paid: pkg.paid || false
   })),
 });
 
@@ -58,7 +55,7 @@ export const convertClientForDatabase = (client: Client): DatabaseClient => ({
   marketing_info: client.marketingInfo || null,
   instagram: client.instagram || null,
   facebook: client.facebook || null,
-  packages: client.packages as unknown as Json,
+  packages: client.packages as Json,
 });
 
 export const convertDatabaseTask = (task: DatabaseTask): Task => ({

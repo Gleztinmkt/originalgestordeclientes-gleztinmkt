@@ -6,7 +6,6 @@ import { GoogleOAuthProvider } from '@react-oauth/google';
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useEffect, useState } from 'react';
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/hooks/use-toast";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 
@@ -17,31 +16,15 @@ const App = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const handleSessionError = () => {
-      // Clear any potentially invalid session data
-      supabase.auth.signOut();
-      setSession(null);
-      toast({
-        title: "Sesión expirada",
-        description: "Por favor, inicia sesión nuevamente.",
-        variant: "destructive"
-      });
-    };
+    // Clear any potentially invalid session data
+    supabase.auth.signOut();
 
     const getInitialSession = async () => {
       try {
-        const { data: { session: initialSession }, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error('Error al obtener la sesión inicial:', error);
-          handleSessionError();
-          return;
-        }
-
+        const { data: { session: initialSession } } = await supabase.auth.getSession();
         setSession(initialSession);
       } catch (error) {
         console.error('Error al obtener la sesión inicial:', error);
-        handleSessionError();
       } finally {
         setLoading(false);
       }
@@ -49,23 +32,11 @@ const App = () => {
 
     getInitialSession();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
-      console.log("Auth state changed:", event, currentSession);
-      
-      if (event === 'SIGNED_OUT') {
-        setSession(null);
-        toast({
-          title: "Sesión cerrada",
-          description: "Has cerrado sesión exitosamente."
-        });
-      } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-        setSession(currentSession);
-      } else if (event === 'USER_UPDATED') {
-        setSession(currentSession);
-      }
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      console.log("Auth state changed:", _event, session);
+      setSession(session);
     });
 
-    // Cleanup subscription on unmount
     return () => {
       subscription.unsubscribe();
     };
