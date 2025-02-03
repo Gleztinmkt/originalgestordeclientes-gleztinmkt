@@ -24,7 +24,9 @@ const Login = () => {
         email,
         password,
         options: {
-          persistSession: rememberMe // This ensures the session persists if rememberMe is true
+          data: {
+            remember_me: rememberMe
+          }
         }
       });
 
