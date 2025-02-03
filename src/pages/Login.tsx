@@ -22,15 +22,18 @@ const Login = () => {
     try {
       const { error } = await supabase.auth.signInWithPassword({
         email,
-        password,
-        options: {
-          data: {
-            remember_me: rememberMe
-          }
-        }
+        password
       });
 
       if (error) throw error;
+
+      // Si rememberMe está activo, configuramos la persistencia de la sesión
+      if (rememberMe) {
+        await supabase.auth.setSession({
+          access_token: (await supabase.auth.getSession()).data.session?.access_token || '',
+          refresh_token: (await supabase.auth.getSession()).data.session?.refresh_token || ''
+        });
+      }
 
       toast({
         title: "Inicio de sesión exitoso",
