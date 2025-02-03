@@ -8,7 +8,7 @@ import { Client, ClientInfo } from "../../types/client";
 
 interface CardHeaderProps {
   client: Client;
-  viewMode: "list" | "grid" | "calendar";
+  viewMode: "list" | "grid";
   onUpdateClientInfo: (clientId: string, info: ClientInfo) => void;
   onDeleteClient: () => void;
   onUpdateClient: (id: string, data: any) => void;

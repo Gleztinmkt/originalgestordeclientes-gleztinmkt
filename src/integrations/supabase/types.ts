@@ -435,44 +435,6 @@ export type Database = {
           },
         ]
       }
-      publication_planning: {
-        Row: {
-          client_id: string | null
-          created_at: string
-          deleted_at: string | null
-          id: string
-          month: string
-          status: string | null
-          updated_at: string
-        }
-        Insert: {
-          client_id?: string | null
-          created_at?: string
-          deleted_at?: string | null
-          id?: string
-          month: string
-          status?: string | null
-          updated_at?: string
-        }
-        Update: {
-          client_id?: string | null
-          created_at?: string
-          deleted_at?: string | null
-          id?: string
-          month?: string
-          status?: string | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "publication_planning_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       publications: {
         Row: {
           approved: boolean | null

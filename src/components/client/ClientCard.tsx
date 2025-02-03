@@ -35,7 +35,7 @@ interface ClientCardProps {
   onDeleteTask: (id: string) => void;
   onCompleteTask: (id: string) => void;
   onUpdateTask: (id: string, task: Partial<Task>) => void;
-  viewMode: "list" | "grid" | "calendar";
+  viewMode: "list" | "grid";
   index: number;
 }
 
