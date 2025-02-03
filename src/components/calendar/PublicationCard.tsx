@@ -1,307 +1,100 @@
-import { useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Publication } from "../client/publication/types";
-import { Client } from "../types/client";
-import { PublicationDialog } from "./PublicationDialog";
-import { cn } from "@/lib/utils";
-import { 
-  Video, 
-  Edit, 
-  CheckCircle2, 
-  Upload, 
-  AlertCircle,
-  Clock,
-  User,
-  Instagram
-} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuSeparator,
-  ContextMenuSub,
-  ContextMenuSubContent,
-  ContextMenuSubTrigger,
-  ContextMenuTrigger,
-} from "@/components/ui/context-menu";
-import { supabase } from "@/integrations/supabase/client";
+import { Card } from "@/components/ui/card";
+import { CheckCircle2, XCircle, AlertCircle } from "lucide-react";
+import { useState } from "react";
 import { toast } from "@/hooks/use-toast";
-import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 interface PublicationCardProps {
-  publication: Publication;
-  client?: Client;
-  onUpdate: () => void;
-  displayTitle: string;
-  designers?: any[];
-  isMobile?: boolean;
+  clientName: string;
+  status: string;
+  planningId: string;
+  onStatusChange: () => void;
 }
 
 export const PublicationCard = ({ 
-  publication, 
-  client, 
-  onUpdate,
-  displayTitle,
-  designers = [],
-  isMobile = false
+  clientName, 
+  status, 
+  planningId,
+  onStatusChange 
 }: PublicationCardProps) => {
-  const [showDialog, setShowDialog] = useState(false);
-  const [touchCount, setTouchCount] = useState(0);
-  const [touchTimer, setTouchTimer] = useState<NodeJS.Timeout | null>(null);
+  const [isUpdating, setIsUpdating] = useState(false);
 
-  const handleTouch = () => {
-    if (isMobile) {
-      setTouchCount(prev => prev + 1);
-      
-      if (touchTimer) {
-        clearTimeout(touchTimer);
-      }
-      
-      const timer = setTimeout(() => {
-        setTouchCount(0);
-      }, 300);
-      
-      setTouchTimer(timer);
-      
-      if (touchCount === 1) {
-        setShowDialog(true);
-        setTouchCount(0);
-        if (touchTimer) clearTimeout(touchTimer);
-      }
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'hacer':
+        return 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100';
+      case 'no_hacer':
+        return 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100';
+      case 'consultar':
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100';
+      default:
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100';
     }
   };
 
-  const getStatusColor = () => {
-    if (publication.is_published) return "bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100";
-    if (publication.approved) return "bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100";
-    if (publication.in_review) return "bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100";
-    if (publication.in_editing) return "bg-purple-100 text-purple-800 dark:bg-purple-800 dark:text-purple-100";
-    if (publication.needs_editing) return "bg-orange-100 text-orange-800 dark:bg-orange-800 dark:text-orange-100";
-    if (publication.needs_recording) return "bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100";
-    return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100";
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'hacer':
+        return <CheckCircle2 className="h-4 w-4" />;
+      case 'no_hacer':
+        return <XCircle className="h-4 w-4" />;
+      case 'consultar':
+        return <AlertCircle className="h-4 w-4" />;
+      default:
+        return null;
+    }
   };
 
-  const getStatusIcon = () => {
-    if (publication.is_published) return <Upload className="h-3 w-3" />;
-    if (publication.approved) return <CheckCircle2 className="h-3 w-3" />;
-    if (publication.in_review) return <AlertCircle className="h-3 w-3" />;
-    if (publication.in_editing) return <Edit className="h-3 w-3" />;
-    if (publication.needs_editing) return <Edit className="h-3 w-3" />;
-    if (publication.needs_recording) return <Video className="h-3 w-3" />;
-    return <Clock className="h-3 w-3" />;
-  };
+  const handleStatusChange = async () => {
+    if (isUpdating) return;
 
-  const handleStatusChange = async (status: string) => {
     try {
-      const updates: any = {
-        needs_recording: false,
-        needs_editing: false,
-        in_editing: false,
-        in_review: false,
-        approved: false,
-        is_published: false
-      };
-
-      updates[status] = true;
+      setIsUpdating(true);
+      const newStatus = status === 'hacer' ? 'no_hacer' : 
+                       status === 'no_hacer' ? 'consultar' : 'hacer';
 
       const { error } = await supabase
-        .from('publications')
-        .update(updates)
-        .eq('id', publication.id);
+        .from('publication_planning')
+        .update({ status: newStatus })
+        .eq('id', planningId);
 
       if (error) throw error;
 
+      onStatusChange();
+      
       toast({
         title: "Estado actualizado",
-        description: "El estado de la publicación ha sido actualizado correctamente.",
+        description: "El estado de la publicación ha sido actualizado.",
       });
-
-      onUpdate();
     } catch (error) {
-      console.error('Error updating publication status:', error);
+      console.error('Error updating status:', error);
       toast({
         title: "Error",
-        description: "No se pudo actualizar el estado de la publicación.",
+        description: "No se pudo actualizar el estado. Por favor, intenta de nuevo.",
         variant: "destructive",
       });
+    } finally {
+      setIsUpdating(false);
     }
   };
-
-  const handleDesignerAssign = async (designerName: string) => {
-    try {
-      const { error } = await supabase
-        .from('publications')
-        .update({ designer: designerName })
-        .eq('id', publication.id);
-
-      if (error) throw error;
-
-      toast({
-        title: "Diseñador asignado",
-        description: "El diseñador ha sido asignado correctamente.",
-      });
-
-      onUpdate();
-    } catch (error) {
-      console.error('Error assigning designer:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo asignar el diseñador.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleDelete = async () => {
-    try {
-      const { error } = await supabase
-        .from('publications')
-        .update({ deleted_at: new Date().toISOString() })
-        .eq('id', publication.id);
-
-      if (error) throw error;
-
-      toast({
-        title: "Publicación eliminada",
-        description: "La publicación ha sido eliminada correctamente.",
-      });
-
-      onUpdate();
-      setShowDialog(false);
-    } catch (error) {
-      console.error('Error deleting publication:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo eliminar la publicación.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const { data: userRole } = useQuery({
-    queryKey: ['userRole'],
-    queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return null;
-
-      const { data: roleData } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .single();
-
-      return roleData?.role || null;
-    },
-  });
-
-  const isAdmin = userRole === 'admin';
 
   return (
-    <ContextMenu>
-      <ContextMenuTrigger>
-        <Card 
-          className={cn(
-            "mb-1 hover:shadow-md transition-shadow cursor-pointer group",
-            getStatusColor()
-          )}
-          onClick={isMobile ? handleTouch : () => setShowDialog(true)}
+    <Card 
+      className="p-4 cursor-pointer hover:shadow-md transition-shadow duration-200"
+      onClick={handleStatusChange}
+    >
+      <div className="space-y-2">
+        <h3 className="text-sm font-medium truncate">{clientName}</h3>
+        <Badge 
+          variant="secondary" 
+          className={`${getStatusColor(status)} flex items-center gap-1`}
         >
-          <CardContent className="p-2">
-            <div className="flex flex-col gap-1">
-              <div className="flex items-center gap-1 min-w-0">
-                {getStatusIcon()}
-                <p className="text-xs font-medium truncate">
-                  {displayTitle}
-                </p>
-              </div>
-              <div className="flex flex-col gap-1">
-                {publication.designer && (
-                  <div className="flex items-center gap-1">
-                    <User className="h-3 w-3" />
-                    <span className="text-xs truncate">{publication.designer}</span>
-                  </div>
-                )}
-                {client?.instagram && (
-                  <a 
-                    href={`https://instagram.com/${client.instagram}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1 text-pink-600 hover:text-pink-700 dark:text-pink-400 dark:hover:text-pink-300"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <Instagram className="h-3 w-3" />
-                    <span className="text-xs truncate">@{client.instagram}</span>
-                  </a>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </ContextMenuTrigger>
-
-      <ContextMenuContent className="w-64">
-        {isAdmin && (
-          <>
-            <ContextMenuSub>
-              <ContextMenuSubTrigger>
-                <User className="mr-2 h-4 w-4" />
-                <span>Asignar diseñador</span>
-              </ContextMenuSubTrigger>
-              <ContextMenuSubContent className="w-48">
-                <ContextMenuItem onClick={() => handleDesignerAssign("")}>
-                  Sin diseñador
-                </ContextMenuItem>
-                <ContextMenuSeparator />
-                {designers.map((designer) => (
-                  <ContextMenuItem
-                    key={designer.id}
-                    onClick={() => handleDesignerAssign(designer.name)}
-                  >
-                    {designer.name}
-                  </ContextMenuItem>
-                ))}
-              </ContextMenuSubContent>
-            </ContextMenuSub>
-            <ContextMenuSeparator />
-          </>
-        )}
-
-        <ContextMenuItem onClick={() => handleStatusChange("needs_recording")}>
-          <Video className="mr-2 h-4 w-4" />
-          <span>Falta grabar</span>
-        </ContextMenuItem>
-        <ContextMenuItem onClick={() => handleStatusChange("needs_editing")}>
-          <Edit className="mr-2 h-4 w-4" />
-          <span>Falta editar</span>
-        </ContextMenuItem>
-        <ContextMenuItem onClick={() => handleStatusChange("in_editing")}>
-          <Clock className="mr-2 h-4 w-4" />
-          <span>En edición</span>
-        </ContextMenuItem>
-        <ContextMenuItem onClick={() => handleStatusChange("in_review")}>
-          <AlertCircle className="mr-2 h-4 w-4" />
-          <span>En revisión</span>
-        </ContextMenuItem>
-        <ContextMenuItem onClick={() => handleStatusChange("approved")}>
-          <CheckCircle2 className="mr-2 h-4 w-4" />
-          <span>Aprobado</span>
-        </ContextMenuItem>
-        <ContextMenuItem onClick={() => handleStatusChange("is_published")}>
-          <Upload className="mr-2 h-4 w-4" />
-          <span>Publicado</span>
-        </ContextMenuItem>
-      </ContextMenuContent>
-
-      <PublicationDialog
-        open={showDialog}
-        onOpenChange={setShowDialog}
-        publication={publication}
-        client={client}
-        onUpdate={onUpdate}
-        onDelete={handleDelete}
-        designers={designers}
-      />
-    </ContextMenu>
+          {getStatusIcon(status)}
+          {status === 'hacer' ? 'Hacer' : 
+           status === 'no_hacer' ? 'No hacer' : 'Consultar'}
+        </Badge>
+      </div>
+    </Card>
   );
 };
