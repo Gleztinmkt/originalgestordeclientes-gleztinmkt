@@ -82,43 +82,55 @@ export const PlanningCalendar = ({ clients }: PlanningCalendarProps) => {
   const handleStatusChange = async (clientId: string, newStatus: 'hacer' | 'no_hacer' | 'consultar') => {
     const startOfMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
     
-    const { data, error } = await supabase
-      .from('publication_planning')
-      .upsert({
-        client_id: clientId,
-        month: startOfMonth.toISOString(),
-        status: newStatus,
-        description: planningData[clientId]?.description || ''
-      }, {
-        onConflict: 'client_id,month'
-      })
-      .select()
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from('publication_planning')
+        .upsert(
+          {
+            client_id: clientId,
+            month: startOfMonth.toISOString(),
+            status: newStatus,
+            description: planningData[clientId]?.description || ''
+          },
+          {
+            onConflict: 'client_id,month'
+          }
+        )
+        .select()
+        .single();
 
-    if (error) {
+      if (error) {
+        toast({
+          title: "Error",
+          description: "No se pudo actualizar el estado",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setPlanningData(prev => ({
+        ...prev,
+        [clientId]: {
+          id: data.id,
+          client_id: data.client_id,
+          month: data.month,
+          status: data.status as 'hacer' | 'no_hacer' | 'consultar',
+          description: data.description
+        }
+      }));
+
+      toast({
+        title: "Estado actualizado",
+        description: "El estado se ha actualizado correctamente",
+      });
+    } catch (error) {
+      console.error('Error updating planning status:', error);
       toast({
         title: "Error",
         description: "No se pudo actualizar el estado",
         variant: "destructive",
       });
-      return;
     }
-
-    setPlanningData(prev => ({
-      ...prev,
-      [clientId]: {
-        id: data.id,
-        client_id: data.client_id,
-        month: data.month,
-        status: data.status as 'hacer' | 'no_hacer' | 'consultar',
-        description: data.description
-      }
-    }));
-
-    toast({
-      title: "Estado actualizado",
-      description: "El estado se ha actualizado correctamente",
-    });
   };
 
   const handleDescriptionSave = async () => {
@@ -126,31 +138,43 @@ export const PlanningCalendar = ({ clients }: PlanningCalendarProps) => {
 
     const startOfMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
     
-    const { error } = await supabase
-      .from('publication_planning')
-      .upsert({
-        client_id: selectedClient,
-        month: startOfMonth.toISOString(),
-        status: planningData[selectedClient]?.status || 'consultar',
-        description
-      }, {
-        onConflict: 'client_id,month'
-      });
+    try {
+      const { error } = await supabase
+        .from('publication_planning')
+        .upsert(
+          {
+            client_id: selectedClient,
+            month: startOfMonth.toISOString(),
+            status: planningData[selectedClient]?.status || 'consultar',
+            description
+          },
+          {
+            onConflict: 'client_id,month'
+          }
+        );
 
-    if (error) {
+      if (error) {
+        toast({
+          title: "Error",
+          description: "No se pudo guardar la descripción",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Descripción guardada",
+        description: "La descripción se ha guardado correctamente",
+      });
+      setIsDialogOpen(false);
+    } catch (error) {
+      console.error('Error saving description:', error);
       toast({
         title: "Error",
         description: "No se pudo guardar la descripción",
         variant: "destructive",
       });
-      return;
     }
-
-    toast({
-      title: "Descripción guardada",
-      description: "La descripción se ha guardado correctamente",
-    });
-    setIsDialogOpen(false);
   };
 
   return (
