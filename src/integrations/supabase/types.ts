@@ -203,6 +203,30 @@ export type Database = {
           },
         ]
       }
+      deleted_items: {
+        Row: {
+          content: string | null
+          deleted_at: string | null
+          id: string
+          original_id: string | null
+          type: string | null
+        }
+        Insert: {
+          content?: string | null
+          deleted_at?: string | null
+          id?: string
+          original_id?: string | null
+          type?: string | null
+        }
+        Update: {
+          content?: string | null
+          deleted_at?: string | null
+          id?: string
+          original_id?: string | null
+          type?: string | null
+        }
+        Relationships: []
+      }
       designers: {
         Row: {
           created_at: string
@@ -659,17 +683,15 @@ export type Database = {
       }
     }
     Views: {
-      deleted_items: {
-        Row: {
-          content: string | null
-          deleted_at: string | null
-          id: string | null
-          type: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
+      check_admin_role: {
+        Args: {
+          user_id: string
+        }
+        Returns: boolean
+      }
       create_initial_super_admin: {
         Args: {
           user_id: string

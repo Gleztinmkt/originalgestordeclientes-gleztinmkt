@@ -13,6 +13,9 @@ import { Client } from "../types/client";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import { Calendar } from "@/components/ui/calendar";
+import { es } from "date-fns/locale";
+import { format } from "date-fns";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 interface PublicationDialogProps {
@@ -59,6 +62,7 @@ export const PublicationDialog = ({
   const [newLinkLabel, setNewLinkLabel] = useState("");
   const [newLinkUrl, setNewLinkUrl] = useState("");
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date(publication.date));
 
   const { data: userRole } = useQuery({
     queryKey: ['userRole'],
@@ -143,6 +147,7 @@ export const PublicationDialog = ({
         updates.copywriting = copywriting;
         updates.designer = designer === "no_designer" ? null : designer;
         updates.links = JSON.stringify(links);
+        updates.date = selectedDate.toISOString();
         updates.needs_recording = status === 'needs_recording';
         updates.needs_editing = status === 'needs_editing';
         updates.in_editing = status === 'in_editing';
@@ -176,11 +181,7 @@ export const PublicationDialog = ({
 
   return (
     <>
-      <Dialog 
-        open={open} 
-        onOpenChange={handleOpenChange} 
-        modal={true}
-      >
+      <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogContent 
           className="max-w-[600px] max-h-[80vh]" 
           onPointerDownOutside={(e) => {
@@ -298,6 +299,21 @@ export const PublicationDialog = ({
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Fecha de publicación</Label>
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={(date) => date && setSelectedDate(date)}
+                  locale={es}
+                  disabled={isDesigner}
+                  className="rounded-md border"
+                />
+                <div className="text-sm text-muted-foreground">
+                  Fecha seleccionada: {format(selectedDate, "EEEE d 'de' MMMM 'de' yyyy", { locale: es })}
                 </div>
               </div>
 
