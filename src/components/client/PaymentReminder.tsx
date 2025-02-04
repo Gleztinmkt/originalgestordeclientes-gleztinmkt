@@ -17,13 +17,22 @@ export const PaymentReminder = ({ clientName, paymentDay, phone }: PaymentRemind
       return;
     }
 
+    const currentDate = new Date();
+    const currentMonth = currentDate.getMonth();
+    const currentYear = currentDate.getFullYear();
+    
+    // Calcular la fecha 5 días antes del pago
+    const paymentDate = new Date(currentYear, currentMonth, paymentDay);
+    const reminderDate = new Date(paymentDate);
+    reminderDate.setDate(paymentDate.getDate() - 5);
+
     const message = `Buenos días ${clientName}, este es un mensaje automático.\n\n` +
-      `Les recordamos la fecha de pago del día ${paymentDay} de cada mes.\n\n` +
-      `Los valores actualizados los vas a encontrar en el siguiente link:\n` +
+      `Les recordamos la fecha de pago del día ${reminderDate.getDate()} al ${paymentDay} de cada mes.\n\n` +
+      `Los valores actualizados los vas a encontrar en el *siguiente link*:\n\n` +
       `https://gleztin.com.ar/index.php/valores-de-redes-sociales/\n` +
-      `Contraseña: Gleztin\n\n` +
-      `Muchas gracias.\n\n` +
-      `En caso de tener alguna duda o no poder abonarlo dentro de la fecha establecida por favor contáctarnos.`;
+      `*Contraseña*: Gleztin (Con mayuscula al inicio)\n\n` +
+      `En caso de tener alguna duda o no poder abonarlo dentro de la fecha establecida por favor contáctarnos.\n\n` +
+      `Muchas gracias`;
 
     const whatsappUrl = `https://wa.me/${phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');

@@ -30,17 +30,14 @@ export const BulkMessageButton = ({
 }: BulkMessageButtonProps) => {
   const getFilteredClients = () => {
     return clients.filter(client => {
-      // Aplicar filtro de día de pago si está seleccionado
       if (selectedPaymentDay && client.paymentDay !== selectedPaymentDay) {
         return false;
       }
 
-      // Aplicar filtro de búsqueda si existe
       if (searchQuery && !client.name.toLowerCase().includes(searchQuery.toLowerCase())) {
         return false;
       }
 
-      // Aplicar filtro de pagos pendientes si está activo
       if (showPendingPayments && !client.packages.some(pkg => !pkg.paid)) {
         return false;
       }
@@ -63,12 +60,24 @@ export const BulkMessageButton = ({
 
     filteredClients.forEach(client => {
       if (client.phone) {
-        const message = `Buenos días ${client.name}, este es un mensaje automático. \n\n` +
-          `Les recordamos la fecha de pago del día 1 de cada mes. Los valores actualizados los vas a encontrar en el *siguiente link*:\n\n` +
-          `https://gleztin.com.ar/index.php/valores-de-redes-sociales/\n\n\n` +
+        const paymentDay = client.paymentDay || 1;
+        const currentDate = new Date();
+        const currentMonth = currentDate.getMonth();
+        const currentYear = currentDate.getFullYear();
+        
+        // Calcular la fecha 5 días antes del pago
+        const paymentDate = new Date(currentYear, currentMonth, paymentDay);
+        const reminderDate = new Date(paymentDate);
+        reminderDate.setDate(paymentDate.getDate() - 5);
+
+        const message = `Buenos días ${client.name}, este es un mensaje automático.\n\n` +
+          `Les recordamos la fecha de pago del día ${reminderDate.getDate()} al ${paymentDay} de cada mes.\n\n` +
+          `Los valores actualizados los vas a encontrar en el *siguiente link*:\n\n` +
+          `https://gleztin.com.ar/index.php/valores-de-redes-sociales/\n` +
           `*Contraseña*: Gleztin (Con mayuscula al inicio)\n\n` +
           `En caso de tener alguna duda o no poder abonarlo dentro de la fecha establecida por favor contáctarnos.\n\n` +
           `Muchas gracias`;
+
         const whatsappUrl = `https://wa.me/${client.phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
         window.open(whatsappUrl, '_blank');
       }
