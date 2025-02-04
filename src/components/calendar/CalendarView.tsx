@@ -94,10 +94,7 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
       return;
     }
 
-    if (!result.destination) {
-      setDraggedOverDate(null);
-      return;
-    }
+    if (!result.destination) return;
 
     const destinationDate = result.destination.droppableId;
     const publicationId = result.draggableId;
@@ -132,8 +129,6 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
         description: "No se pudo actualizar la fecha de la publicación.",
         variant: "destructive",
       });
-    } finally {
-      setDraggedOverDate(null);
     }
   };
 
@@ -232,7 +227,7 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
                     ref={provided.innerRef}
                     {...provided.droppableProps}
                     className={`calendar-day-card ${isCurrentDay ? 'ring-2 ring-blue-500 dark:ring-blue-400' : ''} ${
-                      isDraggedOver ? 'bg-blue-50 dark:bg-blue-900/50 transition-colors duration-100' : ''
+                      isDraggedOver ? 'bg-blue-50 dark:bg-blue-900/30' : ''
                     }`}
                   >
                     <div className={`calendar-day-header ${isCurrentDay ? 'font-bold text-blue-500 dark:text-blue-400' : ''}`}>
@@ -244,39 +239,33 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
                       </span>
                     </div>
                     <div className="calendar-publications">
-                      {dayPublications.map((publication, pubIndex) => {
-                        const client = clients.find(c => c.id === publication.client_id);
-                        const typeShorthand = publication.type === 'reel' ? 'R' : publication.type === 'carousel' ? 'C' : 'I';
-                        const displayTitle = `${client?.name || ''} - ${typeShorthand} - ${publication.name}`;
-
-                        return (
-                          <Draggable
-                            key={publication.id}
-                            draggableId={publication.id}
-                            index={pubIndex}
-                          >
-                            {(provided, snapshot) => (
-                              <div
-                                ref={provided.innerRef}
-                                {...provided.draggableProps}
-                                {...provided.dragHandleProps}
-                                className={`draggable-item ${snapshot.isDragging ? 'dragging' : ''} ${
-                                  highlightedPublicationId === publication.id ? 'animate-pulse bg-blue-100 dark:bg-blue-900' : ''
-                                }`}
-                              >
-                                <PublicationCard
-                                  publication={publication}
-                                  client={client}
-                                  onUpdate={refetch}
-                                  displayTitle={displayTitle}
-                                  designers={designers}
-                                  isMobile={isMobile}
-                                />
-                              </div>
-                            )}
-                          </Draggable>
-                        );
-                      })}
+                      {dayPublications.map((publication, pubIndex) => (
+                        <Draggable
+                          key={publication.id}
+                          draggableId={publication.id}
+                          index={pubIndex}
+                        >
+                          {(provided, snapshot) => (
+                            <div
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              {...provided.dragHandleProps}
+                              className={`draggable-item ${snapshot.isDragging ? 'dragging' : ''} ${
+                                highlightedPublicationId === publication.id ? 'animate-pulse bg-blue-100 dark:bg-blue-900' : ''
+                              }`}
+                            >
+                              <PublicationCard
+                                publication={publication}
+                                client={clients.find(c => c.id === publication.client_id)}
+                                onUpdate={refetch}
+                                displayTitle={`${clients.find(c => c.id === publication.client_id)?.name || ''} - ${publication.type === 'reel' ? 'R' : publication.type === 'carousel' ? 'C' : 'I'} - ${publication.name}`}
+                                designers={designers}
+                                isMobile={isMobile}
+                              />
+                            </div>
+                          )}
+                        </Draggable>
+                      ))}
                       {provided.placeholder}
                     </div>
                   </div>
@@ -312,8 +301,8 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
                   <div
                     ref={provided.innerRef}
                     {...provided.droppableProps}
-                    className={`min-h-[120px] border rounded-lg p-1 relative transition-colors duration-100 ${
-                      isDraggedOver ? 'bg-blue-50 border-blue-300 dark:bg-blue-900/30 dark:border-blue-500' : 'bg-white/50 dark:bg-gray-800/50'
+                    className={`min-h-[120px] border rounded-lg p-1 relative ${
+                      isDraggedOver ? 'bg-blue-50 dark:bg-blue-900/30' : 'bg-white/50 dark:bg-gray-800/50'
                     } ${isCurrentDay ? 'ring-2 ring-blue-500 dark:ring-blue-400' : ''}`}
                   >
                     <div className={`text-right text-sm mb-1 px-1 ${
@@ -323,39 +312,33 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
                     </div>
                     <ScrollArea className={`h-full ${isMobile ? 'touch-pan-y' : ''}`}>
                       <div className="space-y-1">
-                        {dayPublications.map((publication, pubIndex) => {
-                          const client = clients.find(c => c.id === publication.client_id);
-                          const typeShorthand = publication.type === 'reel' ? 'R' : publication.type === 'carousel' ? 'C' : 'I';
-                          const displayTitle = `${client?.name || ''} - ${typeShorthand} - ${publication.name}`;
-
-                          return (
-                            <Draggable
-                              key={publication.id}
-                              draggableId={publication.id}
-                              index={pubIndex}
-                            >
-                              {(provided, snapshot) => (
-                                <div
-                                  ref={provided.innerRef}
-                                  {...provided.draggableProps}
-                                  {...provided.dragHandleProps}
-                                  className={`draggable-item ${snapshot.isDragging ? 'dragging' : ''} ${
-                                    highlightedPublicationId === publication.id ? 'animate-pulse bg-blue-100 dark:bg-blue-900' : ''
-                                  }`}
-                                >
-                                  <PublicationCard
-                                    publication={publication}
-                                    client={client}
-                                    onUpdate={refetch}
-                                    displayTitle={displayTitle}
-                                    designers={designers}
-                                    isMobile={isMobile}
-                                  />
-                                </div>
-                              )}
-                            </Draggable>
-                          );
-                        })}
+                        {dayPublications.map((publication, pubIndex) => (
+                          <Draggable
+                            key={publication.id}
+                            draggableId={publication.id}
+                            index={pubIndex}
+                          >
+                            {(provided, snapshot) => (
+                              <div
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                                {...provided.dragHandleProps}
+                                className={`draggable-item ${snapshot.isDragging ? 'dragging' : ''} ${
+                                  highlightedPublicationId === publication.id ? 'animate-pulse bg-blue-100 dark:bg-blue-900' : ''
+                                }`}
+                              >
+                                <PublicationCard
+                                  publication={publication}
+                                  client={clients.find(c => c.id === publication.client_id)}
+                                  onUpdate={refetch}
+                                  displayTitle={`${clients.find(c => c.id === publication.client_id)?.name || ''} - ${publication.type === 'reel' ? 'R' : publication.type === 'carousel' ? 'C' : 'I'} - ${publication.name}`}
+                                  designers={designers}
+                                  isMobile={isMobile}
+                                />
+                              </div>
+                            )}
+                          </Draggable>
+                        ))}
                         {provided.placeholder}
                       </div>
                     </ScrollArea>
