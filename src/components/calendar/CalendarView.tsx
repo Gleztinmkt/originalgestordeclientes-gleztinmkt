@@ -26,7 +26,6 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
   const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
   const [expandedDays, setExpandedDays] = useState<{ [key: string]: boolean }>({});
   const [highlightedPublicationId, setHighlightedPublicationId] = useState<string | null>(null);
-  const [draggedOverDate, setDraggedOverDate] = useState<string | null>(null);
   const isMobile = useIsMobile();
 
   const { data: userRole } = useQuery({
@@ -132,14 +131,6 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
     }
   };
 
-  const handleDragUpdate = (update: any) => {
-    if (!update.destination) {
-      setDraggedOverDate(null);
-      return;
-    }
-    setDraggedOverDate(update.destination.droppableId);
-  };
-
   useEffect(() => {
     if (highlightedPublicationId) {
       const timer = setTimeout(() => {
@@ -203,15 +194,11 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
   );
 
   const CalendarContent = () => (
-    <DragDropContext 
-      onDragEnd={handleDragEnd}
-      onDragUpdate={handleDragUpdate}
-    >
+    <DragDropContext onDragEnd={handleDragEnd}>
       {isMobile ? (
         <div className="calendar-mobile-view">
           {daysInMonth.map((date) => {
             const dateStr = format(date, 'yyyy-MM-dd');
-            const isDraggedOver = draggedOverDate === dateStr;
             const dayPublications = filteredPublications.filter(
               pub => format(new Date(pub.date), 'yyyy-MM-dd') === dateStr
             );
@@ -226,9 +213,7 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
                   <div
                     ref={provided.innerRef}
                     {...provided.droppableProps}
-                    className={`calendar-day-card ${isCurrentDay ? 'ring-2 ring-blue-500 dark:ring-blue-400' : ''} ${
-                      isDraggedOver ? 'bg-blue-50 dark:bg-blue-900/30' : ''
-                    }`}
+                    className={`calendar-day-card ${isCurrentDay ? 'ring-2 ring-blue-500 dark:ring-blue-400' : ''}`}
                   >
                     <div className={`calendar-day-header ${isCurrentDay ? 'font-bold text-blue-500 dark:text-blue-400' : ''}`}>
                       <h3 className="calendar-day-title">
@@ -288,7 +273,6 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
             }
 
             const dateStr = format(date, 'yyyy-MM-dd');
-            const isDraggedOver = draggedOverDate === dateStr;
             const dayPublications = filteredPublications.filter(
               pub => format(new Date(pub.date), 'yyyy-MM-dd') === dateStr
             );
@@ -301,9 +285,9 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
                   <div
                     ref={provided.innerRef}
                     {...provided.droppableProps}
-                    className={`min-h-[120px] border rounded-lg p-1 relative ${
-                      isDraggedOver ? 'bg-blue-50 dark:bg-blue-900/30' : 'bg-white/50 dark:bg-gray-800/50'
-                    } ${isCurrentDay ? 'ring-2 ring-blue-500 dark:ring-blue-400' : ''}`}
+                    className={`min-h-[120px] border rounded-lg p-1 relative bg-white/50 dark:bg-gray-800/50 ${
+                      isCurrentDay ? 'ring-2 ring-blue-500 dark:ring-blue-400' : ''
+                    }`}
                   >
                     <div className={`text-right text-sm mb-1 px-1 ${
                       isCurrentDay ? 'font-bold text-blue-500 dark:text-blue-400' : ''
