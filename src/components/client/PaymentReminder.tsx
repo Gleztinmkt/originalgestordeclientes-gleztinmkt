@@ -1,4 +1,6 @@
 import { toast } from "@/hooks/use-toast";
+import { addDays, format } from "date-fns";
+import { es } from "date-fns/locale";
 
 interface PaymentReminderProps {
   clientName: string;
@@ -17,13 +19,16 @@ export const PaymentReminder = ({ clientName, paymentDay, phone }: PaymentRemind
       return;
     }
 
+    const today = new Date();
+    const reminderDate = format(addDays(today, -5), "d", { locale: es });
+
     const message = `Buenos días ${clientName}, este es un mensaje automático.\n\n` +
-      `Les recordamos la fecha de pago del día ${paymentDay} de cada mes.\n\n` +
-      `Los valores actualizados los vas a encontrar en el siguiente link:\n` +
+      `Les recordamos la fecha de pago del día ${reminderDate} al ${paymentDay} de cada mes.\n\n` +
+      `Los valores actualizados los vas a encontrar en el *siguiente link*:\n\n` +
       `https://gleztin.com.ar/index.php/valores-de-redes-sociales/\n` +
-      `Contraseña: Gleztin\n\n` +
-      `Muchas gracias.\n\n` +
-      `En caso de tener alguna duda o no poder abonarlo dentro de la fecha establecida por favor contáctarnos.`;
+      `*Contraseña*: Gleztin (Con mayuscula al inicio)\n\n` +
+      `Si usted ya abono o la fecha de pago es incorrecta, avisenos porfavor.\n\n` +
+      `En caso de tener alguna duda o no poder abonarlo dentro de la fecha establecida por favor contáctarnos. Muchas gracias`;
 
     const whatsappUrl = `https://wa.me/${phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');

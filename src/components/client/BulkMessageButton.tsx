@@ -1,6 +1,8 @@
 import { MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
+import { addDays, format } from "date-fns";
+import { es } from "date-fns/locale";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,6 +24,19 @@ interface BulkMessageButtonProps {
   showPendingPayments?: boolean;
 }
 
+const createPaymentMessage = (clientName: string, paymentDay: number) => {
+  const today = new Date();
+  const reminderDate = format(addDays(today, -5), "d", { locale: es });
+  
+  return `Buenos días ${clientName}, este es un mensaje automático.\n\n` +
+    `Les recordamos la fecha de pago del día ${reminderDate} al ${paymentDay} de cada mes.\n\n` +
+    `Los valores actualizados los vas a encontrar en el *siguiente link*:\n\n` +
+    `https://gleztin.com.ar/index.php/valores-de-redes-sociales/\n` +
+    `*Contraseña*: Gleztin (Con mayuscula al inicio)\n\n` +
+    `Si usted ya abono o la fecha de pago es incorrecta, avisenos porfavor.\n\n` +
+    `En caso de tener alguna duda o no poder abonarlo dentro de la fecha establecida por favor contáctarnos. Muchas gracias`;
+};
+
 export const BulkMessageButton = ({ 
   clients, 
   selectedPaymentDay,
@@ -30,17 +45,14 @@ export const BulkMessageButton = ({
 }: BulkMessageButtonProps) => {
   const getFilteredClients = () => {
     return clients.filter(client => {
-      // Aplicar filtro de día de pago si está seleccionado
       if (selectedPaymentDay && client.paymentDay !== selectedPaymentDay) {
         return false;
       }
 
-      // Aplicar filtro de búsqueda si existe
       if (searchQuery && !client.name.toLowerCase().includes(searchQuery.toLowerCase())) {
         return false;
       }
 
-      // Aplicar filtro de pagos pendientes si está activo
       if (showPendingPayments && !client.packages.some(pkg => !pkg.paid)) {
         return false;
       }
@@ -63,12 +75,7 @@ export const BulkMessageButton = ({
 
     filteredClients.forEach(client => {
       if (client.phone) {
-        const message = `Buenos días ${client.name}, este es un mensaje automático. \n\n` +
-          `Les recordamos la fecha de pago del día 1 de cada mes. Los valores actualizados los vas a encontrar en el *siguiente link*:\n\n` +
-          `https://gleztin.com.ar/index.php/valores-de-redes-sociales/\n\n\n` +
-          `*Contraseña*: Gleztin (Con mayuscula al inicio)\n\n` +
-          `En caso de tener alguna duda o no poder abonarlo dentro de la fecha establecida por favor contáctarnos.\n\n` +
-          `Muchas gracias`;
+        const message = createPaymentMessage(client.name, client.paymentDay);
         const whatsappUrl = `https://wa.me/${client.phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
         window.open(whatsappUrl, '_blank');
       }

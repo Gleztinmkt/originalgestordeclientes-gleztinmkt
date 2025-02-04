@@ -94,7 +94,10 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
       return;
     }
 
-    if (!result.destination) return;
+    if (!result.destination) {
+      setDraggedOverDate(null);
+      return;
+    }
 
     const destinationDate = result.destination.droppableId;
     const publicationId = result.draggableId;
