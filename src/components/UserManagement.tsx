@@ -30,48 +30,80 @@ export const UserManagement = () => {
   const { data: users = [], refetch } = useQuery({
     queryKey: ['users'],
     queryFn: async () => {
-      const { data: roles } = await supabase
-        .from('user_roles')
-        .select('user_id, role');
+      try {
+        const { data: roles, error: rolesError } = await supabase
+          .from('user_roles')
+          .select('user_id, role');
 
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, full_name');
+        if (rolesError) throw rolesError;
 
-      return roles?.map(roleData => ({
-        id: roleData.user_id,
-        role: roleData.role,
-        email: roleData.user_id // We'll use the user_id as a placeholder since we can't get the email directly
-      })) || [];
+        const { data: profiles, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, full_name');
+
+        if (profilesError) throw profilesError;
+
+        // Combinar la información de roles y perfiles
+        return roles?.map(roleData => {
+          const profile = profiles?.find(p => p.id === roleData.user_id);
+          return {
+            id: roleData.user_id,
+            role: roleData.role,
+            email: profile?.full_name || roleData.user_id
+          };
+        }) || [];
+      } catch (error) {
+        console.error('Error fetching users:', error);
+        throw error;
+      }
     },
+    retry: 1,
   });
 
   const handleCreateUser = async () => {
+    if (!email || !password) {
+      toast({
+        title: "Error",
+        description: "Por favor complete todos los campos",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       setIsLoading(true);
       
-      // Create user in Supabase Auth
+      // Crear usuario en Supabase Auth
       const { data: { user }, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
         options: {
           emailRedirectTo: window.location.origin,
           data: {
-            full_name: email.split('@')[0] // Use part of email as initial name
+            full_name: email.split('@')[0]
           }
         }
       });
 
       if (signUpError) throw signUpError;
 
-      // Assign role
-      if (user) {
-        const { error: roleError } = await supabase
-          .from('user_roles')
-          .insert({ user_id: user.id, role });
-
-        if (roleError) throw roleError;
+      if (!user?.id) {
+        throw new Error('No se pudo crear el usuario');
       }
+
+      // Asignar rol
+      const { error: roleError } = await supabase
+        .from('user_roles')
+        .insert({ user_id: user.id, role });
+
+      if (roleError) throw roleError;
+
+      // Crear perfil
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert({ id: user.id, full_name: email.split('@')[0] });
+
+      if (profileError) throw profileError;
 
       toast({
         title: "Usuario creado",
