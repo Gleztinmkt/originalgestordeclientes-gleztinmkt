@@ -170,9 +170,78 @@ export const ClientPackage = ({
   }, [onEditPackage, isProcessing]);
 
   const handleSendCompletionMessage = () => {
-    const message = `*Reporte de Paquete - ${clientName}*\n\n*Nombre:* ${packageName}\n*Mes:* ${month}\n*Estado:* Completado\n*Publicaciones:* ${usedPublications}/${totalPublications}\n\n*Gracias por confiar en Gleztin Marketing Digital*`;
-    const whatsappUrl = `https://wa.me/${clientId}?text=${encodeURIComponent(message)}`;
+    if (!clientId) {
+      toast({
+        title: "Error",
+        description: "No se encontró el ID del cliente",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const message = `*Reporte de Paquete - ${clientName}*\n\n` +
+      `*Nombre:* ${packageName}\n` +
+      `*Mes:* ${month}\n` +
+      `*Estado:* Completado\n` +
+      `*Publicaciones:* ${usedPublications}/${totalPublications}\n\n` +
+      `*Gracias por confiar en Gleztin Marketing Digital*`;
+
+    const whatsappUrl = `https://wa.me/${clientId.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
+  };
+
+  const handleSendPaymentReminder = async () => {
+    try {
+      const { data: clientData, error } = await supabase
+        .from('clients')
+        .select('name, phone, payment_day')
+        .eq('id', clientId)
+        .single();
+
+      if (error) throw error;
+
+      if (!clientData?.phone) {
+        toast({
+          title: "Error",
+          description: "El cliente no tiene número de teléfono registrado",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const paymentDay = clientData.payment_day || 1;
+      const currentDate = new Date();
+      const currentMonth = currentDate.getMonth();
+      const currentYear = currentDate.getFullYear();
+      
+      // Calcular la fecha 5 días antes del pago
+      const paymentDate = new Date(currentYear, currentMonth, paymentDay);
+      const reminderDate = new Date(paymentDate);
+      reminderDate.setDate(paymentDate.getDate() - 5);
+
+      const message = `Buenos días ${clientData.name}, este es un mensaje automático.\n\n` +
+        `Les recordamos la fecha de pago del día ${reminderDate.getDate()} al ${paymentDay} de cada mes.\n\n` +
+        `Los valores actualizados los vas a encontrar en el *siguiente link*:\n\n` +
+        `https://gleztin.com.ar/index.php/valores-de-redes-sociales/\n` +
+        `*Contraseña*: Gleztin (Con mayuscula al inicio)\n\n` +
+        `En caso de tener alguna duda o no poder abonarlo dentro de la fecha establecida por favor contáctarnos.\n\n` +
+        `Muchas gracias`;
+
+      const whatsappUrl = `https://wa.me/${clientData.phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
+      window.open(whatsappUrl, '_blank');
+
+      toast({
+        title: "Recordatorio enviado",
+        description: "Se ha abierto WhatsApp con el mensaje predefinido.",
+      });
+    } catch (error) {
+      console.error('Error sending payment reminder:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo enviar el recordatorio de pago",
+        variant: "destructive",
+      });
+    }
   };
 
   const closeEditDialog = () => {
