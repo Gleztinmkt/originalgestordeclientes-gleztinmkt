@@ -67,6 +67,7 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
       return data as Publication[];
     },
     staleTime: 1000 * 60, // Cache for 1 minute
+    refetchOnWindowFocus: false, // Evitar refetch automático al cambiar de ventana
   });
 
   const { data: designers = [], refetch: refetchDesigners } = useQuery({

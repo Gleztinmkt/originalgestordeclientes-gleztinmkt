@@ -63,6 +63,7 @@ export const PublicationDialog = ({
   const [newLinkUrl, setNewLinkUrl] = useState("");
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date(publication.date));
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { data: userRole } = useQuery({
     queryKey: ['userRole'],
@@ -74,10 +75,11 @@ export const PublicationDialog = ({
         .from('user_roles')
         .select('role')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
       return roleData?.role || null;
     },
+    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
   });
 
   const isDesigner = userRole === 'designer';
@@ -100,17 +102,10 @@ export const PublicationDialog = ({
   }, [name, type, description, copywriting, designer, status, links, publication]);
 
   useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') {
-        return;
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, []);
+    if (!open) {
+      setIsSubmitting(false);
+    }
+  }, [open]);
 
   const handleOpenChange = (open: boolean) => {
     if (!open && hasChanges()) {
@@ -130,7 +125,10 @@ export const PublicationDialog = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
+    
     try {
+      setIsSubmitting(true);
       const updates: any = {};
       
       if (isDesigner) {
@@ -169,6 +167,7 @@ export const PublicationDialog = ({
       });
 
       onUpdate();
+      onOpenChange(false);
     } catch (error) {
       console.error('Error updating publication:', error);
       toast({
@@ -176,6 +175,8 @@ export const PublicationDialog = ({
         description: "No se pudo actualizar la publicación. Por favor, intenta de nuevo.",
         variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
