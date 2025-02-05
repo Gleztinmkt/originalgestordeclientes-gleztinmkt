@@ -7,8 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Json } from "@/integrations/supabase/types";
-import html2canvas from 'html2canvas';
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import {
@@ -154,47 +152,56 @@ export const ClientPackage = ({
       
       console.log(`Submission #${currentSubmissionCount} completed successfully`);
       
-      processingTimeoutRef.current = setTimeout(() => {
-        if (currentSubmissionCount === submissionCountRef.current) {
-          setIsEditDialogOpen(false);
-          setIsProcessing(false);
-          toast({
-            title: "Paquete actualizado",
-            description: "El paquete ha sido actualizado correctamente.",
-          });
-        }
-      }, 300);
-
+      if (isMounted.current) {
+        processingTimeoutRef.current = setTimeout(() => {
+          if (currentSubmissionCount === submissionCountRef.current && isMounted.current) {
+            setIsEditDialogOpen(false);
+            setIsProcessing(false);
+            toast({
+              title: "Paquete actualizado",
+              description: "El paquete ha sido actualizado correctamente.",
+            });
+          }
+        }, 300);
+      }
     } catch (error) {
       console.error(`Error in submission #${currentSubmissionCount}:`, error);
-      toast({
-        title: "Error",
-        description: "No se pudo actualizar el paquete. Por favor, intenta de nuevo.",
-        variant: "destructive",
-      });
-      setIsProcessing(false);
+      if (isMounted.current) {
+        toast({
+          title: "Error",
+          description: "No se pudo actualizar el paquete. Por favor, intenta de nuevo.",
+          variant: "destructive",
+        });
+        setIsProcessing(false);
+      }
     }
   }, [onEditPackage, isProcessing]);
 
-  const handleSendCompletionMessage = () => {
-    if (!clientId) {
-      toast({
-        title: "Error",
-        description: "No se encontró el ID del cliente",
-        variant: "destructive",
-      });
-      return;
+  const handleUpdatePaid = async (newPaidStatus: boolean) => {
+    try {
+      setIsProcessing(true);
+      await onUpdatePaid(newPaidStatus);
+      
+      if (isMounted.current) {
+        toast({
+          title: "Estado actualizado",
+          description: "El estado de pago ha sido actualizado correctamente.",
+        });
+      }
+    } catch (error) {
+      console.error('Error updating paid status:', error);
+      if (isMounted.current) {
+        toast({
+          title: "Error",
+          description: "No se pudo actualizar el estado de pago.",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      if (isMounted.current) {
+        setIsProcessing(false);
+      }
     }
-
-    const message = `*Reporte de Paquete - ${clientName}*\n\n` +
-      `*Nombre:* ${packageName}\n` +
-      `*Mes:* ${month}\n` +
-      `*Estado:* Completado\n` +
-      `*Publicaciones:* ${usedPublications}/${totalPublications}\n\n` +
-      `*Gracias por confiar en Gleztin Marketing Digital*`;
-
-    const whatsappUrl = `https://wa.me/${clientId.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
-    window.open(whatsappUrl, '_blank');
   };
 
   const handleSendPaymentReminder = async () => {
@@ -248,15 +255,6 @@ export const ClientPackage = ({
         description: "No se pudo enviar el recordatorio de pago",
         variant: "destructive",
       });
-    }
-  };
-
-  const closeEditDialog = () => {
-    if (!isProcessing) {
-      console.log('Closing edit dialog - not processing');
-      setIsEditDialogOpen(false);
-    } else {
-      console.log('Cannot close dialog - processing in progress');
     }
   };
 
@@ -394,7 +392,7 @@ export const ClientPackage = ({
             </span>
             <Switch 
               checked={paid} 
-              onCheckedChange={handleSendPaymentReminder}
+              onCheckedChange={handleUpdatePaid}
               disabled={isProcessing}
             />
           </div>
@@ -404,7 +402,7 @@ export const ClientPackage = ({
                 <MoreVertical className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent>
+            <DropdownMenuContent align="end">
               <DropdownMenuItem 
                 onClick={() => setIsEditDialogOpen(true)}
                 disabled={isProcessing}
@@ -475,7 +473,7 @@ export const ClientPackage = ({
         </div>
       </CardContent>
 
-      <Dialog open={isEditDialogOpen} onOpenChange={closeEditDialog}>
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>Editar Paquete</DialogTitle>
