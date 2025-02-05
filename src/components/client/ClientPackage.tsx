@@ -75,7 +75,6 @@ export const ClientPackage = ({
     };
   }, []);
 
-  // Fetch last post on component mount
   useEffect(() => {
     const fetchLastPost = async () => {
       const { data: clientData, error } = await supabase
@@ -92,7 +91,6 @@ export const ClientPackage = ({
     fetchLastPost();
   }, [clientId]);
 
-  // Update last post in database
   const handleLastPostChange = async (value: string) => {
     setLastPost(value);
     try {
@@ -157,33 +155,6 @@ export const ClientPackage = ({
       }
     }
   }, [onEditPackage, isProcessing]);
-
-  const handleUpdatePaid = async (newPaidStatus: boolean) => {
-    try {
-      setIsProcessing(true);
-      await onUpdatePaid(newPaidStatus);
-      
-      if (isMounted.current) {
-        toast({
-          title: "Estado actualizado",
-          description: "El estado de pago ha sido actualizado correctamente.",
-        });
-      }
-    } catch (error) {
-      console.error('Error updating paid status:', error);
-      if (isMounted.current) {
-        toast({
-          title: "Error",
-          description: "No se pudo actualizar el estado de pago.",
-          variant: "destructive",
-        });
-      }
-    } finally {
-      if (isMounted.current) {
-        setIsProcessing(false);
-      }
-    }
-  };
 
   const handleSendCompletionMessage = async () => {
     try {
@@ -361,7 +332,7 @@ export const ClientPackage = ({
             </span>
             <Switch 
               checked={paid} 
-              onCheckedChange={handleUpdatePaid}
+              onCheckedChange={onUpdatePaid}
               disabled={isProcessing}
             />
           </div>
