@@ -1,40 +1,20 @@
-import { useState, useCallback, useRef, useEffect } from "react";
-import { Package, Edit, MoreVertical, Trash, Send, Download } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PackageCounter } from "./PackageCounter";
-import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Package, Edit, MoreVertical, Trash, Send, Download } from "lucide-react";
+import { PackageCounter } from "./PackageCounter";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { AddPackageForm } from "./AddPackageForm";
+import { PublicationCalendarDialog } from "./PublicationCalendarDialog";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import html2canvas from 'html2canvas';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { AddPackageForm } from "./AddPackageForm";
-import { PublicationCalendarDialog } from "./PublicationCalendarDialog";
 
 interface PackageFormValues {
   name: string;
@@ -202,60 +182,6 @@ export const ClientPackage = ({
       if (isMounted.current) {
         setIsProcessing(false);
       }
-    }
-  };
-
-  const handleSendPaymentReminder = async () => {
-    try {
-      const { data: clientData, error } = await supabase
-        .from('clients')
-        .select('name, phone, payment_day')
-        .eq('id', clientId)
-        .single();
-
-      if (error) throw error;
-
-      if (!clientData?.phone) {
-        toast({
-          title: "Error",
-          description: "El cliente no tiene número de teléfono registrado",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      const paymentDay = clientData.payment_day || 1;
-      const currentDate = new Date();
-      const currentMonth = currentDate.getMonth();
-      const currentYear = currentDate.getFullYear();
-      
-      // Calcular la fecha 5 días antes del pago
-      const paymentDate = new Date(currentYear, currentMonth, paymentDay);
-      const reminderDate = new Date(paymentDate);
-      reminderDate.setDate(paymentDate.getDate() - 5);
-
-      const message = `Buenos días ${clientData.name}, este es un mensaje automático.\n\n` +
-        `Les recordamos la fecha de pago del día ${reminderDate.getDate()} al ${paymentDay} de cada mes.\n\n` +
-        `Los valores actualizados los vas a encontrar en el *siguiente link*:\n\n` +
-        `https://gleztin.com.ar/index.php/valores-de-redes-sociales/\n` +
-        `*Contraseña*: Gleztin (Con mayuscula al inicio)\n\n` +
-        `En caso de tener alguna duda o no poder abonarlo dentro de la fecha establecida por favor contáctarnos.\n\n` +
-        `Muchas gracias`;
-
-      const whatsappUrl = `https://wa.me/${clientData.phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
-      window.open(whatsappUrl, '_blank');
-
-      toast({
-        title: "Recordatorio enviado",
-        description: "Se ha abierto WhatsApp con el mensaje predefinido.",
-      });
-    } catch (error) {
-      console.error('Error sending payment reminder:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo enviar el recordatorio de pago",
-        variant: "destructive",
-      });
     }
   };
 
