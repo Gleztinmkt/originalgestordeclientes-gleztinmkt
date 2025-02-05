@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import html2canvas from 'html2canvas';
 import {
   Dialog,
   DialogContent,
@@ -253,6 +254,48 @@ export const ClientPackage = ({
       toast({
         title: "Error",
         description: "No se pudo enviar el recordatorio de pago",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSendCompletionMessage = async () => {
+    try {
+      const { data: clientData, error } = await supabase
+        .from('clients')
+        .select('name, phone')
+        .eq('id', clientId)
+        .single();
+
+      if (error) throw error;
+
+      if (!clientData?.phone) {
+        toast({
+          title: "Error",
+          description: "El cliente no tiene número de teléfono registrado",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const message = `Hola ${clientData.name}!\n\n` +
+        `Te escribimos para informarte que has completado todas las publicaciones del paquete "${packageName}" correspondiente al mes de ${month}.\n\n` +
+        `¿Te gustaría renovar el paquete para el próximo mes?\n\n` +
+        `Quedamos atentos a tu respuesta.\n\n` +
+        `¡Gracias por confiar en nosotros!`;
+
+      const whatsappUrl = `https://wa.me/${clientData.phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
+      window.open(whatsappUrl, '_blank');
+
+      toast({
+        title: "Mensaje enviado",
+        description: "Se ha abierto WhatsApp con el mensaje predefinido.",
+      });
+    } catch (error) {
+      console.error('Error sending completion message:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo enviar el mensaje de completado",
         variant: "destructive",
       });
     }
