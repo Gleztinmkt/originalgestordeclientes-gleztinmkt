@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
 import { ExternalLink, Link as LinkIcon, Plus, Trash2, Instagram } from "lucide-react";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Publication } from "../client/publication/types";
 import { Client } from "../types/client";
 import { toast } from "@/hooks/use-toast";
@@ -15,7 +15,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Calendar } from "@/components/ui/calendar";
 import { es } from "date-fns/locale";
-import { format } from "date-fns";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 interface PublicationDialogProps {
@@ -64,6 +63,7 @@ export const PublicationDialog = ({
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date(publication.date));
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const isMounted = useRef(true);
 
   const { data: userRole } = useQuery({
     queryKey: ['userRole'],
@@ -79,10 +79,16 @@ export const PublicationDialog = ({
 
       return roleData?.role || null;
     },
-    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
+    staleTime: 1000 * 60 * 5,
   });
 
   const isDesigner = userRole === 'designer';
+
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
   const hasChanges = useCallback(() => {
     return name !== publication.name ||
@@ -170,22 +176,26 @@ export const PublicationDialog = ({
       }
 
       console.log('Update successful');
-      toast({
-        title: "Publicación actualizada",
-        description: "Los cambios han sido guardados correctamente.",
-      });
+      
+      if (isMounted.current) {
+        toast({
+          title: "Publicación actualizada",
+          description: "Los cambios han sido guardados correctamente.",
+        });
 
-      await onUpdate();
-      onOpenChange(false);
+        await onUpdate();
+        onOpenChange(false);
+      }
     } catch (error) {
       console.error('Error updating publication:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo actualizar la publicación. Por favor, intenta de nuevo.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
+      if (isMounted.current) {
+        toast({
+          title: "Error",
+          description: "No se pudo actualizar la publicación. Por favor, intenta de nuevo.",
+          variant: "destructive",
+        });
+        setIsSubmitting(false);
+      }
     }
   };
 
