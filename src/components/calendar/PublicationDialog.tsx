@@ -200,27 +200,132 @@ export const PublicationDialog = ({
     }
   };
 
+  const generateCalendarImage = async () => {
+    const calendarElement = document.createElement('div');
+    calendarElement.className = 'p-8 bg-gradient-to-br from-[#F2FCE2] to-[#E5DEFF] min-w-[800px]';
+    
+    // Header with modern styling and company name
+    const header = document.createElement('div');
+    header.className = 'text-center mb-8 bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-lg';
+    header.innerHTML = `
+      <div class="flex flex-col items-center justify-center gap-2 mb-4">
+        <h1 class="text-2xl font-bold text-[#221F26]">Gleztin Marketing Digital - Depto. Marketing</h1>
+      </div>
+      <h2 class="text-xl text-[#221F26] font-semibold mb-2">${client?.name} - ${publication.name}</h2>
+      <p class="text-[#8E9196]">Generado el ${format(new Date(), "d 'de' MMMM 'de' yyyy", { locale: es })}</p>
+    `;
+    calendarElement.appendChild(header);
+
+    try {
+      const { data: publications = [] } = await supabase
+        .from('publications')
+        .select('*')
+        .eq('client_id', client?.id)
+        .eq('package_id', publication.package_id)
+        .is('deleted_at', null)
+        .order('date', { ascending: true });
+
+      // Publications list with modern cards
+      const list = document.createElement('div');
+      list.className = 'space-y-4';
+      
+      publications.forEach(pub => {
+        const item = document.createElement('div');
+        item.className = 'bg-white/90 backdrop-blur-sm rounded-xl p-6 shadow-md transition-all hover:shadow-lg';
+        
+        const typeColors = {
+          reel: { bg: '#D3E4FD', text: '#0EA5E9' },
+          carousel: { bg: '#FDE1D3', text: '#F97316' },
+          image: { bg: '#E5DEFF', text: '#8B5CF6' }
+        };
+        
+        const typeColor = typeColors[pub.type as keyof typeof typeColors] || typeColors.image;
+        
+        item.innerHTML = `
+          <div class="flex items-center justify-between">
+            <div class="flex-1">
+              <h3 class="text-lg font-semibold text-[#221F26] mb-1">${pub.name}</h3>
+              <p class="text-[#8E9196] text-sm">
+                ${format(new Date(pub.date), "EEEE d 'de' MMMM 'de' yyyy", { locale: es })}
+              </p>
+            </div>
+            <span class="px-4 py-2 rounded-full text-sm font-medium" style="background-color: ${typeColor.bg}; color: ${typeColor.text}">
+              ${pub.type.charAt(0).toUpperCase() + pub.type.slice(1)}
+            </span>
+          </div>
+          ${pub.description ? `
+            <div class="mt-3 pt-3 border-t border-gray-100">
+              <p class="text-sm text-[#8E9196]">${pub.description}</p>
+            </div>
+          ` : ''}
+        `;
+        list.appendChild(item);
+      });
+      
+      calendarElement.appendChild(list);
+
+      // Footer with modern styling
+      const footer = document.createElement('div');
+      footer.className = 'mt-8 text-center p-4 bg-white/80 backdrop-blur-sm rounded-xl';
+      footer.innerHTML = `
+        <div class="text-sm text-[#8E9196] flex items-center justify-center gap-2">
+          <span class="font-medium">Gestor de clientes</span>
+          <span class="text-[#9b87f5] font-bold">Gleztin Marketing Digital</span>
+        </div>
+      `;
+      calendarElement.appendChild(footer);
+
+      // Add to document temporarily
+      document.body.appendChild(calendarElement);
+
+      const canvas = await html2canvas(calendarElement, {
+        scale: 2,
+        backgroundColor: null,
+        logging: false,
+      });
+
+      // Convert to image and download
+      const image = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.download = `calendario-${client?.name.toLowerCase().replace(/\s+/g, '-')}-${publication.name.toLowerCase().replace(/\s+/g, '-')}.png`;
+      link.href = image;
+      link.click();
+
+      toast({
+        title: "Calendario generado",
+        description: "La imagen se ha descargado correctamente.",
+      });
+    } catch (error) {
+      console.error('Error generating calendar image:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo generar la imagen del calendario.",
+        variant: "destructive",
+      });
+    } finally {
+      // Clean up
+      if (document.body.contains(calendarElement)) {
+        document.body.removeChild(calendarElement);
+      }
+    }
+  };
+
   return (
     <>
       <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent 
-          className="max-w-[600px] max-h-[80vh]" 
-          onPointerDownOutside={(e) => {
-            e.preventDefault();
-            if (hasChanges()) {
-              setShowConfirmDialog(true);
-            }
-          }}
-          onInteractOutside={(e) => {
-            e.preventDefault();
-          }}
-          onEscapeKeyDown={(e) => {
-            e.preventDefault();
-            if (hasChanges()) {
-              setShowConfirmDialog(true);
-            }
-          }}
-        >
+        <DialogContent className="max-w-[600px] max-h-[80vh]" onPointerDownOutside={(e) => {
+          e.preventDefault();
+          if (hasChanges()) {
+            setShowConfirmDialog(true);
+          }
+        }} onInteractOutside={(e) => {
+          e.preventDefault();
+        }} onEscapeKeyDown={(e) => {
+          e.preventDefault();
+          if (hasChanges()) {
+            setShowConfirmDialog(true);
+          }
+        }}>
           <DialogHeader>
             <DialogTitle>Editar Publicación</DialogTitle>
           </DialogHeader>
