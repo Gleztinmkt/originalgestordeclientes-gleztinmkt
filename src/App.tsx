@@ -28,21 +28,42 @@ const App = () => {
     const initializeAuth = async () => {
       try {
         // Check for existing session
-        const { data: { session: currentSession } } = await supabase.auth.getSession();
-        console.log("Current session:", currentSession);
+        const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          console.error("Error getting session:", sessionError);
+          throw sessionError;
+        }
+
+        console.log("Initial session check:", currentSession);
         setSession(currentSession);
 
         // Set up auth state change listener
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-          console.log("Auth state changed:", _event, session);
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, changedSession) => {
+          console.log("Auth state changed:", event, changedSession);
           
-          if (_event === 'SIGNED_OUT') {
-            // Clear session on sign out
+          if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
+            // Clear session on sign out or user deletion
             setSession(null);
-          } else if (session) {
+            // Clear any cached data
+            queryClient.clear();
+          } else if (changedSession) {
             // Validate and update session
-            const { data: { session: validSession } } = await supabase.auth.getSession();
-            setSession(validSession);
+            const { data: { session: validSession }, error: validationError } = await supabase.auth.getSession();
+            
+            if (validationError) {
+              console.error("Session validation error:", validationError);
+              setSession(null);
+              return;
+            }
+
+            if (validSession?.expires_at && new Date(validSession.expires_at * 1000) < new Date()) {
+              console.log("Session expired, signing out");
+              await supabase.auth.signOut();
+              setSession(null);
+            } else {
+              setSession(validSession);
+            }
           }
         });
 
@@ -51,7 +72,8 @@ const App = () => {
         };
       } catch (error) {
         console.error('Error initializing auth:', error);
-        // Clear session on error
+        // Clear session on error and ensure user is logged out
+        await supabase.auth.signOut();
         setSession(null);
       } finally {
         setLoading(false);
