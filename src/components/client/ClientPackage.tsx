@@ -60,7 +60,7 @@ interface ClientPackageProps {
   month: string;
   paid: boolean;
   onUpdateUsed: (newCount: number) => void;
-  onUpdatePaid: (paid: boolean) => void;
+  onUpdatePaid: (paid: boolean) => Promise<void>;
   onEditPackage: (values: PackageFormValues & { name: string, totalPublications: string }) => Promise<void>;
   onDeletePackage?: () => void;
   clientId: string;
@@ -88,6 +88,13 @@ export const ClientPackage = ({
   const [lastPost, setLastPost] = useState<string>("");
   const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const submissionCountRef = useRef(0);
+  const isMounted = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
   // Fetch last post on component mount
   useEffect(() => {
@@ -387,7 +394,7 @@ export const ClientPackage = ({
             </span>
             <Switch 
               checked={paid} 
-              onCheckedChange={onUpdatePaid}
+              onCheckedChange={handleSendPaymentReminder}
               disabled={isProcessing}
             />
           </div>
@@ -397,7 +404,7 @@ export const ClientPackage = ({
                 <MoreVertical className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent>
               <DropdownMenuItem 
                 onClick={() => setIsEditDialogOpen(true)}
                 disabled={isProcessing}
