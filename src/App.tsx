@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
+import { Session } from '@supabase/supabase-js';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -19,37 +20,48 @@ const queryClient = new QueryClient({
 });
 
 const App = () => {
-  const [session, setSession] = useState<any>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Función para obtener la sesión inicial
-    const getInitialSession = async () => {
+    // Get initial session and set up auth state listener
+    const initializeAuth = async () => {
       try {
-        const { data: { session: initialSession } } = await supabase.auth.getSession();
-        console.log("Initial session:", initialSession);
-        setSession(initialSession);
+        // Check for existing session
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        console.log("Current session:", currentSession);
+        setSession(currentSession);
+
+        // Set up auth state change listener
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+          console.log("Auth state changed:", _event, session);
+          
+          if (_event === 'SIGNED_OUT') {
+            // Clear session on sign out
+            setSession(null);
+          } else if (session) {
+            // Validate and update session
+            const { data: { session: validSession } } = await supabase.auth.getSession();
+            setSession(validSession);
+          }
+        });
+
+        return () => {
+          subscription.unsubscribe();
+        };
       } catch (error) {
-        console.error('Error al obtener la sesión inicial:', error);
+        console.error('Error initializing auth:', error);
+        // Clear session on error
+        setSession(null);
       } finally {
         setLoading(false);
       }
     };
 
-    getInitialSession();
-
-    // Suscribirse a cambios en el estado de autenticación
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      console.log("Auth state changed:", _event, session);
-      setSession(session);
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
+    initializeAuth();
   }, []);
 
-  // Mostrar un estado de carga mientras se verifica la sesión
+  // Show loading spinner while checking auth state
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
