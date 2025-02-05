@@ -42,8 +42,8 @@ const App = () => {
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, changedSession) => {
           console.log("Auth state changed:", event, changedSession);
           
-          if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
-            // Clear session on sign out or user deletion
+          if (event === 'SIGNED_OUT') {
+            // Clear session on sign out
             setSession(null);
             // Clear any cached data
             queryClient.clear();
