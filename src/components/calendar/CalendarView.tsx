@@ -24,6 +24,7 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
+  const [expandedDays, setExpandedDays] = useState<{ [key: string]: boolean }>({});
   const [highlightedPublicationId, setHighlightedPublicationId] = useState<string | null>(null);
   const isMobile = useIsMobile();
 
@@ -41,13 +42,11 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
 
       return roleData?.role || null;
     },
-    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
   });
 
-  const { data: publications = [], isLoading: isLoadingPublications, refetch } = useQuery({
+  const { data: publications = [], refetch } = useQuery({
     queryKey: ['publications', selectedClient],
     queryFn: async () => {
-      console.log('Fetching publications for client:', selectedClient);
       let query = supabase
         .from('publications')
         .select('*')
@@ -66,8 +65,6 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
       }
       return data as Publication[];
     },
-    staleTime: 1000 * 60, // Cache for 1 minute
-    refetchOnWindowFocus: false, // Evitar refetch automático al cambiar de ventana
   });
 
   const { data: designers = [], refetch: refetchDesigners } = useQuery({
@@ -84,7 +81,6 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
       }
       return data;
     },
-    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
   });
 
   const handleDragEnd = async (result: DropResult) => {
@@ -170,6 +166,13 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
   const startDay = startOfMonth(selectedDate).getDay();
   const emptyDays = Array(startDay).fill(null);
   const allDays = [...emptyDays, ...daysInMonth];
+
+  const toggleDayExpansion = (date: string) => {
+    setExpandedDays(prev => ({
+      ...prev,
+      [date]: !prev[date]
+    }));
+  };
 
   const FilterContent = () => (
     <FilterPanel
@@ -382,13 +385,7 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
             </Sheet>
           </div>
           <div className="flex-1 overflow-auto">
-            {isLoadingPublications ? (
-              <div className="flex items-center justify-center h-full">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-white"></div>
-              </div>
-            ) : (
-              <CalendarContent />
-            )}
+            <CalendarContent />
           </div>
         </>
       ) : (
@@ -431,13 +428,7 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
             <FilterContent />
           </div>
           <div className="flex-1 p-4 overflow-auto">
-            {isLoadingPublications ? (
-              <div className="flex items-center justify-center h-full">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-white"></div>
-              </div>
-            ) : (
-              <CalendarContent />
-            )}
+            <CalendarContent />
           </div>
         </>
       )}

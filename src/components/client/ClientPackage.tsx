@@ -1,20 +1,41 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { useState, useCallback, useRef, useEffect } from "react";
+import { Package, Edit, MoreVertical, Trash, Send, Download } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PackageCounter } from "./PackageCounter";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Package, Edit, MoreVertical, Trash, Send, Download } from "lucide-react";
-import { PackageCounter } from "./PackageCounter";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { AddPackageForm } from "./AddPackageForm";
-import { PublicationCalendarDialog } from "./PublicationCalendarDialog";
-import { useState, useCallback, useRef, useEffect } from "react";
+import { Json } from "@/integrations/supabase/types";
+import html2canvas from 'html2canvas';
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import html2canvas from 'html2canvas';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { AddPackageForm } from "./AddPackageForm";
+import { PublicationCalendarDialog } from "./PublicationCalendarDialog";
 
 interface PackageFormValues {
   name: string;
@@ -39,7 +60,7 @@ interface ClientPackageProps {
   month: string;
   paid: boolean;
   onUpdateUsed: (newCount: number) => void;
-  onUpdatePaid: (paid: boolean) => Promise<void>;
+  onUpdatePaid: (paid: boolean) => void;
   onEditPackage: (values: PackageFormValues & { name: string, totalPublications: string }) => Promise<void>;
   onDeletePackage?: () => void;
   clientId: string;
@@ -67,14 +88,8 @@ export const ClientPackage = ({
   const [lastPost, setLastPost] = useState<string>("");
   const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const submissionCountRef = useRef(0);
-  const isMounted = useRef(true);
 
-  useEffect(() => {
-    return () => {
-      isMounted.current = false;
-    };
-  }, []);
-
+  // Fetch last post on component mount
   useEffect(() => {
     const fetchLastPost = async () => {
       const { data: clientData, error } = await supabase
@@ -91,6 +106,7 @@ export const ClientPackage = ({
     fetchLastPost();
   }, [clientId]);
 
+  // Update last post in database
   const handleLastPostChange = async (value: string) => {
     setLastPost(value);
     try {
@@ -131,36 +147,54 @@ export const ClientPackage = ({
       
       console.log(`Submission #${currentSubmissionCount} completed successfully`);
       
-      if (isMounted.current) {
-        processingTimeoutRef.current = setTimeout(() => {
-          if (currentSubmissionCount === submissionCountRef.current && isMounted.current) {
-            setIsEditDialogOpen(false);
-            setIsProcessing(false);
-            toast({
-              title: "Paquete actualizado",
-              description: "El paquete ha sido actualizado correctamente.",
-            });
-          }
-        }, 300);
-      }
+      processingTimeoutRef.current = setTimeout(() => {
+        if (currentSubmissionCount === submissionCountRef.current) {
+          setIsEditDialogOpen(false);
+          setIsProcessing(false);
+          toast({
+            title: "Paquete actualizado",
+            description: "El paquete ha sido actualizado correctamente.",
+          });
+        }
+      }, 300);
+
     } catch (error) {
       console.error(`Error in submission #${currentSubmissionCount}:`, error);
-      if (isMounted.current) {
-        toast({
-          title: "Error",
-          description: "No se pudo actualizar el paquete. Por favor, intenta de nuevo.",
-          variant: "destructive",
-        });
-        setIsProcessing(false);
-      }
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el paquete. Por favor, intenta de nuevo.",
+        variant: "destructive",
+      });
+      setIsProcessing(false);
     }
   }, [onEditPackage, isProcessing]);
 
-  const handleSendCompletionMessage = async () => {
+  const handleSendCompletionMessage = () => {
+    if (!clientId) {
+      toast({
+        title: "Error",
+        description: "No se encontró el ID del cliente",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const message = `*Reporte de Paquete - ${clientName}*\n\n` +
+      `*Nombre:* ${packageName}\n` +
+      `*Mes:* ${month}\n` +
+      `*Estado:* Completado\n` +
+      `*Publicaciones:* ${usedPublications}/${totalPublications}\n\n` +
+      `*Gracias por confiar en Gleztin Marketing Digital*`;
+
+    const whatsappUrl = `https://wa.me/${clientId.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+  };
+
+  const handleSendPaymentReminder = async () => {
     try {
       const { data: clientData, error } = await supabase
         .from('clients')
-        .select('name, phone')
+        .select('name, phone, payment_day')
         .eq('id', clientId)
         .single();
 
@@ -175,26 +209,47 @@ export const ClientPackage = ({
         return;
       }
 
-      const message = `Hola ${clientData.name}!\n\n` +
-        `Te escribimos para informarte que has completado todas las publicaciones del paquete "${packageName}" correspondiente al mes de ${month}.\n\n` +
-        `¿Te gustaría renovar el paquete para el próximo mes?\n\n` +
-        `Quedamos atentos a tu respuesta.\n\n` +
-        `¡Gracias por confiar en nosotros!`;
+      const paymentDay = clientData.payment_day || 1;
+      const currentDate = new Date();
+      const currentMonth = currentDate.getMonth();
+      const currentYear = currentDate.getFullYear();
+      
+      // Calcular la fecha 5 días antes del pago
+      const paymentDate = new Date(currentYear, currentMonth, paymentDay);
+      const reminderDate = new Date(paymentDate);
+      reminderDate.setDate(paymentDate.getDate() - 5);
+
+      const message = `Buenos días ${clientData.name}, este es un mensaje automático.\n\n` +
+        `Les recordamos la fecha de pago del día ${reminderDate.getDate()} al ${paymentDay} de cada mes.\n\n` +
+        `Los valores actualizados los vas a encontrar en el *siguiente link*:\n\n` +
+        `https://gleztin.com.ar/index.php/valores-de-redes-sociales/\n` +
+        `*Contraseña*: Gleztin (Con mayuscula al inicio)\n\n` +
+        `En caso de tener alguna duda o no poder abonarlo dentro de la fecha establecida por favor contáctarnos.\n\n` +
+        `Muchas gracias`;
 
       const whatsappUrl = `https://wa.me/${clientData.phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
       window.open(whatsappUrl, '_blank');
 
       toast({
-        title: "Mensaje enviado",
+        title: "Recordatorio enviado",
         description: "Se ha abierto WhatsApp con el mensaje predefinido.",
       });
     } catch (error) {
-      console.error('Error sending completion message:', error);
+      console.error('Error sending payment reminder:', error);
       toast({
         title: "Error",
-        description: "No se pudo enviar el mensaje de completado",
+        description: "No se pudo enviar el recordatorio de pago",
         variant: "destructive",
       });
+    }
+  };
+
+  const closeEditDialog = () => {
+    if (!isProcessing) {
+      console.log('Closing edit dialog - not processing');
+      setIsEditDialogOpen(false);
+    } else {
+      console.log('Cannot close dialog - processing in progress');
     }
   };
 
@@ -413,7 +468,7 @@ export const ClientPackage = ({
         </div>
       </CardContent>
 
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+      <Dialog open={isEditDialogOpen} onOpenChange={closeEditDialog}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>Editar Paquete</DialogTitle>

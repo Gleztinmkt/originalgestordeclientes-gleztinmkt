@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
 import { ExternalLink, Link as LinkIcon, Plus, Trash2, Instagram } from "lucide-react";
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Publication } from "../client/publication/types";
 import { Client } from "../types/client";
 import { toast } from "@/hooks/use-toast";
@@ -16,7 +16,6 @@ import { useQuery } from "@tanstack/react-query";
 import { Calendar } from "@/components/ui/calendar";
 import { es } from "date-fns/locale";
 import { format } from "date-fns";
-import html2canvas from "html2canvas";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 interface PublicationDialogProps {
@@ -64,8 +63,6 @@ export const PublicationDialog = ({
   const [newLinkUrl, setNewLinkUrl] = useState("");
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date(publication.date));
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const isMounted = useRef(true);
 
   const { data: userRole } = useQuery({
     queryKey: ['userRole'],
@@ -77,20 +74,13 @@ export const PublicationDialog = ({
         .from('user_roles')
         .select('role')
         .eq('user_id', user.id)
-        .maybeSingle();
+        .single();
 
       return roleData?.role || null;
     },
-    staleTime: 1000 * 60 * 5,
   });
 
   const isDesigner = userRole === 'designer';
-
-  useEffect(() => {
-    return () => {
-      isMounted.current = false;
-    };
-  }, []);
 
   const hasChanges = useCallback(() => {
     return name !== publication.name ||
@@ -106,15 +96,21 @@ export const PublicationDialog = ({
         publication.approved ? 'approved' :
         publication.is_published ? 'published' : 'needs_recording'
       ) ||
-      JSON.stringify(links) !== (publication.links || "[]") ||
-      selectedDate.toISOString() !== new Date(publication.date).toISOString();
-  }, [name, type, description, copywriting, designer, status, links, selectedDate, publication]);
+      JSON.stringify(links) !== (publication.links || "[]");
+  }, [name, type, description, copywriting, designer, status, links, publication]);
 
   useEffect(() => {
-    if (!open) {
-      setIsSubmitting(false);
-    }
-  }, [open]);
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        return;
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
 
   const handleOpenChange = (open: boolean) => {
     if (!open && hasChanges()) {
@@ -134,12 +130,7 @@ export const PublicationDialog = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isSubmitting) return;
-    
     try {
-      setIsSubmitting(true);
-      console.log('Submitting updates...');
-      
       const updates: any = {};
       
       if (isDesigner) {
@@ -165,168 +156,50 @@ export const PublicationDialog = ({
         updates.is_published = status === 'published';
       }
 
-      console.log('Updates to be applied:', updates);
-
       const { error } = await supabase
         .from('publications')
         .update(updates)
         .eq('id', publication.id);
 
-      if (error) {
-        console.error('Error from Supabase:', error);
-        throw error;
-      }
+      if (error) throw error;
 
-      console.log('Update successful');
-      
-      if (isMounted.current) {
-        toast({
-          title: "Publicación actualizada",
-          description: "Los cambios han sido guardados correctamente.",
-        });
+      toast({
+        title: "Publicación actualizada",
+        description: "Los cambios han sido guardados correctamente.",
+      });
 
-        await onUpdate();
-        onOpenChange(false);
-      }
+      onUpdate();
     } catch (error) {
       console.error('Error updating publication:', error);
-      if (isMounted.current) {
-        toast({
-          title: "Error",
-          description: "No se pudo actualizar la publicación. Por favor, intenta de nuevo.",
-          variant: "destructive",
-        });
-        setIsSubmitting(false);
-      }
-    }
-  };
-
-  const generateCalendarImage = async () => {
-    const calendarElement = document.createElement('div');
-    calendarElement.className = 'p-8 bg-gradient-to-br from-[#F2FCE2] to-[#E5DEFF] min-w-[800px]';
-    
-    // Header with modern styling and company name
-    const header = document.createElement('div');
-    header.className = 'text-center mb-8 bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-lg';
-    header.innerHTML = `
-      <div class="flex flex-col items-center justify-center gap-2 mb-4">
-        <h1 class="text-2xl font-bold text-[#221F26]">Gleztin Marketing Digital - Depto. Marketing</h1>
-      </div>
-      <h2 class="text-xl text-[#221F26] font-semibold mb-2">${client?.name} - ${publication.name}</h2>
-      <p class="text-[#8E9196]">Generado el ${format(new Date(), "d 'de' MMMM 'de' yyyy", { locale: es })}</p>
-    `;
-    calendarElement.appendChild(header);
-
-    try {
-      const { data: publications = [] } = await supabase
-        .from('publications')
-        .select('*')
-        .eq('client_id', client?.id)
-        .eq('package_id', publication.package_id)
-        .is('deleted_at', null)
-        .order('date', { ascending: true });
-
-      // Publications list with modern cards
-      const list = document.createElement('div');
-      list.className = 'space-y-4';
-      
-      publications.forEach(pub => {
-        const item = document.createElement('div');
-        item.className = 'bg-white/90 backdrop-blur-sm rounded-xl p-6 shadow-md transition-all hover:shadow-lg';
-        
-        const typeColors = {
-          reel: { bg: '#D3E4FD', text: '#0EA5E9' },
-          carousel: { bg: '#FDE1D3', text: '#F97316' },
-          image: { bg: '#E5DEFF', text: '#8B5CF6' }
-        };
-        
-        const typeColor = typeColors[pub.type as keyof typeof typeColors] || typeColors.image;
-        
-        item.innerHTML = `
-          <div class="flex items-center justify-between">
-            <div class="flex-1">
-              <h3 class="text-lg font-semibold text-[#221F26] mb-1">${pub.name}</h3>
-              <p class="text-[#8E9196] text-sm">
-                ${format(new Date(pub.date), "EEEE d 'de' MMMM 'de' yyyy", { locale: es })}
-              </p>
-            </div>
-            <span class="px-4 py-2 rounded-full text-sm font-medium" style="background-color: ${typeColor.bg}; color: ${typeColor.text}">
-              ${pub.type.charAt(0).toUpperCase() + pub.type.slice(1)}
-            </span>
-          </div>
-          ${pub.description ? `
-            <div class="mt-3 pt-3 border-t border-gray-100">
-              <p class="text-sm text-[#8E9196]">${pub.description}</p>
-            </div>
-          ` : ''}
-        `;
-        list.appendChild(item);
-      });
-      
-      calendarElement.appendChild(list);
-
-      // Footer with modern styling
-      const footer = document.createElement('div');
-      footer.className = 'mt-8 text-center p-4 bg-white/80 backdrop-blur-sm rounded-xl';
-      footer.innerHTML = `
-        <div class="text-sm text-[#8E9196] flex items-center justify-center gap-2">
-          <span class="font-medium">Gestor de clientes</span>
-          <span class="text-[#9b87f5] font-bold">Gleztin Marketing Digital</span>
-        </div>
-      `;
-      calendarElement.appendChild(footer);
-
-      // Add to document temporarily
-      document.body.appendChild(calendarElement);
-
-      const canvas = await html2canvas(calendarElement, {
-        scale: 2,
-        backgroundColor: null,
-        logging: false,
-      });
-
-      // Convert to image and download
-      const image = canvas.toDataURL('image/png');
-      const link = document.createElement('a');
-      link.download = `calendario-${client?.name.toLowerCase().replace(/\s+/g, '-')}-${publication.name.toLowerCase().replace(/\s+/g, '-')}.png`;
-      link.href = image;
-      link.click();
-
-      toast({
-        title: "Calendario generado",
-        description: "La imagen se ha descargado correctamente.",
-      });
-    } catch (error) {
-      console.error('Error generating calendar image:', error);
       toast({
         title: "Error",
-        description: "No se pudo generar la imagen del calendario.",
+        description: "No se pudo actualizar la publicación. Por favor, intenta de nuevo.",
         variant: "destructive",
       });
-    } finally {
-      // Clean up
-      if (document.body.contains(calendarElement)) {
-        document.body.removeChild(calendarElement);
-      }
     }
   };
 
   return (
     <>
       <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent className="max-w-[600px] max-h-[80vh]" onPointerDownOutside={(e) => {
-          e.preventDefault();
-          if (hasChanges()) {
-            setShowConfirmDialog(true);
-          }
-        }} onInteractOutside={(e) => {
-          e.preventDefault();
-        }} onEscapeKeyDown={(e) => {
-          e.preventDefault();
-          if (hasChanges()) {
-            setShowConfirmDialog(true);
-          }
-        }}>
+        <DialogContent 
+          className="max-w-[600px] max-h-[80vh]" 
+          onPointerDownOutside={(e) => {
+            e.preventDefault();
+            if (hasChanges()) {
+              setShowConfirmDialog(true);
+            }
+          }}
+          onInteractOutside={(e) => {
+            e.preventDefault();
+          }}
+          onEscapeKeyDown={(e) => {
+            e.preventDefault();
+            if (hasChanges()) {
+              setShowConfirmDialog(true);
+            }
+          }}
+        >
           <DialogHeader>
             <DialogTitle>Editar Publicación</DialogTitle>
           </DialogHeader>

@@ -8,7 +8,6 @@ import { useEffect, useState } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
-import { Session } from '@supabase/supabase-js';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -20,70 +19,37 @@ const queryClient = new QueryClient({
 });
 
 const App = () => {
-  const [session, setSession] = useState<Session | null>(null);
+  const [session, setSession] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Get initial session and set up auth state listener
-    const initializeAuth = async () => {
+    // Función para obtener la sesión inicial
+    const getInitialSession = async () => {
       try {
-        // Check for existing session
-        const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession();
-        
-        if (sessionError) {
-          console.error("Error getting session:", sessionError);
-          throw sessionError;
-        }
-
-        console.log("Initial session check:", currentSession);
-        setSession(currentSession);
-
-        // Set up auth state change listener
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, changedSession) => {
-          console.log("Auth state changed:", event, changedSession);
-          
-          if (event === 'SIGNED_OUT') {
-            // Clear session on sign out
-            setSession(null);
-            // Clear any cached data
-            queryClient.clear();
-          } else if (changedSession) {
-            // Validate and update session
-            const { data: { session: validSession }, error: validationError } = await supabase.auth.getSession();
-            
-            if (validationError) {
-              console.error("Session validation error:", validationError);
-              setSession(null);
-              return;
-            }
-
-            if (validSession?.expires_at && new Date(validSession.expires_at * 1000) < new Date()) {
-              console.log("Session expired, signing out");
-              await supabase.auth.signOut();
-              setSession(null);
-            } else {
-              setSession(validSession);
-            }
-          }
-        });
-
-        return () => {
-          subscription.unsubscribe();
-        };
+        const { data: { session: initialSession } } = await supabase.auth.getSession();
+        console.log("Initial session:", initialSession);
+        setSession(initialSession);
       } catch (error) {
-        console.error('Error initializing auth:', error);
-        // Clear session on error and ensure user is logged out
-        await supabase.auth.signOut();
-        setSession(null);
+        console.error('Error al obtener la sesión inicial:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    initializeAuth();
+    getInitialSession();
+
+    // Suscribirse a cambios en el estado de autenticación
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      console.log("Auth state changed:", _event, session);
+      setSession(session);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
-  // Show loading spinner while checking auth state
+  // Mostrar un estado de carga mientras se verifica la sesión
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
