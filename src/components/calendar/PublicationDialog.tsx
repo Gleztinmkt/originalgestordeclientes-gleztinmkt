@@ -98,8 +98,9 @@ export const PublicationDialog = ({
         publication.approved ? 'approved' :
         publication.is_published ? 'published' : 'needs_recording'
       ) ||
-      JSON.stringify(links) !== (publication.links || "[]");
-  }, [name, type, description, copywriting, designer, status, links, publication]);
+      JSON.stringify(links) !== (publication.links || "[]") ||
+      selectedDate.toISOString() !== new Date(publication.date).toISOString();
+  }, [name, type, description, copywriting, designer, status, links, selectedDate, publication]);
 
   useEffect(() => {
     if (!open) {
@@ -129,6 +130,8 @@ export const PublicationDialog = ({
     
     try {
       setIsSubmitting(true);
+      console.log('Submitting updates...');
+      
       const updates: any = {};
       
       if (isDesigner) {
@@ -154,19 +157,25 @@ export const PublicationDialog = ({
         updates.is_published = status === 'published';
       }
 
+      console.log('Updates to be applied:', updates);
+
       const { error } = await supabase
         .from('publications')
         .update(updates)
         .eq('id', publication.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error from Supabase:', error);
+        throw error;
+      }
 
+      console.log('Update successful');
       toast({
         title: "Publicación actualizada",
         description: "Los cambios han sido guardados correctamente.",
       });
 
-      onUpdate();
+      await onUpdate();
       onOpenChange(false);
     } catch (error) {
       console.error('Error updating publication:', error);
