@@ -1,4 +1,3 @@
-
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
 import { ExternalLink, Link as LinkIcon, Plus, Trash2, Instagram } from "lucide-react";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Publication } from "../client/publication/types";
 import { Client } from "../types/client";
 import { toast } from "@/hooks/use-toast";
@@ -64,7 +63,6 @@ export const PublicationDialog = ({
   const [newLinkUrl, setNewLinkUrl] = useState("");
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date(publication.date));
-  const [forceOpen, setForceOpen] = useState(open);
 
   const { data: userRole } = useQuery({
     queryKey: ['userRole'],
@@ -101,13 +99,25 @@ export const PublicationDialog = ({
       JSON.stringify(links) !== (publication.links || "[]");
   }, [name, type, description, copywriting, designer, status, links, publication]);
 
-  const handleOpenChange = (nextOpen: boolean) => {
-    if (!nextOpen && hasChanges()) {
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        return;
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
+  const handleOpenChange = (open: boolean) => {
+    if (!open && hasChanges()) {
       setShowConfirmDialog(true);
-      return;
+    } else {
+      onOpenChange(open);
     }
-    setForceOpen(nextOpen);
-    onOpenChange(nextOpen);
   };
 
   const handleAddLink = () => {
@@ -159,8 +169,6 @@ export const PublicationDialog = ({
       });
 
       onUpdate();
-      setForceOpen(false);
-      onOpenChange(false);
     } catch (error) {
       console.error('Error updating publication:', error);
       toast({
@@ -171,21 +179,11 @@ export const PublicationDialog = ({
     }
   };
 
-  // El diálogo principal ahora usa forceOpen en lugar de open
   return (
     <>
-      <Dialog open={forceOpen} onOpenChange={handleOpenChange}>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogContent 
-          className="max-w-[600px] max-h-[80vh]"
-          onEscapeKeyDown={(e) => {
-            e.preventDefault();
-            if (hasChanges()) {
-              setShowConfirmDialog(true);
-            } else {
-              setForceOpen(false);
-              onOpenChange(false);
-            }
-          }}
+          className="max-w-[600px] max-h-[80vh]" 
           onPointerDownOutside={(e) => {
             e.preventDefault();
             if (hasChanges()) {
@@ -194,6 +192,12 @@ export const PublicationDialog = ({
           }}
           onInteractOutside={(e) => {
             e.preventDefault();
+          }}
+          onEscapeKeyDown={(e) => {
+            e.preventDefault();
+            if (hasChanges()) {
+              setShowConfirmDialog(true);
+            }
           }}
         >
           <DialogHeader>
@@ -433,7 +437,6 @@ export const PublicationDialog = ({
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => {
               setShowConfirmDialog(false);
-              setForceOpen(false);
               onOpenChange(false);
             }}>
               Descartar
@@ -451,4 +454,3 @@ export const PublicationDialog = ({
     </>
   );
 };
-
