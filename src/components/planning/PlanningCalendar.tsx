@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
@@ -85,30 +85,16 @@ export const PlanningCalendar = ({ clients }: PlanningCalendarProps) => {
     try {
       const { error } = await supabase
         .from('publication_planning')
-        .upsert(
-          {
-            client_id: clientId,
-            month: startOfMonth.toISOString(),
-            status: newStatus,
-            description: planningData[clientId]?.description || ''
-          },
-          {
-            onConflict: 'client_id,month'
-          }
-        );
+        .upsert({
+          client_id: clientId,
+          month: startOfMonth.toISOString(),
+          status: newStatus,
+          description: planningData[clientId]?.description || ''
+        });
 
       if (error) throw error;
 
-      // Actualizar el estado local
-      setPlanningData(prev => ({
-        ...prev,
-        [clientId]: {
-          ...prev[clientId],
-          status: newStatus,
-          client_id: clientId,
-          month: startOfMonth.toISOString()
-        }
-      }));
+      await fetchPlanningData();
 
       toast({
         title: "Estado actualizado",
@@ -132,30 +118,16 @@ export const PlanningCalendar = ({ clients }: PlanningCalendarProps) => {
     try {
       const { error } = await supabase
         .from('publication_planning')
-        .upsert(
-          {
-            client_id: selectedClient,
-            month: startOfMonth.toISOString(),
-            status: planningData[selectedClient]?.status || 'consultar',
-            description
-          },
-          {
-            onConflict: 'client_id,month'
-          }
-        );
+        .upsert({
+          client_id: selectedClient,
+          month: startOfMonth.toISOString(),
+          status: planningData[selectedClient]?.status || 'consultar',
+          description
+        });
 
       if (error) throw error;
 
-      // Actualizar el estado local
-      setPlanningData(prev => ({
-        ...prev,
-        [selectedClient]: {
-          ...prev[selectedClient],
-          description,
-          client_id: selectedClient,
-          month: startOfMonth.toISOString()
-        }
-      }));
+      await fetchPlanningData();
 
       toast({
         title: "Descripción guardada",
