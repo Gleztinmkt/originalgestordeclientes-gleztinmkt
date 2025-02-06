@@ -15,6 +15,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { InfoIcon, Filter } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Progress } from "@/components/ui/progress";
 
 export const CalendarView = ({ clients }: { clients: Client[] }) => {
   const initialDate = new Date();
@@ -26,6 +27,7 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
   const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
   const [expandedDays, setExpandedDays] = useState<{ [key: string]: boolean }>({});
   const [highlightedPublicationId, setHighlightedPublicationId] = useState<string | null>(null);
+  const [loadingProgress, setLoadingProgress] = useState(0);
   const isMobile = useIsMobile();
 
   const { data: userRole } = useQuery({
@@ -139,6 +141,37 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
       return () => clearTimeout(timer);
     }
   }, [highlightedPublicationId]);
+
+  // Simulamos el progreso de carga
+  useEffect(() => {
+    let progress = 0;
+    const interval = setInterval(() => {
+      progress += 5;
+      if (progress > 100) {
+        clearInterval(interval);
+      } else {
+        setLoadingProgress(progress);
+      }
+    }, 50);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  if (!publications.length && loadingProgress < 100) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4 p-8">
+        <div className="w-full max-w-md space-y-2">
+          <h2 className="text-lg font-medium text-center mb-4">
+            Cargando publicaciones...
+          </h2>
+          <Progress value={loadingProgress} className="w-full" />
+          <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
+            {loadingProgress}%
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const filteredPublications = publications.filter(pub => {
     if (selectedType && pub.type !== selectedType) return false;
