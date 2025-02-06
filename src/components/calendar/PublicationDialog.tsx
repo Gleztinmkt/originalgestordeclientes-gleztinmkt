@@ -64,6 +64,7 @@ export const PublicationDialog = ({
   const [newLinkUrl, setNewLinkUrl] = useState("");
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date(publication.date));
+  const [forceOpen, setForceOpen] = useState(open);
 
   const { data: userRole } = useQuery({
     queryKey: ['userRole'],
@@ -100,12 +101,13 @@ export const PublicationDialog = ({
       JSON.stringify(links) !== (publication.links || "[]");
   }, [name, type, description, copywriting, designer, status, links, publication]);
 
-  const handleOpenChange = (open: boolean) => {
-    if (!open && hasChanges()) {
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen && hasChanges()) {
       setShowConfirmDialog(true);
-    } else {
-      onOpenChange(open);
+      return;
     }
+    setForceOpen(nextOpen);
+    onOpenChange(nextOpen);
   };
 
   const handleAddLink = () => {
@@ -157,6 +159,8 @@ export const PublicationDialog = ({
       });
 
       onUpdate();
+      setForceOpen(false);
+      onOpenChange(false);
     } catch (error) {
       console.error('Error updating publication:', error);
       toast({
@@ -167,11 +171,21 @@ export const PublicationDialog = ({
     }
   };
 
+  // El diálogo principal ahora usa forceOpen en lugar de open
   return (
     <>
-      <Dialog open={open} onOpenChange={handleOpenChange}>
+      <Dialog open={forceOpen} onOpenChange={handleOpenChange}>
         <DialogContent 
-          className="max-w-[600px] max-h-[80vh]" 
+          className="max-w-[600px] max-h-[80vh]"
+          onEscapeKeyDown={(e) => {
+            e.preventDefault();
+            if (hasChanges()) {
+              setShowConfirmDialog(true);
+            } else {
+              setForceOpen(false);
+              onOpenChange(false);
+            }
+          }}
           onPointerDownOutside={(e) => {
             e.preventDefault();
             if (hasChanges()) {
@@ -180,12 +194,6 @@ export const PublicationDialog = ({
           }}
           onInteractOutside={(e) => {
             e.preventDefault();
-          }}
-          onEscapeKeyDown={(e) => {
-            e.preventDefault();
-            if (hasChanges()) {
-              setShowConfirmDialog(true);
-            }
           }}
         >
           <DialogHeader>
@@ -425,6 +433,7 @@ export const PublicationDialog = ({
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => {
               setShowConfirmDialog(false);
+              setForceOpen(false);
               onOpenChange(false);
             }}>
               Descartar
