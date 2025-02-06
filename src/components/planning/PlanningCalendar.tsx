@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { MonthSelector } from "./MonthSelector";
 import { StatusLegend } from "./StatusLegend";
 import { Card } from "@/components/ui/card";
-import { CalendarIcon, Clock } from "lucide-react";
+import { CalendarIcon } from "lucide-react";
 
 interface PlanningCalendarProps {
   clients: Client[];
@@ -83,7 +83,7 @@ export const PlanningCalendar = ({ clients }: PlanningCalendarProps) => {
     const startOfMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
     
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('publication_planning')
         .upsert(
           {
@@ -93,23 +93,22 @@ export const PlanningCalendar = ({ clients }: PlanningCalendarProps) => {
             description: planningData[clientId]?.description || ''
           },
           {
-            onConflict: 'client_id,month',
-            ignoreDuplicates: false
+            onConflict: 'client_id,month'
           }
         );
 
-      if (error) {
-        console.error('Error updating planning status:', error);
-        toast({
-          title: "Error",
-          description: "No se pudo actualizar el estado",
-          variant: "destructive",
-        });
-        return;
-      }
+      if (error) throw error;
 
-      // Refresh the planning data
-      fetchPlanningData();
+      // Actualizar el estado local
+      setPlanningData(prev => ({
+        ...prev,
+        [clientId]: {
+          ...prev[clientId],
+          status: newStatus,
+          client_id: clientId,
+          month: startOfMonth.toISOString()
+        }
+      }));
 
       toast({
         title: "Estado actualizado",
@@ -141,23 +140,22 @@ export const PlanningCalendar = ({ clients }: PlanningCalendarProps) => {
             description
           },
           {
-            onConflict: 'client_id,month',
-            ignoreDuplicates: false
+            onConflict: 'client_id,month'
           }
         );
 
-      if (error) {
-        console.error('Error saving description:', error);
-        toast({
-          title: "Error",
-          description: "No se pudo guardar la descripción",
-          variant: "destructive",
-        });
-        return;
-      }
+      if (error) throw error;
 
-      // Refresh the planning data
-      fetchPlanningData();
+      // Actualizar el estado local
+      setPlanningData(prev => ({
+        ...prev,
+        [selectedClient]: {
+          ...prev[selectedClient],
+          description,
+          client_id: selectedClient,
+          month: startOfMonth.toISOString()
+        }
+      }));
 
       toast({
         title: "Descripción guardada",
@@ -179,19 +177,18 @@ export const PlanningCalendar = ({ clients }: PlanningCalendarProps) => {
       <MonthSelector selectedDate={selectedDate} onDateChange={setSelectedDate} />
       <StatusLegend getStatusColor={getStatusColor} />
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4">
         {clients.map(client => {
           const planningEntry = planningData[client.id];
           const paymentDay = client.paymentDay || 1;
           const currentMonth = selectedDate.getMonth();
           const currentYear = selectedDate.getFullYear();
-          const paymentDate = new Date(currentYear, currentMonth, paymentDay);
           const creationDate = new Date(currentYear, currentMonth, Math.max(1, paymentDay - 7));
 
           return (
             <Card
               key={client.id}
-              className="p-4 hover:shadow-lg transition-shadow duration-200"
+              className="p-3 hover:shadow-md transition-shadow duration-200 relative"
               onContextMenu={(e) => {
                 e.preventDefault();
                 const status = planningData[client.id]?.status || 'consultar';
@@ -200,45 +197,39 @@ export const PlanningCalendar = ({ clients }: PlanningCalendarProps) => {
                 handleStatusChange(client.id, nextStatus);
               }}
             >
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h3 className="font-semibold text-lg">{client.name}</h3>
-                  <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                    <CalendarIcon className="h-4 w-4" />
-                    <span>Pago: {format(paymentDate, 'd MMMM', { locale: es })}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                    <Clock className="h-4 w-4" />
-                    <span>Creación: {format(creationDate, 'd MMMM', { locale: es })}</span>
-                  </div>
-                </div>
+              <div className="absolute top-2 right-2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <div className={`w-3 h-3 rounded-full cursor-pointer ${getStatusColor(planningEntry?.status || 'consultar')}`} />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem onClick={() => handleStatusChange(client.id, 'hacer')}>
+                      <div className="w-3 h-3 rounded-full bg-green-500 mr-2" />
+                      Hacer
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleStatusChange(client.id, 'no_hacer')}>
+                      <div className="w-3 h-3 rounded-full bg-red-500 mr-2" />
+                      No hacer
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleStatusChange(client.id, 'consultar')}>
+                      <div className="w-3 h-3 rounded-full bg-yellow-500 mr-2" />
+                      Consultar
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
 
-                <div className="flex gap-2">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <div className={`w-4 h-4 rounded-full cursor-pointer ${getStatusColor(planningEntry?.status || 'consultar')}`} />
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                      <DropdownMenuItem onClick={() => handleStatusChange(client.id, 'hacer')}>
-                        <div className="w-4 h-4 rounded-full bg-green-500 mr-2" />
-                        Hacer
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleStatusChange(client.id, 'no_hacer')}>
-                        <div className="w-4 h-4 rounded-full bg-red-500 mr-2" />
-                        No hacer
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleStatusChange(client.id, 'consultar')}>
-                        <div className="w-4 h-4 rounded-full bg-yellow-500 mr-2" />
-                        Consultar
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+              <div className="space-y-2">
+                <h3 className="font-semibold text-sm truncate pr-6">{client.name}</h3>
+                <div className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
+                  <CalendarIcon className="h-3 w-3" />
+                  <span>Creación: {format(creationDate, 'd MMM', { locale: es })}</span>
                 </div>
               </div>
 
               <Button
                 variant="ghost"
-                className="w-full text-left justify-start h-auto py-2 px-3"
+                className="w-full text-left justify-start h-auto py-1 px-2 mt-2 text-xs"
                 onClick={() => {
                   setSelectedClient(client.id);
                   setDescription(planningData[client.id]?.description || '');
@@ -246,11 +237,11 @@ export const PlanningCalendar = ({ clients }: PlanningCalendarProps) => {
                 }}
               >
                 {planningData[client.id]?.description ? (
-                  <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
+                  <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">
                     {planningData[client.id].description}
                   </p>
                 ) : (
-                  <p className="text-sm text-gray-400 dark:text-gray-600">
+                  <p className="text-xs text-gray-400 dark:text-gray-600">
                     Agregar descripción...
                   </p>
                 )}
