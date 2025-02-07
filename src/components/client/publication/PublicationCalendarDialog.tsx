@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { Calendar as CalendarIcon, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,6 +31,24 @@ export const PublicationCalendarDialog = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedPublication, setSelectedPublication] = useState<Publication | null>(null);
   const [copywriting, setCopywriting] = useState("");
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden' && isOpen) {
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible') {
+            setIsOpen(true);
+          }
+        }, { once: true });
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [isOpen]);
 
   const { data: publications = [], refetch } = useQuery({
     queryKey: ['publications', clientId, packageId],
@@ -240,7 +259,11 @@ export const PublicationCalendarDialog = ({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleDialogOpenChange}>
+    <Dialog 
+      open={isOpen} 
+      onOpenChange={() => {}}
+      modal={false}
+    >
       <DialogTrigger asChild>
         <Button
           variant="ghost"
@@ -256,6 +279,7 @@ export const PublicationCalendarDialog = ({
         onPointerDownOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
         onInteractOutside={(e) => e.preventDefault()}
+        onFocusOutside={(e) => e.preventDefault()}
       >
         <DialogHeader>
           <div className="flex items-center justify-between">
