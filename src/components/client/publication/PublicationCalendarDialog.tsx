@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Calendar as CalendarIcon, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -31,24 +30,6 @@ export const PublicationCalendarDialog = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedPublication, setSelectedPublication] = useState<Publication | null>(null);
   const [copywriting, setCopywriting] = useState("");
-
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'hidden' && isOpen) {
-        document.addEventListener('visibilitychange', () => {
-          if (document.visibilityState === 'visible') {
-            setIsOpen(true);
-          }
-        }, { once: true });
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [isOpen]);
 
   const { data: publications = [], refetch } = useQuery({
     queryKey: ['publications', clientId, packageId],
@@ -250,37 +231,18 @@ export const PublicationCalendarDialog = ({
     }
   };
 
-  const handleDialogOpenChange = (open: boolean) => {
-    // If trying to close, prevent it
-    if (!open) {
-      return;
-    }
-    setIsOpen(open);
-  };
-
   return (
-    <Dialog 
-      open={isOpen} 
-      onOpenChange={() => {}}
-      modal={false}
-    >
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button
           variant="ghost"
           size="icon"
           className="h-8 w-8 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-colors duration-200"
-          onClick={() => setIsOpen(true)}
         >
           <CalendarIcon className="h-4 w-4" />
         </Button>
       </DialogTrigger>
-      <DialogContent 
-        className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto dark:bg-gray-900"
-        onPointerDownOutside={(e) => e.preventDefault()}
-        onEscapeKeyDown={(e) => e.preventDefault()}
-        onInteractOutside={(e) => e.preventDefault()}
-        onFocusOutside={(e) => e.preventDefault()}
-      >
+      <DialogContent className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto dark:bg-gray-900">
         <DialogHeader>
           <div className="flex items-center justify-between">
             <DialogTitle className="text-xl font-bold dark:text-white">
