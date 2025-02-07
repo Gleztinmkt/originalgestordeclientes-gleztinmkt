@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Calendar as CalendarIcon, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -232,13 +231,22 @@ export const PublicationCalendarDialog = ({
     }
   };
 
+  const handleDialogOpenChange = (open: boolean) => {
+    // If trying to close, prevent it
+    if (!open) {
+      return;
+    }
+    setIsOpen(open);
+  };
+
   return (
-    <Dialog modal={false} open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={handleDialogOpenChange}>
       <DialogTrigger asChild>
         <Button
           variant="ghost"
           size="icon"
           className="h-8 w-8 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-colors duration-200"
+          onClick={() => setIsOpen(true)}
         >
           <CalendarIcon className="h-4 w-4" />
         </Button>
@@ -247,6 +255,7 @@ export const PublicationCalendarDialog = ({
         className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto dark:bg-gray-900"
         onPointerDownOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
+        onInteractOutside={(e) => e.preventDefault()}
       >
         <DialogHeader>
           <div className="flex items-center justify-between">
@@ -305,4 +314,3 @@ export const PublicationCalendarDialog = ({
     </Dialog>
   );
 };
-
