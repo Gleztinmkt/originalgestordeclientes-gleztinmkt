@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Client } from "@/components/types/client";
 import {
@@ -36,31 +37,46 @@ export const PlanningCalendar = ({ clients }: PlanningCalendarProps) => {
   const [selectedClient, setSelectedClient] = useState<string | null>(null);
   const [description, setDescription] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const fetchPlanningData = async () => {
-    const startOfMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
-    const { data, error } = await supabase
-      .from('publication_planning')
-      .select('*')
-      .is('deleted_at', null)
-      .eq('month', startOfMonth.toISOString());
+    try {
+      const startOfMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
+      const { data, error } = await supabase
+        .from('publication_planning')
+        .select('*')
+        .is('deleted_at', null)
+        .eq('month', startOfMonth.toISOString());
 
-    if (error) {
-      console.error('Error fetching planning data:', error);
-      return;
+      if (error) {
+        console.error('Error fetching planning data:', error);
+        toast({
+          title: "Error al cargar los datos",
+          description: "No se pudieron cargar los datos de planificación",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const planningMap: Record<string, PlanningEntry> = {};
+      data?.forEach(entry => {
+        planningMap[entry.client_id] = {
+          id: entry.id,
+          client_id: entry.client_id,
+          month: entry.month,
+          status: (entry.status || 'consultar') as 'hacer' | 'no_hacer' | 'consultar',
+          description: entry.description
+        };
+      });
+      setPlanningData(planningMap);
+    } catch (error) {
+      console.error('Error in fetchPlanningData:', error);
+      toast({
+        title: "Error",
+        description: "Ocurrió un error al cargar los datos",
+        variant: "destructive",
+      });
     }
-
-    const planningMap: Record<string, PlanningEntry> = {};
-    data?.forEach(entry => {
-      planningMap[entry.client_id] = {
-        id: entry.id,
-        client_id: entry.client_id,
-        month: entry.month,
-        status: (entry.status || 'consultar') as 'hacer' | 'no_hacer' | 'consultar',
-        description: entry.description
-      };
-    });
-    setPlanningData(planningMap);
   };
 
   useEffect(() => {
@@ -80,21 +96,38 @@ export const PlanningCalendar = ({ clients }: PlanningCalendarProps) => {
   };
 
   const handleStatusChange = async (clientId: string, newStatus: 'hacer' | 'no_hacer' | 'consultar') => {
+    if (isSaving) return;
+    setIsSaving(true);
+    
     const startOfMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
+    const currentEntry = planningData[clientId];
     
     try {
+      const upsertData = {
+        client_id: clientId,
+        month: startOfMonth.toISOString(),
+        status: newStatus,
+        description: currentEntry?.description || '',
+        ...(currentEntry?.id ? { id: currentEntry.id } : {})
+      };
+
       const { error } = await supabase
         .from('publication_planning')
-        .upsert({
-          client_id: clientId,
-          month: startOfMonth.toISOString(),
-          status: newStatus,
-          description: planningData[clientId]?.description || ''
-        });
+        .upsert(upsertData);
 
       if (error) throw error;
 
-      await fetchPlanningData();
+      // Actualizar el estado local después de una actualización exitosa
+      setPlanningData(prev => ({
+        ...prev,
+        [clientId]: {
+          ...upsertData,
+          id: currentEntry?.id || upsertData.id,
+          client_id: clientId,
+          month: startOfMonth.toISOString(),
+          status: newStatus,
+        }
+      }));
 
       toast({
         title: "Estado actualizado",
@@ -107,27 +140,43 @@ export const PlanningCalendar = ({ clients }: PlanningCalendarProps) => {
         description: "No se pudo actualizar el estado",
         variant: "destructive",
       });
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleDescriptionSave = async () => {
-    if (!selectedClient) return;
+    if (!selectedClient || isSaving) return;
+    setIsSaving(true);
 
     const startOfMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
+    const currentEntry = planningData[selectedClient];
     
     try {
+      const upsertData = {
+        client_id: selectedClient,
+        month: startOfMonth.toISOString(),
+        status: currentEntry?.status || 'consultar',
+        description,
+        ...(currentEntry?.id ? { id: currentEntry.id } : {})
+      };
+
       const { error } = await supabase
         .from('publication_planning')
-        .upsert({
-          client_id: selectedClient,
-          month: startOfMonth.toISOString(),
-          status: planningData[selectedClient]?.status || 'consultar',
-          description
-        });
+        .upsert(upsertData);
 
       if (error) throw error;
 
-      await fetchPlanningData();
+      // Actualizar el estado local después de una actualización exitosa
+      setPlanningData(prev => ({
+        ...prev,
+        [selectedClient]: {
+          ...upsertData,
+          id: currentEntry?.id || upsertData.id,
+          client_id: selectedClient,
+          month: startOfMonth.toISOString(),
+        }
+      }));
 
       toast({
         title: "Descripción guardada",
@@ -141,6 +190,8 @@ export const PlanningCalendar = ({ clients }: PlanningCalendarProps) => {
         description: "No se pudo guardar la descripción",
         variant: "destructive",
       });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -238,8 +289,8 @@ export const PlanningCalendar = ({ clients }: PlanningCalendarProps) => {
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
               Cancelar
             </Button>
-            <Button onClick={handleDescriptionSave}>
-              Guardar
+            <Button onClick={handleDescriptionSave} disabled={isSaving}>
+              {isSaving ? 'Guardando...' : 'Guardar'}
             </Button>
           </div>
         </DialogContent>
