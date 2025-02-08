@@ -120,6 +120,43 @@ export const PublicationDialog = ({
     }
   };
 
+  const handleClose = () => {
+    if (hasChanges()) {
+      setShowConfirmDialog(true);
+    } else {
+      onOpenChange(false);
+    }
+  };
+
+  const handleDiscardChanges = () => {
+    // Restablecer todos los estados a sus valores originales
+    setName(publication.name);
+    setType(publication.type as 'reel' | 'carousel' | 'image');
+    setDescription(publication.description || "");
+    setCopywriting(publication.copywriting || "");
+    setDesigner(publication.designer || "no_designer");
+    setStatus(
+      publication.needs_recording ? 'needs_recording' :
+      publication.needs_editing ? 'needs_editing' :
+      publication.in_editing ? 'in_editing' :
+      publication.in_review ? 'in_review' :
+      publication.approved ? 'approved' :
+      publication.is_published ? 'published' : 'needs_recording'
+    );
+    setSelectedDate(new Date(publication.date));
+    setLinks(() => {
+      if (!publication.links) return [];
+      try {
+        return JSON.parse(publication.links);
+      } catch (e) {
+        console.error('Error parsing links:', e);
+        return [];
+      }
+    });
+    setShowConfirmDialog(false);
+    onOpenChange(false);
+  };
+
   const handleAddLink = () => {
     if (newLinkLabel && newLinkUrl) {
       setLinks([...links, { label: newLinkLabel, url: newLinkUrl }]);
@@ -181,24 +218,15 @@ export const PublicationDialog = ({
 
   return (
     <>
-      <Dialog open={open} onOpenChange={handleOpenChange}>
+      <Dialog 
+        open={open} 
+        onOpenChange={handleOpenChange}
+      >
         <DialogContent 
-          className="max-w-[600px] max-h-[80vh]" 
-          onPointerDownOutside={(e) => {
-            e.preventDefault();
-            if (hasChanges()) {
-              setShowConfirmDialog(true);
-            }
-          }}
-          onInteractOutside={(e) => {
-            e.preventDefault();
-          }}
-          onEscapeKeyDown={(e) => {
-            e.preventDefault();
-            if (hasChanges()) {
-              setShowConfirmDialog(true);
-            }
-          }}
+          className="max-w-[600px] max-h-[80vh]"
+          onPointerDownOutside={(e) => e.preventDefault()}
+          onInteractOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => e.preventDefault()}
         >
           <DialogHeader>
             <DialogTitle>Editar Publicación</DialogTitle>
@@ -417,6 +445,13 @@ export const PublicationDialog = ({
                     Eliminar
                   </Button>
                 )}
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={handleClose}
+                >
+                  Cerrar
+                </Button>
                 <Button type="submit">
                   Guardar cambios
                 </Button>
@@ -435,11 +470,8 @@ export const PublicationDialog = ({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => {
-              setShowConfirmDialog(false);
-              onOpenChange(false);
-            }}>
-              Descartar
+            <AlertDialogCancel onClick={handleDiscardChanges}>
+              Descartar cambios
             </AlertDialogCancel>
             <AlertDialogAction onClick={() => {
               const fakeEvent = { preventDefault: () => {} } as React.FormEvent;
