@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -24,23 +25,18 @@ function App() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const getInitialSession = async () => {
-      try {
-        const { data: { session: initialSession } } = await supabase.auth.getSession();
-        console.log("Initial session:", initialSession);
-        setSession(initialSession);
-      } catch (error) {
-        console.error('Error al obtener la sesión inicial:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+    // First, get the session from localStorage if it exists
+    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+      setSession(initialSession);
+      setLoading(false);
+    });
 
-    getInitialSession();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      console.log("Auth state changed:", _event, session);
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
+      setLoading(false);
     });
 
     return () => {
@@ -48,6 +44,7 @@ function App() {
     };
   }, []);
 
+  // Show loading state
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
