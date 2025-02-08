@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Publication } from "../client/publication/types";
@@ -209,9 +210,14 @@ export const PublicationCard = ({
         >
           <CardContent className="p-2">
             <div className="flex flex-col gap-1">
-              <div className="flex items-center gap-1 min-w-0">
-                {getStatusIcon()}
-                <p className="text-xs font-medium truncate">
+              <div className="flex items-start gap-1 min-w-0">
+                <div className="flex-shrink-0 mt-1">
+                  {getStatusIcon()}
+                </div>
+                <p className={cn(
+                  "text-xs font-medium",
+                  isMobile ? "truncate" : "line-clamp-3"
+                )}>
                   {displayTitle}
                 </p>
               </div>
@@ -305,3 +311,4 @@ export const PublicationCard = ({
     </ContextMenu>
   );
 };
+
