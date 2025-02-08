@@ -103,26 +103,51 @@ export const PlanningCalendar = ({ clients }: PlanningCalendarProps) => {
     const currentEntry = planningData[clientId];
     
     try {
-      const upsertData = {
-        client_id: clientId,
-        month: startOfMonth.toISOString(),
-        status: newStatus,
-        description: currentEntry?.description || '',
-        ...(currentEntry?.id ? { id: currentEntry.id } : {})
-      };
-
-      const { error } = await supabase
+      // First, check if an entry already exists for this client and month
+      const { data: existingData, error: checkError } = await supabase
         .from('publication_planning')
-        .upsert(upsertData);
+        .select('id')
+        .eq('client_id', clientId)
+        .eq('month', startOfMonth.toISOString())
+        .is('deleted_at', null)
+        .maybeSingle();
 
-      if (error) throw error;
+      if (checkError) throw checkError;
+
+      let result;
+      if (existingData) {
+        // Update existing entry
+        result = await supabase
+          .from('publication_planning')
+          .update({
+            status: newStatus,
+            description: currentEntry?.description || ''
+          })
+          .eq('id', existingData.id)
+          .select()
+          .single();
+      } else {
+        // Insert new entry
+        result = await supabase
+          .from('publication_planning')
+          .insert({
+            client_id: clientId,
+            month: startOfMonth.toISOString(),
+            status: newStatus,
+            description: currentEntry?.description || ''
+          })
+          .select()
+          .single();
+      }
+
+      if (result.error) throw result.error;
 
       // Actualizar el estado local después de una actualización exitosa
       setPlanningData(prev => ({
         ...prev,
         [clientId]: {
-          ...upsertData,
-          id: currentEntry?.id || upsertData.id,
+          ...result.data,
+          id: result.data.id,
           client_id: clientId,
           month: startOfMonth.toISOString(),
           status: newStatus,
@@ -150,29 +175,53 @@ export const PlanningCalendar = ({ clients }: PlanningCalendarProps) => {
     setIsSaving(true);
 
     const startOfMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
-    const currentEntry = planningData[selectedClient];
     
     try {
-      const upsertData = {
-        client_id: selectedClient,
-        month: startOfMonth.toISOString(),
-        status: currentEntry?.status || 'consultar',
-        description,
-        ...(currentEntry?.id ? { id: currentEntry.id } : {})
-      };
-
-      const { error } = await supabase
+      // First, check if an entry already exists
+      const { data: existingData, error: checkError } = await supabase
         .from('publication_planning')
-        .upsert(upsertData);
+        .select('id')
+        .eq('client_id', selectedClient)
+        .eq('month', startOfMonth.toISOString())
+        .is('deleted_at', null)
+        .maybeSingle();
 
-      if (error) throw error;
+      if (checkError) throw checkError;
+
+      let result;
+      if (existingData) {
+        // Update existing entry
+        result = await supabase
+          .from('publication_planning')
+          .update({
+            description,
+            status: planningData[selectedClient]?.status || 'consultar'
+          })
+          .eq('id', existingData.id)
+          .select()
+          .single();
+      } else {
+        // Insert new entry
+        result = await supabase
+          .from('publication_planning')
+          .insert({
+            client_id: selectedClient,
+            month: startOfMonth.toISOString(),
+            status: planningData[selectedClient]?.status || 'consultar',
+            description
+          })
+          .select()
+          .single();
+      }
+
+      if (result.error) throw result.error;
 
       // Actualizar el estado local después de una actualización exitosa
       setPlanningData(prev => ({
         ...prev,
         [selectedClient]: {
-          ...upsertData,
-          id: currentEntry?.id || upsertData.id,
+          ...result.data,
+          id: result.data.id,
           client_id: selectedClient,
           month: startOfMonth.toISOString(),
         }
