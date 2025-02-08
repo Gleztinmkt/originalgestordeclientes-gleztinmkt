@@ -1,5 +1,3 @@
-
-import { useState, useCallback, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
 import { ExternalLink, Link as LinkIcon, Plus, Trash2, Instagram } from "lucide-react";
+import { useState, useCallback, useEffect } from "react";
 import { Publication } from "../client/publication/types";
 import { Client } from "../types/client";
 import { toast } from "@/hooks/use-toast";
@@ -64,9 +63,6 @@ export const PublicationDialog = ({
   const [newLinkUrl, setNewLinkUrl] = useState("");
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date(publication.date));
-  const [forceOpen, setForceOpen] = useState(open);
-
-  const storageKey = `modalEditarAbierto_${publication.id}`;
 
   const { data: userRole } = useQuery({
     queryKey: ['userRole'],
@@ -86,55 +82,6 @@ export const PublicationDialog = ({
 
   const isDesigner = userRole === 'designer';
 
-  useEffect(() => {
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === storageKey) {
-        const isOpenInOtherTab = e.newValue === 'true';
-        setForceOpen(isOpenInOtherTab);
-        onOpenChange(isOpenInOtherTab);
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, [storageKey, onOpenChange]);
-
-  useEffect(() => {
-    localStorage.setItem(storageKey, forceOpen.toString());
-  }, [forceOpen, storageKey]);
-
-  useEffect(() => {
-    setForceOpen(open);
-  }, [open]);
-
-  useEffect(() => {
-    const handleVisibility = () => {
-      if (document.visibilityState === 'visible') {
-        const storedValue = localStorage.getItem(storageKey) === 'true';
-        if (storedValue) {
-          setForceOpen(true);
-          onOpenChange(true);
-        }
-      }
-    };
-
-    const handleFocus = () => {
-      const storedValue = localStorage.getItem(storageKey) === 'true';
-      if (storedValue) {
-        setForceOpen(true);
-        onOpenChange(true);
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibility);
-    window.addEventListener('focus', handleFocus);
-
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibility);
-      window.removeEventListener('focus', handleFocus);
-    };
-  }, [storageKey, onOpenChange]);
-
   const hasChanges = useCallback(() => {
     return name !== publication.name ||
       type !== publication.type ||
@@ -152,13 +99,24 @@ export const PublicationDialog = ({
       JSON.stringify(links) !== (publication.links || "[]");
   }, [name, type, description, copywriting, designer, status, links, publication]);
 
-  const handleOpenChange = (nextOpen: boolean) => {
-    if (!nextOpen && hasChanges()) {
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        return;
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
+  const handleOpenChange = (open: boolean) => {
+    if (!open && hasChanges()) {
       setShowConfirmDialog(true);
     } else {
-      setForceOpen(nextOpen);
-      localStorage.setItem(storageKey, nextOpen.toString());
-      onOpenChange(nextOpen);
+      onOpenChange(open);
     }
   };
 
@@ -166,13 +124,12 @@ export const PublicationDialog = ({
     if (hasChanges()) {
       setShowConfirmDialog(true);
     } else {
-      setForceOpen(false);
-      localStorage.setItem(storageKey, 'false');
       onOpenChange(false);
     }
   };
 
   const handleDiscardChanges = () => {
+    // Restablecer todos los estados a sus valores originales
     setName(publication.name);
     setType(publication.type as 'reel' | 'carousel' | 'image');
     setDescription(publication.description || "");
@@ -197,8 +154,6 @@ export const PublicationDialog = ({
       }
     });
     setShowConfirmDialog(false);
-    setForceOpen(false);
-    localStorage.setItem(storageKey, 'false');
     onOpenChange(false);
   };
 
@@ -264,7 +219,7 @@ export const PublicationDialog = ({
   return (
     <>
       <Dialog 
-        open={forceOpen} 
+        open={open} 
         onOpenChange={handleOpenChange}
       >
         <DialogContent 
@@ -531,4 +486,3 @@ export const PublicationDialog = ({
     </>
   );
 };
-
