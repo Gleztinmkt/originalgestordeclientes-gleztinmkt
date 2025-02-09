@@ -1,3 +1,4 @@
+
 import {
   Select,
   SelectContent,
@@ -16,8 +17,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface FilterPanelProps {
   clients: Array<{ id: string; name: string }>;
@@ -57,8 +57,8 @@ export const FilterPanel = ({
   const [showDesignerDialog, setShowDesignerDialog] = useState(false);
   const isMobile = useIsMobile();
 
-  return (
-    <div className={`flex items-center gap-4 ${isMobile ? 'flex-col w-full' : 'flex-row'}`}>
+  const filterContent = (
+    <>
       <Select value={selectedClient || "all_clients"} onValueChange={(value) => onClientChange(value === "all_clients" ? null : value)}>
         <SelectTrigger className="min-w-[200px]">
           <SelectValue placeholder="Todos los clientes" />
@@ -139,6 +139,22 @@ export const FilterPanel = ({
           </div>
         </PopoverContent>
       </Popover>
+    </>
+  );
+
+  return (
+    <div className={`${isMobile ? 'w-full' : ''}`}>
+      {isMobile ? (
+        <ScrollArea className="h-[calc(100vh-8rem)] px-4 pt-8">
+          <div className="flex flex-col space-y-4">
+            {filterContent}
+          </div>
+        </ScrollArea>
+      ) : (
+        <div className="flex items-center gap-4">
+          {filterContent}
+        </div>
+      )}
 
       {!isDesigner && (
         <DesignerDialog
