@@ -1,3 +1,4 @@
+import * as React from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -63,6 +64,7 @@ export const PublicationDialog = ({
   const [newLinkUrl, setNewLinkUrl] = useState("");
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date(publication.date));
+  const [forceOpen, setForceOpen] = React.useState(open);
 
   const { data: userRole } = useQuery({
     queryKey: ['userRole'],
@@ -100,47 +102,45 @@ export const PublicationDialog = ({
   }, [name, type, description, copywriting, designer, status, links, publication]);
 
   useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') {
-        return;
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, []);
+    setForceOpen(open);
+  }, [open]);
 
   useEffect(() => {
-    if (open) {
+    if (forceOpen) {
       const handleVisibilityChange = () => {
-        if (!document.hidden && hasChanges()) {
+        if (document.visibilityState === 'visible') {
+          setForceOpen(true);
           onOpenChange(true);
         }
       };
 
       const handleFocus = () => {
-        if (hasChanges()) {
-          onOpenChange(true);
-        }
+        setForceOpen(true);
+        onOpenChange(true);
+      };
+
+      const handleBlur = () => {
+        setForceOpen(true);
       };
 
       document.addEventListener('visibilitychange', handleVisibilityChange);
       window.addEventListener('focus', handleFocus);
+      window.addEventListener('blur', handleBlur);
 
       return () => {
         document.removeEventListener('visibilitychange', handleVisibilityChange);
         window.removeEventListener('focus', handleFocus);
+        window.removeEventListener('blur', handleBlur);
       };
     }
-  }, [open, hasChanges, onOpenChange]);
+  }, [forceOpen, onOpenChange]);
 
-  const handleOpenChange = (open: boolean) => {
-    if (!open && hasChanges()) {
+  const handleOpenChange = (newOpenState: boolean) => {
+    if (!newOpenState && hasChanges()) {
       setShowConfirmDialog(true);
     } else {
-      onOpenChange(open);
+      setForceOpen(newOpenState);
+      onOpenChange(newOpenState);
     }
   };
 
@@ -242,7 +242,7 @@ export const PublicationDialog = ({
   return (
     <>
       <Dialog 
-        open={open} 
+        open={forceOpen} 
         onOpenChange={handleOpenChange}
       >
         <DialogContent 
