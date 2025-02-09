@@ -1,27 +1,30 @@
-import * as React from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+
+import { useState, useCallback, useEffect } from "react";
+import { Calendar as CalendarIcon, Link as LinkIcon, Plus, Trash2, ExternalLink, Instagram } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
-import { ExternalLink, Link as LinkIcon, Plus, Trash2, Instagram } from "lucide-react";
-import { useState, useCallback, useEffect } from "react";
-import { Publication } from "../client/publication/types";
-import { Client } from "../types/client";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
-import { Calendar } from "@/components/ui/calendar";
-import { es } from "date-fns/locale";
 import { format } from "date-fns";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { es } from "date-fns/locale";
+import { useQuery } from "@tanstack/react-query";
 
 interface PublicationDialogProps {
-  publication: Publication;
-  client?: Client;
+  publication: any;
+  client?: any;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onUpdate: () => void;
@@ -39,7 +42,7 @@ export const PublicationDialog = ({
   designers = []
 }: PublicationDialogProps) => {
   const [name, setName] = useState(publication.name);
-  const [type, setType] = useState<'reel' | 'carousel' | 'image'>(publication.type as 'reel' | 'carousel' | 'image');
+  const [type, setType] = useState(publication.type);
   const [description, setDescription] = useState(publication.description || "");
   const [copywriting, setCopywriting] = useState(publication.copywriting || "");
   const [designer, setDesigner] = useState(publication.designer || "no_designer");
@@ -65,6 +68,25 @@ export const PublicationDialog = ({
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date(publication.date));
   const dialogId = `publication-dialog-${publication.id}`;
+
+  // Restore the user role query
+  const { data: userRole } = useQuery({
+    queryKey: ['userRole'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+
+      const { data: roleData } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .single();
+
+      return roleData?.role || null;
+    },
+  });
+
+  const isDesigner = userRole === 'designer';
 
   useEffect(() => {
     if (open) {
@@ -422,11 +444,11 @@ export const PublicationDialog = ({
 
               <div className="space-y-2">
                 <Label htmlFor="copywriting">Copywriting</Label>
-                <Textarea
+                <textarea
                   id="copywriting"
                   value={copywriting}
                   onChange={(e) => setCopywriting(e.target.value)}
-                  className="min-h-[150px]"
+                  className="w-full min-h-[150px] p-2 border rounded"
                   disabled={isDesigner}
                   readOnly={isDesigner}
                 />
@@ -434,11 +456,11 @@ export const PublicationDialog = ({
 
               <div className="space-y-2">
                 <Label htmlFor="description">Descripción</Label>
-                <Textarea
+                <textarea
                   id="description"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="min-h-[200px]"
+                  className="w-full min-h-[200px] p-2 border rounded"
                   disabled={isDesigner}
                   readOnly={isDesigner}
                 />
@@ -496,3 +518,4 @@ export const PublicationDialog = ({
     </>
   );
 };
+
