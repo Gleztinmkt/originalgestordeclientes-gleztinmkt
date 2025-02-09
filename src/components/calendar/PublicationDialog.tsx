@@ -64,25 +64,38 @@ export const PublicationDialog = ({
   const [newLinkUrl, setNewLinkUrl] = useState("");
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date(publication.date));
-  const [forceOpen, setForceOpen] = React.useState(open);
+  const dialogId = `publication-dialog-${publication.id}`;
 
-  const { data: userRole } = useQuery({
-    queryKey: ['userRole'],
-    queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return null;
+  useEffect(() => {
+    if (open) {
+      localStorage.setItem(dialogId, 'open');
+    }
 
-      const { data: roleData } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .single();
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === dialogId) {
+        const shouldBeOpen = e.newValue === 'open';
+        onOpenChange(shouldBeOpen);
+      }
+    };
 
-      return roleData?.role || null;
-    },
-  });
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (localStorage.getItem(dialogId) === 'open') {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
 
-  const isDesigner = userRole === 'designer';
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      if (!open) {
+        localStorage.removeItem(dialogId);
+      }
+    };
+  }, [dialogId, open, onOpenChange]);
 
   const hasChanges = useCallback(() => {
     return name !== publication.name ||
@@ -101,45 +114,11 @@ export const PublicationDialog = ({
       JSON.stringify(links) !== (publication.links || "[]");
   }, [name, type, description, copywriting, designer, status, links, publication]);
 
-  useEffect(() => {
-    setForceOpen(open);
-  }, [open]);
-
-  useEffect(() => {
-    if (forceOpen) {
-      const handleVisibilityChange = () => {
-        if (document.visibilityState === 'visible') {
-          setForceOpen(true);
-          onOpenChange(true);
-        }
-      };
-
-      const handleFocus = () => {
-        setForceOpen(true);
-        onOpenChange(true);
-      };
-
-      const handleBlur = () => {
-        setForceOpen(true);
-      };
-
-      document.addEventListener('visibilitychange', handleVisibilityChange);
-      window.addEventListener('focus', handleFocus);
-      window.addEventListener('blur', handleBlur);
-
-      return () => {
-        document.removeEventListener('visibilitychange', handleVisibilityChange);
-        window.removeEventListener('focus', handleFocus);
-        window.removeEventListener('blur', handleBlur);
-      };
-    }
-  }, [forceOpen, onOpenChange]);
-
   const handleOpenChange = (newOpenState: boolean) => {
     if (!newOpenState && hasChanges()) {
       setShowConfirmDialog(true);
     } else {
-      setForceOpen(newOpenState);
+      localStorage.setItem(dialogId, newOpenState ? 'open' : 'closed');
       onOpenChange(newOpenState);
     }
   };
@@ -148,6 +127,7 @@ export const PublicationDialog = ({
     if (hasChanges()) {
       setShowConfirmDialog(true);
     } else {
+      localStorage.removeItem(dialogId);
       onOpenChange(false);
     }
   };
@@ -177,6 +157,7 @@ export const PublicationDialog = ({
       }
     });
     setShowConfirmDialog(false);
+    localStorage.removeItem(dialogId);
     onOpenChange(false);
   };
 
@@ -228,6 +209,7 @@ export const PublicationDialog = ({
         description: "Los cambios han sido guardados correctamente.",
       });
 
+      localStorage.removeItem(dialogId);
       onUpdate();
     } catch (error) {
       console.error('Error updating publication:', error);
@@ -242,7 +224,7 @@ export const PublicationDialog = ({
   return (
     <>
       <Dialog 
-        open={forceOpen} 
+        open={open} 
         onOpenChange={handleOpenChange}
       >
         <DialogContent 
