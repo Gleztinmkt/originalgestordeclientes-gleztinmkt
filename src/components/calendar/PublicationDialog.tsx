@@ -112,6 +112,30 @@ export const PublicationDialog = ({
     };
   }, []);
 
+  useEffect(() => {
+    if (open) {
+      const handleVisibilityChange = () => {
+        if (!document.hidden && hasChanges()) {
+          onOpenChange(true);
+        }
+      };
+
+      const handleFocus = () => {
+        if (hasChanges()) {
+          onOpenChange(true);
+        }
+      };
+
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+      window.addEventListener('focus', handleFocus);
+
+      return () => {
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+        window.removeEventListener('focus', handleFocus);
+      };
+    }
+  }, [open, hasChanges, onOpenChange]);
+
   const handleOpenChange = (open: boolean) => {
     if (!open && hasChanges()) {
       setShowConfirmDialog(true);
@@ -129,7 +153,6 @@ export const PublicationDialog = ({
   };
 
   const handleDiscardChanges = () => {
-    // Restablecer todos los estados a sus valores originales
     setName(publication.name);
     setType(publication.type as 'reel' | 'carousel' | 'image');
     setDescription(publication.description || "");
@@ -226,7 +249,12 @@ export const PublicationDialog = ({
           className="max-w-[600px] max-h-[80vh]"
           onPointerDownOutside={(e) => e.preventDefault()}
           onInteractOutside={(e) => e.preventDefault()}
-          onEscapeKeyDown={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => {
+            if (hasChanges()) {
+              e.preventDefault();
+              setShowConfirmDialog(true);
+            }
+          }}
         >
           <DialogHeader>
             <DialogTitle>Editar Publicación</DialogTitle>
