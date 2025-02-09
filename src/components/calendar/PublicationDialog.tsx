@@ -1,30 +1,26 @@
-
-import { useState, useCallback, useEffect } from "react";
-import { Calendar as CalendarIcon, Link as LinkIcon, Plus, Trash2, ExternalLink, Instagram } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar } from "@/components/ui/calendar";
+import { ExternalLink, Link as LinkIcon, Plus, Trash2, Instagram } from "lucide-react";
+import { useState, useCallback, useEffect } from "react";
+import { Publication } from "../client/publication/types";
+import { Client } from "../types/client";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
 import { useQuery } from "@tanstack/react-query";
+import { Calendar } from "@/components/ui/calendar";
+import { es } from "date-fns/locale";
+import { format } from "date-fns";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 interface PublicationDialogProps {
-  publication: any;
-  client?: any;
+  publication: Publication;
+  client?: Client;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onUpdate: () => void;
@@ -42,7 +38,7 @@ export const PublicationDialog = ({
   designers = []
 }: PublicationDialogProps) => {
   const [name, setName] = useState(publication.name);
-  const [type, setType] = useState(publication.type);
+  const [type, setType] = useState<'reel' | 'carousel' | 'image'>(publication.type as 'reel' | 'carousel' | 'image');
   const [description, setDescription] = useState(publication.description || "");
   const [copywriting, setCopywriting] = useState(publication.copywriting || "");
   const [designer, setDesigner] = useState(publication.designer || "no_designer");
@@ -67,9 +63,7 @@ export const PublicationDialog = ({
   const [newLinkUrl, setNewLinkUrl] = useState("");
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date(publication.date));
-  const dialogId = `publication-dialog-${publication.id}`;
 
-  // Restore the user role query
   const { data: userRole } = useQuery({
     queryKey: ['userRole'],
     queryFn: async () => {
@@ -88,37 +82,6 @@ export const PublicationDialog = ({
 
   const isDesigner = userRole === 'designer';
 
-  useEffect(() => {
-    if (open) {
-      localStorage.setItem(dialogId, 'open');
-    }
-
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === dialogId) {
-        const shouldBeOpen = e.newValue === 'open';
-        onOpenChange(shouldBeOpen);
-      }
-    };
-
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (localStorage.getItem(dialogId) === 'open') {
-        e.preventDefault();
-        e.returnValue = '';
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('beforeunload', handleBeforeUnload);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      if (!open) {
-        localStorage.removeItem(dialogId);
-      }
-    };
-  }, [dialogId, open, onOpenChange]);
-
   const hasChanges = useCallback(() => {
     return name !== publication.name ||
       type !== publication.type ||
@@ -136,12 +99,24 @@ export const PublicationDialog = ({
       JSON.stringify(links) !== (publication.links || "[]");
   }, [name, type, description, copywriting, designer, status, links, publication]);
 
-  const handleOpenChange = (newOpenState: boolean) => {
-    if (!newOpenState && hasChanges()) {
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        return;
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
+  const handleOpenChange = (open: boolean) => {
+    if (!open && hasChanges()) {
       setShowConfirmDialog(true);
     } else {
-      localStorage.setItem(dialogId, newOpenState ? 'open' : 'closed');
-      onOpenChange(newOpenState);
+      onOpenChange(open);
     }
   };
 
@@ -149,12 +124,12 @@ export const PublicationDialog = ({
     if (hasChanges()) {
       setShowConfirmDialog(true);
     } else {
-      localStorage.removeItem(dialogId);
       onOpenChange(false);
     }
   };
 
   const handleDiscardChanges = () => {
+    // Restablecer todos los estados a sus valores originales
     setName(publication.name);
     setType(publication.type as 'reel' | 'carousel' | 'image');
     setDescription(publication.description || "");
@@ -179,7 +154,6 @@ export const PublicationDialog = ({
       }
     });
     setShowConfirmDialog(false);
-    localStorage.removeItem(dialogId);
     onOpenChange(false);
   };
 
@@ -231,7 +205,6 @@ export const PublicationDialog = ({
         description: "Los cambios han sido guardados correctamente.",
       });
 
-      localStorage.removeItem(dialogId);
       onUpdate();
     } catch (error) {
       console.error('Error updating publication:', error);
@@ -253,12 +226,7 @@ export const PublicationDialog = ({
           className="max-w-[600px] max-h-[80vh]"
           onPointerDownOutside={(e) => e.preventDefault()}
           onInteractOutside={(e) => e.preventDefault()}
-          onEscapeKeyDown={(e) => {
-            if (hasChanges()) {
-              e.preventDefault();
-              setShowConfirmDialog(true);
-            }
-          }}
+          onEscapeKeyDown={(e) => e.preventDefault()}
         >
           <DialogHeader>
             <DialogTitle>Editar Publicación</DialogTitle>
@@ -444,11 +412,11 @@ export const PublicationDialog = ({
 
               <div className="space-y-2">
                 <Label htmlFor="copywriting">Copywriting</Label>
-                <textarea
+                <Textarea
                   id="copywriting"
                   value={copywriting}
                   onChange={(e) => setCopywriting(e.target.value)}
-                  className="w-full min-h-[150px] p-2 border rounded"
+                  className="min-h-[150px]"
                   disabled={isDesigner}
                   readOnly={isDesigner}
                 />
@@ -456,11 +424,11 @@ export const PublicationDialog = ({
 
               <div className="space-y-2">
                 <Label htmlFor="description">Descripción</Label>
-                <textarea
+                <Textarea
                   id="description"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="w-full min-h-[200px] p-2 border rounded"
+                  className="min-h-[200px]"
                   disabled={isDesigner}
                   readOnly={isDesigner}
                 />
@@ -518,4 +486,3 @@ export const PublicationDialog = ({
     </>
   );
 };
-
