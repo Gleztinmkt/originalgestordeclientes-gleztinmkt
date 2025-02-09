@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Client } from "@/components/types/client";
 import {
@@ -17,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { MonthSelector } from "./MonthSelector";
 import { StatusLegend } from "./StatusLegend";
 import { Card } from "@/components/ui/card";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, CheckSquare, Square } from "lucide-react";
 
 interface PlanningCalendarProps {
   clients: Client[];
@@ -29,6 +28,7 @@ interface PlanningEntry {
   month: string;
   status: 'hacer' | 'no_hacer' | 'consultar';
   description?: string;
+  completed?: boolean;
 }
 
 export const PlanningCalendar = ({ clients }: PlanningCalendarProps) => {
@@ -65,7 +65,8 @@ export const PlanningCalendar = ({ clients }: PlanningCalendarProps) => {
           client_id: entry.client_id,
           month: entry.month,
           status: (entry.status || 'consultar') as 'hacer' | 'no_hacer' | 'consultar',
-          description: entry.description
+          description: entry.description,
+          completed: entry.completed
         };
       });
       setPlanningData(planningMap);
@@ -160,6 +161,83 @@ export const PlanningCalendar = ({ clients }: PlanningCalendarProps) => {
       });
     } catch (error) {
       console.error('Error updating planning status:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el estado",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleCompletion = async (clientId: string, completed: boolean) => {
+    if (isSaving) return;
+    setIsSaving(true);
+    
+    const startOfMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
+    const currentEntry = planningData[clientId];
+    
+    try {
+      // First, check if an entry already exists for this client and month
+      const { data: existingData, error: checkError } = await supabase
+        .from('publication_planning')
+        .select('id')
+        .eq('client_id', clientId)
+        .eq('month', startOfMonth.toISOString())
+        .is('deleted_at', null)
+        .maybeSingle();
+
+      if (checkError) throw checkError;
+
+      let result;
+      if (existingData) {
+        // Update existing entry
+        result = await supabase
+          .from('publication_planning')
+          .update({
+            completed,
+            status: currentEntry?.status || 'consultar',
+            description: currentEntry?.description || ''
+          })
+          .eq('id', existingData.id)
+          .select()
+          .single();
+      } else {
+        // Insert new entry
+        result = await supabase
+          .from('publication_planning')
+          .insert({
+            client_id: clientId,
+            month: startOfMonth.toISOString(),
+            status: currentEntry?.status || 'consultar',
+            description: currentEntry?.description || '',
+            completed
+          })
+          .select()
+          .single();
+      }
+
+      if (result.error) throw result.error;
+
+      // Update local state after successful update
+      setPlanningData(prev => ({
+        ...prev,
+        [clientId]: {
+          ...result.data,
+          id: result.data.id,
+          client_id: clientId,
+          month: startOfMonth.toISOString(),
+          completed: result.data.completed
+        }
+      }));
+
+      toast({
+        title: completed ? "Tarea marcada como completada" : "Tarea marcada como pendiente",
+        description: "El estado se ha actualizado correctamente",
+      });
+    } catch (error) {
+      console.error('Error updating completion status:', error);
       toast({
         title: "Error",
         description: "No se pudo actualizar el estado",
@@ -292,7 +370,21 @@ export const PlanningCalendar = ({ clients }: PlanningCalendarProps) => {
               </div>
 
               <div className="space-y-2">
-                <h3 className="font-semibold text-sm truncate pr-6">{client.name}</h3>
+                <div className="flex items-start justify-between">
+                  <h3 className="font-semibold text-sm truncate pr-6">{client.name}</h3>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="flex-shrink-0 -mt-1"
+                    onClick={() => handleCompletion(client.id, !planningEntry?.completed)}
+                  >
+                    {planningEntry?.completed ? (
+                      <CheckSquare className="h-5 w-5 text-green-500" />
+                    ) : (
+                      <Square className="h-5 w-5 text-gray-400" />
+                    )}
+                  </Button>
+                </div>
                 <div className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
                   <CalendarIcon className="h-3 w-3" />
                   <span>Creación: {format(creationDate, 'd MMM', { locale: es })}</span>

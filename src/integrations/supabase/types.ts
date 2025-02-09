@@ -462,6 +462,7 @@ export type Database = {
       publication_planning: {
         Row: {
           client_id: string | null
+          completed: boolean | null
           created_at: string
           deleted_at: string | null
           description: string | null
@@ -472,6 +473,7 @@ export type Database = {
         }
         Insert: {
           client_id?: string | null
+          completed?: boolean | null
           created_at?: string
           deleted_at?: string | null
           description?: string | null
@@ -482,6 +484,7 @@ export type Database = {
         }
         Update: {
           client_id?: string | null
+          completed?: boolean | null
           created_at?: string
           deleted_at?: string | null
           description?: string | null
