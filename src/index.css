@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -77,6 +78,22 @@
   .loading-screen .copyright {
     @apply text-sm text-gray-500 dark:text-gray-400;
   }
+
+  /* Estilos para scroll horizontal en mobile */
+  @media (max-width: 640px) {
+    .mobile-scroll-container {
+      @apply flex gap-2 overflow-x-auto pb-2 scrollbar-hide;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .mobile-scroll-container::-webkit-scrollbar {
+      display: none;
+    }
+
+    .mobile-scroll-item {
+      @apply flex-none;
+    }
+  }
 }
 
 @keyframes progress {
@@ -128,3 +145,4 @@
 .dark [role="dialog"] [class*="bg-gray-100"] {
   @apply bg-gray-900;
 }
+
