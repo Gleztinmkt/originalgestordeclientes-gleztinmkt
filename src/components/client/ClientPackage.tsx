@@ -259,7 +259,7 @@ export const ClientPackage = ({
     
     // Header with modern styling and company name
     const header = document.createElement('div');
-    header.className = 'text-center mb-8 bg-white/800 backdrop-blur-sm rounded-xl p-6 shadow-lg';
+    header.className = 'text-center mb-8 bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-lg';
     header.innerHTML = `
       <div class="flex flex-col items-center justify-center gap-2 mb-4">
         <h1 class="text-2xl font-bold text-[#221F26]">Gleztin Marketing Digital - Depto. Marketing</h1>
@@ -328,7 +328,7 @@ export const ClientPackage = ({
 
       // Footer with modern styling
       const footer = document.createElement('div');
-      footer.className = 'mt-8 text-center p-4 bg-white/800 backdrop-blur-sm rounded-xl';
+      footer.className = 'mt-8 text-center p-4 bg-white/80 backdrop-blur-sm rounded-xl';
       footer.innerHTML = `
         <div class="text-sm text-[#8E9196] flex items-center justify-center gap-2">
           <span class="font-medium">Gestor de clientes</span>
@@ -374,15 +374,15 @@ export const ClientPackage = ({
 
   return (
     <Card className="bg-white dark:bg-gray-800 border dark:border-gray-700">
-      <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-2 gap-4">
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-lg font-heading flex items-center gap-2">
           <Package className="h-5 w-5" />
           {packageName}
         </CardTitle>
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full sm:w-auto">
+        <div className="flex items-center gap-4">
           <Badge>{month}</Badge>
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">
+            <span className="text-sm text-gray-600 dark:text-gray-300">
               {paid ? "Pagado" : "Pendiente"}
             </span>
             <Switch 
@@ -443,12 +443,12 @@ export const ClientPackage = ({
               id="lastPost"
               value={lastPost}
               onChange={(e) => handleLastPostChange(e.target.value)}
-              className="w-full text-sm"
+              className="w-full"
               placeholder="Ingrese el último post..."
             />
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-2">
+          <div className="flex gap-2">
             {usedPublications === totalPublications && (
               <Button 
                 onClick={handleSendCompletionMessage}
@@ -456,7 +456,7 @@ export const ClientPackage = ({
                 variant="outline"
               >
                 <Send className="h-4 w-4" />
-                <span className="whitespace-normal text-sm">Enviar mensaje de completado</span>
+                Enviar mensaje de completado
               </Button>
             )}
             <PublicationCalendarDialog 
