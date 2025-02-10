@@ -247,15 +247,15 @@ export const PublicationDialog = ({
         onOpenChange={handleOpenChange}
       >
         <DialogContent 
-          className="max-w-[600px] max-h-[80vh]"
+          className="w-[95vw] max-w-[600px] max-h-[90vh] overflow-hidden p-4 sm:p-6"
           onPointerDownOutside={(e) => e.preventDefault()}
           onInteractOutside={(e) => e.preventDefault()}
           onEscapeKeyDown={(e) => e.preventDefault()}
         >
           <DialogHeader>
-            <DialogTitle>Editar Publicación</DialogTitle>
+            <DialogTitle className="text-lg sm:text-xl">Editar Publicación</DialogTitle>
           </DialogHeader>
-          <ScrollArea className="h-[calc(80vh-120px)] pr-4">
+          <ScrollArea className="h-[calc(90vh-120px)] pr-2 sm:pr-4">
             <form onSubmit={handleSubmit} className="space-y-4">
               {client && (
                 <div className="space-y-2 mb-4 border-b pb-4">
@@ -285,25 +285,26 @@ export const PublicationDialog = ({
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="name">Nombre de la publicación</Label>
+                <Label htmlFor="name" className="text-sm sm:text-base">Nombre de la publicación</Label>
                 <Input
                   id="name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   disabled={isDesigner}
                   readOnly={isDesigner}
+                  className="w-full text-sm sm:text-base"
                 />
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label>Tipo de contenido</Label>
+                  <Label className="text-sm sm:text-base">Tipo de contenido</Label>
                   <Select 
                     value={type} 
                     onValueChange={(value: 'reel' | 'carousel' | 'image') => setType(value)}
                     disabled={isDesigner}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="text-sm sm:text-base">
                       <SelectValue placeholder="Seleccionar tipo" />
                     </SelectTrigger>
                     <SelectContent>
@@ -315,12 +316,9 @@ export const PublicationDialog = ({
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Estado</Label>
-                  <Select 
-                    value={status} 
-                    onValueChange={setStatus}
-                  >
-                    <SelectTrigger>
+                  <Label className="text-sm sm:text-base">Estado</Label>
+                  <Select value={status} onValueChange={setStatus}>
+                    <SelectTrigger className="text-sm sm:text-base">
                       <SelectValue placeholder="Seleccionar estado" />
                     </SelectTrigger>
                     <SelectContent>
@@ -335,13 +333,13 @@ export const PublicationDialog = ({
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Diseñador asignado</Label>
+                  <Label className="text-sm sm:text-base">Diseñador asignado</Label>
                   <Select 
                     value={designer} 
                     onValueChange={setDesigner}
                     disabled={isDesigner}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="text-sm sm:text-base">
                       <SelectValue placeholder="Seleccionar diseñador" />
                     </SelectTrigger>
                     <SelectContent>
@@ -355,31 +353,34 @@ export const PublicationDialog = ({
               </div>
 
               <div className="space-y-2">
-                <Label>Fecha de publicación</Label>
-                <Calendar
-                  mode="single"
-                  selected={selectedDate}
-                  onSelect={(date) => date && setSelectedDate(date)}
-                  locale={es}
-                  disabled={isDesigner}
-                  className="rounded-md border"
-                />
-                <div className="text-sm text-muted-foreground">
+                <Label className="text-sm sm:text-base">Fecha de publicación</Label>
+                <div className="border rounded-lg p-2 max-h-[250px] overflow-y-auto">
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={(date) => date && setSelectedDate(date)}
+                    locale={es}
+                    disabled={isDesigner}
+                    className="rounded-md border"
+                  />
+                </div>
+                <div className="text-xs sm:text-sm text-muted-foreground">
                   Fecha seleccionada: {format(selectedDate, "EEEE d 'de' MMMM 'de' yyyy", { locale: es })}
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label>Links</Label>
+                <Label className="text-sm sm:text-base">Links</Label>
                 <Card>
-                  <CardContent className="p-4 space-y-4">
+                  <CardContent className="p-3 sm:p-4 space-y-4">
                     {!isDesigner && (
-                      <div className="flex gap-2">
+                      <div className="flex flex-col sm:flex-row gap-2">
                         <div className="flex-1">
                           <Input
                             placeholder="Etiqueta"
                             value={newLinkLabel}
                             onChange={(e) => setNewLinkLabel(e.target.value)}
+                            className="text-sm sm:text-base"
                           />
                         </div>
                         <div className="flex-1">
@@ -387,12 +388,14 @@ export const PublicationDialog = ({
                             placeholder="URL"
                             value={newLinkUrl}
                             onChange={(e) => setNewLinkUrl(e.target.value)}
+                            className="text-sm sm:text-base"
                           />
                         </div>
                         <Button
                           type="button"
                           variant="outline"
                           onClick={handleAddLink}
+                          className="w-full sm:w-auto"
                         >
                           <Plus className="h-4 w-4" />
                         </Button>
@@ -401,7 +404,7 @@ export const PublicationDialog = ({
                     <ScrollArea className="h-[100px]">
                       <div className="space-y-2">
                         {links.map((link, index) => (
-                          <div key={index} className="flex items-center gap-2 bg-secondary p-2 rounded">
+                          <div key={index} className="flex items-center gap-2 bg-secondary p-2 rounded text-sm">
                             {!isDesigner && (
                               <Button
                                 type="button"
@@ -436,7 +439,7 @@ export const PublicationDialog = ({
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="copywriting">Copywriting</Label>
+                  <Label htmlFor="copywriting" className="text-sm sm:text-base">Copywriting</Label>
                   <Button
                     type="button"
                     variant="ghost"
@@ -455,7 +458,7 @@ export const PublicationDialog = ({
                   id="copywriting"
                   value={copywriting}
                   onChange={(e) => setCopywriting(e.target.value)}
-                  className="min-h-[150px] select-all touch-manipulation"
+                  className="min-h-[150px] select-all touch-manipulation text-sm sm:text-base"
                   disabled={isDesigner}
                   readOnly={isDesigner}
                 />
@@ -463,7 +466,7 @@ export const PublicationDialog = ({
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="description">Descripción</Label>
+                  <Label htmlFor="description" className="text-sm sm:text-base">Descripción</Label>
                   <Button
                     type="button"
                     variant="ghost"
@@ -482,18 +485,19 @@ export const PublicationDialog = ({
                   id="description"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="min-h-[200px] select-all touch-manipulation"
+                  className="min-h-[200px] select-all touch-manipulation text-sm sm:text-base"
                   disabled={isDesigner}
                   readOnly={isDesigner}
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-4">
+              <div className="flex flex-col sm:flex-row justify-end gap-2 pt-4">
                 {onDelete && !isDesigner && (
                   <Button 
                     type="button"
                     variant="destructive"
                     onClick={onDelete}
+                    className="w-full sm:w-auto text-sm"
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
                     Eliminar
@@ -503,10 +507,14 @@ export const PublicationDialog = ({
                   type="button" 
                   variant="outline" 
                   onClick={handleClose}
+                  className="w-full sm:w-auto text-sm"
                 >
                   Cerrar
                 </Button>
-                <Button type="submit">
+                <Button 
+                  type="submit"
+                  className="w-full sm:w-auto text-sm"
+                >
                   Guardar cambios
                 </Button>
               </div>

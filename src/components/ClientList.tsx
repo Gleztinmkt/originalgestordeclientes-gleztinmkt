@@ -73,17 +73,17 @@ export const ClientList = ({
               placeholder="Buscar clientes..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-8"
+              className="pl-8 h-10 text-base"
             />
           </div>
           <ClientFilter onFilterChange={setSelectedPaymentDay} />
           <Button
             variant={showPendingPayments ? "default" : "outline"}
             onClick={() => setShowPendingPayments(!showPendingPayments)}
-            className="gap-2"
+            className="gap-2 whitespace-nowrap text-sm"
           >
             <DollarSign className="h-4 w-4" />
-            Pagos pendientes
+            <span className="hidden sm:inline">Pagos pendientes</span>
           </Button>
         </div>
         <div className="flex items-center gap-2">
