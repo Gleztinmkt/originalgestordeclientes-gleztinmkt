@@ -1,8 +1,10 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { ClientInfo } from "@/components/types/client";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface ClientInfoFormProps {
   defaultValues?: ClientInfo;
@@ -18,6 +20,7 @@ export const ClientInfoForm = ({ defaultValues, onSubmit, isSubmitting }: Client
     branding: "",
     publicationSchedule: []
   });
+  const isMobile = useIsMobile();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,7 +44,7 @@ export const ClientInfoForm = ({ defaultValues, onSubmit, isSubmitting }: Client
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-2">
-        <label htmlFor="generalInfo" className="text-sm font-medium">
+        <label htmlFor="generalInfo" className={`text-sm font-medium ${isMobile ? 'block mb-1' : ''}`}>
           Información General
         </label>
         <Textarea
@@ -49,19 +52,19 @@ export const ClientInfoForm = ({ defaultValues, onSubmit, isSubmitting }: Client
           value={info.generalInfo}
           onChange={(e) => setInfo(prev => ({ ...prev, generalInfo: e.target.value }))}
           placeholder="Información general del cliente..."
-          className="min-h-[200px]"
+          className={`min-h-[150px] ${isMobile ? 'text-sm' : ''}`}
         />
       </div>
 
       <div className="space-y-4">
         <div className="flex justify-between items-center">
-          <h3 className="text-lg font-semibold">Reuniones</h3>
-          <Button type="button" onClick={addMeeting} variant="outline" size="sm">
+          <h3 className={`font-semibold ${isMobile ? 'text-base' : 'text-lg'}`}>Reuniones</h3>
+          <Button type="button" onClick={addMeeting} variant="outline" size={isMobile ? "sm" : "default"}>
             Agregar Reunión
           </Button>
         </div>
         {info.meetings.map((meeting, index) => (
-          <div key={index} className="space-y-2 border p-4 rounded-lg">
+          <div key={index} className={`space-y-2 border p-3 rounded-lg ${isMobile ? 'text-sm' : 'p-4'}`}>
             <Input
               type="date"
               value={meeting.date}
@@ -79,6 +82,7 @@ export const ClientInfoForm = ({ defaultValues, onSubmit, isSubmitting }: Client
                 setInfo(prev => ({ ...prev, meetings: newMeetings }));
               }}
               placeholder="Notas de la reunión..."
+              className={isMobile ? 'min-h-[100px]' : ''}
             />
           </div>
         ))}
@@ -86,13 +90,13 @@ export const ClientInfoForm = ({ defaultValues, onSubmit, isSubmitting }: Client
 
       <div className="space-y-4">
         <div className="flex justify-between items-center">
-          <h3 className="text-lg font-semibold">Redes Sociales</h3>
-          <Button type="button" onClick={addSocialNetwork} variant="outline" size="sm">
-            Agregar Red Social
+          <h3 className={`font-semibold ${isMobile ? 'text-base' : 'text-lg'}`}>Redes Sociales</h3>
+          <Button type="button" onClick={addSocialNetwork} variant="outline" size={isMobile ? "sm" : "default"}>
+            Agregar Red
           </Button>
         </div>
         {info.socialNetworks.map((network, index) => (
-          <div key={index} className="space-y-2 border p-4 rounded-lg">
+          <div key={index} className={`space-y-2 border p-3 rounded-lg ${isMobile ? 'text-sm' : 'p-4'}`}>
             <select
               value={network.platform}
               onChange={(e) => {
@@ -117,12 +121,13 @@ export const ClientInfoForm = ({ defaultValues, onSubmit, isSubmitting }: Client
                 newNetworks[index].username = e.target.value;
                 setInfo(prev => ({ ...prev, socialNetworks: newNetworks }));
               }}
+              className={isMobile ? 'text-sm' : ''}
             />
           </div>
         ))}
       </div>
 
-      <Button type="submit" className="w-full" disabled={isSubmitting}>
+      <Button type="submit" className={`w-full ${isMobile ? 'text-sm py-2' : ''}`} disabled={isSubmitting}>
         {isSubmitting ? "Guardando..." : "Guardar Cambios"}
       </Button>
     </form>
