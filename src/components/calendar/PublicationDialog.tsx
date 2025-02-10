@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
-import { ExternalLink, Link as LinkIcon, Plus, Trash2, Instagram } from "lucide-react";
+import { ExternalLink, Link as LinkIcon, Plus, Trash2, Instagram, Copy, Check } from "lucide-react";
 import { useState, useCallback, useEffect } from "react";
 import { Publication } from "../client/publication/types";
 import { Client } from "../types/client";
@@ -63,6 +63,8 @@ export const PublicationDialog = ({
   const [newLinkUrl, setNewLinkUrl] = useState("");
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date(publication.date));
+  const [copyingCopywriting, setCopyingCopywriting] = useState(false);
+  const [copyingDescription, setCopyingDescription] = useState(false);
 
   const { data: userRole } = useQuery({
     queryKey: ['userRole'],
@@ -129,7 +131,6 @@ export const PublicationDialog = ({
   };
 
   const handleDiscardChanges = () => {
-    // Restablecer todos los estados a sus valores originales
     setName(publication.name);
     setType(publication.type as 'reel' | 'carousel' | 'image');
     setDescription(publication.description || "");
@@ -211,6 +212,29 @@ export const PublicationDialog = ({
       toast({
         title: "Error",
         description: "No se pudo actualizar la publicación. Por favor, intenta de nuevo.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCopyText = async (text: string, type: 'copywriting' | 'description') => {
+    try {
+      await navigator.clipboard.writeText(text);
+      if (type === 'copywriting') {
+        setCopyingCopywriting(true);
+        setTimeout(() => setCopyingCopywriting(false), 2000);
+      } else {
+        setCopyingDescription(true);
+        setTimeout(() => setCopyingDescription(false), 2000);
+      }
+      toast({
+        title: "Texto copiado",
+        description: "El texto ha sido copiado al portapapeles.",
+      });
+    } catch (err) {
+      toast({
+        title: "Error al copiar",
+        description: "No se pudo copiar el texto. Inténtalo manualmente.",
         variant: "destructive",
       });
     }
@@ -411,24 +435,54 @@ export const PublicationDialog = ({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="copywriting">Copywriting</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="copywriting">Copywriting</Label>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleCopyText(copywriting, 'copywriting')}
+                    className="h-8"
+                  >
+                    {copyingCopywriting ? (
+                      <Check className="h-4 w-4 text-green-500" />
+                    ) : (
+                      <Copy className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
                 <Textarea
                   id="copywriting"
                   value={copywriting}
                   onChange={(e) => setCopywriting(e.target.value)}
-                  className="min-h-[150px]"
+                  className="min-h-[150px] select-all touch-manipulation"
                   disabled={isDesigner}
                   readOnly={isDesigner}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description">Descripción</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="description">Descripción</Label>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleCopyText(description, 'description')}
+                    className="h-8"
+                  >
+                    {copyingDescription ? (
+                      <Check className="h-4 w-4 text-green-500" />
+                    ) : (
+                      <Copy className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
                 <Textarea
                   id="description"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="min-h-[200px]"
+                  className="min-h-[200px] select-all touch-manipulation"
                   disabled={isDesigner}
                   readOnly={isDesigner}
                 />
