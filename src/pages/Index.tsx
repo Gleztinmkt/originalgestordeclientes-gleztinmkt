@@ -41,36 +41,32 @@ const Index = () => {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
 
-  // Fetch user role with error handling
   const { data: userRole } = useQuery({
     queryKey: ['userRole'],
     queryFn: async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-          console.log('No user found, redirecting to login');
-          navigate('/login');
-          return null;
-        }
-
-        const { data: roleData, error } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', user.id)
-          .single();
-
-        if (error) {
-          console.error('Error fetching user role:', error);
-          return null;
-        }
-
-        return roleData?.role || null;
-      } catch (error) {
-        console.error('Error in userRole query:', error);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        navigate('/login');
         return null;
       }
+
+      const { data: roleData, error } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .single();
+
+      if (error) {
+        console.error('Error fetching user role:', error);
+        return null;
+      }
+
+      return roleData?.role || null;
     },
-    retry: 1,
+    retry: false,
+    onError: () => {
+      navigate('/login');
+    }
   });
 
   const handleLogout = async () => {
@@ -102,10 +98,20 @@ const Index = () => {
           variant: "destructive"
         });
       } finally {
-        setTimeout(() => setIsLoading(false), 1000);
+        setIsLoading(false);
       }
     };
-    init();
+
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        navigate('/login');
+        return;
+      }
+      init();
+    };
+
+    checkSession();
   }, []);
 
   const handleFilterChange = (type: string | null, clientId: string | null) => {
@@ -138,12 +144,7 @@ const Index = () => {
 
   if (isLoading) {
     return (
-      <div className="loading-screen fixed inset-0 flex items-center justify-center w-full h-full" style={{
-        backgroundImage: 'url(https://i.imgur.com/w73iJfK.png)',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat'
-      }}>
+      <div className="loading-screen fixed inset-0 flex items-center justify-center w-full h-full bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
         <div className="content bg-white/90 dark:bg-gray-800/90 p-6 rounded-lg shadow-lg backdrop-blur-sm w-[90%] max-w-md mx-auto">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Gestor de clientes</h1>
           <img 
@@ -154,8 +155,8 @@ const Index = () => {
           <div className="progress-bar mt-4 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
             <div className="h-2 bg-blue-500 dark:bg-blue-400 animate-progress" />
           </div>
-          <div className="copyright mt-4 text-sm text-gray-600 dark:text-gray-400">
-            Copyright {new Date().getFullYear()} - Gleztin Marketing Digital
+          <div className="copyright mt-4 text-sm text-gray-600 dark:text-gray-400 text-center">
+            Cargando...
           </div>
         </div>
       </div>
