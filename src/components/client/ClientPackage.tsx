@@ -260,7 +260,7 @@ export const ClientPackage = ({
     
     // Header with modern styling and company name
     const header = document.createElement('div');
-    header.className = 'text-center mb-8 bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-lg';
+    header.className = 'text-center mb-8 bg-white/800 backdrop-blur-sm rounded-xl p-6 shadow-lg';
     header.innerHTML = `
       <div class="flex flex-col items-center justify-center gap-2 mb-4">
         <h1 class="text-2xl font-bold text-[#221F26]">Gleztin Marketing Digital - Depto. Marketing</h1>
@@ -329,7 +329,7 @@ export const ClientPackage = ({
 
       // Footer with modern styling
       const footer = document.createElement('div');
-      footer.className = 'mt-8 text-center p-4 bg-white/80 backdrop-blur-sm rounded-xl';
+      footer.className = 'mt-8 text-center p-4 bg-white/800 backdrop-blur-sm rounded-xl';
       footer.innerHTML = `
         <div class="text-sm text-[#8E9196] flex items-center justify-center gap-2">
           <span class="font-medium">Gestor de clientes</span>
