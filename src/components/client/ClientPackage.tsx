@@ -179,12 +179,13 @@ export const ClientPackage = ({
       return;
     }
 
-    const message = `*Reporte de Paquete - ${clientName}*\n\n` +
-      `*Nombre:* ${packageName}\n` +
-      `*Mes:* ${month}\n` +
-      `*Estado:* Completado\n` +
-      `*Publicaciones:* ${usedPublications}/${totalPublications}\n\n` +
-      `*Gracias por confiar en Gleztin Marketing Digital*`;
+    const message = `¡Hola! Este es un mensaje automático.\n\n` +
+      `Te informamos que tu paquete "${packageName}" del mes de ${month} ha sido completado. ` +
+      `Para continuar con nuestros servicios, te pedimos que nos cuentes con qué paquete te interesaría continuar.\n\n` +
+      `Los valores actualizados los vas a encontrar en el siguiente link:\n\n` +
+      `https://gleztin.com.ar/index.php/valores-de-redes-sociales/\n` +
+      `*Contraseña:* Gleztin (Con mayúscula al inicio)\n\n` +
+      `¡Gracias por confiar en nosotros!`;
 
     const whatsappUrl = `https://wa.me/${clientId.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
