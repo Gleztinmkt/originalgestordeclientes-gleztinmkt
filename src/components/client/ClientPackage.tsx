@@ -86,24 +86,26 @@ export const ClientPackage = ({
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [lastPost, setLastPost] = useState<string>("");
+  const [clientPhone, setClientPhone] = useState<string>("");
   const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const submissionCountRef = useRef(0);
 
-  // Fetch last post on component mount
+  // Fetch client phone and last post on component mount
   useEffect(() => {
-    const fetchLastPost = async () => {
+    const fetchClientData = async () => {
       const { data: clientData, error } = await supabase
         .from('clients')
-        .select('last_post')
+        .select('last_post, phone')
         .eq('id', clientId)
         .single();
 
       if (!error && clientData) {
         setLastPost(clientData.last_post || "");
+        setClientPhone(clientData.phone || "");
       }
     };
 
-    fetchLastPost();
+    fetchClientData();
   }, [clientId]);
 
   // Update last post in database
@@ -170,10 +172,10 @@ export const ClientPackage = ({
   }, [onEditPackage, isProcessing]);
 
   const handleSendCompletionMessage = () => {
-    if (!clientId) {
+    if (!clientPhone) {
       toast({
         title: "Error",
-        description: "No se encontró el ID del cliente",
+        description: "El cliente no tiene número de teléfono registrado",
         variant: "destructive",
       });
       return;
@@ -187,7 +189,9 @@ export const ClientPackage = ({
       `*Contraseña:* Gleztin (Con mayúscula al inicio)\n\n` +
       `¡Gracias por confiar en nosotros!`;
 
-    const whatsappUrl = `https://wa.me/${clientId.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
+    // Limpiar el número de teléfono de cualquier carácter que no sea dígito
+    const cleanPhone = clientPhone.replace(/\D/g, '');
+    const whatsappUrl = `https://wa.me/${cleanPhone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
   };
 
