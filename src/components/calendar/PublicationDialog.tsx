@@ -102,15 +102,8 @@ export const PublicationDialog = ({
   }, [name, type, description, copywriting, designer, status, links, publication]);
 
   useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') {
-        return;
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      // Cleanup
     };
   }, []);
 
