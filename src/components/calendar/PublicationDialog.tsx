@@ -458,7 +458,7 @@ export const PublicationDialog = ({
                   id="copywriting"
                   value={copywriting}
                   onChange={(e) => setCopywriting(e.target.value)}
-                  className="min-h-[150px] select-all touch-manipulation text-sm sm:text-base"
+                  className="min-h-[150px] touch-manipulation text-sm sm:text-base"
                   disabled={isDesigner}
                   readOnly={isDesigner}
                 />
@@ -485,7 +485,7 @@ export const PublicationDialog = ({
                   id="description"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="min-h-[200px] select-all touch-manipulation text-sm sm:text-base"
+                  className="min-h-[200px] touch-manipulation text-sm sm:text-base"
                   disabled={isDesigner}
                   readOnly={isDesigner}
                 />
