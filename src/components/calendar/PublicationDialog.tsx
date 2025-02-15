@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { Trash2, RotateCcw, Search, Link as LinkIcon, Plus, Instagram, Copy, Check } from "lucide-react";
+
+import { useState, useCallback, useEffect } from "react";
+import { Trash2, RotateCcw, Search, Link as LinkIcon, Plus, Instagram, Copy, Check, ExternalLink } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Dialog,
@@ -67,6 +68,7 @@ export const PublicationDialog = ({
   const [selectedDate, setSelectedDate] = useState<Date>(new Date(publication.date));
   const [copyingCopywriting, setCopyingCopywriting] = useState(false);
   const [copyingDescription, setCopyingDescription] = useState(false);
+
   const {
     data: userRole
   } = useQuery({
@@ -84,15 +86,19 @@ export const PublicationDialog = ({
       return roleData?.role || null;
     }
   });
+
   const isDesigner = userRole === 'designer';
+
   const hasChanges = useCallback(() => {
-    return name !== publication.name || type !== publication.type || description !== (publication.description || "") || copywriting !== (publication.copywriting || "") || designer !== (publication.designer || "no_designer") || status !== (publication.needs_recording ? 'needs_recording' : publication.needs_editing ? 'needs_editing' : publication.in_editing ? 'in_editing' : publication.in_review ? 'in_review' : publication.approved ? 'approved' : publication.is_published ? 'published' : 'needs_recording') || JSON.stringify(links) !== (publication.links || "[]");
+    return name !== publication.name || 
+           type !== publication.type || 
+           description !== (publication.description || "") || 
+           copywriting !== (publication.copywriting || "") || 
+           designer !== (publication.designer || "no_designer") || 
+           status !== (publication.needs_recording ? 'needs_recording' : publication.needs_editing ? 'needs_editing' : publication.in_editing ? 'in_editing' : publication.in_review ? 'in_review' : publication.approved ? 'approved' : publication.is_published ? 'published' : 'needs_recording') || 
+           JSON.stringify(links) !== (publication.links || "[]");
   }, [name, type, description, copywriting, designer, status, links, publication]);
-  useEffect(() => {
-    return () => {
-      // Cleanup
-    };
-  }, []);
+
   const handleOpenChange = (open: boolean) => {
     if (!open && hasChanges()) {
       setShowConfirmDialog(true);
@@ -100,6 +106,7 @@ export const PublicationDialog = ({
       onOpenChange(open);
     }
   };
+
   const handleClose = () => {
     if (hasChanges()) {
       setShowConfirmDialog(true);
@@ -107,6 +114,7 @@ export const PublicationDialog = ({
       onOpenChange(false);
     }
   };
+
   const handleDiscardChanges = () => {
     setName(publication.name);
     setType(publication.type as 'reel' | 'carousel' | 'image');
@@ -127,6 +135,7 @@ export const PublicationDialog = ({
     setShowConfirmDialog(false);
     onOpenChange(false);
   };
+
   const handleAddLink = () => {
     if (newLinkLabel && newLinkUrl) {
       setLinks([...links, {
@@ -137,6 +146,7 @@ export const PublicationDialog = ({
       setNewLinkUrl("");
     }
   };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -181,6 +191,7 @@ export const PublicationDialog = ({
       });
     }
   };
+
   const handleCopyText = async (text: string, type: 'copywriting' | 'description') => {
     try {
       await navigator.clipboard.writeText(text);
@@ -203,6 +214,7 @@ export const PublicationDialog = ({
       });
     }
   };
+
   const handleVisibilityChange = () => {
     // Do nothing when visibility changes
     return;
@@ -314,7 +326,9 @@ export const PublicationDialog = ({
                 <Label className="text-sm sm:text-base">Links</Label>
                 <Card>
                   <CardContent className="p-3 sm:p-4 space-y-4">
-                    {!isDesigner && <div className="flex flex-col sm:flex-row gap-2">
+                    {!isDesigner && <div className="flex flex-col sm:flex-row gap
+
+-2">
                         <div className="flex-1">
                           <Input placeholder="Etiqueta" value={newLinkLabel} onChange={e => setNewLinkLabel(e.target.value)} className="text-sm sm:text-base" />
                         </div>
@@ -363,7 +377,7 @@ export const PublicationDialog = ({
                     {copyingDescription ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
                   </Button>
                 </div>
-                <Textarea id="description" value={description} onChange={e => setDescription(e.target.value)} disabled={isDesigner} readOnly={isDesigner} className="min-h-[200px] touch-manipulation text-sm sm:text-base py-[192px]" />
+                <Textarea id="description" value={description} onChange={e => setDescription(e.target.value)} disabled={isDesigner} readOnly={isDesigner} className="min-h-[200px] touch-manipulation text-sm sm:text-base" />
               </div>
 
               <div className="flex flex-col sm:flex-row justify-end gap-2 pt-4">
@@ -396,12 +410,12 @@ export const PublicationDialog = ({
               Descartar cambios
             </AlertDialogCancel>
             <AlertDialogAction onClick={() => {
-            const fakeEvent = {
-              preventDefault: () => {}
-            } as React.FormEvent;
-            handleSubmit(fakeEvent);
-            setShowConfirmDialog(false);
-          }}>
+              const fakeEvent = {
+                preventDefault: () => {}
+              } as React.FormEvent;
+              handleSubmit(fakeEvent);
+              setShowConfirmDialog(false);
+            }}>
               Guardar
             </AlertDialogAction>
           </AlertDialogFooter>
