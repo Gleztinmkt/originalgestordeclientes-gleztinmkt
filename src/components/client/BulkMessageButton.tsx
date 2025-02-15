@@ -32,6 +32,7 @@ interface BulkMessageButtonProps {
   selectedPaymentDay?: number;
   searchQuery?: string;
   showPendingPayments?: boolean;
+  selectedClientIds?: string[];
 }
 
 const createPaymentMessage = (clientName: string, paymentDay: number) => {
@@ -51,13 +52,19 @@ export const BulkMessageButton = ({
   clients, 
   selectedPaymentDay,
   searchQuery = "",
-  showPendingPayments = false
+  showPendingPayments = false,
+  selectedClientIds = []
 }: BulkMessageButtonProps) => {
   const [isCustomMessageDialogOpen, setIsCustomMessageDialogOpen] = useState(false);
   const [customMessage, setCustomMessage] = useState("");
 
   const getFilteredClients = () => {
     return clients.filter(client => {
+      // Filter by manually selected clients
+      if (selectedClientIds.length > 0 && !selectedClientIds.includes(client.id)) {
+        return false;
+      }
+
       if (selectedPaymentDay && client.paymentDay !== selectedPaymentDay) {
         return false;
       }

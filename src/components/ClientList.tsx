@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { BulkMessageButton } from "./client/BulkMessageButton";
 import { ClientFilter } from "./client/ClientFilter";
@@ -125,6 +124,7 @@ export const ClientList = ({
             selectedPaymentDay={selectedPaymentDay !== "all" ? parseInt(selectedPaymentDay) : undefined}
             searchQuery={searchQuery}
             showPendingPayments={showPendingPayments}
+            selectedClientIds={selectedClientIds}
           />
         </div>
       </div>
