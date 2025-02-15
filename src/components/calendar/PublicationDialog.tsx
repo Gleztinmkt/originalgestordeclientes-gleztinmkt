@@ -359,7 +359,7 @@ export const PublicationDialog = ({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={handleDiscardChanges} className="text-neutral-100">
+            <AlertDialogCancel onClick={handleDiscardChanges} className="text-neutral-100 bg-gray-700 hover:bg-gray-600">
               Descartar cambios
             </AlertDialogCancel>
             <AlertDialogAction onClick={() => {
