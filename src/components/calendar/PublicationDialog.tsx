@@ -1,4 +1,13 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useState } from "react";
+import { Trash2, RotateCcw, Search, Link as LinkIcon, Plus, Instagram, Copy, Check } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -6,17 +15,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
-import { ExternalLink, Link as LinkIcon, Plus, Trash2, Instagram, Copy, Check } from "lucide-react";
-import { useState, useCallback, useEffect } from "react";
-import { Publication } from "../client/publication/types";
-import { Client } from "../types/client";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { Publication } from "../client/publication/types";
+import { Client } from "../types/client";
 import { Calendar } from "@/components/ui/calendar";
 import { es } from "date-fns/locale";
 import { format } from "date-fns";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+
 interface PublicationDialogProps {
   publication: Publication;
   client?: Client;
@@ -26,6 +33,7 @@ interface PublicationDialogProps {
   onDelete?: () => void;
   designers?: any[];
 }
+
 export const PublicationDialog = ({
   publication,
   client,
@@ -195,9 +203,34 @@ export const PublicationDialog = ({
       });
     }
   };
-  return <>
+  const handleVisibilityChange = () => {
+    // Do nothing when visibility changes
+    return;
+  };
+
+  useEffect(() => {
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
+  return (
+    <>
       <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent className="w-[95vw] max-w-[600px] max-h-[90vh] overflow-hidden p-4 sm:p-6" onPointerDownOutside={e => e.preventDefault()} onInteractOutside={e => e.preventDefault()} onEscapeKeyDown={e => e.preventDefault()}>
+        <DialogContent 
+          className="w-[95vw] max-w-[600px] max-h-[90vh] overflow-hidden p-4 sm:p-6" 
+          onPointerDownOutside={(e) => {
+            e.preventDefault();
+          }}
+          onInteractOutside={(e) => {
+            e.preventDefault();
+          }}
+          onEscapeKeyDown={(e) => {
+            e.preventDefault();
+          }}
+          forceMount={true}
+        >
           <DialogHeader>
             <DialogTitle className="text-lg sm:text-xl">Editar Publicación</DialogTitle>
           </DialogHeader>
@@ -374,5 +407,6 @@ export const PublicationDialog = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </>;
+    </>
+  );
 };
