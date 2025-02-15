@@ -21,6 +21,7 @@ import {
 import { useState } from "react";
 
 interface Client {
+  id: string; // Added the id property
   name: string;
   phone: string;
   paymentDay: number;
