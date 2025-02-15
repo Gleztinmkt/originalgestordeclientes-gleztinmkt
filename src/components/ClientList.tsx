@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { BulkMessageButton } from "./client/BulkMessageButton";
 import { ClientFilter } from "./client/ClientFilter";
@@ -74,17 +75,20 @@ export const ClientList = ({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="flex flex-1 gap-2 items-center">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar clientes..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-8 h-10 text-base"
-            />
-          </div>
+      <div className="flex flex-col gap-4">
+        {/* Primer grupo: Búsqueda */}
+        <div className="relative w-full">
+          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar clientes..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-8 h-10 text-base w-full"
+          />
+        </div>
+
+        {/* Segundo grupo: Filtros (en móvil se apilan) */}
+        <div className="flex flex-col sm:flex-row gap-2 w-full">
           <ManualClientFilter 
             clients={clients}
             selectedClientIds={selectedClientIds}
@@ -94,14 +98,16 @@ export const ClientList = ({
           <Button
             variant={showPendingPayments ? "default" : "outline"}
             onClick={() => setShowPendingPayments(!showPendingPayments)}
-            className="gap-2 whitespace-nowrap text-sm"
+            className="gap-2 text-sm w-full sm:w-auto"
           >
             <DollarSign className="h-4 w-4" />
-            <span className="hidden sm:inline">Pagos pendientes</span>
+            <span>Pagos pendientes</span>
           </Button>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center bg-background border border-input rounded-lg p-1">
+
+        {/* Tercer grupo: Controles de vista y mensajes */}
+        <div className="flex flex-col sm:flex-row gap-2 justify-end items-stretch sm:items-center">
+          <div className="flex items-center bg-background border border-input rounded-lg p-1 w-fit">
             <Button
               variant={viewMode === "list" ? "default" : "ghost"}
               size="sm"
