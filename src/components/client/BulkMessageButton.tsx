@@ -1,3 +1,4 @@
+
 import { MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
@@ -20,7 +21,7 @@ import {
 import { useState } from "react";
 
 interface Client {
-  id: string; // Added the id property
+  id: string;
   name: string;
   phone: string;
   paymentDay: number;
