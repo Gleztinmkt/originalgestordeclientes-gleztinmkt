@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { BulkMessageButton } from "./client/BulkMessageButton";
 import { ClientFilter } from "./client/ClientFilter";
@@ -7,6 +8,7 @@ import { Client } from "./types/client";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { Grid3x3, List, Search, DollarSign } from "lucide-react";
+import { ManualClientFilter } from "./client/ManualClientFilter";
 
 interface ClientListProps {
   clients: Client[];
@@ -37,6 +39,7 @@ export const ClientList = ({
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   const [showPendingPayments, setShowPendingPayments] = useState(false);
+  const [selectedClientIds, setSelectedClientIds] = useState<string[]>([]);
 
   const getSubtleGradient = (index: number) => {
     const gradients = [
@@ -50,6 +53,13 @@ export const ClientList = ({
   };
 
   const filteredClients = clients
+    .filter(client => {
+      // Filter by manually selected clients
+      if (selectedClientIds.length > 0) {
+        return selectedClientIds.includes(client.id);
+      }
+      return true;
+    })
     .filter(client => {
       if (showPendingPayments) {
         return client.packages.some(pkg => !pkg.paid);
@@ -76,6 +86,11 @@ export const ClientList = ({
               className="pl-8 h-10 text-base"
             />
           </div>
+          <ManualClientFilter 
+            clients={clients}
+            selectedClientIds={selectedClientIds}
+            onSelectedClientsChange={setSelectedClientIds}
+          />
           <ClientFilter onFilterChange={setSelectedPaymentDay} />
           <Button
             variant={showPendingPayments ? "default" : "outline"}
