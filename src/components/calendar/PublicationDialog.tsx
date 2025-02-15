@@ -1,13 +1,12 @@
 
 import { useState, useCallback, useEffect } from "react";
-import { Trash2, RotateCcw, Search, Link as LinkIcon, Plus, Instagram, Copy, Check, ExternalLink } from "lucide-react";
+import { Trash2, Copy, Check } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,25 +14,17 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Card, CardContent } from "@/components/ui/card";
+import { Calendar } from "@/components/ui/calendar";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Publication } from "../client/publication/types";
-import { Client } from "../types/client";
-import { Calendar } from "@/components/ui/calendar";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { es } from "date-fns/locale";
 import { format } from "date-fns";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-
-interface PublicationDialogProps {
-  publication: Publication;
-  client?: Client;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onUpdate: () => void;
-  onDelete?: () => void;
-  designers?: any[];
-}
+import { PublicationHeader } from "./publication-dialog/PublicationHeader";
+import { PublicationLinks } from "./publication-dialog/PublicationLinks";
+import { StatusSelect } from "./publication-dialog/StatusSelect";
+import { DesignerSelect } from "./publication-dialog/DesignerSelect";
+import type { PublicationDialogProps, PublicationFormData } from "./publication-dialog/types";
 
 export const PublicationDialog = ({
   publication,
@@ -44,45 +35,36 @@ export const PublicationDialog = ({
   onDelete,
   designers = []
 }: PublicationDialogProps) => {
-  const [name, setName] = useState(publication.name);
-  const [type, setType] = useState<'reel' | 'carousel' | 'image'>(publication.type as 'reel' | 'carousel' | 'image');
-  const [description, setDescription] = useState(publication.description || "");
-  const [copywriting, setCopywriting] = useState(publication.copywriting || "");
-  const [designer, setDesigner] = useState(publication.designer || "no_designer");
-  const [status, setStatus] = useState(publication.needs_recording ? 'needs_recording' : publication.needs_editing ? 'needs_editing' : publication.in_editing ? 'in_editing' : publication.in_review ? 'in_review' : publication.approved ? 'approved' : publication.is_published ? 'published' : 'needs_recording');
-  const [links, setLinks] = useState<Array<{
-    label: string;
-    url: string;
-  }>>(() => {
-    if (!publication.links) return [];
-    try {
-      return JSON.parse(publication.links);
-    } catch (e) {
-      console.error('Error parsing links:', e);
-      return [];
-    }
+  const [formData, setFormData] = useState<PublicationFormData>({
+    name: publication.name,
+    type: publication.type as 'reel' | 'carousel' | 'image',
+    description: publication.description || "",
+    copywriting: publication.copywriting || "",
+    designer: publication.designer || "no_designer",
+    status: publication.needs_recording ? 'needs_recording' : 
+            publication.needs_editing ? 'needs_editing' : 
+            publication.in_editing ? 'in_editing' : 
+            publication.in_review ? 'in_review' : 
+            publication.approved ? 'approved' : 
+            publication.is_published ? 'published' : 'needs_recording',
+    date: new Date(publication.date),
+    links: publication.links ? JSON.parse(publication.links) : [],
   });
-  const [newLinkLabel, setNewLinkLabel] = useState("");
-  const [newLinkUrl, setNewLinkUrl] = useState("");
+
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date(publication.date));
   const [copyingCopywriting, setCopyingCopywriting] = useState(false);
   const [copyingDescription, setCopyingDescription] = useState(false);
 
-  const {
-    data: userRole
-  } = useQuery({
+  const { data: userRole } = useQuery({
     queryKey: ['userRole'],
     queryFn: async () => {
-      const {
-        data: {
-          user
-        }
-      } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) return null;
-      const {
-        data: roleData
-      } = await supabase.from('user_roles').select('role').eq('user_id', user.id).single();
+      const { data: roleData } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .single();
       return roleData?.role || null;
     }
   });
@@ -90,14 +72,19 @@ export const PublicationDialog = ({
   const isDesigner = userRole === 'designer';
 
   const hasChanges = useCallback(() => {
-    return name !== publication.name || 
-           type !== publication.type || 
-           description !== (publication.description || "") || 
-           copywriting !== (publication.copywriting || "") || 
-           designer !== (publication.designer || "no_designer") || 
-           status !== (publication.needs_recording ? 'needs_recording' : publication.needs_editing ? 'needs_editing' : publication.in_editing ? 'in_editing' : publication.in_review ? 'in_review' : publication.approved ? 'approved' : publication.is_published ? 'published' : 'needs_recording') || 
-           JSON.stringify(links) !== (publication.links || "[]");
-  }, [name, type, description, copywriting, designer, status, links, publication]);
+    return formData.name !== publication.name || 
+           formData.type !== publication.type || 
+           formData.description !== (publication.description || "") || 
+           formData.copywriting !== (publication.copywriting || "") || 
+           formData.designer !== (publication.designer || "no_designer") || 
+           formData.status !== (publication.needs_recording ? 'needs_recording' : 
+                              publication.needs_editing ? 'needs_editing' : 
+                              publication.in_editing ? 'in_editing' : 
+                              publication.in_review ? 'in_review' : 
+                              publication.approved ? 'approved' : 
+                              publication.is_published ? 'published' : 'needs_recording') || 
+           JSON.stringify(formData.links) !== (publication.links || "[]");
+  }, [formData, publication]);
 
   const handleOpenChange = (open: boolean) => {
     if (!open && hasChanges()) {
@@ -116,35 +103,23 @@ export const PublicationDialog = ({
   };
 
   const handleDiscardChanges = () => {
-    setName(publication.name);
-    setType(publication.type as 'reel' | 'carousel' | 'image');
-    setDescription(publication.description || "");
-    setCopywriting(publication.copywriting || "");
-    setDesigner(publication.designer || "no_designer");
-    setStatus(publication.needs_recording ? 'needs_recording' : publication.needs_editing ? 'needs_editing' : publication.in_editing ? 'in_editing' : publication.in_review ? 'in_review' : publication.approved ? 'approved' : publication.is_published ? 'published' : 'needs_recording');
-    setSelectedDate(new Date(publication.date));
-    setLinks(() => {
-      if (!publication.links) return [];
-      try {
-        return JSON.parse(publication.links);
-      } catch (e) {
-        console.error('Error parsing links:', e);
-        return [];
-      }
+    setFormData({
+      name: publication.name,
+      type: publication.type as 'reel' | 'carousel' | 'image',
+      description: publication.description || "",
+      copywriting: publication.copywriting || "",
+      designer: publication.designer || "no_designer",
+      status: publication.needs_recording ? 'needs_recording' : 
+              publication.needs_editing ? 'needs_editing' : 
+              publication.in_editing ? 'in_editing' : 
+              publication.in_review ? 'in_review' : 
+              publication.approved ? 'approved' : 
+              publication.is_published ? 'published' : 'needs_recording',
+      date: new Date(publication.date),
+      links: publication.links ? JSON.parse(publication.links) : [],
     });
     setShowConfirmDialog(false);
     onOpenChange(false);
-  };
-
-  const handleAddLink = () => {
-    if (newLinkLabel && newLinkUrl) {
-      setLinks([...links, {
-        label: newLinkLabel,
-        url: newLinkUrl
-      }]);
-      setNewLinkLabel("");
-      setNewLinkUrl("");
-    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -152,31 +127,35 @@ export const PublicationDialog = ({
     try {
       const updates: any = {};
       if (isDesigner) {
-        updates.needs_recording = status === 'needs_recording';
-        updates.needs_editing = status === 'needs_editing';
-        updates.in_editing = status === 'in_editing';
-        updates.in_review = status === 'in_review';
-        updates.approved = status === 'approved';
-        updates.is_published = status === 'published';
+        updates.needs_recording = formData.status === 'needs_recording';
+        updates.needs_editing = formData.status === 'needs_editing';
+        updates.in_editing = formData.status === 'in_editing';
+        updates.in_review = formData.status === 'in_review';
+        updates.approved = formData.status === 'approved';
+        updates.is_published = formData.status === 'published';
       } else {
-        updates.name = name;
-        updates.type = type;
-        updates.description = description;
-        updates.copywriting = copywriting;
-        updates.designer = designer === "no_designer" ? null : designer;
-        updates.links = JSON.stringify(links);
-        updates.date = selectedDate.toISOString();
-        updates.needs_recording = status === 'needs_recording';
-        updates.needs_editing = status === 'needs_editing';
-        updates.in_editing = status === 'in_editing';
-        updates.in_review = status === 'in_review';
-        updates.approved = status === 'approved';
-        updates.is_published = status === 'published';
+        updates.name = formData.name;
+        updates.type = formData.type;
+        updates.description = formData.description;
+        updates.copywriting = formData.copywriting;
+        updates.designer = formData.designer === "no_designer" ? null : formData.designer;
+        updates.links = JSON.stringify(formData.links);
+        updates.date = formData.date.toISOString();
+        updates.needs_recording = formData.status === 'needs_recording';
+        updates.needs_editing = formData.status === 'needs_editing';
+        updates.in_editing = formData.status === 'in_editing';
+        updates.in_review = formData.status === 'in_review';
+        updates.approved = formData.status === 'approved';
+        updates.is_published = formData.status === 'published';
       }
-      const {
-        error
-      } = await supabase.from('publications').update(updates).eq('id', publication.id);
+
+      const { error } = await supabase
+        .from('publications')
+        .update(updates)
+        .eq('id', publication.id);
+
       if (error) throw error;
+
       toast({
         title: "Publicación actualizada",
         description: "Los cambios han sido guardados correctamente."
@@ -232,15 +211,9 @@ export const PublicationDialog = ({
       <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogContent 
           className="w-[95vw] max-w-[600px] max-h-[90vh] overflow-hidden p-4 sm:p-6" 
-          onPointerDownOutside={(e) => {
-            e.preventDefault();
-          }}
-          onInteractOutside={(e) => {
-            e.preventDefault();
-          }}
-          onEscapeKeyDown={(e) => {
-            e.preventDefault();
-          }}
+          onPointerDownOutside={(e) => e.preventDefault()}
+          onInteractOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => e.preventDefault()}
           forceMount={true}
         >
           <DialogHeader>
@@ -248,26 +221,31 @@ export const PublicationDialog = ({
           </DialogHeader>
           <ScrollArea className="h-[calc(90vh-120px)] pr-2 sm:pr-4">
             <form onSubmit={handleSubmit} className="space-y-4">
-              {client && <div className="space-y-2 mb-4 border-b pb-4">
-                  {client.clientInfo?.branding && <a href={client.clientInfo.branding} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
-                      <LinkIcon className="h-4 w-4" />
-                      <span className="truncate">Branding</span>
-                    </a>}
-                  {client.instagram && <a href={`https://instagram.com/${client.instagram}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-pink-600 hover:text-pink-800 dark:text-pink-400 dark:hover:text-pink-300">
-                      <Instagram className="h-4 w-4" />
-                      <span className="truncate">@{client.instagram}</span>
-                    </a>}
-                </div>}
+              <PublicationHeader client={client} />
 
               <div className="space-y-2">
-                <Label htmlFor="name" className="text-sm sm:text-base">Nombre de la publicación</Label>
-                <Input id="name" value={name} onChange={e => setName(e.target.value)} disabled={isDesigner} readOnly={isDesigner} className="w-full text-sm sm:text-base" />
+                <Label htmlFor="name" className="text-sm sm:text-base">
+                  Nombre de la publicación
+                </Label>
+                <Input 
+                  id="name"
+                  value={formData.name}
+                  onChange={e => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                  disabled={isDesigner}
+                  readOnly={isDesigner}
+                  className="w-full text-sm sm:text-base"
+                />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label className="text-sm sm:text-base">Tipo de contenido</Label>
-                  <Select value={type} onValueChange={(value: 'reel' | 'carousel' | 'image') => setType(value)} disabled={isDesigner}>
+                  <Select 
+                    value={formData.type} 
+                    onValueChange={(value: 'reel' | 'carousel' | 'image') => 
+                      setFormData(prev => ({ ...prev, type: value }))}
+                    disabled={isDesigner}
+                  >
                     <SelectTrigger className="text-sm sm:text-base">
                       <SelectValue placeholder="Seleccionar tipo" />
                     </SelectTrigger>
@@ -279,113 +257,118 @@ export const PublicationDialog = ({
                   </Select>
                 </div>
 
-                <div className="space-y-2">
-                  <Label className="text-sm sm:text-base">Estado</Label>
-                  <Select value={status} onValueChange={setStatus}>
-                    <SelectTrigger className="text-sm sm:text-base">
-                      <SelectValue placeholder="Seleccionar estado" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="needs_recording">Falta grabar</SelectItem>
-                      <SelectItem value="needs_editing">Falta editar</SelectItem>
-                      <SelectItem value="in_editing">En edición</SelectItem>
-                      <SelectItem value="in_review">En revisión</SelectItem>
-                      <SelectItem value="approved">Aprobado</SelectItem>
-                      <SelectItem value="published">Publicado</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                <StatusSelect 
+                  value={formData.status}
+                  onChange={value => setFormData(prev => ({ ...prev, status: value }))}
+                />
 
-                <div className="space-y-2">
-                  <Label className="text-sm sm:text-base">Diseñador asignado</Label>
-                  <Select value={designer} onValueChange={setDesigner} disabled={isDesigner}>
-                    <SelectTrigger className="text-sm sm:text-base">
-                      <SelectValue placeholder="Seleccionar diseñador" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="no_designer">Sin diseñador</SelectItem>
-                      {designers.map(d => <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
+                <DesignerSelect 
+                  value={formData.designer}
+                  onChange={value => setFormData(prev => ({ ...prev, designer: value }))}
+                  designers={designers}
+                  disabled={isDesigner}
+                />
               </div>
 
               <div className="space-y-2">
                 <Label className="text-sm sm:text-base">Fecha de publicación</Label>
                 <div className="border rounded-lg p-2 max-h-[250px] overflow-y-auto">
-                  <Calendar mode="single" selected={selectedDate} onSelect={date => date && setSelectedDate(date)} locale={es} disabled={isDesigner} className="rounded-md border" />
+                  <Calendar
+                    mode="single"
+                    selected={formData.date}
+                    onSelect={date => date && setFormData(prev => ({ ...prev, date }))}
+                    locale={es}
+                    disabled={isDesigner}
+                    className="rounded-md border"
+                  />
                 </div>
                 <div className="text-xs sm:text-sm text-muted-foreground">
-                  Fecha seleccionada: {format(selectedDate, "EEEE d 'de' MMMM 'de' yyyy", {
-                  locale: es
-                })}
+                  Fecha seleccionada: {format(formData.date, "EEEE d 'de' MMMM 'de' yyyy", { locale: es })}
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label className="text-sm sm:text-base">Links</Label>
-                <Card>
-                  <CardContent className="p-3 sm:p-4 space-y-4">
-                    {!isDesigner && <div className="flex flex-col sm:flex-row gap
+              <PublicationLinks
+                links={formData.links}
+                onLinksChange={links => setFormData(prev => ({ ...prev, links }))}
+                isDesigner={isDesigner}
+              />
 
--2">
-                        <div className="flex-1">
-                          <Input placeholder="Etiqueta" value={newLinkLabel} onChange={e => setNewLinkLabel(e.target.value)} className="text-sm sm:text-base" />
-                        </div>
-                        <div className="flex-1">
-                          <Input placeholder="URL" value={newLinkUrl} onChange={e => setNewLinkUrl(e.target.value)} className="text-sm sm:text-base" />
-                        </div>
-                        <Button type="button" variant="outline" onClick={handleAddLink} className="w-full sm:w-auto">
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                      </div>}
-                    <ScrollArea className="h-[100px]">
-                      <div className="space-y-2">
-                        {links.map((link, index) => <div key={index} className="flex items-center gap-2 bg-secondary p-2 rounded text-sm">
-                            {!isDesigner && <Button type="button" variant="ghost" size="sm" onClick={() => {
-                          const newLinks = [...links];
-                          newLinks.splice(index, 1);
-                          setLinks(newLinks);
-                        }} className="text-destructive">
-                                <Trash2 className="h-4 w-4" />
-                              </Button>}
-                            <span className="flex-1 truncate">{link.label}</span>
-                            <a href={link.url} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-700">
-                              <ExternalLink className="h-4 w-4" />
-                            </a>
-                          </div>)}
-                      </div>
-                    </ScrollArea>
-                  </CardContent>
-                </Card>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="copywriting" className="text-sm sm:text-base">
+                    Copywriting
+                  </Label>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleCopyText(formData.copywriting, 'copywriting')}
+                    className="h-8"
+                  >
+                    {copyingCopywriting ? (
+                      <Check className="h-4 w-4 text-green-500" />
+                    ) : (
+                      <Copy className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+                <Textarea
+                  id="copywriting"
+                  value={formData.copywriting}
+                  onChange={e => setFormData(prev => ({ ...prev, copywriting: e.target.value }))}
+                  className="min-h-[150px] touch-manipulation text-sm sm:text-base"
+                  disabled={isDesigner}
+                  readOnly={isDesigner}
+                />
               </div>
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="copywriting" className="text-sm sm:text-base">Copywriting</Label>
-                  <Button type="button" variant="ghost" size="sm" onClick={() => handleCopyText(copywriting, 'copywriting')} className="h-8">
-                    {copyingCopywriting ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                  <Label htmlFor="description" className="text-sm sm:text-base">
+                    Descripción
+                  </Label>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleCopyText(formData.description, 'description')}
+                    className="h-8"
+                  >
+                    {copyingDescription ? (
+                      <Check className="h-4 w-4 text-green-500" />
+                    ) : (
+                      <Copy className="h-4 w-4" />
+                    )}
                   </Button>
                 </div>
-                <Textarea id="copywriting" value={copywriting} onChange={e => setCopywriting(e.target.value)} className="min-h-[150px] touch-manipulation text-sm sm:text-base" disabled={isDesigner} readOnly={isDesigner} />
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="description" className="text-sm sm:text-base">Descripción</Label>
-                  <Button type="button" variant="ghost" size="sm" onClick={() => handleCopyText(description, 'description')} className="h-8">
-                    {copyingDescription ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
-                  </Button>
-                </div>
-                <Textarea id="description" value={description} onChange={e => setDescription(e.target.value)} disabled={isDesigner} readOnly={isDesigner} className="min-h-[200px] touch-manipulation text-sm sm:text-base" />
+                <Textarea
+                  id="description"
+                  value={formData.description}
+                  onChange={e => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                  disabled={isDesigner}
+                  readOnly={isDesigner}
+                  className="min-h-[200px] touch-manipulation text-sm sm:text-base"
+                />
               </div>
 
               <div className="flex flex-col sm:flex-row justify-end gap-2 pt-4">
-                {onDelete && !isDesigner && <Button type="button" variant="destructive" onClick={onDelete} className="w-full sm:w-auto text-sm">
+                {onDelete && !isDesigner && (
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    onClick={onDelete}
+                    className="w-full sm:w-auto text-sm"
+                  >
                     <Trash2 className="h-4 w-4 mr-2" />
                     Eliminar
-                  </Button>}
-                <Button type="button" variant="outline" onClick={handleClose} className="w-full sm:w-auto text-sm">
+                  </Button>
+                )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleClose}
+                  className="w-full sm:w-auto text-sm"
+                >
                   Cerrar
                 </Button>
                 <Button type="submit" className="w-full sm:w-auto text-sm">
@@ -406,16 +389,21 @@ export const PublicationDialog = ({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={handleDiscardChanges} className="text-neutral-100 bg-gray-700 hover:bg-gray-600">
+            <AlertDialogCancel
+              onClick={handleDiscardChanges}
+              className="text-neutral-100 bg-gray-700 hover:bg-gray-600"
+            >
               Descartar cambios
             </AlertDialogCancel>
-            <AlertDialogAction onClick={() => {
-              const fakeEvent = {
-                preventDefault: () => {}
-              } as React.FormEvent;
-              handleSubmit(fakeEvent);
-              setShowConfirmDialog(false);
-            }}>
+            <AlertDialogAction
+              onClick={() => {
+                const fakeEvent = {
+                  preventDefault: () => {}
+                } as React.FormEvent;
+                handleSubmit(fakeEvent);
+                setShowConfirmDialog(false);
+              }}
+            >
               Guardar
             </AlertDialogAction>
           </AlertDialogFooter>
