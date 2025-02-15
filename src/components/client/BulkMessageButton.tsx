@@ -1,4 +1,3 @@
-
 import { MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
@@ -38,15 +37,27 @@ interface BulkMessageButtonProps {
 
 const createPaymentMessage = (clientName: string, paymentDay: number) => {
   const today = new Date();
-  const reminderDate = format(addDays(today, -5), "d", { locale: es });
-  
-  return `Buenos días ${clientName}, este es un mensaje automático.\n\n` +
-    `Les recordamos la fecha de pago del día ${reminderDate} al ${paymentDay} de cada mes.\n\n` +
-    `Los valores actualizados los vas a encontrar en el *siguiente link*:\n\n` +
-    `https://gleztin.com.ar/index.php/valores-de-redes-sociales/\n` +
-    `*Contraseña*: Gleztin (Con mayuscula al inicio)\n\n` +
-    `Si usted ya abono o la fecha de pago es incorrecta, avisenos porfavor.\n\n` +
-    `En caso de tener alguna duda o no poder abonarlo dentro de la fecha establecida por favor contáctarnos. Muchas gracias`;
+  let message = "";
+
+  if (paymentDay >= 1 && paymentDay <= 5) {
+    const reminderDate = format(addDays(today, -5), "d", { locale: es });
+    message = `*Buenos días, ${clientName}.*\n\n` +
+      `Este es un mensaje automático.\n\n` +
+      `Les recordamos la fecha de pago del día ${reminderDate} al ${paymentDay} de cada mes.\n\n`;
+  } else {
+    message = `*Buenos días, ${clientName}.*\n\n` +
+      `Este es un mensaje automático.\n\n` +
+      `Les recordamos que la fecha de pago es el día ${paymentDay} de cada mes.\n\n`;
+  }
+
+  message += `Los valores actualizados pueden encontrarlos en el siguiente enlace:\n` +
+    `*Link:* https://gleztin.com.ar/index.php/valores-de-redes-sociales/\n` +
+    `*Contraseña:* Gleztin (con mayúscula al inicio).\n\n` +
+    `Si ya realizó el pago o la fecha indicada es incorrecta, le pedimos que nos lo informe.\n\n` +
+    `En caso de tener alguna duda o no poder realizar el pago dentro de la fecha establecida, por favor, contáctenos.\n\n` +
+    `Muchas gracias.`;
+
+  return message;
 };
 
 export const BulkMessageButton = ({ 
