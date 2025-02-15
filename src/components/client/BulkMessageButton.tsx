@@ -1,14 +1,24 @@
+
 import { MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { addDays, format } from "date-fns";
 import { es } from "date-fns/locale";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useState } from "react";
 
 interface Client {
   name: string;
@@ -43,6 +53,9 @@ export const BulkMessageButton = ({
   searchQuery = "",
   showPendingPayments = false
 }: BulkMessageButtonProps) => {
+  const [isCustomMessageDialogOpen, setIsCustomMessageDialogOpen] = useState(false);
+  const [customMessage, setCustomMessage] = useState("");
+
   const getFilteredClients = () => {
     return clients.filter(client => {
       if (selectedPaymentDay && client.paymentDay !== selectedPaymentDay) {
@@ -119,23 +132,88 @@ export const BulkMessageButton = ({
     });
   };
 
+  const sendCustomMessage = () => {
+    const filteredClients = getFilteredClients();
+
+    if (filteredClients.length === 0) {
+      toast({
+        title: "No hay clientes",
+        description: "No hay clientes que cumplan con los filtros seleccionados",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!customMessage.trim()) {
+      toast({
+        title: "Mensaje vacío",
+        description: "Por favor, escribe un mensaje para enviar",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    filteredClients.forEach(client => {
+      if (client.phone) {
+        const personalizedMessage = customMessage.replace(/\{nombre\}/g, client.name);
+        const whatsappUrl = `https://wa.me/${client.phone.replace(/\D/g, '')}?text=${encodeURIComponent(personalizedMessage)}`;
+        window.open(whatsappUrl, '_blank');
+      }
+    });
+
+    toast({
+      title: "Mensajes enviados",
+      description: `Se abrieron ${filteredClients.length} chats de WhatsApp`,
+    });
+
+    setIsCustomMessageDialogOpen(false);
+    setCustomMessage("");
+  };
+
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button className="gap-2">
-          <MessageSquare className="h-4 w-4" />
-          Enviar Mensajes Masivos
-          {selectedPaymentDay && ` (Día ${selectedPaymentDay})`}
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={sendBulkMessages}>
-          Recordatorio de pago
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={sendValuesUpdateMessage}>
-          Actualización de valores
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button className="gap-2">
+            <MessageSquare className="h-4 w-4" />
+            Enviar Mensajes Masivos
+            {selectedPaymentDay && ` (Día ${selectedPaymentDay})`}
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={sendBulkMessages}>
+            Recordatorio de pago
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={sendValuesUpdateMessage}>
+            Actualización de valores
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setIsCustomMessageDialogOpen(true)}>
+            Mensaje personalizado
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <Dialog open={isCustomMessageDialogOpen} onOpenChange={setIsCustomMessageDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Enviar mensaje personalizado</DialogTitle>
+            <DialogDescription>
+              Escribe tu mensaje. Usa {"{nombre}"} para incluir el nombre del cliente.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Textarea
+              value={customMessage}
+              onChange={(e) => setCustomMessage(e.target.value)}
+              placeholder="Escribe tu mensaje aquí..."
+              className="min-h-[200px]"
+            />
+            <Button onClick={sendCustomMessage} className="w-full">
+              Enviar mensajes
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
