@@ -1,3 +1,4 @@
+
 import {
   Select,
   SelectContent,
@@ -8,12 +9,13 @@ import {
 
 interface ClientFilterProps {
   onFilterChange: (day: string) => void;
+  className?: string;
 }
 
-export const ClientFilter = ({ onFilterChange }: ClientFilterProps) => {
+export const ClientFilter = ({ onFilterChange, className }: ClientFilterProps) => {
   return (
     <Select onValueChange={onFilterChange}>
-      <SelectTrigger className="w-[200px]">
+      <SelectTrigger className={className || "w-[200px]"}>
         <SelectValue placeholder="Filtrar por día de pago" />
       </SelectTrigger>
       <SelectContent>

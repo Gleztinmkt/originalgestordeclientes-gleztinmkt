@@ -15,12 +15,14 @@ interface ManualClientFilterProps {
   clients: Client[];
   selectedClientIds: string[];
   onSelectedClientsChange: (selectedIds: string[]) => void;
+  className?: string;
 }
 
 export const ManualClientFilter = ({
   clients,
   selectedClientIds,
   onSelectedClientsChange,
+  className,
 }: ManualClientFilterProps) => {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -45,7 +47,7 @@ export const ManualClientFilter = ({
       <PopoverTrigger asChild>
         <Button 
           variant="outline" 
-          className="relative"
+          className={`relative ${className}`}
           size="sm"
         >
           Seleccionar clientes
