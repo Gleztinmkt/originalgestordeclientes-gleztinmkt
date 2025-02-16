@@ -76,7 +76,7 @@ export const ClientList = ({
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4">
-        {/* Primer grupo: Búsqueda */}
+        {/* Búsqueda */}
         <div className="relative w-full">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
@@ -87,51 +87,56 @@ export const ClientList = ({
           />
         </div>
 
-        {/* Segundo grupo: Filtros (en móvil se apilan) */}
-        <div className="flex flex-col sm:flex-row gap-2 w-full">
-          <ManualClientFilter 
-            clients={clients}
-            selectedClientIds={selectedClientIds}
-            onSelectedClientsChange={setSelectedClientIds}
-          />
-          <ClientFilter onFilterChange={setSelectedPaymentDay} />
-          <Button
-            variant={showPendingPayments ? "default" : "outline"}
-            onClick={() => setShowPendingPayments(!showPendingPayments)}
-            className="gap-2 text-sm w-full sm:w-auto"
-          >
-            <DollarSign className="h-4 w-4" />
-            <span>Pagos pendientes</span>
-          </Button>
-        </div>
-
-        {/* Tercer grupo: Controles de vista y mensajes */}
-        <div className="flex flex-col sm:flex-row gap-2 justify-end items-stretch sm:items-center">
-          <div className="flex items-center bg-background border border-input rounded-lg p-1 w-fit">
+        {/* Filtros (en línea en desktop, apilados en móvil) */}
+        <div className="flex flex-col gap-2 md:flex-row md:items-center md:space-x-2">
+          <div className="flex flex-col gap-2 md:flex-row md:flex-1">
+            <ManualClientFilter 
+              clients={clients}
+              selectedClientIds={selectedClientIds}
+              onSelectedClientsChange={setSelectedClientIds}
+              className="w-full md:w-auto"
+            />
+            <ClientFilter 
+              onFilterChange={setSelectedPaymentDay}
+              className="w-full md:w-auto"
+            />
             <Button
-              variant={viewMode === "list" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setViewMode("list")}
-              className="h-8 w-8 p-0"
+              variant={showPendingPayments ? "default" : "outline"}
+              onClick={() => setShowPendingPayments(!showPendingPayments)}
+              className="gap-2 text-sm w-full md:w-auto"
             >
-              <List className="h-4 w-4" />
-            </Button>
-            <Button
-              variant={viewMode === "grid" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setViewMode("grid")}
-              className="h-8 w-8 p-0"
-            >
-              <Grid3x3 className="h-4 w-4" />
+              <DollarSign className="h-4 w-4" />
+              <span>Pagos pendientes</span>
             </Button>
           </div>
-          <BulkMessageButton 
-            clients={clients}
-            selectedPaymentDay={selectedPaymentDay !== "all" ? parseInt(selectedPaymentDay) : undefined}
-            searchQuery={searchQuery}
-            showPendingPayments={showPendingPayments}
-            selectedClientIds={selectedClientIds}
-          />
+
+          <div className="flex flex-col gap-2 md:flex-row md:items-center">
+            <div className="flex items-center bg-background border border-input rounded-lg p-1 w-fit">
+              <Button
+                variant={viewMode === "list" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setViewMode("list")}
+                className="h-8 w-8 p-0"
+              >
+                <List className="h-4 w-4" />
+              </Button>
+              <Button
+                variant={viewMode === "grid" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setViewMode("grid")}
+                className="h-8 w-8 p-0"
+              >
+                <Grid3x3 className="h-4 w-4" />
+              </Button>
+            </div>
+            <BulkMessageButton 
+              clients={clients}
+              selectedPaymentDay={selectedPaymentDay !== "all" ? parseInt(selectedPaymentDay) : undefined}
+              searchQuery={searchQuery}
+              showPendingPayments={showPendingPayments}
+              selectedClientIds={selectedClientIds}
+            />
+          </div>
         </div>
       </div>
 
