@@ -12,9 +12,11 @@ import { MonthSelector } from "./MonthSelector";
 import { StatusLegend } from "./StatusLegend";
 import { Card } from "@/components/ui/card";
 import { CalendarIcon, CheckSquare, Square } from "lucide-react";
+
 interface PlanningCalendarProps {
   clients: Client[];
 }
+
 interface PlanningEntry {
   id: string;
   client_id: string;
@@ -23,6 +25,7 @@ interface PlanningEntry {
   description?: string;
   completed?: boolean;
 }
+
 export const PlanningCalendar = ({
   clients
 }: PlanningCalendarProps) => {
@@ -32,6 +35,7 @@ export const PlanningCalendar = ({
   const [description, setDescription] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
   const fetchPlanningData = async () => {
     try {
       const startOfMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
@@ -69,9 +73,11 @@ export const PlanningCalendar = ({
       });
     }
   };
+
   useEffect(() => {
     fetchPlanningData();
   }, [selectedDate]);
+
   const getStatusColor = (status: 'hacer' | 'no_hacer' | 'consultar') => {
     switch (status) {
       case 'hacer':
@@ -83,13 +89,13 @@ export const PlanningCalendar = ({
         return 'bg-yellow-500';
     }
   };
+
   const handleStatusChange = async (clientId: string, newStatus: 'hacer' | 'no_hacer' | 'consultar') => {
     if (isSaving) return;
     setIsSaving(true);
     const startOfMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
     const currentEntry = planningData[clientId];
     try {
-      // First, check if an entry already exists for this client and month
       const {
         data: existingData,
         error: checkError
@@ -97,13 +103,11 @@ export const PlanningCalendar = ({
       if (checkError) throw checkError;
       let result;
       if (existingData) {
-        // Update existing entry
         result = await supabase.from('publication_planning').update({
           status: newStatus,
           description: currentEntry?.description || ''
         }).eq('id', existingData.id).select().single();
       } else {
-        // Insert new entry
         result = await supabase.from('publication_planning').insert({
           client_id: clientId,
           month: startOfMonth.toISOString(),
@@ -113,7 +117,6 @@ export const PlanningCalendar = ({
       }
       if (result.error) throw result.error;
 
-      // Actualizar el estado local después de una actualización exitosa
       setPlanningData(prev => ({
         ...prev,
         [clientId]: {
@@ -139,13 +142,13 @@ export const PlanningCalendar = ({
       setIsSaving(false);
     }
   };
+
   const handleCompletion = async (clientId: string, completed: boolean) => {
     if (isSaving) return;
     setIsSaving(true);
     const startOfMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
     const currentEntry = planningData[clientId];
     try {
-      // First, check if an entry already exists for this client and month
       const {
         data: existingData,
         error: checkError
@@ -153,14 +156,12 @@ export const PlanningCalendar = ({
       if (checkError) throw checkError;
       let result;
       if (existingData) {
-        // Update existing entry
         result = await supabase.from('publication_planning').update({
           completed,
           status: currentEntry?.status || 'consultar',
           description: currentEntry?.description || ''
         }).eq('id', existingData.id).select().single();
       } else {
-        // Insert new entry
         result = await supabase.from('publication_planning').insert({
           client_id: clientId,
           month: startOfMonth.toISOString(),
@@ -171,7 +172,6 @@ export const PlanningCalendar = ({
       }
       if (result.error) throw result.error;
 
-      // Update local state after successful update
       setPlanningData(prev => ({
         ...prev,
         [clientId]: {
@@ -197,12 +197,12 @@ export const PlanningCalendar = ({
       setIsSaving(false);
     }
   };
+
   const handleDescriptionSave = async () => {
     if (!selectedClient || isSaving) return;
     setIsSaving(true);
     const startOfMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
     try {
-      // First, check if an entry already exists
       const {
         data: existingData,
         error: checkError
@@ -210,13 +210,11 @@ export const PlanningCalendar = ({
       if (checkError) throw checkError;
       let result;
       if (existingData) {
-        // Update existing entry
         result = await supabase.from('publication_planning').update({
           description,
           status: planningData[selectedClient]?.status || 'consultar'
         }).eq('id', existingData.id).select().single();
       } else {
-        // Insert new entry
         result = await supabase.from('publication_planning').insert({
           client_id: selectedClient,
           month: startOfMonth.toISOString(),
@@ -226,7 +224,6 @@ export const PlanningCalendar = ({
       }
       if (result.error) throw result.error;
 
-      // Actualizar el estado local después de una actualización exitosa
       setPlanningData(prev => ({
         ...prev,
         [selectedClient]: {
@@ -252,6 +249,7 @@ export const PlanningCalendar = ({
       setIsSaving(false);
     }
   };
+
   return <div className="space-y-6 p-6 bg-gray-50 dark:bg-gray-900 min-h-screen px-0">
       <MonthSelector selectedDate={selectedDate} onDateChange={setSelectedDate} />
       <StatusLegend getStatusColor={getStatusColor} />
@@ -268,7 +266,7 @@ export const PlanningCalendar = ({
           const status = planningData[client.id]?.status || 'consultar';
           const nextStatus = status === 'hacer' ? 'no_hacer' : status === 'no_hacer' ? 'consultar' : 'hacer';
           handleStatusChange(client.id, nextStatus);
-        }} className="p-3 hover:shadow-md transition-shadow duration-200 relative mx-0 px-[11px]">
+        }} className="p-3 hover:shadow-md transition-shadow duration-200 relative md:mx-0 md:px-[11px] mx-2 px-3">
               <div className="absolute top-2 right-2">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
