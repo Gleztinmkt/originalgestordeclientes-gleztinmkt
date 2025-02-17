@@ -17,6 +17,10 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuPortal,
 } from "@/components/ui/dropdown-menu";
 import { useState } from "react";
 
@@ -36,11 +40,11 @@ interface BulkMessageButtonProps {
   selectedClientIds?: string[];
 }
 
-const createPaymentMessage = (clientName: string, paymentDay: number) => {
+const createPaymentMessage = (clientName: string, paymentDay: number, includePeriod: boolean = false) => {
   const today = new Date();
   let message = "";
 
-  if (paymentDay >= 1 && paymentDay <= 5) {
+  if (includePeriod && paymentDay >= 1 && paymentDay <= 5) {
     const reminderDate = format(addDays(today, -5), "d", { locale: es });
     message = `*Buenos días, ${clientName}.*\n\n` +
       `Este es un mensaje automático.\n\n` +
@@ -73,7 +77,6 @@ export const BulkMessageButton = ({
 
   const getFilteredClients = () => {
     return clients.filter(client => {
-      // Filter by manually selected clients
       if (selectedClientIds.length > 0 && !selectedClientIds.includes(client.id)) {
         return false;
       }
@@ -94,7 +97,7 @@ export const BulkMessageButton = ({
     });
   };
 
-  const sendBulkMessages = () => {
+  const sendBulkMessages = (includePeriod: boolean = false) => {
     const filteredClients = getFilteredClients();
 
     if (filteredClients.length === 0) {
@@ -108,7 +111,7 @@ export const BulkMessageButton = ({
 
     filteredClients.forEach(client => {
       if (client.phone) {
-        const message = createPaymentMessage(client.name, client.paymentDay);
+        const message = createPaymentMessage(client.name, client.paymentDay, includePeriod);
         const whatsappUrl = `https://wa.me/${client.phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
         window.open(whatsappUrl, '_blank');
       }
@@ -201,9 +204,21 @@ export const BulkMessageButton = ({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={sendBulkMessages}>
-            Recordatorio de pago
-          </DropdownMenuItem>
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger>
+              Recordatorio de pago
+            </DropdownMenuSubTrigger>
+            <DropdownMenuPortal>
+              <DropdownMenuSubContent>
+                <DropdownMenuItem onClick={() => sendBulkMessages(true)}>
+                  Con plazo (5 días)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => sendBulkMessages(false)}>
+                  Sin plazo
+                </DropdownMenuItem>
+              </DropdownMenuSubContent>
+            </DropdownMenuPortal>
+          </DropdownMenuSub>
           <DropdownMenuItem onClick={sendValuesUpdateMessage}>
             Actualización de valores
           </DropdownMenuItem>
