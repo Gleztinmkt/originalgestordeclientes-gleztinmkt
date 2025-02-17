@@ -261,12 +261,14 @@ export const PlanningCalendar = ({
         const currentMonth = selectedDate.getMonth();
         const currentYear = selectedDate.getFullYear();
         const creationDate = new Date(currentYear, currentMonth, Math.max(1, paymentDay - 7));
-        return <Card key={client.id} onContextMenu={e => {
-          e.preventDefault();
-          const status = planningData[client.id]?.status || 'consultar';
-          const nextStatus = status === 'hacer' ? 'no_hacer' : status === 'no_hacer' ? 'consultar' : 'hacer';
-          handleStatusChange(client.id, nextStatus);
-        }} className="p-3 hover:shadow-md transition-shadow duration-200 relative md:mx-0 md:px-[11px] mx-2 px-3">
+        return <Card key={client.id} 
+                onContextMenu={e => {
+                  e.preventDefault();
+                  const status = planningData[client.id]?.status || 'consultar';
+                  const nextStatus = status === 'hacer' ? 'no_hacer' : status === 'no_hacer' ? 'consultar' : 'hacer';
+                  handleStatusChange(client.id, nextStatus);
+                }} 
+                className="hover:shadow-md transition-shadow duration-200 relative md:p-3 p-2 w-[calc(100vw-3rem)] md:w-auto mx-auto md:mx-0">
               <div className="absolute top-2 right-2">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
