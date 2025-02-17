@@ -252,7 +252,7 @@ export const PlanningCalendar = ({
       setIsSaving(false);
     }
   };
-  return <div className="space-y-6 p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+  return <div className="space-y-6 p-6 bg-gray-50 dark:bg-gray-900 min-h-screen px-0">
       <MonthSelector selectedDate={selectedDate} onDateChange={setSelectedDate} />
       <StatusLegend getStatusColor={getStatusColor} />
 
