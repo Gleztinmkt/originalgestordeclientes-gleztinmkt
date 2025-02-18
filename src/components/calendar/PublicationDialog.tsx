@@ -58,7 +58,6 @@ export const PublicationDialog = ({
   const [selectedDate, setSelectedDate] = useState<Date>(new Date(publication.date));
   const [copyingCopywriting, setCopyingCopywriting] = useState(false);
   const [copyingDescription, setCopyingDescription] = useState(false);
-  const [shouldKeepOpen, setShouldKeepOpen] = useState(true);
 
   const { data: userRole } = useQuery({
     queryKey: ['userRole'],
@@ -72,6 +71,18 @@ export const PublicationDialog = ({
       return roleData?.role || null;
     }
   });
+
+  const isDesigner = userRole === 'designer';
+
+  const hasChanges = useCallback(() => {
+    return name !== publication.name || 
+           type !== publication.type || 
+           description !== (publication.description || "") || 
+           copywriting !== (publication.copywriting || "") || 
+           designer !== (publication.designer || "no_designer") || 
+           status !== (publication.needs_recording ? 'needs_recording' : publication.needs_editing ? 'needs_editing' : publication.in_editing ? 'in_editing' : publication.in_review ? 'in_review' : publication.approved ? 'approved' : publication.is_published ? 'published' : 'needs_recording') || 
+           JSON.stringify(links) !== (publication.links || "[]");
+  }, [name, type, description, copywriting, designer, status, links, publication]);
 
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -101,22 +112,6 @@ export const PublicationDialog = ({
     };
   }, [open, hasChanges, onOpenChange]);
 
-  useEffect(() => {
-    setShouldKeepOpen(open);
-  }, [open]);
-
-  const isDesigner = userRole === 'designer';
-
-  const hasChanges = useCallback(() => {
-    return name !== publication.name || 
-           type !== publication.type || 
-           description !== (publication.description || "") || 
-           copywriting !== (publication.copywriting || "") || 
-           designer !== (publication.designer || "no_designer") || 
-           status !== (publication.needs_recording ? 'needs_recording' : publication.needs_editing ? 'needs_editing' : publication.in_editing ? 'in_editing' : publication.in_review ? 'in_review' : publication.approved ? 'approved' : publication.is_published ? 'published' : 'needs_recording') || 
-           JSON.stringify(links) !== (publication.links || "[]");
-  }, [name, type, description, copywriting, designer, status, links, publication]);
-
   const handleOpenChange = (nextOpen: boolean) => {
     if (!nextOpen && hasChanges()) {
       setShowConfirmDialog(true);
@@ -132,46 +127,6 @@ export const PublicationDialog = ({
     }
     
     onOpenChange(nextOpen);
-  };
-
-  const handleClose = () => {
-    if (hasChanges()) {
-      setShowConfirmDialog(true);
-    } else {
-      onOpenChange(false);
-    }
-  };
-
-  const handleDiscardChanges = () => {
-    setName(publication.name);
-    setType(publication.type as 'reel' | 'carousel' | 'image');
-    setDescription(publication.description || "");
-    setCopywriting(publication.copywriting || "");
-    setDesigner(publication.designer || "no_designer");
-    setStatus(publication.needs_recording ? 'needs_recording' : publication.needs_editing ? 'needs_editing' : publication.in_editing ? 'in_editing' : publication.in_review ? 'in_review' : publication.approved ? 'approved' : publication.is_published ? 'published' : 'needs_recording');
-    setSelectedDate(new Date(publication.date));
-    setLinks(() => {
-      if (!publication.links) return [];
-      try {
-        return JSON.parse(publication.links);
-      } catch (e) {
-        console.error('Error parsing links:', e);
-        return [];
-      }
-    });
-    setShowConfirmDialog(false);
-    onOpenChange(false);
-  };
-
-  const handleAddLink = () => {
-    if (newLinkLabel && newLinkUrl) {
-      setLinks([...links, {
-        label: newLinkLabel,
-        url: newLinkUrl
-      }]);
-      setNewLinkLabel("");
-      setNewLinkUrl("");
-    }
   };
 
   const handleSubmit = async (e?: React.FormEvent) => {
@@ -214,6 +169,14 @@ export const PublicationDialog = ({
         description: "No se pudo actualizar la publicación. Por favor, intenta de nuevo.",
         variant: "destructive"
       });
+    }
+  };
+
+  const handleAddLink = () => {
+    if (newLinkLabel && newLinkUrl) {
+      setLinks([...links, { label: newLinkLabel, url: newLinkUrl }]);
+      setNewLinkLabel("");
+      setNewLinkUrl("");
     }
   };
 
