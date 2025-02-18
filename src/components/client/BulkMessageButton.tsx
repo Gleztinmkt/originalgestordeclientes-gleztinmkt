@@ -42,10 +42,13 @@ interface BulkMessageButtonProps {
 
 const createPaymentMessage = (clientName: string, paymentDay: number, includePeriod: boolean = false) => {
   const today = new Date();
+  const currentMonth = today.getMonth();
+  const currentYear = today.getFullYear();
   let message = "";
 
   if (includePeriod) {
-    const reminderDate = format(addDays(today, -5), "d", { locale: es });
+    const paymentDate = new Date(currentYear, currentMonth, paymentDay);
+    const reminderDate = format(addDays(paymentDate, -5), "d", { locale: es });
     message = `*Buenos días, ${clientName}.*\n\n` +
       `Este es un mensaje automático.\n\n` +
       `Les recordamos la fecha de pago del día ${reminderDate} al ${paymentDay} de cada mes.\n\n`;
