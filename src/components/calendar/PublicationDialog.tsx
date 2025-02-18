@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
 import { ExternalLink, Link as LinkIcon, Plus, Trash2, Instagram, Copy, Check } from "lucide-react";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Publication } from "../client/publication/types";
 import { Client } from "../types/client";
 import { toast } from "@/hooks/use-toast";
@@ -15,8 +15,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Calendar } from "@/components/ui/calendar";
 import { es } from "date-fns/locale";
-import { format } from "date-fns";
+import { format, addDays } from "date-fns";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+
 interface PublicationDialogProps {
   publication: Publication;
   client?: Client;
@@ -26,6 +27,7 @@ interface PublicationDialogProps {
   onDelete?: () => void;
   designers?: any[];
 }
+
 export const PublicationDialog = ({
   publication,
   client,
@@ -41,10 +43,7 @@ export const PublicationDialog = ({
   const [copywriting, setCopywriting] = useState(publication.copywriting || "");
   const [designer, setDesigner] = useState(publication.designer || "no_designer");
   const [status, setStatus] = useState(publication.needs_recording ? 'needs_recording' : publication.needs_editing ? 'needs_editing' : publication.in_editing ? 'in_editing' : publication.in_review ? 'in_review' : publication.approved ? 'approved' : publication.is_published ? 'published' : 'needs_recording');
-  const [links, setLinks] = useState<Array<{
-    label: string;
-    url: string;
-  }>>(() => {
+  const [links, setLinks] = useState<Array<{ label: string; url: string; }>>(() => {
     if (!publication.links) return [];
     try {
       return JSON.parse(publication.links);
@@ -59,32 +58,44 @@ export const PublicationDialog = ({
   const [selectedDate, setSelectedDate] = useState<Date>(new Date(publication.date));
   const [copyingCopywriting, setCopyingCopywriting] = useState(false);
   const [copyingDescription, setCopyingDescription] = useState(false);
-  const {
-    data: userRole
-  } = useQuery({
+  const dialogOpenRef = useRef(open);
+
+  const { data: userRole } = useQuery({
     queryKey: ['userRole'],
     queryFn: async () => {
-      const {
-        data: {
-          user
-        }
-      } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) return null;
-      const {
-        data: roleData
-      } = await supabase.from('user_roles').select('role').eq('user_id', user.id).single();
+      const { data: roleData } = await supabase.from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .single();
       return roleData?.role || null;
     }
   });
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && dialogOpenRef.current) {
+        onOpenChange(true);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [onOpenChange]);
+
+  useEffect(() => {
+    dialogOpenRef.current = open;
+  }, [open]);
+
   const isDesigner = userRole === 'designer';
   const hasChanges = useCallback(() => {
     return name !== publication.name || type !== publication.type || description !== (publication.description || "") || copywriting !== (publication.copywriting || "") || designer !== (publication.designer || "no_designer") || status !== (publication.needs_recording ? 'needs_recording' : publication.needs_editing ? 'needs_editing' : publication.in_editing ? 'in_editing' : publication.in_review ? 'in_review' : publication.approved ? 'approved' : publication.is_published ? 'published' : 'needs_recording') || JSON.stringify(links) !== (publication.links || "[]");
   }, [name, type, description, copywriting, designer, status, links, publication]);
-  useEffect(() => {
-    return () => {
-      // Cleanup
-    };
-  }, []);
+
   const handleOpenChange = (open: boolean) => {
     if (!open && hasChanges()) {
       setShowConfirmDialog(true);
@@ -92,6 +103,7 @@ export const PublicationDialog = ({
       onOpenChange(open);
     }
   };
+
   const handleClose = () => {
     if (hasChanges()) {
       setShowConfirmDialog(true);
@@ -99,6 +111,7 @@ export const PublicationDialog = ({
       onOpenChange(false);
     }
   };
+
   const handleDiscardChanges = () => {
     setName(publication.name);
     setType(publication.type as 'reel' | 'carousel' | 'image');
@@ -119,6 +132,7 @@ export const PublicationDialog = ({
     setShowConfirmDialog(false);
     onOpenChange(false);
   };
+
   const handleAddLink = () => {
     if (newLinkLabel && newLinkUrl) {
       setLinks([...links, {
@@ -129,6 +143,7 @@ export const PublicationDialog = ({
       setNewLinkUrl("");
     }
   };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -155,9 +170,7 @@ export const PublicationDialog = ({
         updates.approved = status === 'approved';
         updates.is_published = status === 'published';
       }
-      const {
-        error
-      } = await supabase.from('publications').update(updates).eq('id', publication.id);
+      const { error } = await supabase.from('publications').update(updates).eq('id', publication.id);
       if (error) throw error;
       toast({
         title: "Publicación actualizada",
@@ -173,6 +186,7 @@ export const PublicationDialog = ({
       });
     }
   };
+
   const handleCopyText = async (text: string, type: 'copywriting' | 'description') => {
     try {
       await navigator.clipboard.writeText(text);
@@ -195,9 +209,22 @@ export const PublicationDialog = ({
       });
     }
   };
-  return <>
-      <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent className="w-[95vw] max-w-[600px] max-h-[90vh] overflow-hidden p-4 sm:p-6" onPointerDownOutside={e => e.preventDefault()} onInteractOutside={e => e.preventDefault()} onEscapeKeyDown={e => e.preventDefault()}>
+
+  return (
+    <>
+      <Dialog 
+        open={open} 
+        onOpenChange={handleOpenChange}
+        modal={true}
+        forceMount
+      >
+        <DialogContent 
+          className="w-[95vw] max-w-[600px] max-h-[90vh] overflow-hidden p-4 sm:p-6" 
+          onPointerDownOutside={e => e.preventDefault()}
+          onInteractOutside={e => e.preventDefault()}
+          onEscapeKeyDown={e => e.preventDefault()}
+          forceMount
+        >
           <DialogHeader>
             <DialogTitle className="text-lg sm:text-xl">Editar Publicación</DialogTitle>
           </DialogHeader>
@@ -374,5 +401,6 @@ export const PublicationDialog = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </>;
+    </>
+  );
 };
