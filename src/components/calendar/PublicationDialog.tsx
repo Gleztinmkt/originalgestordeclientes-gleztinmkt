@@ -74,15 +74,32 @@ export const PublicationDialog = ({
   });
 
   useEffect(() => {
-    const handleVisibility = () => {
-      if (document.visibilityState === 'visible' && shouldKeepOpen) {
+    const handleVisibilityChange = () => {
+      if (!open) return;
+      
+      const timer = setTimeout(() => {
         onOpenChange(true);
-      }
+      }, 100);
+
+      return () => clearTimeout(timer);
     };
 
-    document.addEventListener('visibilitychange', handleVisibility);
-    return () => document.removeEventListener('visibilitychange', handleVisibility);
-  }, [shouldKeepOpen, onOpenChange]);
+    window.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('blur', handleVisibilityChange);
+    window.addEventListener('focus', handleVisibilityChange);
+    window.addEventListener('beforeunload', (e) => {
+      if (open && hasChanges()) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    });
+
+    return () => {
+      window.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('blur', handleVisibilityChange);
+      window.removeEventListener('focus', handleVisibilityChange);
+    };
+  }, [open, hasChanges, onOpenChange]);
 
   useEffect(() => {
     setShouldKeepOpen(open);
@@ -103,10 +120,18 @@ export const PublicationDialog = ({
   const handleOpenChange = (nextOpen: boolean) => {
     if (!nextOpen && hasChanges()) {
       setShowConfirmDialog(true);
-    } else {
-      setShouldKeepOpen(nextOpen);
-      onOpenChange(nextOpen);
+      return;
     }
+    
+    if (!nextOpen) {
+      const shouldActuallyClose = !hasChanges();
+      if (!shouldActuallyClose) {
+        onOpenChange(true);
+        return;
+      }
+    }
+    
+    onOpenChange(nextOpen);
   };
 
   const handleClose = () => {
@@ -217,18 +242,17 @@ export const PublicationDialog = ({
 
   return (
     <>
-      <Dialog open={open} onOpenChange={handleOpenChange}>
+      <Dialog 
+        open={open} 
+        onOpenChange={handleOpenChange}
+        modal={true}
+      >
         <DialogContent 
           className="w-[95vw] max-w-[600px] max-h-[90vh] overflow-y-auto p-4 sm:p-6"
-          onPointerDownOutside={(e) => {
-            e.preventDefault();
-          }}
-          onInteractOutside={(e) => {
-            e.preventDefault();
-          }}
-          onEscapeKeyDown={(e) => {
-            e.preventDefault();
-          }}
+          onPointerDownOutside={(e) => e.preventDefault()}
+          onInteractOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => e.preventDefault()}
+          onOpenAutoFocus={(e) => e.preventDefault()}
         >
           <DialogHeader>
             <DialogTitle className="text-lg sm:text-xl">Editar Publicación</DialogTitle>
@@ -493,7 +517,14 @@ export const PublicationDialog = ({
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+      <AlertDialog 
+        open={showConfirmDialog} 
+        onOpenChange={(open) => {
+          if (!open) {
+            setShowConfirmDialog(false);
+          }
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>¿Guardar cambios?</AlertDialogTitle>
@@ -533,7 +564,6 @@ export const PublicationDialog = ({
                     return [];
                   }
                 });
-                setShouldKeepOpen(false);
                 setShowConfirmDialog(false);
                 onOpenChange(false);
               }}
