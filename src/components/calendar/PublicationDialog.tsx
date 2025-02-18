@@ -215,15 +215,13 @@ export const PublicationDialog = ({
       <Dialog 
         open={open} 
         onOpenChange={handleOpenChange}
-        modal={true}
-        forceMount
+        modal
       >
         <DialogContent 
           className="w-[95vw] max-w-[600px] max-h-[90vh] overflow-hidden p-4 sm:p-6" 
           onPointerDownOutside={e => e.preventDefault()}
           onInteractOutside={e => e.preventDefault()}
           onEscapeKeyDown={e => e.preventDefault()}
-          forceMount
         >
           <DialogHeader>
             <DialogTitle className="text-lg sm:text-xl">Editar Publicación</DialogTitle>
