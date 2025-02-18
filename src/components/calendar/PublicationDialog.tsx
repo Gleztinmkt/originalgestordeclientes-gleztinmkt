@@ -149,8 +149,8 @@ export const PublicationDialog = ({
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     try {
       const updates: any = {};
       if (isDesigner) {
@@ -483,7 +483,7 @@ export const PublicationDialog = ({
               </Button>
               <Button
                 type="submit"
-                onClick={handleSubmit}
+                onClick={() => handleSubmit()}
                 className="w-full sm:w-auto text-sm"
               >
                 Guardar cambios
