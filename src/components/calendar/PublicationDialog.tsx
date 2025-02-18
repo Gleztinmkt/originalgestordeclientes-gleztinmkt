@@ -1,5 +1,4 @@
-
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
 import { ExternalLink, Link as LinkIcon, Plus, Trash2, Instagram, Copy, Check } from "lucide-react";
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Publication } from "../client/publication/types";
 import { Client } from "../types/client";
 import { toast } from "@/hooks/use-toast";
@@ -16,7 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Calendar } from "@/components/ui/calendar";
 import { es } from "date-fns/locale";
-import { format, addDays } from "date-fns";
+import { format } from "date-fns";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 interface PublicationDialogProps {
@@ -59,7 +58,7 @@ export const PublicationDialog = ({
   const [selectedDate, setSelectedDate] = useState<Date>(new Date(publication.date));
   const [copyingCopywriting, setCopyingCopywriting] = useState(false);
   const [copyingDescription, setCopyingDescription] = useState(false);
-  const [isVisible, setIsVisible] = useState(true);
+  const [shouldKeepOpen, setShouldKeepOpen] = useState(true);
 
   const { data: userRole } = useQuery({
     queryKey: ['userRole'],
@@ -75,32 +74,22 @@ export const PublicationDialog = ({
   });
 
   useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        setIsVisible(true);
-      } else {
-        setIsVisible(false);
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible' && shouldKeepOpen) {
+        onOpenChange(true);
       }
     };
 
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('blur', () => setIsVisible(false));
-    window.addEventListener('focus', () => setIsVisible(true));
-    
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('blur', () => setIsVisible(false));
-      window.removeEventListener('focus', () => setIsVisible(true));
-    };
-  }, []);
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [shouldKeepOpen, onOpenChange]);
 
   useEffect(() => {
-    if (isVisible && !open) {
-      onOpenChange(true);
-    }
-  }, [isVisible, open, onOpenChange]);
+    setShouldKeepOpen(open);
+  }, [open]);
 
   const isDesigner = userRole === 'designer';
+
   const hasChanges = useCallback(() => {
     return name !== publication.name || 
            type !== publication.type || 
@@ -111,11 +100,12 @@ export const PublicationDialog = ({
            JSON.stringify(links) !== (publication.links || "[]");
   }, [name, type, description, copywriting, designer, status, links, publication]);
 
-  const handleOpenChange = (open: boolean) => {
-    if (!open && hasChanges()) {
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen && hasChanges()) {
       setShowConfirmDialog(true);
     } else {
-      onOpenChange(open);
+      setShouldKeepOpen(nextOpen);
+      onOpenChange(nextOpen);
     }
   };
 
@@ -227,20 +217,22 @@ export const PublicationDialog = ({
 
   return (
     <>
-      <Sheet 
-        open={open} 
-        onOpenChange={handleOpenChange}
-      >
-        <SheetContent 
-          side="right"
-          className="w-[95vw] max-w-[600px] h-full overflow-y-auto p-4 sm:p-6"
-          onPointerDownOutside={e => e.preventDefault()}
-          onInteractOutside={e => e.preventDefault()}
-          onEscapeKeyDown={e => e.preventDefault()}
+      <Dialog open={open} onOpenChange={handleOpenChange}>
+        <DialogContent 
+          className="w-[95vw] max-w-[600px] max-h-[90vh] overflow-y-auto p-4 sm:p-6"
+          onPointerDownOutside={(e) => {
+            e.preventDefault();
+          }}
+          onInteractOutside={(e) => {
+            e.preventDefault();
+          }}
+          onEscapeKeyDown={(e) => {
+            e.preventDefault();
+          }}
         >
-          <SheetHeader>
-            <SheetTitle className="text-lg sm:text-xl">Editar Publicación</SheetTitle>
-          </SheetHeader>
+          <DialogHeader>
+            <DialogTitle className="text-lg sm:text-xl">Editar Publicación</DialogTitle>
+          </DialogHeader>
           <div className="space-y-6 mt-4">
             {client && (
               <div className="space-y-2 mb-4 border-b pb-4">
@@ -498,8 +490,8 @@ export const PublicationDialog = ({
               </Button>
             </div>
           </div>
-        </SheetContent>
-      </Sheet>
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
         <AlertDialogContent>
@@ -532,7 +524,6 @@ export const PublicationDialog = ({
                     ? 'published'
                     : 'needs_recording'
                 );
-                setSelectedDate(new Date(publication.date));
                 setLinks(() => {
                   if (!publication.links) return [];
                   try {
@@ -542,19 +533,16 @@ export const PublicationDialog = ({
                     return [];
                   }
                 });
+                setShouldKeepOpen(false);
                 setShowConfirmDialog(false);
                 onOpenChange(false);
               }}
-              className="text-neutral-100 bg-gray-700 hover:bg-gray-600"
             >
               Descartar cambios
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
-                const fakeEvent = {
-                  preventDefault: () => {},
-                } as React.FormEvent;
-                handleSubmit(fakeEvent);
+                handleSubmit();
                 setShowConfirmDialog(false);
               }}
             >
