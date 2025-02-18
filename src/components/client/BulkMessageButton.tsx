@@ -44,7 +44,7 @@ const createPaymentMessage = (clientName: string, paymentDay: number, includePer
   const today = new Date();
   let message = "";
 
-  if (includePeriod && paymentDay >= 1 && paymentDay <= 5) {
+  if (includePeriod) {
     const reminderDate = format(addDays(today, -5), "d", { locale: es });
     message = `*Buenos días, ${clientName}.*\n\n` +
       `Este es un mensaje automático.\n\n` +
