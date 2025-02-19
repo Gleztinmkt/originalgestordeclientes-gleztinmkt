@@ -269,7 +269,12 @@ export const PublicationDialog = ({
   return (
     <>
       <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent className="sm:max-w-[425px] max-h-[80vh] overflow-y-auto dark:bg-gray-900">
+        <DialogContent 
+          className="sm:max-w-[425px] max-h-[80vh] overflow-y-auto dark:bg-gray-900"
+          onPointerDownOutside={(e) => {
+            e.preventDefault();
+          }}
+        >
           <DialogHeader>
             <div className="flex items-center justify-between">
               <DialogTitle className="text-xl font-bold dark:text-white">
