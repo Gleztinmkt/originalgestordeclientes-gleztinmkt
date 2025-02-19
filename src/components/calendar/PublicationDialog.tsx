@@ -15,23 +15,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Calendar } from "@/components/ui/calendar";
 import { es } from "date-fns/locale";
 import { format } from "date-fns";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 interface PublicationDialogProps {
   publication: Publication;
   client?: Client;
@@ -41,7 +26,6 @@ interface PublicationDialogProps {
   onDelete?: () => void;
   designers?: any[];
 }
-
 export const PublicationDialog = ({
   publication,
   client,
@@ -75,7 +59,6 @@ export const PublicationDialog = ({
   const [selectedDate, setSelectedDate] = useState<Date>(new Date(publication.date));
   const [copyingCopywriting, setCopyingCopywriting] = useState(false);
   const [copyingDescription, setCopyingDescription] = useState(false);
-
   const handleOpenSocialLinks = () => {
     if (!client?.clientInfo?.socialNetworks) {
       toast({
@@ -85,7 +68,6 @@ export const PublicationDialog = ({
       });
       return;
     }
-
     client.clientInfo.socialNetworks.forEach(network => {
       if (network.username) {
         let url;
@@ -115,7 +97,6 @@ export const PublicationDialog = ({
       }
     });
   };
-
   const {
     data: userRole
   } = useQuery({
@@ -133,18 +114,15 @@ export const PublicationDialog = ({
       return roleData?.role || null;
     }
   });
-
   const isDesigner = userRole === 'designer';
   const hasChanges = useCallback(() => {
     return name !== publication.name || type !== publication.type || description !== (publication.description || "") || copywriting !== (publication.copywriting || "") || designer !== (publication.designer || "no_designer") || status !== (publication.needs_recording ? 'needs_recording' : publication.needs_editing ? 'needs_editing' : publication.in_editing ? 'in_editing' : publication.in_review ? 'in_review' : publication.approved ? 'approved' : publication.is_published ? 'published' : 'needs_recording') || JSON.stringify(links) !== (publication.links || "[]");
   }, [name, type, description, copywriting, designer, status, links, publication]);
-
   useEffect(() => {
     return () => {
       // Cleanup
     };
   }, []);
-
   const handleOpenChange = (open: boolean) => {
     if (!open && hasChanges()) {
       setShowConfirmDialog(true);
@@ -152,7 +130,6 @@ export const PublicationDialog = ({
       onOpenChange(open);
     }
   };
-
   const handleClose = () => {
     if (hasChanges()) {
       setShowConfirmDialog(true);
@@ -160,7 +137,6 @@ export const PublicationDialog = ({
       onOpenChange(false);
     }
   };
-
   const handleDiscardChanges = () => {
     setName(publication.name);
     setType(publication.type as 'reel' | 'carousel' | 'image');
@@ -181,7 +157,6 @@ export const PublicationDialog = ({
     setShowConfirmDialog(false);
     onOpenChange(false);
   };
-
   const handleAddLink = () => {
     if (newLinkLabel && newLinkUrl) {
       setLinks([...links, {
@@ -192,7 +167,6 @@ export const PublicationDialog = ({
       setNewLinkUrl("");
     }
   };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -237,7 +211,6 @@ export const PublicationDialog = ({
       });
     }
   };
-
   const handleCopyText = async (text: string, type: 'copywriting' | 'description') => {
     try {
       await navigator.clipboard.writeText(text);
@@ -260,9 +233,7 @@ export const PublicationDialog = ({
       });
     }
   };
-
-  return (
-    <>
+  return <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-[425px] max-h-[80vh] overflow-y-auto dark:bg-gray-900">
           <DialogHeader>
@@ -270,17 +241,9 @@ export const PublicationDialog = ({
               <DialogTitle className="text-xl font-bold dark:text-white">
                 Editar Publicación
               </DialogTitle>
-              {client && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleOpenSocialLinks}
-                  className="ml-2"
-                  title="Abrir redes sociales"
-                >
+              {client && <Button variant="ghost" size="icon" onClick={handleOpenSocialLinks} className="ml-2" title="Abrir redes sociales">
                   <Share2 className="h-4 w-4" />
-                </Button>
-              )}
+                </Button>}
             </div>
           </DialogHeader>
 
@@ -313,7 +276,7 @@ export const PublicationDialog = ({
                   </Select>
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-2 mx-0 my-[23px]">
                   <Label className="text-sm sm:text-base">Estado</Label>
                   <Select value={status} onValueChange={setStatus}>
                     <SelectTrigger className="text-sm sm:text-base">
@@ -453,6 +416,5 @@ export const PublicationDialog = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </>
-  );
+    </>;
 };
