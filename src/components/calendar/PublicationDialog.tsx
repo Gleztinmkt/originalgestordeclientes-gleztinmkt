@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useState, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -6,8 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
-import { ExternalLink, Link as LinkIcon, Plus, Trash2, Instagram, Copy, Check } from "lucide-react";
-import { useState, useCallback, useEffect } from "react";
+import { ExternalLink, Link as LinkIcon, Plus, Trash2, Copy, Check, Share2 } from "lucide-react";
 import { Publication } from "../client/publication/types";
 import { Client } from "../types/client";
 import { toast } from "@/hooks/use-toast";
@@ -16,7 +15,23 @@ import { useQuery } from "@tanstack/react-query";
 import { Calendar } from "@/components/ui/calendar";
 import { es } from "date-fns/locale";
 import { format } from "date-fns";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
 interface PublicationDialogProps {
   publication: Publication;
   client?: Client;
@@ -26,6 +41,7 @@ interface PublicationDialogProps {
   onDelete?: () => void;
   designers?: any[];
 }
+
 export const PublicationDialog = ({
   publication,
   client,
@@ -59,6 +75,47 @@ export const PublicationDialog = ({
   const [selectedDate, setSelectedDate] = useState<Date>(new Date(publication.date));
   const [copyingCopywriting, setCopyingCopywriting] = useState(false);
   const [copyingDescription, setCopyingDescription] = useState(false);
+
+  const handleOpenSocialLinks = () => {
+    if (!client?.clientInfo?.socialNetworks) {
+      toast({
+        title: "Sin redes sociales",
+        description: "Este cliente no tiene redes sociales configuradas.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    client.clientInfo.socialNetworks.forEach(network => {
+      if (network.username) {
+        let url;
+        switch (network.platform) {
+          case 'instagram':
+            url = `https://instagram.com/${network.username}`;
+            break;
+          case 'facebook':
+            url = `https://facebook.com/${network.username}`;
+            break;
+          case 'tiktok':
+            url = `https://tiktok.com/@${network.username}`;
+            break;
+          case 'linkedin':
+            url = `https://linkedin.com/in/${network.username}`;
+            break;
+          case 'twitter':
+            url = `https://twitter.com/${network.username}`;
+            break;
+          case 'youtube':
+            url = `https://youtube.com/@${network.username}`;
+            break;
+          default:
+            return;
+        }
+        window.open(url, '_blank');
+      }
+    });
+  };
+
   const {
     data: userRole
   } = useQuery({
@@ -76,15 +133,18 @@ export const PublicationDialog = ({
       return roleData?.role || null;
     }
   });
+
   const isDesigner = userRole === 'designer';
   const hasChanges = useCallback(() => {
     return name !== publication.name || type !== publication.type || description !== (publication.description || "") || copywriting !== (publication.copywriting || "") || designer !== (publication.designer || "no_designer") || status !== (publication.needs_recording ? 'needs_recording' : publication.needs_editing ? 'needs_editing' : publication.in_editing ? 'in_editing' : publication.in_review ? 'in_review' : publication.approved ? 'approved' : publication.is_published ? 'published' : 'needs_recording') || JSON.stringify(links) !== (publication.links || "[]");
   }, [name, type, description, copywriting, designer, status, links, publication]);
+
   useEffect(() => {
     return () => {
       // Cleanup
     };
   }, []);
+
   const handleOpenChange = (open: boolean) => {
     if (!open && hasChanges()) {
       setShowConfirmDialog(true);
@@ -92,6 +152,7 @@ export const PublicationDialog = ({
       onOpenChange(open);
     }
   };
+
   const handleClose = () => {
     if (hasChanges()) {
       setShowConfirmDialog(true);
@@ -99,6 +160,7 @@ export const PublicationDialog = ({
       onOpenChange(false);
     }
   };
+
   const handleDiscardChanges = () => {
     setName(publication.name);
     setType(publication.type as 'reel' | 'carousel' | 'image');
@@ -119,6 +181,7 @@ export const PublicationDialog = ({
     setShowConfirmDialog(false);
     onOpenChange(false);
   };
+
   const handleAddLink = () => {
     if (newLinkLabel && newLinkUrl) {
       setLinks([...links, {
@@ -129,6 +192,7 @@ export const PublicationDialog = ({
       setNewLinkUrl("");
     }
   };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -173,6 +237,7 @@ export const PublicationDialog = ({
       });
     }
   };
+
   const handleCopyText = async (text: string, type: 'copywriting' | 'description') => {
     try {
       await navigator.clipboard.writeText(text);
@@ -195,13 +260,30 @@ export const PublicationDialog = ({
       });
     }
   };
-  return <>
+
+  return (
+    <>
       <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent className="w-[95vw] max-w-[600px] max-h-[90vh] overflow-hidden p-4 sm:p-6" onPointerDownOutside={e => e.preventDefault()} onInteractOutside={e => e.preventDefault()} onEscapeKeyDown={e => e.preventDefault()}>
+        <DialogContent className="sm:max-w-[425px] max-h-[80vh] overflow-y-auto dark:bg-gray-900" onPointerDownOutside={e => e.preventDefault()} onInteractOutside={e => e.preventDefault()} onEscapeKeyDown={e => e.preventDefault()}>
           <DialogHeader>
-            <DialogTitle className="text-lg sm:text-xl">Editar Publicación</DialogTitle>
+            <div className="flex items-center justify-between">
+              <DialogTitle className="text-xl font-bold dark:text-white">
+                Editar Publicación
+              </DialogTitle>
+              {client && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleOpenSocialLinks}
+                  className="ml-2"
+                  title="Abrir redes sociales"
+                >
+                  <Share2 className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
           </DialogHeader>
-          <ScrollArea className="h-[calc(90vh-120px)] pr-2 sm:pr-4">
+          <ScrollArea className="h-[calc(80vh-120px)] pr-2 sm:pr-4">
             <form onSubmit={handleSubmit} className="space-y-4">
               {client && <div className="space-y-2 mb-4 border-b pb-4">
                   {client.clientInfo?.branding && <a href={client.clientInfo.branding} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
@@ -374,5 +456,6 @@ export const PublicationDialog = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </>;
+    </>
+  );
 };
