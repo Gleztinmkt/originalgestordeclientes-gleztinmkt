@@ -507,13 +507,16 @@ export const PublicationDialog = ({
       <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Descartar cambios?</AlertDialogTitle>
+            <AlertDialogTitle>Cambios sin guardar</AlertDialogTitle>
             <AlertDialogDescription>
-              Tienes cambios sin guardar. ¿Estás seguro de que quieres descartarlos?
+              Tienes cambios sin guardar. ¿Qué deseas hacer?
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setShowConfirmDialog(false)}>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <AlertDialogCancel 
+              onClick={() => setShowConfirmDialog(false)}
+              className="mt-0"
+            >
               Cancelar
             </AlertDialogCancel>
             <AlertDialogAction
@@ -521,6 +524,16 @@ export const PublicationDialog = ({
               className="bg-destructive hover:bg-destructive/90"
             >
               Descartar cambios
+            </AlertDialogAction>
+            <AlertDialogAction
+              onClick={() => {
+                handleSubmit();
+                setShowConfirmDialog(false);
+                onOpenChange(false);
+              }}
+              className="bg-primary hover:bg-primary/90"
+            >
+              Guardar cambios
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
