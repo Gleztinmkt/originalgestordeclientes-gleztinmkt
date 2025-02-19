@@ -57,6 +57,7 @@ export const PublicationDialog = ({
   });
   const [newLinkLabel, setNewLinkLabel] = useState("");
   const [newLinkUrl, setNewLinkUrl] = useState("");
+  const [showConfirmDeleteDialog, setShowConfirmDeleteDialog] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date(publication.date));
   const [copyingCopywriting, setCopyingCopywriting] = useState(false);
@@ -152,6 +153,10 @@ export const PublicationDialog = ({
     } else {
       onOpenChange(false);
     }
+  };
+
+  const handleDelete = () => {
+    setShowConfirmDeleteDialog(true);
   };
 
   const handleDiscardChanges = () => {
@@ -263,7 +268,7 @@ export const PublicationDialog = ({
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogContent className="sm:max-w-[425px] max-h-[80vh] overflow-y-auto dark:bg-gray-900">
           <DialogHeader>
             <div className="flex items-center justify-between">
@@ -482,7 +487,7 @@ export const PublicationDialog = ({
 
               <div className="flex flex-col sm:flex-row justify-end gap-2 pt-4">
                 {onDelete && !isDesigner && (
-                  <Button type="button" variant="destructive" onClick={onDelete} className="w-full sm:w-auto text-sm">
+                  <Button type="button" variant="destructive" onClick={handleDelete} className="w-full sm:w-auto text-sm">
                     <Trash2 className="h-4 w-4 mr-2" />
                     Eliminar
                   </Button>
@@ -502,22 +507,47 @@ export const PublicationDialog = ({
       <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Guardar cambios?</AlertDialogTitle>
+            <AlertDialogTitle>¿Descartar cambios?</AlertDialogTitle>
             <AlertDialogDescription>
-              Has realizado cambios en esta publicación. ¿Quieres guardarlos antes de salir?
+              Tienes cambios sin guardar. ¿Estás seguro de que quieres descartarlos?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={handleDiscardChanges}>
+            <AlertDialogCancel onClick={() => setShowConfirmDialog(false)}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDiscardChanges}
+              className="bg-destructive hover:bg-destructive/90"
+            >
               Descartar cambios
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showConfirmDeleteDialog} onOpenChange={setShowConfirmDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar publicación?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. ¿Estás seguro de que quieres eliminar esta publicación?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShowConfirmDeleteDialog(false)}>
+              Cancelar
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
-                handleSubmit();
-                setShowConfirmDialog(false);
+                if (onDelete) {
+                  onDelete();
+                }
+                setShowConfirmDeleteDialog(false);
               }}
+              className="bg-destructive hover:bg-destructive/90"
             >
-              Guardar
+              Eliminar
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
