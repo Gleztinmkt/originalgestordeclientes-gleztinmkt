@@ -263,8 +263,8 @@ export const PublicationDialog = ({
 
   return (
     <>
-      <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent className="sm:max-w-[425px] max-h-[80vh] overflow-y-auto dark:bg-gray-900" onPointerDownOutside={e => e.preventDefault()} onInteractOutside={e => e.preventDefault()} onEscapeKeyDown={e => e.preventDefault()}>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-[425px] max-h-[80vh] overflow-y-auto dark:bg-gray-900">
           <DialogHeader>
             <div className="flex items-center justify-between">
               <DialogTitle className="text-xl font-bold dark:text-white">
@@ -283,16 +283,13 @@ export const PublicationDialog = ({
               )}
             </div>
           </DialogHeader>
+
           <ScrollArea className="h-[calc(80vh-120px)] pr-2 sm:pr-4">
             <form onSubmit={handleSubmit} className="space-y-4">
               {client && <div className="space-y-2 mb-4 border-b pb-4">
                   {client.clientInfo?.branding && <a href={client.clientInfo.branding} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
                       <LinkIcon className="h-4 w-4" />
                       <span className="truncate">Branding</span>
-                    </a>}
-                  {client.instagram && <a href={`https://instagram.com/${client.instagram}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-pink-600 hover:text-pink-800 dark:text-pink-400 dark:hover:text-pink-300">
-                      <Instagram className="h-4 w-4" />
-                      <span className="truncate">@{client.instagram}</span>
                     </a>}
                 </div>}
 
