@@ -17,6 +17,7 @@ import { es } from "date-fns/locale";
 import { format } from "date-fns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+
 interface PublicationDialogProps {
   publication: Publication;
   client?: Client;
@@ -26,6 +27,7 @@ interface PublicationDialogProps {
   onDelete?: () => void;
   designers?: any[];
 }
+
 export const PublicationDialog = ({
   publication,
   client,
@@ -55,10 +57,12 @@ export const PublicationDialog = ({
   });
   const [newLinkLabel, setNewLinkLabel] = useState("");
   const [newLinkUrl, setNewLinkUrl] = useState("");
+  const [showConfirmDeleteDialog, setShowConfirmDeleteDialog] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date(publication.date));
   const [copyingCopywriting, setCopyingCopywriting] = useState(false);
   const [copyingDescription, setCopyingDescription] = useState(false);
+
   const handleOpenSocialLinks = () => {
     if (!client?.clientInfo?.socialNetworks) {
       toast({
@@ -68,6 +72,7 @@ export const PublicationDialog = ({
       });
       return;
     }
+
     client.clientInfo.socialNetworks.forEach(network => {
       if (network.username) {
         let url;
@@ -97,6 +102,7 @@ export const PublicationDialog = ({
       }
     });
   };
+
   const {
     data: userRole
   } = useQuery({
@@ -114,15 +120,25 @@ export const PublicationDialog = ({
       return roleData?.role || null;
     }
   });
+
   const isDesigner = userRole === 'designer';
+
   const hasChanges = useCallback(() => {
-    return name !== publication.name || type !== publication.type || description !== (publication.description || "") || copywriting !== (publication.copywriting || "") || designer !== (publication.designer || "no_designer") || status !== (publication.needs_recording ? 'needs_recording' : publication.needs_editing ? 'needs_editing' : publication.in_editing ? 'in_editing' : publication.in_review ? 'in_review' : publication.approved ? 'approved' : publication.is_published ? 'published' : 'needs_recording') || JSON.stringify(links) !== (publication.links || "[]");
+    return name !== publication.name ||
+      type !== publication.type ||
+      description !== (publication.description || "") ||
+      copywriting !== (publication.copywriting || "") ||
+      designer !== (publication.designer || "no_designer") ||
+      status !== (publication.needs_recording ? 'needs_recording' : publication.needs_editing ? 'needs_editing' : publication.in_editing ? 'in_editing' : publication.in_review ? 'in_review' : publication.approved ? 'approved' : publication.is_published ? 'published' : 'needs_recording') ||
+      JSON.stringify(links) !== (publication.links || "[]");
   }, [name, type, description, copywriting, designer, status, links, publication]);
+
   useEffect(() => {
     return () => {
       // Cleanup
     };
   }, []);
+
   const handleOpenChange = (open: boolean) => {
     if (!open && hasChanges()) {
       setShowConfirmDialog(true);
@@ -130,6 +146,7 @@ export const PublicationDialog = ({
       onOpenChange(open);
     }
   };
+
   const handleClose = () => {
     if (hasChanges()) {
       setShowConfirmDialog(true);
@@ -137,6 +154,11 @@ export const PublicationDialog = ({
       onOpenChange(false);
     }
   };
+
+  const handleDelete = () => {
+    setShowConfirmDeleteDialog(true);
+  };
+
   const handleDiscardChanges = () => {
     setName(publication.name);
     setType(publication.type as 'reel' | 'carousel' | 'image');
@@ -157,6 +179,7 @@ export const PublicationDialog = ({
     setShowConfirmDialog(false);
     onOpenChange(false);
   };
+
   const handleAddLink = () => {
     if (newLinkLabel && newLinkUrl) {
       setLinks([...links, {
@@ -167,8 +190,12 @@ export const PublicationDialog = ({
       setNewLinkUrl("");
     }
   };
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) {
+      e.preventDefault();
+    }
+    
     try {
       const updates: any = {};
       if (isDesigner) {
@@ -193,10 +220,14 @@ export const PublicationDialog = ({
         updates.approved = status === 'approved';
         updates.is_published = status === 'published';
       }
-      const {
-        error
-      } = await supabase.from('publications').update(updates).eq('id', publication.id);
+
+      const { error } = await supabase
+        .from('publications')
+        .update(updates)
+        .eq('id', publication.id);
+
       if (error) throw error;
+
       toast({
         title: "Publicación actualizada",
         description: "Los cambios han sido guardados correctamente."
@@ -211,6 +242,7 @@ export const PublicationDialog = ({
       });
     }
   };
+
   const handleCopyText = async (text: string, type: 'copywriting' | 'description') => {
     try {
       await navigator.clipboard.writeText(text);
@@ -233,17 +265,27 @@ export const PublicationDialog = ({
       });
     }
   };
-  return <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
+
+  return (
+    <>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogContent className="sm:max-w-[425px] max-h-[80vh] overflow-y-auto dark:bg-gray-900">
           <DialogHeader>
             <div className="flex items-center justify-between">
               <DialogTitle className="text-xl font-bold dark:text-white">
                 Editar Publicación
               </DialogTitle>
-              {client && <Button variant="ghost" size="icon" onClick={handleOpenSocialLinks} title="Abrir redes sociales" className="ml-2 mx-0 my-0 py-[30px] px-[16px]">
+              {client && (
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={handleOpenSocialLinks}
+                  className="ml-2"
+                  title="Abrir redes sociales"
+                >
                   <Share2 className="h-4 w-4" />
-                </Button>}
+                </Button>
+              )}
             </div>
           </DialogHeader>
 
@@ -301,7 +343,9 @@ export const PublicationDialog = ({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="no_designer">Sin diseñador</SelectItem>
-                      {designers.map(d => <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>)}
+                      {designers.map(d => (
+                        <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -310,12 +354,17 @@ export const PublicationDialog = ({
               <div className="space-y-2">
                 <Label className="text-sm sm:text-base">Fecha de publicación</Label>
                 <div className="border rounded-lg p-2 max-h-[250px] overflow-y-auto">
-                  <Calendar mode="single" selected={selectedDate} onSelect={date => date && setSelectedDate(date)} locale={es} disabled={isDesigner} className="rounded-md border" />
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={date => date && setSelectedDate(date)}
+                    locale={es}
+                    disabled={isDesigner}
+                    className="rounded-md border"
+                  />
                 </div>
                 <div className="text-xs sm:text-sm text-muted-foreground">
-                  Fecha seleccionada: {format(selectedDate, "EEEE d 'de' MMMM 'de' yyyy", {
-                  locale: es
-                })}
+                  Fecha seleccionada: {format(selectedDate, "EEEE d 'de' MMMM 'de' yyyy", { locale: es })}
                 </div>
               </div>
 
@@ -323,32 +372,59 @@ export const PublicationDialog = ({
                 <Label className="text-sm sm:text-base">Links</Label>
                 <Card>
                   <CardContent className="p-3 sm:p-4 space-y-4">
-                    {!isDesigner && <div className="flex flex-col sm:flex-row gap-2">
+                    {!isDesigner && (
+                      <div className="flex flex-col sm:flex-row gap-2">
                         <div className="flex-1">
-                          <Input placeholder="Etiqueta" value={newLinkLabel} onChange={e => setNewLinkLabel(e.target.value)} className="text-sm sm:text-base" />
+                          <Input
+                            placeholder="Etiqueta"
+                            value={newLinkLabel}
+                            onChange={e => setNewLinkLabel(e.target.value)}
+                            className="text-sm sm:text-base"
+                          />
                         </div>
                         <div className="flex-1">
-                          <Input placeholder="URL" value={newLinkUrl} onChange={e => setNewLinkUrl(e.target.value)} className="text-sm sm:text-base" />
+                          <Input
+                            placeholder="URL"
+                            value={newLinkUrl}
+                            onChange={e => setNewLinkUrl(e.target.value)}
+                            className="text-sm sm:text-base"
+                          />
                         </div>
                         <Button type="button" variant="outline" onClick={handleAddLink} className="w-full sm:w-auto">
                           <Plus className="h-4 w-4" />
                         </Button>
-                      </div>}
+                      </div>
+                    )}
                     <ScrollArea className="h-[100px]">
                       <div className="space-y-2">
-                        {links.map((link, index) => <div key={index} className="flex items-center gap-2 bg-secondary p-2 rounded text-sm">
-                            {!isDesigner && <Button type="button" variant="ghost" size="sm" onClick={() => {
-                          const newLinks = [...links];
-                          newLinks.splice(index, 1);
-                          setLinks(newLinks);
-                        }} className="text-destructive">
+                        {links.map((link, index) => (
+                          <div key={index} className="flex items-center gap-2 bg-secondary p-2 rounded text-sm">
+                            {!isDesigner && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  const newLinks = [...links];
+                                  newLinks.splice(index, 1);
+                                  setLinks(newLinks);
+                                }}
+                                className="text-destructive"
+                              >
                                 <Trash2 className="h-4 w-4" />
-                              </Button>}
+                              </Button>
+                            )}
                             <span className="flex-1 truncate">{link.label}</span>
-                            <a href={link.url} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-700">
+                            <a
+                              href={link.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-500 hover:text-blue-700"
+                            >
                               <ExternalLink className="h-4 w-4" />
                             </a>
-                          </div>)}
+                          </div>
+                        ))}
                       </div>
                     </ScrollArea>
                   </CardContent>
@@ -358,28 +434,64 @@ export const PublicationDialog = ({
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="copywriting" className="text-sm sm:text-base">Copywriting</Label>
-                  <Button type="button" variant="ghost" size="sm" onClick={() => handleCopyText(copywriting, 'copywriting')} className="h-8">
-                    {copyingCopywriting ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleCopyText(copywriting, 'copywriting')}
+                    className="h-8"
+                  >
+                    {copyingCopywriting ? (
+                      <Check className="h-4 w-4 text-green-500" />
+                    ) : (
+                      <Copy className="h-4 w-4" />
+                    )}
                   </Button>
                 </div>
-                <Textarea id="copywriting" value={copywriting} onChange={e => setCopywriting(e.target.value)} className="min-h-[150px] touch-manipulation text-sm sm:text-base" disabled={isDesigner} readOnly={isDesigner} />
+                <Textarea
+                  id="copywriting"
+                  value={copywriting}
+                  onChange={e => setCopywriting(e.target.value)}
+                  className="min-h-[150px] touch-manipulation text-sm sm:text-base"
+                  disabled={isDesigner}
+                  readOnly={isDesigner}
+                />
               </div>
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="description" className="text-sm sm:text-base">Descripción</Label>
-                  <Button type="button" variant="ghost" size="sm" onClick={() => handleCopyText(description, 'description')} className="h-8">
-                    {copyingDescription ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleCopyText(description, 'description')}
+                    className="h-8"
+                  >
+                    {copyingDescription ? (
+                      <Check className="h-4 w-4 text-green-500" />
+                    ) : (
+                      <Copy className="h-4 w-4" />
+                    )}
                   </Button>
                 </div>
-                <Textarea id="description" value={description} onChange={e => setDescription(e.target.value)} disabled={isDesigner} readOnly={isDesigner} className="min-h-[200px] touch-manipulation text-sm sm:text-base py-[192px]" />
+                <Textarea
+                  id="description"
+                  value={description}
+                  onChange={e => setDescription(e.target.value)}
+                  disabled={isDesigner}
+                  readOnly={isDesigner}
+                  className="min-h-[200px] touch-manipulation text-sm sm:text-base py-[192px]"
+                />
               </div>
 
               <div className="flex flex-col sm:flex-row justify-end gap-2 pt-4">
-                {onDelete && !isDesigner && <Button type="button" variant="destructive" onClick={onDelete} className="w-full sm:w-auto text-sm">
+                {onDelete && !isDesigner && (
+                  <Button type="button" variant="destructive" onClick={handleDelete} className="w-full sm:w-auto text-sm">
                     <Trash2 className="h-4 w-4 mr-2" />
                     Eliminar
-                  </Button>}
+                  </Button>
+                )}
                 <Button type="button" variant="outline" onClick={handleClose} className="w-full sm:w-auto text-sm">
                   Cerrar
                 </Button>
@@ -395,23 +507,51 @@ export const PublicationDialog = ({
       <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Guardar cambios?</AlertDialogTitle>
+            <AlertDialogTitle>¿Descartar cambios?</AlertDialogTitle>
             <AlertDialogDescription>
-              Has realizado cambios en esta publicación. ¿Quieres guardarlos antes de salir?
+              Tienes cambios sin guardar. ¿Estás seguro de que quieres descartarlos?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={handleDiscardChanges}>
-              Descartar cambios
+            <AlertDialogCancel onClick={() => setShowConfirmDialog(false)}>
+              Cancelar
             </AlertDialogCancel>
-            <AlertDialogAction onClick={() => {
-            handleSubmit();
-            setShowConfirmDialog(false);
-          }}>
-              Guardar
+            <AlertDialogAction
+              onClick={handleDiscardChanges}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              Descartar cambios
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </>;
+
+      <AlertDialog open={showConfirmDeleteDialog} onOpenChange={setShowConfirmDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar publicación?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. ¿Estás seguro de que quieres eliminar esta publicación?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShowConfirmDeleteDialog(false)}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (onDelete) {
+                  onDelete();
+                }
+                setShowConfirmDeleteDialog(false);
+              }}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
 };
