@@ -403,7 +403,7 @@ export const PublicationDialog = ({
       <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Cambios sin guardar</AlertDialogTitle>
+            <AlertDialogTitle className="text-gray-100">Cambios sin guardar</AlertDialogTitle>
             <AlertDialogDescription>
               Tienes cambios sin guardar. ¿Qué deseas hacer?
             </AlertDialogDescription>
