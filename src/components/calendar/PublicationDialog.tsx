@@ -412,7 +412,7 @@ export const PublicationDialog = ({
             <AlertDialogCancel onClick={() => setShowConfirmDialog(false)} className="mt-0 font-normal text-slate-50 bg-zinc-700 hover:bg-zinc-600">
               Cancelar
             </AlertDialogCancel>
-            <AlertDialogAction onClick={handleDiscardChanges} className="bg-destructive hover:bg-destructive/90">
+            <AlertDialogAction onClick={handleDiscardChanges} className="bg-destructive hover:bg-destructive/90 text-slate-50">
               Descartar cambios
             </AlertDialogAction>
             <AlertDialogAction onClick={() => {
