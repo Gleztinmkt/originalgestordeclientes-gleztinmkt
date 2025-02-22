@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Package, Edit, MoreVertical, Trash, Send, Download } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,7 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
-import { html2canvas } from "html2canvas";
+import html2canvas from "html2canvas";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog,
@@ -74,13 +75,13 @@ export const ClientPackage = ({
 
   useState(() => {
     const fetchClientData = async () => {
-      const { data: clientData, error } = await supabase
+      const { data: clientData } = await supabase
         .from('clients')
         .select('last_post, phone')
         .eq('id', clientId)
         .single();
 
-      if (!error && clientData) {
+      if (clientData) {
         setLastPost(clientData.last_post || "");
         setClientPhone(clientData.phone || "");
       }

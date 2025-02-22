@@ -1,3 +1,4 @@
+
 import { MinusCircle, PlusCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,9 +10,10 @@ interface PackageCounterProps {
   used: number;
   onUpdateUsed: (newCount: number) => void;
   onUpdateLastUsed?: (date: string) => void;
+  disabled?: boolean;
 }
 
-export const PackageCounter = ({ total, used, onUpdateUsed, onUpdateLastUsed }: PackageCounterProps) => {
+export const PackageCounter = ({ total, used, onUpdateUsed, onUpdateLastUsed, disabled }: PackageCounterProps) => {
   const remaining = total - used;
 
   const handleIncrease = () => {
@@ -37,7 +39,7 @@ export const PackageCounter = ({ total, used, onUpdateUsed, onUpdateLastUsed }: 
         variant="ghost"
         size="icon"
         onClick={handleDecrease}
-        disabled={used === 0}
+        disabled={used === 0 || disabled}
       >
         <MinusCircle className="h-4 w-4" />
       </Button>
@@ -54,7 +56,7 @@ export const PackageCounter = ({ total, used, onUpdateUsed, onUpdateLastUsed }: 
         variant="ghost"
         size="icon"
         onClick={handleIncrease}
-        disabled={used === total}
+        disabled={used === total || disabled}
       >
         <PlusCircle className="h-4 w-4" />
       </Button>
