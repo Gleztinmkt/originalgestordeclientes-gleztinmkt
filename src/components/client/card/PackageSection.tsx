@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { FileText } from "lucide-react";
 import { ClientPackage } from "../ClientPackage";
@@ -5,6 +6,7 @@ import { Client } from "../../types/client";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { useState } from "react";
 
 interface PackageSectionProps {
   client: Client;
@@ -27,6 +29,8 @@ export const PackageSection = ({
   onCaptureStart,
   onCaptureEnd,
 }: PackageSectionProps) => {
+  const [processingPackageId, setProcessingPackageId] = useState<string | null>(null);
+
   const sendPackageReport = async (): Promise<void> => {
     if (!client.phone) {
       toast({
@@ -60,6 +64,36 @@ export const PackageSection = ({
     return Promise.resolve();
   };
 
+  const handleUpdatePaid = async (packageId: string, paid: boolean) => {
+    if (processingPackageId) return;
+    try {
+      setProcessingPackageId(packageId);
+      await onUpdatePaid(packageId, paid);
+    } finally {
+      setProcessingPackageId(null);
+    }
+  };
+
+  const handleEditPackage = async (packageId: string, values: any) => {
+    if (processingPackageId) return;
+    try {
+      setProcessingPackageId(packageId);
+      await onEditPackage(packageId, values);
+    } finally {
+      setProcessingPackageId(null);
+    }
+  };
+
+  const handleDeletePackage = async (packageId: string) => {
+    if (processingPackageId) return;
+    try {
+      setProcessingPackageId(packageId);
+      await onDeletePackage(packageId);
+    } finally {
+      setProcessingPackageId(null);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div id={`client-packages-${client.id}`} className="space-y-4">
@@ -72,12 +106,13 @@ export const PackageSection = ({
             month={pkg.month}
             paid={pkg.paid}
             onUpdateUsed={(newCount) => onUpdatePackage(client.id, pkg.id, newCount)}
-            onUpdatePaid={(paid) => onUpdatePaid(pkg.id, paid)}
-            onEditPackage={(values) => onEditPackage(pkg.id, values)}
-            onDeletePackage={() => onDeletePackage(pkg.id)}
+            onUpdatePaid={(paid) => handleUpdatePaid(pkg.id, paid)}
+            onEditPackage={(values) => handleEditPackage(pkg.id, values)}
+            onDeletePackage={() => handleDeletePackage(pkg.id)}
             clientId={client.id}
             clientName={client.name}
             packageId={pkg.id}
+            isProcessing={processingPackageId === pkg.id}
           />
         ))}
       </div>

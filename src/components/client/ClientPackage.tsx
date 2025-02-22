@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState } from "react";
 import { Package, Edit, MoreVertical, Trash, Send, Download } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PackageCounter } from "./PackageCounter";
@@ -7,10 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Json } from "@/integrations/supabase/types";
-import html2canvas from 'html2canvas';
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { html2canvas } from "html2canvas";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog,
   DialogContent,
@@ -37,22 +36,6 @@ import {
 import { AddPackageForm } from "./AddPackageForm";
 import { PublicationCalendarDialog } from "./PublicationCalendarDialog";
 
-interface PackageFormValues {
-  name: string;
-  totalPublications: string;
-  month: string;
-  paid: boolean;
-}
-
-interface PackageData {
-  id: string;
-  name: string;
-  totalPublications: number;
-  usedPublications: number;
-  month: string;
-  paid: boolean;
-}
-
 interface ClientPackageProps {
   packageName: string;
   totalPublications: number;
@@ -61,11 +44,12 @@ interface ClientPackageProps {
   paid: boolean;
   onUpdateUsed: (newCount: number) => void;
   onUpdatePaid: (paid: boolean) => void;
-  onEditPackage: (values: PackageFormValues & { name: string, totalPublications: string }) => Promise<void>;
+  onEditPackage: (values: any) => Promise<void>;
   onDeletePackage?: () => void;
   clientId: string;
   clientName: string;
   packageId: string;
+  isProcessing: boolean;
 }
 
 export const ClientPackage = ({
@@ -81,17 +65,14 @@ export const ClientPackage = ({
   clientId,
   clientName,
   packageId,
+  isProcessing,
 }: ClientPackageProps) => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
   const [lastPost, setLastPost] = useState<string>("");
   const [clientPhone, setClientPhone] = useState<string>("");
-  const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const submissionCountRef = useRef(0);
 
-  // Fetch client phone and last post on component mount
-  useEffect(() => {
+  useState(() => {
     const fetchClientData = async () => {
       const { data: clientData, error } = await supabase
         .from('clients')
@@ -108,8 +89,9 @@ export const ClientPackage = ({
     fetchClientData();
   }, [clientId]);
 
-  // Update last post in database
   const handleLastPostChange = async (value: string) => {
+    if (isProcessing) return;
+    
     setLastPost(value);
     try {
       const { error } = await supabase
@@ -128,48 +110,25 @@ export const ClientPackage = ({
     }
   };
 
-  const handleEditSubmit = useCallback(async (values: PackageFormValues & { name: string, totalPublications: string }) => {
-    const currentSubmissionCount = ++submissionCountRef.current;
+  const handleEditSubmit = async (values: any) => {
+    if (isProcessing) return;
     
-    if (isProcessing) {
-      console.log('Submission blocked - already processing');
-      return;
-    }
-
-    console.log(`Starting submission #${currentSubmissionCount}`, {
-      values,
-      isProcessing,
-      currentTime: new Date().toISOString()
-    });
-
     try {
-      setIsProcessing(true);
-      await new Promise(resolve => setTimeout(resolve, 100));
       await onEditPackage(values);
-      
-      console.log(`Submission #${currentSubmissionCount} completed successfully`);
-      
-      processingTimeoutRef.current = setTimeout(() => {
-        if (currentSubmissionCount === submissionCountRef.current) {
-          setIsEditDialogOpen(false);
-          setIsProcessing(false);
-          toast({
-            title: "Paquete actualizado",
-            description: "El paquete ha sido actualizado correctamente.",
-          });
-        }
-      }, 300);
-
+      setIsEditDialogOpen(false);
+      toast({
+        title: "Paquete actualizado",
+        description: "El paquete ha sido actualizado correctamente.",
+      });
     } catch (error) {
-      console.error(`Error in submission #${currentSubmissionCount}:`, error);
+      console.error('Error updating package:', error);
       toast({
         title: "Error",
         description: "No se pudo actualizar el paquete. Por favor, intenta de nuevo.",
         variant: "destructive",
       });
-      setIsProcessing(false);
     }
-  }, [onEditPackage, isProcessing]);
+  };
 
   const handleSendCompletionMessage = () => {
     if (!clientPhone) {
@@ -189,72 +148,32 @@ export const ClientPackage = ({
       `*Contraseña:* Gleztin (Con mayúscula al inicio)\n\n` +
       `¡Gracias por confiar en nosotros!`;
 
-    // Limpiar el número de teléfono de cualquier carácter que no sea dígito
-    const cleanPhone = clientPhone.replace(/\D/g, '');
-    const whatsappUrl = `https://wa.me/${cleanPhone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
+    const whatsappUrl = `https://wa.me/${clientPhone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
   };
 
-  const handleSendPaymentReminder = async () => {
-    try {
-      const { data: clientData, error } = await supabase
-        .from('clients')
-        .select('name, phone, payment_day')
-        .eq('id', clientId)
-        .single();
-
-      if (error) throw error;
-
-      if (!clientData?.phone) {
-        toast({
-          title: "Error",
-          description: "El cliente no tiene número de teléfono registrado",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      const paymentDay = clientData.payment_day || 1;
-      const currentDate = new Date();
-      const currentMonth = currentDate.getMonth();
-      const currentYear = currentDate.getFullYear();
-      
-      // Calcular la fecha 5 días antes del pago
-      const paymentDate = new Date(currentYear, currentMonth, paymentDay);
-      const reminderDate = new Date(paymentDate);
-      reminderDate.setDate(paymentDate.getDate() - 5);
-
-      const message = `Buenos días ${clientData.name}, este es un mensaje automático.\n\n` +
-        `Les recordamos la fecha de pago del día ${reminderDate.getDate()} al ${paymentDay} de cada mes.\n\n` +
-        `Los valores actualizados los vas a encontrar en el *siguiente link*:\n\n` +
-        `https://gleztin.com.ar/index.php/valores-de-redes-sociales/\n` +
-        `*Contraseña*: Gleztin (Con mayuscula al inicio)\n\n` +
-        `En caso de tener alguna duda o no poder abonarlo dentro de la fecha establecida por favor contáctarnos.\n\n` +
-        `Muchas gracias`;
-
-      const whatsappUrl = `https://wa.me/${clientData.phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
-      window.open(whatsappUrl, '_blank');
-
-      toast({
-        title: "Recordatorio enviado",
-        description: "Se ha abierto WhatsApp con el mensaje predefinido.",
-      });
-    } catch (error) {
-      console.error('Error sending payment reminder:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo enviar el recordatorio de pago",
-        variant: "destructive",
-      });
-    }
+  const handleDeletePackageClick = () => {
+    if (isProcessing) return;
+    setIsDeleteDialogOpen(true);
   };
 
-  const closeEditDialog = () => {
-    if (!isProcessing) {
-      console.log('Closing edit dialog - not processing');
-      setIsEditDialogOpen(false);
-    } else {
-      console.log('Cannot close dialog - processing in progress');
+  const handleConfirmDelete = async () => {
+    if (isProcessing || !onDeletePackage) return;
+    
+    try {
+      await onDeletePackage();
+      setIsDeleteDialogOpen(false);
+      toast({
+        title: "Paquete eliminado",
+        description: "El paquete ha sido eliminado correctamente.",
+      });
+    } catch (error) {
+      console.error('Error deleting package:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar el paquete. Por favor, intenta de nuevo.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -262,7 +181,6 @@ export const ClientPackage = ({
     const calendarElement = document.createElement('div');
     calendarElement.className = 'p-8 bg-gradient-to-br from-[#F2FCE2] to-[#E5DEFF] min-w-[800px]';
     
-    // Header with modern styling and company name
     const header = document.createElement('div');
     header.className = 'text-center mb-8 bg-white/800 backdrop-blur-sm rounded-xl p-6 shadow-lg';
     header.innerHTML = `
@@ -287,7 +205,6 @@ export const ClientPackage = ({
         .is('deleted_at', null)
         .order('date', { ascending: true });
 
-      // Publications list with modern cards
       const list = document.createElement('div');
       list.className = 'space-y-4';
       
@@ -331,7 +248,6 @@ export const ClientPackage = ({
       
       calendarElement.appendChild(list);
 
-      // Footer with modern styling
       const footer = document.createElement('div');
       footer.className = 'mt-8 text-center p-4 bg-white/800 backdrop-blur-sm rounded-xl';
       footer.innerHTML = `
@@ -342,7 +258,6 @@ export const ClientPackage = ({
       `;
       calendarElement.appendChild(footer);
 
-      // Add to document temporarily
       document.body.appendChild(calendarElement);
 
       const canvas = await html2canvas(calendarElement, {
@@ -351,7 +266,6 @@ export const ClientPackage = ({
         logging: false,
       });
 
-      // Convert to image and download
       const image = canvas.toDataURL('image/png');
       const link = document.createElement('a');
       link.download = `calendario-${clientName.toLowerCase().replace(/\s+/g, '-')}-${packageName.toLowerCase().replace(/\s+/g, '-')}.png`;
@@ -370,7 +284,6 @@ export const ClientPackage = ({
         variant: "destructive",
       });
     } finally {
-      // Clean up
       if (document.body.contains(calendarElement)) {
         document.body.removeChild(calendarElement);
       }
@@ -398,7 +311,7 @@ export const ClientPackage = ({
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
+              <Button variant="ghost" size="icon" className="h-8 w-8" disabled={isProcessing}>
                 <MoreVertical className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -420,7 +333,7 @@ export const ClientPackage = ({
               {onDeletePackage && (
                 <DropdownMenuItem
                   className="text-red-600 dark:text-red-400"
-                  onClick={() => setIsDeleteDialogOpen(true)}
+                  onClick={handleDeletePackageClick}
                   disabled={isProcessing}
                 >
                   <Trash className="mr-2 h-4 w-4" />
@@ -437,6 +350,7 @@ export const ClientPackage = ({
           used={usedPublications}
           onUpdateUsed={onUpdateUsed}
           onUpdateLastUsed={handleLastPostChange}
+          disabled={isProcessing}
         />
         
         <div className="mt-4 space-y-4">
@@ -450,6 +364,7 @@ export const ClientPackage = ({
               onChange={(e) => handleLastPostChange(e.target.value)}
               className="w-full"
               placeholder="Ingrese el último post..."
+              disabled={isProcessing}
             />
           </div>
 
@@ -459,6 +374,7 @@ export const ClientPackage = ({
                 onClick={handleSendCompletionMessage}
                 className="w-full gap-2"
                 variant="outline"
+                disabled={isProcessing}
               >
                 <Send className="h-4 w-4" />
                 Enviar mensaje de completado
@@ -473,7 +389,14 @@ export const ClientPackage = ({
         </div>
       </CardContent>
 
-      <Dialog open={isEditDialogOpen} onOpenChange={closeEditDialog}>
+      <Dialog 
+        open={isEditDialogOpen} 
+        onOpenChange={(open) => {
+          if (!isProcessing) {
+            setIsEditDialogOpen(open);
+          }
+        }}
+      >
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>Editar Paquete</DialogTitle>
@@ -502,13 +425,11 @@ export const ClientPackage = ({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => setIsDeleteDialogOpen(false)}>Cancelar</AlertDialogCancel>
             <AlertDialogAction 
-              onClick={() => {
-                onDeletePackage?.();
-                setIsDeleteDialogOpen(false);
-              }} 
+              onClick={handleConfirmDelete}
               className="bg-red-500 hover:bg-red-600"
+              disabled={isProcessing}
             >
               Eliminar
             </AlertDialogAction>
