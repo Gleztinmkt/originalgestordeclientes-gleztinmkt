@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Package, Edit, MoreVertical, Trash, Send, Download } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PackageCounter } from "./PackageCounter";
@@ -70,10 +70,12 @@ export const ClientPackage = ({
 }: ClientPackageProps) => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isCapturing, setIsCapturing] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
   const [lastPost, setLastPost] = useState<string>("");
   const [clientPhone, setClientPhone] = useState<string>("");
 
-  useState(() => {
+  useEffect(() => {
     const fetchClientData = async () => {
       const { data: clientData } = await supabase
         .from('clients')
