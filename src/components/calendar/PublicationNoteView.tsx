@@ -1,177 +1,183 @@
-
 import { useState, useEffect } from "react";
+import { format } from "date-fns";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Pencil, Trash2 } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { MessageCircle, CheckCircle, Clock } from "lucide-react";
-import { PublicationNote } from "../client/publication/types";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+
+import { PublicationNote } from "@/components/client/publication/types";
 
 interface PublicationNoteViewProps {
-  publicationId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  publicationId: string;
   onEdit: (noteId: string) => void;
-  onSuccess: () => void;
+  onSuccess?: () => void;
 }
 
+const formatDate = (dateStr: string): string => {
+  const date = new Date(dateStr);
+  return format(date, "dd/MM/yyyy HH:mm");
+};
+
+const getStatusColor = (status: PublicationNote["status"]) => {
+  switch (status) {
+    case "new":
+      return {
+        bg: "bg-yellow-500",
+        border: "border-yellow-500",
+      };
+    case "done":
+      return {
+        bg: "bg-green-500",
+        border: "border-green-500",
+      };
+    case "received":
+      return {
+        bg: "bg-blue-500",
+        border: "border-blue-500",
+      };
+    default:
+      return {
+        bg: "bg-gray-400",
+        border: "border-gray-400",
+      };
+  }
+};
+
 export const PublicationNoteView = ({
-  publicationId,
   open,
   onOpenChange,
+  publicationId,
   onEdit,
   onSuccess
 }: PublicationNoteViewProps) => {
-  const [notes, setNotes] = useState<PublicationNote[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [currentStatus, setCurrentStatus] = useState<PublicationNote["status"]>("new");
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    if (open) {
-      fetchNotes();
-    }
-  }, [open, publicationId]);
-
-  const fetchNotes = async () => {
-    setLoading(true);
-    try {
+  const { data: notes = [], isLoading, refetch } = useQuery({
+    queryKey: ["publicationNotes", publicationId],
+    queryFn: async () => {
       const { data, error } = await supabase
         .from("publication_notes")
         .select("*")
         .eq("publication_id", publicationId)
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
-      
-      // Ensure each note has a valid status before setting to state
-      const typedNotes: PublicationNote[] = (data || []).map(note => {
-        let validStatus: "new" | "done" | "received" = "new";
-        if (note.status === "new" || note.status === "done" || note.status === "received") {
-          validStatus = note.status as "new" | "done" | "received";
-        } else {
-          console.warn(`Invalid status found: ${note.status}, defaulting to "new"`);
-        }
-        
-        return {
-          ...note,
-          status: validStatus
-        };
-      });
-      
-      setNotes(typedNotes);
-    } catch (error) {
-      console.error("Error fetching notes:", error);
-      toast({
-        title: "Error",
-        description: "No se pudieron cargar las notas",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+      if (error) {
+        console.error("Error fetching notes:", error);
+        toast({
+          title: "Error",
+          description: "No se pudieron cargar las notas",
+          variant: "destructive",
+        });
+        return [];
+      }
 
-  const handleUpdateStatus = async (noteId: string, status: "new" | "done" | "received") => {
+      return data as PublicationNote[];
+    },
+    enabled: open,
+  });
+
+  useEffect(() => {
+    if (notes.length > 0) {
+      setCurrentStatus(notes[0].status);
+    }
+  }, [notes]);
+
+  const handleStatusChange = async (newStatus: PublicationNote["status"]) => {
     try {
       const { error } = await supabase
         .from("publication_notes")
-        .update({
-          status,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", noteId);
+        .update({ status: newStatus })
+        .eq("publication_id", publicationId);
 
-      if (error) throw error;
-
-      // Update local state first for optimistic UI update
-      setNotes(
-        notes.map((note) =>
-          note.id === noteId ? { ...note, status } : note
-        )
-      );
+      if (error) {
+        console.error("Error updating status:", error);
+        toast({
+          title: "Error",
+          description: "No se pudo actualizar el estado",
+          variant: "destructive",
+        });
+        return;
+      }
 
       toast({
         title: "Estado actualizado",
-        description: "El estado de la nota se ha actualizado correctamente",
+        description: "El estado se ha actualizado correctamente",
       });
-
-      // Refetch notes to ensure consistency
-      setTimeout(() => {
-        onSuccess();
-      }, 50);
+      
+      // Invalidate the query to refetch notes
+      queryClient.invalidateQueries(["publicationNotes", publicationId]);
+      
     } catch (error) {
-      console.error("Error updating note status:", error);
+      console.error("Error in handleStatusChange:", error);
       toast({
         title: "Error",
-        description: "No se pudo actualizar el estado de la nota",
+        description: "Ocurrió un error al actualizar el estado",
         variant: "destructive",
       });
     }
   };
 
-  const handleDelete = async (noteId: string) => {
+  const handleAddNote = () => {
+    onOpenChange(false);
+    setTimeout(() => {
+      onEdit(null as any);
+    }, 300);
+  };
+
+  const handleDeleteNote = async (noteId: string) => {
     try {
       const { error } = await supabase
         .from("publication_notes")
         .delete()
         .eq("id", noteId);
 
-      if (error) throw error;
-
-      // Update local state first for optimistic UI update
-      setNotes(notes.filter((note) => note.id !== noteId));
+      if (error) {
+        console.error("Error deleting note:", error);
+        toast({
+          title: "Error",
+          description: "No se pudo eliminar la nota",
+          variant: "destructive",
+        });
+        return;
+      }
 
       toast({
         title: "Nota eliminada",
         description: "La nota se ha eliminado correctamente",
       });
-
-      // Notify parent component
-      setTimeout(() => {
-        onSuccess();
-      }, 50);
+      
+      // Invalidate the query to refetch notes
+      queryClient.invalidateQueries(["publicationNotes", publicationId]);
+      
     } catch (error) {
-      console.error("Error deleting note:", error);
+      console.error("Error in handleDeleteNote:", error);
       toast({
         title: "Error",
-        description: "No se pudo eliminar la nota",
+        description: "Ocurrió un error al eliminar la nota",
         variant: "destructive",
       });
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "done":
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case "received":
-        return <Clock className="h-4 w-4 text-blue-500" />;
-      default:
-        return <MessageCircle className="h-4 w-4 text-yellow-500" />;
-    }
-  };
-
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case "done":
-        return "Hecha";
-      case "received":
-        return "Recibida";
-      default:
-        return "Nueva";
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "done":
-        return "text-green-500";
-      case "received":
-        return "text-blue-500";
-      default:
-        return "text-yellow-500";
     }
   };
 
@@ -194,105 +200,120 @@ export const PublicationNoteView = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Notas de la Publicación</DialogTitle>
+          <DialogTitle>Notas de publicación</DialogTitle>
+          <DialogDescription>
+            Ver y gestionar notas para esta publicación
+          </DialogDescription>
         </DialogHeader>
-
-        {loading ? (
-          <div className="flex justify-center py-4">
-            <p>Cargando notas...</p>
+        
+        <div className="flex justify-between items-center mb-2">
+          <h3 className="font-medium">Estado actual:</h3>
+          <Select
+            defaultValue={currentStatus}
+            onValueChange={(value: "new" | "done" | "received") => {
+              setCurrentStatus(value);
+              handleStatusChange(value);
+            }}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Seleccionar estado" />
+            </SelectTrigger>
+            <SelectContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+              <SelectItem value="new" className="cursor-pointer">
+                <div className="flex items-center">
+                  <div className="w-3 h-3 rounded-full bg-yellow-500 mr-2" />
+                  Nuevo
+                </div>
+              </SelectItem>
+              <SelectItem value="done" className="cursor-pointer">
+                <div className="flex items-center">
+                  <div className="w-3 h-3 rounded-full bg-green-500 mr-2" />
+                  Completado
+                </div>
+              </SelectItem>
+              <SelectItem value="received" className="cursor-pointer">
+                <div className="flex items-center">
+                  <div className="w-3 h-3 rounded-full bg-blue-500 mr-2" />
+                  Recibido
+                </div>
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        
+        <div className="space-y-4 mt-4">
+          <div className="flex justify-between items-center">
+            <h3 className="font-medium">Historial de notas</h3>
+            <Button variant="outline" size="sm" onClick={handleAddNote}>
+              Añadir nota
+            </Button>
           </div>
-        ) : notes.length === 0 ? (
-          <div className="text-center py-4">
-            <p className="text-muted-foreground">No hay notas para esta publicación</p>
-          </div>
-        ) : (
-          <div className="space-y-4 max-h-[60vh] overflow-y-auto">
-            {notes.map((note) => (
-              <div
-                key={note.id}
-                className="p-4 border rounded-lg bg-secondary"
-              >
-                <div className="flex justify-between items-start mb-2">
-                  <div className="flex items-center gap-2">
-                    {getStatusIcon(note.status)}
-                    <span className={`text-sm font-medium ${getStatusColor(note.status)}`}>
-                      {getStatusText(note.status)}
-                    </span>
-                  </div>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                        <span className="sr-only">Opciones</span>
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className="h-4 w-4"
-                        >
-                          <circle cx="12" cy="12" r="1" />
-                          <circle cx="12" cy="5" r="1" />
-                          <circle cx="12" cy="19" r="1" />
-                        </svg>
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-48 p-2">
-                      <div className="grid gap-1">
+          
+          {isLoading ? (
+            <div className="flex justify-center py-4">
+              <div className="w-8 h-8 border-2 border-t-blue-500 rounded-full animate-spin"></div>
+            </div>
+          ) : notes.length === 0 ? (
+            <div className="text-center py-4 text-gray-500">
+              No hay notas para esta publicación
+            </div>
+          ) : (
+            <ScrollArea className="h-[300px]">
+              <div className="space-y-4 pr-4">
+                {notes.map((note) => (
+                  <div 
+                    key={note.id} 
+                    className={`p-3 rounded-lg border ${
+                      getStatusColor(note.status).border
+                    }`}
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex items-center gap-2">
+                        <div 
+                          className={`w-3 h-3 rounded-full ${
+                            getStatusColor(note.status).bg
+                          }`} 
+                        />
+                        <span className="text-xs text-gray-500">
+                          {formatDate(note.created_at)}
+                        </span>
+                      </div>
+                      <div className="flex gap-1">
                         <Button
-                          variant="ghost"
-                          className="justify-start text-sm"
                           onClick={() => handleEditNote(note.id)}
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 p-0"
                         >
-                          Editar
+                          <Pencil className="h-4 w-4" />
+                          <span className="sr-only">Editar</span>
                         </Button>
                         <Button
+                          onClick={() => handleDeleteNote(note.id)}
                           variant="ghost"
-                          className="justify-start text-sm text-green-500"
-                          onClick={() => handleUpdateStatus(note.id, "done")}
-                          disabled={note.status === "done"}
+                          size="icon"
+                          className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
                         >
-                          Marcar como hecha
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          className="justify-start text-sm text-blue-500"
-                          onClick={() => handleUpdateStatus(note.id, "received")}
-                          disabled={note.status === "received"}
-                        >
-                          Marcar como recibida
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          className="justify-start text-sm text-yellow-500"
-                          onClick={() => handleUpdateStatus(note.id, "new")}
-                          disabled={note.status === "new"}
-                        >
-                          Marcar como nueva
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          className="justify-start text-sm text-red-500"
-                          onClick={() => handleDelete(note.id)}
-                        >
-                          Eliminar
+                          <Trash2 className="h-4 w-4" />
+                          <span className="sr-only">Eliminar</span>
                         </Button>
                       </div>
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                <p className="text-sm whitespace-pre-wrap">{note.content}</p>
-                <div className="mt-2 text-xs text-muted-foreground">
-                  {format(new Date(note.created_at), "d MMM yyyy, HH:mm", { locale: es })}
-                </div>
+                    </div>
+                    <p className="text-sm whitespace-pre-wrap">{note.content}</p>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        )}
+            </ScrollArea>
+          )}
+        </div>
+        
+        <DialogFooter>
+          <Button onClick={() => onOpenChange(false)}>
+            Cerrar
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

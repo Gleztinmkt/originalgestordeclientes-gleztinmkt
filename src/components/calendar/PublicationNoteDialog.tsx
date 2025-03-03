@@ -1,13 +1,13 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { PublicationNote } from "../client/publication/types";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 
 interface PublicationNoteDialogProps {
   publicationId: string;
@@ -29,7 +29,6 @@ export const PublicationNoteDialog = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isEditing = !!noteId;
 
-  // Fetch note data when editing
   useEffect(() => {
     let isMounted = true;
     
@@ -50,28 +49,31 @@ export const PublicationNoteDialog = ({
               description: "No se pudo cargar la nota",
               variant: "destructive",
             });
+            onOpenChange(false);
             return;
           }
 
           if (data && isMounted) {
             setContent(data.content);
-            // Ensure the status is a valid enum value
             if (data.status === "new" || data.status === "done" || data.status === "received") {
               setStatus(data.status as "new" | "done" | "received");
             } else {
-              // Default to "new" if status is invalid
               setStatus("new");
-              console.warn(`Invalid status received: ${data.status}, defaulting to "new"`);
             }
           }
-        } catch (err) {
-          console.error("Error in fetchNote:", err);
+        } catch (error) {
+          console.error("Error in fetchNote:", error);
+          toast({
+            title: "Error",
+            description: "Ocurrió un error al cargar la nota",
+            variant: "destructive",
+          });
+          onOpenChange(false);
         }
       };
 
       fetchNote();
     } else if (open) {
-      // Reset form for new notes
       setContent("");
       setStatus("new");
     }
@@ -79,13 +81,13 @@ export const PublicationNoteDialog = ({
     return () => {
       isMounted = false;
     };
-  }, [open, noteId]);
+  }, [open, noteId, onOpenChange]);
 
   const handleSubmit = async () => {
     if (!content.trim()) {
       toast({
         title: "Error",
-        description: "Por favor ingresa un contenido para la nota",
+        description: "El contenido no puede estar vacío",
         variant: "destructive",
       });
       return;
@@ -107,32 +109,29 @@ export const PublicationNoteDialog = ({
           .eq("id", noteId);
 
         if (error) throw error;
-
-        toast({
-          title: "Nota actualizada",
-          description: "La nota se ha actualizado correctamente",
-        });
       } else {
         const { error } = await supabase.from("publication_notes").insert({
           publication_id: publicationId,
           content,
           status,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
         });
 
         if (error) throw error;
-
-        toast({
-          title: "Nota agregada",
-          description: "La nota se ha agregado correctamente",
-        });
       }
 
-      // Call onSuccess callback
+      toast({
+        title: isEditing ? "Nota actualizada" : "Nota agregada",
+        description: isEditing
+          ? "La nota se ha actualizado correctamente"
+          : "La nota se ha agregado correctamente",
+      });
+      
       if (onSuccess) {
         onSuccess();
       }
       
-      // Close dialog with a delay to avoid state update conflicts
       setTimeout(() => {
         onOpenChange(false);
       }, 300);
@@ -151,11 +150,51 @@ export const PublicationNoteDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{isEditing ? "Editar Nota" : "Agregar Nota"}</DialogTitle>
+          <DialogTitle>
+            {isEditing ? "Editar nota" : "Agregar nota"}
+          </DialogTitle>
+          <DialogDescription>
+            {isEditing
+              ? "Actualiza la información de la nota"
+              : "Agrega una nueva nota a la publicación"}
+          </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4">
+
+        <div className="space-y-4 py-4">
+          <div className="space-y-2">
+            <Label htmlFor="status">Estado</Label>
+            <Select
+              value={status}
+              onValueChange={(value: "new" | "done" | "received") => setStatus(value)}
+            >
+              <SelectTrigger id="status" className="w-full">
+                <SelectValue placeholder="Seleccionar estado" />
+              </SelectTrigger>
+              <SelectContent position="popper" className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 z-50">
+                <SelectItem value="new" className="cursor-pointer">
+                  <div className="flex items-center">
+                    <div className="w-3 h-3 rounded-full bg-yellow-500 mr-2" />
+                    Nuevo
+                  </div>
+                </SelectItem>
+                <SelectItem value="done" className="cursor-pointer">
+                  <div className="flex items-center">
+                    <div className="w-3 h-3 rounded-full bg-green-500 mr-2" />
+                    Completado
+                  </div>
+                </SelectItem>
+                <SelectItem value="received" className="cursor-pointer">
+                  <div className="flex items-center">
+                    <div className="w-3 h-3 rounded-full bg-blue-500 mr-2" />
+                    Recibido
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="content">Contenido</Label>
             <Textarea
@@ -163,37 +202,32 @@ export const PublicationNoteDialog = ({
               value={content}
               onChange={(e) => setContent(e.target.value)}
               placeholder="Escribe tu nota aquí..."
-              className="min-h-[100px]"
+              className="min-h-[150px]"
             />
           </div>
-
-          <div className="space-y-2">
-            <Label>Estado</Label>
-            <RadioGroup value={status} onValueChange={(value: "new" | "done" | "received") => setStatus(value)}>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="new" id="new" />
-                <Label htmlFor="new" className="text-yellow-500">Nueva</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="done" id="done" />
-                <Label htmlFor="done" className="text-green-500">Hecha</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="received" id="received" />
-                <Label htmlFor="received" className="text-blue-500">Recibida</Label>
-              </div>
-            </RadioGroup>
-          </div>
-
-          <div className="flex justify-end space-x-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
-              Cancelar
-            </Button>
-            <Button onClick={handleSubmit} disabled={isSubmitting}>
-              {isSubmitting ? "Guardando..." : isEditing ? "Actualizar" : "Guardar"}
-            </Button>
-          </div>
         </div>
+
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={isSubmitting}
+          >
+            Cancelar
+          </Button>
+          <Button onClick={handleSubmit} disabled={isSubmitting}>
+            {isSubmitting ? (
+              <>
+                <span className="animate-spin mr-2">⌛</span>
+                {isEditing ? "Actualizando..." : "Guardando..."}
+              </>
+            ) : isEditing ? (
+              "Actualizar"
+            ) : (
+              "Guardar"
+            )}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
