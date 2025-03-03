@@ -2,7 +2,7 @@
 import { format } from "date-fns";
 import { Trash2, StickyNote } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Publication } from "./types";
+import { Publication, PublicationNote } from "./types";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
@@ -52,7 +52,7 @@ export const PublicationItem = ({
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return data;
+      return data as PublicationNote[];
     },
     enabled: isAdmin,
   });

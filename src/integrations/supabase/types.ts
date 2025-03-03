@@ -459,6 +459,41 @@ export type Database = {
           },
         ]
       }
+      publication_notes: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          publication_id: string
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          publication_id: string
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          publication_id?: string
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "publication_notes_publication_id_fkey"
+            columns: ["publication_id"]
+            isOneToOne: false
+            referencedRelation: "publications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       publication_planning: {
         Row: {
           client_id: string | null
