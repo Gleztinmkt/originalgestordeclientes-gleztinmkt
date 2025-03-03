@@ -1,3 +1,4 @@
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Info } from "lucide-react";
 import { DesignerDialog } from "./DesignerDialog";
@@ -6,7 +7,7 @@ import { useState } from "react";
 import { Button } from "../ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ScrollArea } from "@/components/ui/scroll-area";
+
 interface FilterPanelProps {
   clients: Array<{
     id: string;
@@ -27,6 +28,7 @@ interface FilterPanelProps {
   isDesigner?: boolean;
   children?: React.ReactNode;
 }
+
 export const FilterPanel = ({
   clients,
   designers,
@@ -118,13 +120,17 @@ export const FilterPanel = ({
       </Popover>
     </>;
   return <div className={`${isMobile ? 'w-full' : ''}`}>
-      {isMobile ? <ScrollArea className="h-[calc(100vh-8rem)] px-4 pt-8">
+      {isMobile ? (
+        <div className="h-[calc(100vh-8rem)] px-4 pt-8 overflow-y-auto">
           <div className="flex flex-col space-y-4 py-[42px]">
             {filterContent}
           </div>
-        </ScrollArea> : <div className="flex items-center gap-4">
+        </div>
+      ) : (
+        <div className="flex items-center gap-4">
           {filterContent}
-        </div>}
+        </div>
+      )}
 
       {!isDesigner && <DesignerDialog open={showDesignerDialog} onOpenChange={setShowDesignerDialog} onDesignerAdded={onDesignerAdded} onDesignerDeleted={onDesignerAdded} />}
     </div>;
