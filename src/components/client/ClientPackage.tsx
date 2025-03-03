@@ -286,7 +286,7 @@ export const ClientPackage = ({
                 <MoreVertical className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align="end" className="bg-zinc-700">
               <DropdownMenuItem onClick={() => setIsEditDialogOpen(true)} disabled={disabled}>
                 <Edit className="mr-2 h-4 w-4" />
                 Editar paquete
