@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Publication } from "../client/publication/types";
@@ -57,7 +56,6 @@ export const PublicationCard = ({
   const [showNoteView, setShowNoteView] = useState(false);
   const [editNoteId, setEditNoteId] = useState<string | undefined>(undefined);
 
-  // Query to check if user is admin
   const { data: userRole } = useQuery({
     queryKey: ['userRole'],
     queryFn: async () => {
@@ -76,7 +74,6 @@ export const PublicationCard = ({
 
   const isAdmin = userRole === 'admin';
 
-  // Query for notes
   const { data: noteData, refetch: refetchNotes } = useQuery({
     queryKey: ['publicationNotes', publication.id],
     queryFn: async () => {
@@ -96,7 +93,6 @@ export const PublicationCard = ({
 
   const hasNotes = noteData && noteData.length > 0;
   
-  // Get the latest note status for the icon color
   const latestNoteStatus = hasNotes ? noteData[0]?.status : null;
 
   const getNoteStatusColor = () => {
@@ -242,11 +238,17 @@ export const PublicationCard = ({
 
   const handleAddNote = () => {
     setEditNoteId(undefined);
-    setShowNoteDialog(true);
+    setShowNoteView(false);
+    setTimeout(() => {
+      setShowNoteDialog(true);
+    }, 50);
   };
 
   const handleViewNotes = () => {
-    setShowNoteView(true);
+    setShowNoteDialog(false);
+    setTimeout(() => {
+      setShowNoteView(true);
+    }, 50);
   };
 
   const handleEditNote = (noteId: string) => {
@@ -256,7 +258,9 @@ export const PublicationCard = ({
   };
 
   const handleNoteSuccess = () => {
-    refetchNotes();
+    setTimeout(() => {
+      refetchNotes();
+    }, 50);
   };
 
   return (
@@ -337,7 +341,6 @@ export const PublicationCard = ({
                 </ContextMenuSubContent>
               </ContextMenuSub>
               
-              {/* Note options - only for admins */}
               <ContextMenuItem onClick={handleAddNote}>
                 <MessageCircle className="mr-2 h-4 w-4" />
                 <span>Agregar nota</span>
@@ -395,7 +398,12 @@ export const PublicationCard = ({
             publicationId={publication.id}
             noteId={editNoteId}
             open={showNoteDialog}
-            onOpenChange={setShowNoteDialog}
+            onOpenChange={(open) => {
+              setShowNoteDialog(open);
+              if (!open) {
+                setEditNoteId(undefined);
+              }
+            }}
             onSuccess={handleNoteSuccess}
           />
 

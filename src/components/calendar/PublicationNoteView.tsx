@@ -85,6 +85,7 @@ export const PublicationNoteView = ({
 
       if (error) throw error;
 
+      // Update local state first for optimistic UI update
       setNotes(
         notes.map((note) =>
           note.id === noteId ? { ...note, status } : note
@@ -96,7 +97,10 @@ export const PublicationNoteView = ({
         description: "El estado de la nota se ha actualizado correctamente",
       });
 
-      onSuccess();
+      // Refetch notes to ensure consistency
+      setTimeout(() => {
+        onSuccess();
+      }, 50);
     } catch (error) {
       console.error("Error updating note status:", error);
       toast({
@@ -116,6 +120,7 @@ export const PublicationNoteView = ({
 
       if (error) throw error;
 
+      // Update local state first for optimistic UI update
       setNotes(notes.filter((note) => note.id !== noteId));
 
       toast({
@@ -123,7 +128,10 @@ export const PublicationNoteView = ({
         description: "La nota se ha eliminado correctamente",
       });
 
-      onSuccess();
+      // Notify parent component
+      setTimeout(() => {
+        onSuccess();
+      }, 50);
     } catch (error) {
       console.error("Error deleting note:", error);
       toast({
@@ -165,6 +173,17 @@ export const PublicationNoteView = ({
       default:
         return "text-yellow-500";
     }
+  };
+
+  const handleEditNote = (noteId: string) => {
+    // Use setTimeout to prevent state conflicts
+    setTimeout(() => {
+      onOpenChange(false);
+      // Add a small delay before opening the edit dialog
+      setTimeout(() => {
+        onEdit(noteId);
+      }, 100);
+    }, 50);
   };
 
   return (
@@ -221,7 +240,7 @@ export const PublicationNoteView = ({
                         <Button
                           variant="ghost"
                           className="justify-start text-sm"
-                          onClick={() => onEdit(note.id)}
+                          onClick={() => handleEditNote(note.id)}
                         >
                           Editar
                         </Button>

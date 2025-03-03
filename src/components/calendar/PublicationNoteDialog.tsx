@@ -32,32 +32,36 @@ export const PublicationNoteDialog = ({
   useEffect(() => {
     if (open && noteId) {
       const fetchNote = async () => {
-        const { data, error } = await supabase
-          .from("publication_notes")
-          .select("*")
-          .eq("id", noteId)
-          .single();
+        try {
+          const { data, error } = await supabase
+            .from("publication_notes")
+            .select("*")
+            .eq("id", noteId)
+            .single();
 
-        if (error) {
-          console.error("Error fetching note:", error);
-          toast({
-            title: "Error",
-            description: "No se pudo cargar la nota",
-            variant: "destructive",
-          });
-          return;
-        }
-
-        if (data) {
-          setContent(data.content);
-          // Ensure the status is a valid enum value
-          if (data.status === "new" || data.status === "done" || data.status === "received") {
-            setStatus(data.status as "new" | "done" | "received");
-          } else {
-            // Default to "new" if status is invalid
-            setStatus("new");
-            console.warn(`Invalid status received: ${data.status}, defaulting to "new"`);
+          if (error) {
+            console.error("Error fetching note:", error);
+            toast({
+              title: "Error",
+              description: "No se pudo cargar la nota",
+              variant: "destructive",
+            });
+            return;
           }
+
+          if (data) {
+            setContent(data.content);
+            // Ensure the status is a valid enum value
+            if (data.status === "new" || data.status === "done" || data.status === "received") {
+              setStatus(data.status as "new" | "done" | "received");
+            } else {
+              // Default to "new" if status is invalid
+              setStatus("new");
+              console.warn(`Invalid status received: ${data.status}, defaulting to "new"`);
+            }
+          }
+        } catch (err) {
+          console.error("Error in fetchNote:", err);
         }
       };
 
@@ -113,8 +117,14 @@ export const PublicationNoteDialog = ({
         });
       }
 
-      onSuccess();
-      onOpenChange(false);
+      // Call onSuccess first, then close dialog
+      if (onSuccess) {
+        onSuccess();
+      }
+      // Use setTimeout to avoid state update conflicts
+      setTimeout(() => {
+        onOpenChange(false);
+      }, 50);
     } catch (error) {
       console.error("Error saving note:", error);
       toast({

@@ -24,16 +24,21 @@ export const PublicationItem = ({
   const { data: userRole } = useQuery({
     queryKey: ['userRole'],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return null;
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return null;
 
-      const { data: roleData } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .single();
+        const { data: roleData } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id)
+          .single();
 
-      return roleData?.role || null;
+        return roleData?.role || null;
+      } catch (error) {
+        console.error("Error fetching user role:", error);
+        return null;
+      }
     },
   });
 
@@ -45,28 +50,33 @@ export const PublicationItem = ({
     queryFn: async () => {
       if (!isAdmin) return null;
       
-      const { data, error } = await supabase
-        .from('publication_notes')
-        .select('*')
-        .eq('publication_id', publication.id)
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      
-      // Ensure each note has a valid status
-      const typedNotes: PublicationNote[] = (data || []).map(note => {
-        let validStatus: "new" | "done" | "received" = "new";
-        if (note.status === "new" || note.status === "done" || note.status === "received") {
-          validStatus = note.status as "new" | "done" | "received";
-        }
+      try {
+        const { data, error } = await supabase
+          .from('publication_notes')
+          .select('*')
+          .eq('publication_id', publication.id)
+          .order('created_at', { ascending: false });
         
-        return {
-          ...note,
-          status: validStatus
-        };
-      });
-      
-      return typedNotes;
+        if (error) throw error;
+        
+        // Ensure each note has a valid status
+        const typedNotes: PublicationNote[] = (data || []).map(note => {
+          let validStatus: "new" | "done" | "received" = "new";
+          if (note.status === "new" || note.status === "done" || note.status === "received") {
+            validStatus = note.status as "new" | "done" | "received";
+          }
+          
+          return {
+            ...note,
+            status: validStatus
+          };
+        });
+        
+        return typedNotes;
+      } catch (error) {
+        console.error("Error fetching notes:", error);
+        return [];
+      }
     },
     enabled: isAdmin,
   });
