@@ -29,10 +29,14 @@ export const PublicationNoteDialog = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isEditing = !!noteId;
 
+  // Fetch note data when editing
   useEffect(() => {
+    let isMounted = true;
+    
     if (open && noteId) {
       const fetchNote = async () => {
         try {
+          console.log("Fetching note with ID:", noteId);
           const { data, error } = await supabase
             .from("publication_notes")
             .select("*")
@@ -49,7 +53,7 @@ export const PublicationNoteDialog = ({
             return;
           }
 
-          if (data) {
+          if (data && isMounted) {
             setContent(data.content);
             // Ensure the status is a valid enum value
             if (data.status === "new" || data.status === "done" || data.status === "received") {
@@ -71,6 +75,10 @@ export const PublicationNoteDialog = ({
       setContent("");
       setStatus("new");
     }
+    
+    return () => {
+      isMounted = false;
+    };
   }, [open, noteId]);
 
   const handleSubmit = async () => {
@@ -86,7 +94,9 @@ export const PublicationNoteDialog = ({
     setIsSubmitting(true);
 
     try {
-      if (isEditing) {
+      console.log("Saving note:", isEditing ? "update" : "new", noteId || "new note");
+      
+      if (isEditing && noteId) {
         const { error } = await supabase
           .from("publication_notes")
           .update({
@@ -117,14 +127,16 @@ export const PublicationNoteDialog = ({
         });
       }
 
-      // Call onSuccess first, then close dialog
+      // Call onSuccess callback
       if (onSuccess) {
         onSuccess();
       }
-      // Use setTimeout to avoid state update conflicts
+      
+      // Close dialog with a delay to avoid state update conflicts
       setTimeout(() => {
         onOpenChange(false);
-      }, 50);
+      }, 300);
+      
     } catch (error) {
       console.error("Error saving note:", error);
       toast({

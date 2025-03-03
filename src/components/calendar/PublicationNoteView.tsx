@@ -176,14 +176,20 @@ export const PublicationNoteView = ({
   };
 
   const handleEditNote = (noteId: string) => {
-    // Use setTimeout to prevent state conflicts
+    if (!noteId) {
+      console.error("Note ID is missing");
+      return;
+    }
+    
+    console.log("Editing note with ID:", noteId);
+    
+    // First close the note view dialog
+    onOpenChange(false);
+    
+    // Add a small delay before triggering the edit action to prevent UI conflicts
     setTimeout(() => {
-      onOpenChange(false);
-      // Add a small delay before opening the edit dialog
-      setTimeout(() => {
-        onEdit(noteId);
-      }, 100);
-    }, 50);
+      onEdit(noteId);
+    }, 300);
   };
 
   return (

@@ -6,6 +6,7 @@ import { Publication, PublicationNote } from "./types";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { useState, useEffect } from "react";
 
 interface PublicationItemProps {
   publication: Publication;
@@ -45,7 +46,7 @@ export const PublicationItem = ({
   const isAdmin = userRole === 'admin';
 
   // Query for notes
-  const { data: noteData } = useQuery({
+  const { data: noteData, refetch: refetchNotes } = useQuery({
     queryKey: ['publicationItemNotes', publication.id],
     queryFn: async () => {
       if (!isAdmin) return null;
@@ -80,6 +81,13 @@ export const PublicationItem = ({
     },
     enabled: isAdmin,
   });
+
+  // Refresh notes when the component mounts to ensure we have the latest data
+  useEffect(() => {
+    if (isAdmin) {
+      refetchNotes();
+    }
+  }, [isAdmin, refetchNotes]);
 
   const hasNotes = noteData && noteData.length > 0;
   
