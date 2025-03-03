@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import {
@@ -126,7 +125,6 @@ export const PublicationNoteView = ({
         description: "El estado se ha actualizado correctamente",
       });
       
-      // Invalidate the query to refetch notes - fix the type error
       queryClient.invalidateQueries({
         queryKey: ["publicationNotes", publicationId]
       });
@@ -163,7 +161,6 @@ export const PublicationNoteView = ({
         description: "El estado de la nota se ha actualizado correctamente",
       });
       
-      // Invalidate the query to refetch notes - fix the type error
       queryClient.invalidateQueries({
         queryKey: ["publicationNotes", publicationId]
       });
@@ -207,7 +204,6 @@ export const PublicationNoteView = ({
         description: "La nota se ha eliminado correctamente",
       });
       
-      // Invalidate the query to refetch notes - fix the type error
       queryClient.invalidateQueries({
         queryKey: ["publicationNotes", publicationId]
       });
@@ -230,10 +226,7 @@ export const PublicationNoteView = ({
     
     console.log("Editing note with ID:", noteId);
     
-    // First close the note view dialog
     onOpenChange(false);
-    
-    // Add a small delay before triggering the edit action to prevent UI conflicts
     setTimeout(() => {
       onEdit(noteId);
     }, 300);
