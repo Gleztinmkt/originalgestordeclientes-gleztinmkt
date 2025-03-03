@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import {
@@ -18,7 +19,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Pencil, Trash2 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -71,7 +71,7 @@ export const PublicationNoteView = ({
   onEdit,
   onSuccess
 }: PublicationNoteViewProps) => {
-  const [currentStatus, setCurrentStatus] = useState<PublicationNote["status"]>("new");
+  const [publicationStatus, setPublicationStatus] = useState<PublicationNote["status"]>("new");
   const queryClient = useQueryClient();
 
   const { data: notes = [], isLoading, refetch } = useQuery({
@@ -100,11 +100,11 @@ export const PublicationNoteView = ({
 
   useEffect(() => {
     if (notes.length > 0) {
-      setCurrentStatus(notes[0].status);
+      setPublicationStatus(notes[0].status);
     }
   }, [notes]);
 
-  const handleStatusChange = async (newStatus: PublicationNote["status"]) => {
+  const handleUpdatePublicationStatus = async (newStatus: PublicationNote["status"]) => {
     try {
       const { error } = await supabase
         .from("publication_notes")
@@ -126,14 +126,53 @@ export const PublicationNoteView = ({
         description: "El estado se ha actualizado correctamente",
       });
       
-      // Invalidate the query to refetch notes
-      queryClient.invalidateQueries(["publicationNotes", publicationId]);
+      // Invalidate the query to refetch notes - fix the type error
+      queryClient.invalidateQueries({
+        queryKey: ["publicationNotes", publicationId]
+      });
       
     } catch (error) {
       console.error("Error in handleStatusChange:", error);
       toast({
         title: "Error",
         description: "Ocurrió un error al actualizar el estado",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleUpdateNoteStatus = async (noteId: string, newStatus: PublicationNote["status"]) => {
+    try {
+      const { error } = await supabase
+        .from("publication_notes")
+        .update({ status: newStatus })
+        .eq("id", noteId);
+
+      if (error) {
+        console.error("Error updating note status:", error);
+        toast({
+          title: "Error",
+          description: "No se pudo actualizar el estado de la nota",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Estado actualizado",
+        description: "El estado de la nota se ha actualizado correctamente",
+      });
+      
+      // Invalidate the query to refetch notes - fix the type error
+      queryClient.invalidateQueries({
+        queryKey: ["publicationNotes", publicationId]
+      });
+      
+    } catch (error) {
+      console.error("Error in handleNoteStatusChange:", error);
+      toast({
+        title: "Error",
+        description: "Ocurrió un error al actualizar el estado de la nota",
         variant: "destructive",
       });
     }
@@ -168,8 +207,10 @@ export const PublicationNoteView = ({
         description: "La nota se ha eliminado correctamente",
       });
       
-      // Invalidate the query to refetch notes
-      queryClient.invalidateQueries(["publicationNotes", publicationId]);
+      // Invalidate the query to refetch notes - fix the type error
+      queryClient.invalidateQueries({
+        queryKey: ["publicationNotes", publicationId]
+      });
       
     } catch (error) {
       console.error("Error in handleDeleteNote:", error);
@@ -209,18 +250,18 @@ export const PublicationNoteView = ({
         </DialogHeader>
         
         <div className="flex justify-between items-center mb-2">
-          <h3 className="font-medium">Estado actual:</h3>
+          <h3 className="font-medium">Estado general:</h3>
           <Select
-            defaultValue={currentStatus}
+            defaultValue={publicationStatus}
             onValueChange={(value: "new" | "done" | "received") => {
-              setCurrentStatus(value);
-              handleStatusChange(value);
+              setPublicationStatus(value);
+              handleUpdatePublicationStatus(value);
             }}
           >
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Seleccionar estado" />
             </SelectTrigger>
-            <SelectContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+            <SelectContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 z-50">
               <SelectItem value="new" className="cursor-pointer">
                 <div className="flex items-center">
                   <div className="w-3 h-3 rounded-full bg-yellow-500 mr-2" />
@@ -301,7 +342,39 @@ export const PublicationNoteView = ({
                         </Button>
                       </div>
                     </div>
-                    <p className="text-sm whitespace-pre-wrap">{note.content}</p>
+                    <div className="flex justify-between items-center mb-2">
+                      <p className="text-sm whitespace-pre-wrap">{note.content}</p>
+                      <Select
+                        value={note.status}
+                        onValueChange={(value: "new" | "done" | "received") => {
+                          handleUpdateNoteStatus(note.id, value);
+                        }}
+                      >
+                        <SelectTrigger className="w-[130px] h-8">
+                          <SelectValue placeholder="Estado" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 z-50">
+                          <SelectItem value="new" className="cursor-pointer">
+                            <div className="flex items-center">
+                              <div className="w-3 h-3 rounded-full bg-yellow-500 mr-2" />
+                              Nuevo
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="done" className="cursor-pointer">
+                            <div className="flex items-center">
+                              <div className="w-3 h-3 rounded-full bg-green-500 mr-2" />
+                              Completado
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="received" className="cursor-pointer">
+                            <div className="flex items-center">
+                              <div className="w-3 h-3 rounded-full bg-blue-500 mr-2" />
+                              Recibido
+                            </div>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 ))}
               </div>
