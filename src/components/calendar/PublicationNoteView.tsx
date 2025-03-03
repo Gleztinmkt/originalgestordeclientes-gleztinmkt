@@ -44,7 +44,23 @@ export const PublicationNoteView = ({
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setNotes(data || []);
+      
+      // Ensure each note has a valid status before setting to state
+      const typedNotes: PublicationNote[] = (data || []).map(note => {
+        let validStatus: "new" | "done" | "received" = "new";
+        if (note.status === "new" || note.status === "done" || note.status === "received") {
+          validStatus = note.status as "new" | "done" | "received";
+        } else {
+          console.warn(`Invalid status found: ${note.status}, defaulting to "new"`);
+        }
+        
+        return {
+          ...note,
+          status: validStatus
+        };
+      });
+      
+      setNotes(typedNotes);
     } catch (error) {
       console.error("Error fetching notes:", error);
       toast({

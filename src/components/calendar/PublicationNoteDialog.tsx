@@ -50,7 +50,14 @@ export const PublicationNoteDialog = ({
 
         if (data) {
           setContent(data.content);
-          setStatus(data.status);
+          // Ensure the status is a valid enum value
+          if (data.status === "new" || data.status === "done" || data.status === "received") {
+            setStatus(data.status as "new" | "done" | "received");
+          } else {
+            // Default to "new" if status is invalid
+            setStatus("new");
+            console.warn(`Invalid status received: ${data.status}, defaulting to "new"`);
+          }
         }
       };
 
@@ -140,7 +147,7 @@ export const PublicationNoteDialog = ({
 
           <div className="space-y-2">
             <Label>Estado</Label>
-            <RadioGroup value={status} onValueChange={(value) => setStatus(value as "new" | "done" | "received")}>
+            <RadioGroup value={status} onValueChange={(value: "new" | "done" | "received") => setStatus(value)}>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="new" id="new" />
                 <Label htmlFor="new" className="text-yellow-500">Nueva</Label>

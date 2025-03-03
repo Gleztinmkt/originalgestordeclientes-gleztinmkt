@@ -52,7 +52,21 @@ export const PublicationItem = ({
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return data as PublicationNote[];
+      
+      // Ensure each note has a valid status
+      const typedNotes: PublicationNote[] = (data || []).map(note => {
+        let validStatus: "new" | "done" | "received" = "new";
+        if (note.status === "new" || note.status === "done" || note.status === "received") {
+          validStatus = note.status as "new" | "done" | "received";
+        }
+        
+        return {
+          ...note,
+          status: validStatus
+        };
+      });
+      
+      return typedNotes;
     },
     enabled: isAdmin,
   });
