@@ -16,6 +16,7 @@ import { InfoIcon, Filter } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
 
 export const CalendarView = ({ clients }: { clients: Client[] }) => {
   const initialDate = new Date();
@@ -142,7 +143,6 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
     }
   }, [highlightedPublicationId]);
 
-  // Simulamos el progreso de carga
   useEffect(() => {
     let progress = 0;
     const interval = setInterval(() => {
@@ -208,22 +208,30 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
   };
 
   const FilterContent = () => (
-    <FilterPanel
-      clients={clients}
-      designers={designers}
-      selectedClient={selectedClient}
-      selectedDesigner={selectedDesigner}
-      selectedStatus={selectedStatus}
-      selectedType={selectedType}
-      selectedPackage={selectedPackage}
-      onClientChange={setSelectedClient}
-      onDesignerChange={setSelectedDesigner}
-      onStatusChange={setSelectedStatus}
-      onTypeChange={setSelectedType}
-      onPackageChange={setSelectedPackage}
-      onDesignerAdded={refetchDesigners}
-      isDesigner={userRole === 'designer'}
-    />
+    <div>
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="font-medium">Filtros</h3>
+        <Badge variant="outline" className="bg-primary/10">
+          {filteredPublications.length} publicaciones
+        </Badge>
+      </div>
+      <FilterPanel
+        clients={clients}
+        designers={designers}
+        selectedClient={selectedClient}
+        selectedDesigner={selectedDesigner}
+        selectedStatus={selectedStatus}
+        selectedType={selectedType}
+        selectedPackage={selectedPackage}
+        onClientChange={setSelectedClient}
+        onDesignerChange={setSelectedDesigner}
+        onStatusChange={setSelectedStatus}
+        onTypeChange={setSelectedType}
+        onPackageChange={setSelectedPackage}
+        onDesignerAdded={refetchDesigners}
+        isDesigner={userRole === 'designer'}
+      />
+    </div>
   );
 
   const CalendarContent = () => (
@@ -406,16 +414,21 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
                 {format(selectedDate, 'MMMM yyyy', { locale: es })}
               </h2>
             </div>
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="outline" size="icon">
-                  <Filter className="h-4 w-4" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="right" className="w-full sm:w-[400px]">
-                <FilterContent />
-              </SheetContent>
-            </Sheet>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="bg-primary/10 mr-1">
+                {filteredPublications.length}
+              </Badge>
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button variant="outline" size="icon">
+                    <Filter className="h-4 w-4" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="right" className="w-full sm:w-[400px]">
+                  <FilterContent />
+                </SheetContent>
+              </Sheet>
+            </div>
           </div>
           <div className="flex-1 overflow-auto">
             <CalendarContent />
@@ -456,6 +469,9 @@ export const CalendarView = ({ clients }: { clients: Client[] }) => {
                 <h2 className="text-xl font-semibold capitalize">
                   {format(selectedDate, 'MMMM yyyy', { locale: es })}
                 </h2>
+                <Badge variant="outline" className="bg-primary/10 ml-2">
+                  {filteredPublications.length} publicaciones
+                </Badge>
               </div>
             </div>
             <FilterContent />
