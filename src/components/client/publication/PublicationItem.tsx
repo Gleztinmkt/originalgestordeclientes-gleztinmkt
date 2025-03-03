@@ -1,7 +1,11 @@
+
 import { format } from "date-fns";
-import { Trash2 } from "lucide-react";
+import { Trash2, StickyNote } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Publication } from "./types";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { cn } from "@/lib/utils";
 
 interface PublicationItemProps {
   publication: Publication;
@@ -16,6 +20,60 @@ export const PublicationItem = ({
   onTogglePublished,
   onSelect 
 }: PublicationItemProps) => {
+  // Query to check if user is admin
+  const { data: userRole } = useQuery({
+    queryKey: ['userRole'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+
+      const { data: roleData } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .single();
+
+      return roleData?.role || null;
+    },
+  });
+
+  const isAdmin = userRole === 'admin';
+
+  // Query for notes
+  const { data: noteData } = useQuery({
+    queryKey: ['publicationItemNotes', publication.id],
+    queryFn: async () => {
+      if (!isAdmin) return null;
+      
+      const { data, error } = await supabase
+        .from('publication_notes')
+        .select('*')
+        .eq('publication_id', publication.id)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: isAdmin,
+  });
+
+  const hasNotes = noteData && noteData.length > 0;
+  
+  // Get the latest note status for the icon color
+  const latestNoteStatus = hasNotes ? noteData[0]?.status : null;
+
+  const getNoteStatusColor = () => {
+    if (!latestNoteStatus) return "text-gray-400";
+    switch (latestNoteStatus) {
+      case "done":
+        return "text-green-500";
+      case "received":
+        return "text-blue-500";
+      default:
+        return "text-yellow-500";
+    }
+  };
+
   return (
     <div 
       className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm cursor-pointer"
@@ -35,6 +93,9 @@ export const PublicationItem = ({
           <p className="font-medium dark:text-white">
             {publication.name}
           </p>
+          {isAdmin && hasNotes && (
+            <StickyNote className={cn("h-4 w-4", getNoteStatusColor())} />
+          )}
         </div>
         <p className="text-sm text-gray-500 dark:text-gray-400">
           {format(new Date(publication.date), "dd/MM/yyyy")} • {publication.type}

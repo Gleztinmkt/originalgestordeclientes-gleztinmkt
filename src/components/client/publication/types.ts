@@ -1,3 +1,4 @@
+
 export interface Publication {
   id: string;
   client_id: string | null;
@@ -21,6 +22,15 @@ export interface Publication {
   filming_time?: string | null;
   links?: string | null;
   copywriting?: string | null;
+}
+
+export interface PublicationNote {
+  id: string;
+  publication_id: string;
+  content: string;
+  status: 'new' | 'done' | 'received';
+  created_at: string;
+  updated_at: string;
 }
 
 export interface PublicationFormValues {

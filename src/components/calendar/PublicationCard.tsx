@@ -13,9 +13,10 @@ import {
   AlertCircle,
   Clock,
   User,
-  Instagram
+  Instagram,
+  MessageCircle,
+  StickyNote
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -29,6 +30,8 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
+import { PublicationNoteDialog } from "./PublicationNoteDialog";
+import { PublicationNoteView } from "./PublicationNoteView";
 
 interface PublicationCardProps {
   publication: Publication;
@@ -50,6 +53,63 @@ export const PublicationCard = ({
   const [showDialog, setShowDialog] = useState(false);
   const [touchCount, setTouchCount] = useState(0);
   const [touchTimer, setTouchTimer] = useState<NodeJS.Timeout | null>(null);
+  const [showNoteDialog, setShowNoteDialog] = useState(false);
+  const [showNoteView, setShowNoteView] = useState(false);
+  const [editNoteId, setEditNoteId] = useState<string | undefined>(undefined);
+
+  // Query to check if user is admin
+  const { data: userRole } = useQuery({
+    queryKey: ['userRole'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+
+      const { data: roleData } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .single();
+
+      return roleData?.role || null;
+    },
+  });
+
+  const isAdmin = userRole === 'admin';
+
+  // Query for notes
+  const { data: noteData, refetch: refetchNotes } = useQuery({
+    queryKey: ['publicationNotes', publication.id],
+    queryFn: async () => {
+      if (!isAdmin) return null;
+      
+      const { data, error } = await supabase
+        .from('publication_notes')
+        .select('*')
+        .eq('publication_id', publication.id)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: isAdmin,
+  });
+
+  const hasNotes = noteData && noteData.length > 0;
+  
+  // Get the latest note status for the icon color
+  const latestNoteStatus = hasNotes ? noteData[0]?.status : null;
+
+  const getNoteStatusColor = () => {
+    if (!latestNoteStatus) return "text-gray-400";
+    switch (latestNoteStatus) {
+      case "done":
+        return "text-green-500";
+      case "received":
+        return "text-blue-500";
+      default:
+        return "text-yellow-500";
+    }
+  };
 
   const handleTouch = () => {
     if (isMobile) {
@@ -180,124 +240,144 @@ export const PublicationCard = ({
     }
   };
 
-  const { data: userRole } = useQuery({
-    queryKey: ['userRole'],
-    queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return null;
+  const handleAddNote = () => {
+    setEditNoteId(undefined);
+    setShowNoteDialog(true);
+  };
 
-      const { data: roleData } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .single();
+  const handleViewNotes = () => {
+    setShowNoteView(true);
+  };
 
-      return roleData?.role || null;
-    },
-  });
+  const handleEditNote = (noteId: string) => {
+    setEditNoteId(noteId);
+    setShowNoteDialog(true);
+    setShowNoteView(false);
+  };
 
-  const isAdmin = userRole === 'admin';
+  const handleNoteSuccess = () => {
+    refetchNotes();
+  };
 
   return (
-    <ContextMenu>
-      <ContextMenuTrigger>
-        <Card 
-          className={cn(
-            "mb-1 hover:shadow-md transition-shadow cursor-pointer group",
-            getStatusColor()
-          )}
-          onClick={isMobile ? handleTouch : () => setShowDialog(true)}
-        >
-          <CardContent className="p-2">
-            <div className="flex flex-col gap-1">
-              <div className="flex items-start gap-1 min-w-0">
-                <div className="flex-shrink-0 mt-1">
-                  {getStatusIcon()}
-                </div>
-                <p className={cn(
-                  "text-xs font-medium",
-                  isMobile ? "truncate" : "line-clamp-3"
-                )}>
-                  {displayTitle}
-                </p>
-              </div>
+    <>
+      <ContextMenu>
+        <ContextMenuTrigger>
+          <Card 
+            className={cn(
+              "mb-1 hover:shadow-md transition-shadow cursor-pointer group",
+              getStatusColor()
+            )}
+            onClick={isMobile ? handleTouch : () => setShowDialog(true)}
+          >
+            <CardContent className="p-2">
               <div className="flex flex-col gap-1">
-                {publication.designer && (
-                  <div className="flex items-center gap-1">
-                    <User className="h-3 w-3" />
-                    <span className="text-xs truncate">{publication.designer}</span>
+                <div className="flex items-start gap-1 min-w-0">
+                  <div className="flex-shrink-0 mt-1">
+                    {getStatusIcon()}
                   </div>
-                )}
-                {client?.instagram && (
-                  <a 
-                    href={`https://instagram.com/${client.instagram}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1 text-pink-600 hover:text-pink-700 dark:text-pink-400 dark:hover:text-pink-300"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <Instagram className="h-3 w-3" />
-                    <span className="text-xs truncate">@{client.instagram}</span>
-                  </a>
-                )}
+                  <p className={cn(
+                    "text-xs font-medium",
+                    isMobile ? "truncate" : "line-clamp-3"
+                  )}>
+                    {displayTitle}
+                  </p>
+                  {isAdmin && hasNotes && (
+                    <div className="flex-shrink-0 ml-auto">
+                      <StickyNote className={`h-3 w-3 ${getNoteStatusColor()}`} />
+                    </div>
+                  )}
+                </div>
+                <div className="flex flex-col gap-1">
+                  {publication.designer && (
+                    <div className="flex items-center gap-1">
+                      <User className="h-3 w-3" />
+                      <span className="text-xs truncate">{publication.designer}</span>
+                    </div>
+                  )}
+                  {client?.instagram && (
+                    <a 
+                      href={`https://instagram.com/${client.instagram}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1 text-pink-600 hover:text-pink-700 dark:text-pink-400 dark:hover:text-pink-300"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Instagram className="h-3 w-3" />
+                      <span className="text-xs truncate">@{client.instagram}</span>
+                    </a>
+                  )}
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-      </ContextMenuTrigger>
+            </CardContent>
+          </Card>
+        </ContextMenuTrigger>
 
-      <ContextMenuContent className="w-64">
-        {isAdmin && (
-          <>
-            <ContextMenuSub>
-              <ContextMenuSubTrigger>
-                <User className="mr-2 h-4 w-4" />
-                <span>Asignar diseñador</span>
-              </ContextMenuSubTrigger>
-              <ContextMenuSubContent className="w-48">
-                <ContextMenuItem onClick={() => handleDesignerAssign("")}>
-                  Sin diseñador
-                </ContextMenuItem>
-                <ContextMenuSeparator />
-                {designers.map((designer) => (
-                  <ContextMenuItem
-                    key={designer.id}
-                    onClick={() => handleDesignerAssign(designer.name)}
-                  >
-                    {designer.name}
+        <ContextMenuContent className="w-64">
+          {isAdmin && (
+            <>
+              <ContextMenuSub>
+                <ContextMenuSubTrigger>
+                  <User className="mr-2 h-4 w-4" />
+                  <span>Asignar diseñador</span>
+                </ContextMenuSubTrigger>
+                <ContextMenuSubContent className="w-48">
+                  <ContextMenuItem onClick={() => handleDesignerAssign("")}>
+                    Sin diseñador
                   </ContextMenuItem>
-                ))}
-              </ContextMenuSubContent>
-            </ContextMenuSub>
-            <ContextMenuSeparator />
-          </>
-        )}
+                  <ContextMenuSeparator />
+                  {designers.map((designer) => (
+                    <ContextMenuItem
+                      key={designer.id}
+                      onClick={() => handleDesignerAssign(designer.name)}
+                    >
+                      {designer.name}
+                    </ContextMenuItem>
+                  ))}
+                </ContextMenuSubContent>
+              </ContextMenuSub>
+              
+              {/* Note options - only for admins */}
+              <ContextMenuItem onClick={handleAddNote}>
+                <MessageCircle className="mr-2 h-4 w-4" />
+                <span>Agregar nota</span>
+              </ContextMenuItem>
+              
+              <ContextMenuItem onClick={handleViewNotes}>
+                <StickyNote className="mr-2 h-4 w-4" />
+                <span>Ver notas {hasNotes ? `(${noteData?.length})` : ""}</span>
+              </ContextMenuItem>
+              
+              <ContextMenuSeparator />
+            </>
+          )}
 
-        <ContextMenuItem onClick={() => handleStatusChange("needs_recording")}>
-          <Video className="mr-2 h-4 w-4" />
-          <span>Falta grabar</span>
-        </ContextMenuItem>
-        <ContextMenuItem onClick={() => handleStatusChange("needs_editing")}>
-          <Edit className="mr-2 h-4 w-4" />
-          <span>Falta editar</span>
-        </ContextMenuItem>
-        <ContextMenuItem onClick={() => handleStatusChange("in_editing")}>
-          <Clock className="mr-2 h-4 w-4" />
-          <span>En edición</span>
-        </ContextMenuItem>
-        <ContextMenuItem onClick={() => handleStatusChange("in_review")}>
-          <AlertCircle className="mr-2 h-4 w-4" />
-          <span>En revisión</span>
-        </ContextMenuItem>
-        <ContextMenuItem onClick={() => handleStatusChange("approved")}>
-          <CheckCircle2 className="mr-2 h-4 w-4" />
-          <span>Aprobado</span>
-        </ContextMenuItem>
-        <ContextMenuItem onClick={() => handleStatusChange("is_published")}>
-          <Upload className="mr-2 h-4 w-4" />
-          <span>Publicado</span>
-        </ContextMenuItem>
-      </ContextMenuContent>
+          <ContextMenuItem onClick={() => handleStatusChange("needs_recording")}>
+            <Video className="mr-2 h-4 w-4" />
+            <span>Falta grabar</span>
+          </ContextMenuItem>
+          <ContextMenuItem onClick={() => handleStatusChange("needs_editing")}>
+            <Edit className="mr-2 h-4 w-4" />
+            <span>Falta editar</span>
+          </ContextMenuItem>
+          <ContextMenuItem onClick={() => handleStatusChange("in_editing")}>
+            <Clock className="mr-2 h-4 w-4" />
+            <span>En edición</span>
+          </ContextMenuItem>
+          <ContextMenuItem onClick={() => handleStatusChange("in_review")}>
+            <AlertCircle className="mr-2 h-4 w-4" />
+            <span>En revisión</span>
+          </ContextMenuItem>
+          <ContextMenuItem onClick={() => handleStatusChange("approved")}>
+            <CheckCircle2 className="mr-2 h-4 w-4" />
+            <span>Aprobado</span>
+          </ContextMenuItem>
+          <ContextMenuItem onClick={() => handleStatusChange("is_published")}>
+            <Upload className="mr-2 h-4 w-4" />
+            <span>Publicado</span>
+          </ContextMenuItem>
+        </ContextMenuContent>
+      </ContextMenu>
 
       <PublicationDialog
         open={showDialog}
@@ -308,7 +388,26 @@ export const PublicationCard = ({
         onDelete={handleDelete}
         designers={designers}
       />
-    </ContextMenu>
+
+      {isAdmin && (
+        <>
+          <PublicationNoteDialog
+            publicationId={publication.id}
+            noteId={editNoteId}
+            open={showNoteDialog}
+            onOpenChange={setShowNoteDialog}
+            onSuccess={handleNoteSuccess}
+          />
+
+          <PublicationNoteView
+            publicationId={publication.id}
+            open={showNoteView}
+            onOpenChange={setShowNoteView}
+            onEdit={handleEditNote}
+            onSuccess={handleNoteSuccess}
+          />
+        </>
+      )}
+    </>
   );
 };
-
