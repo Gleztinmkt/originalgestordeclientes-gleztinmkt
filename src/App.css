@@ -1,4 +1,3 @@
-
 #root {
   max-width: 1280px;
   margin: 0 auto;
@@ -79,29 +78,6 @@
   .loading-screen img {
     height: 60px;
   }
-}
-
-/* Universal Touch Scrolling Fix */
-* {
-  -webkit-overflow-scrolling: touch;
-  touch-action: manipulation;
-}
-
-/* Ensure all scrollable areas work well with touch */
-.overflow-auto,
-.overflow-y-auto,
-.overflow-x-auto,
-div[class*="overflow"],
-.select-content,
-[data-radix-scroll-area-viewport] {
-  -webkit-overflow-scrolling: touch !important;
-  touch-action: pan-y !important;
-  overscroll-behavior-y: contain;
-}
-
-/* Ensure select dropdowns are large enough to interact with on touch */
-.select-content {
-  max-height: 60vh !important;
 }
 
 /* Dark mode client cards */
