@@ -7,6 +7,7 @@ import { useState } from "react";
 import { Button } from "../ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface FilterPanelProps {
   clients: Array<{
@@ -48,16 +49,43 @@ export const FilterPanel = ({
 }: FilterPanelProps) => {
   const [showDesignerDialog, setShowDesignerDialog] = useState(false);
   const isMobile = useIsMobile();
+  
+  const renderSelectContent = (items: any[], valueKey: string = 'id', labelKey: string = 'name') => (
+    <SelectContent position="popper" className="max-h-60 overflow-auto z-50 bg-white dark:bg-gray-800 shadow-lg border border-gray-200 dark:border-gray-700">
+      <ScrollArea className="h-full py-1">
+        {items.map(item => (
+          <SelectItem 
+            key={item[valueKey]} 
+            value={item[valueKey]}
+            className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+          >
+            {item[labelKey]}
+          </SelectItem>
+        ))}
+      </ScrollArea>
+    </SelectContent>
+  );
+  
   const filterContent = <>
       <Select value={selectedClient || "all_clients"} onValueChange={value => onClientChange(value === "all_clients" ? null : value)}>
         <SelectTrigger className="min-w-[200px]">
           <SelectValue placeholder="Todos los clientes" />
         </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all_clients">Todos los clientes</SelectItem>
-          {clients.map(client => <SelectItem key={client.id} value={client.id}>
-              {client.name}
-            </SelectItem>)}
+        <SelectContent position="popper" className="max-h-60 overflow-auto z-50 bg-white dark:bg-gray-800 shadow-lg border border-gray-200 dark:border-gray-700">
+          <ScrollArea className="h-full py-1">
+            <SelectItem value="all_clients" className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700">
+              Todos los clientes
+            </SelectItem>
+            {clients.map(client => (
+              <SelectItem 
+                key={client.id} 
+                value={client.id}
+                className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
+                {client.name}
+              </SelectItem>
+            ))}
+          </ScrollArea>
         </SelectContent>
       </Select>
 
@@ -66,11 +94,21 @@ export const FilterPanel = ({
           <SelectTrigger className="min-w-[200px]">
             <SelectValue placeholder="Todos los diseñadores" />
           </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all_designers">Todos los diseñadores</SelectItem>
-            {designers.map(designer => <SelectItem key={designer.id} value={designer.name}>
-                {designer.name}
-              </SelectItem>)}
+          <SelectContent position="popper" className="max-h-60 overflow-auto z-50 bg-white dark:bg-gray-800 shadow-lg border border-gray-200 dark:border-gray-700">
+            <ScrollArea className="h-full py-1">
+              <SelectItem value="all_designers" className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700">
+                Todos los diseñadores
+              </SelectItem>
+              {designers.map(designer => (
+                <SelectItem 
+                  key={designer.id} 
+                  value={designer.name}
+                  className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+                >
+                  {designer.name}
+                </SelectItem>
+              ))}
+            </ScrollArea>
           </SelectContent>
         </Select>
         {!isDesigner && <Button variant="outline" size="icon" onClick={() => setShowDesignerDialog(true)} className="flex-shrink-0">
@@ -82,14 +120,30 @@ export const FilterPanel = ({
         <SelectTrigger className="min-w-[200px]">
           <SelectValue placeholder="Todos los estados" />
         </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all_status">Todos los estados</SelectItem>
-          <SelectItem value="needs_recording">Falta grabar</SelectItem>
-          <SelectItem value="needs_editing">Falta editar</SelectItem>
-          <SelectItem value="in_editing">En edición</SelectItem>
-          <SelectItem value="in_review">En revisión</SelectItem>
-          <SelectItem value="approved">Aprobado</SelectItem>
-          <SelectItem value="published">Publicado</SelectItem>
+        <SelectContent position="popper" className="max-h-60 overflow-auto z-50 bg-white dark:bg-gray-800 shadow-lg border border-gray-200 dark:border-gray-700">
+          <ScrollArea className="h-full py-1">
+            <SelectItem value="all_status" className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700">
+              Todos los estados
+            </SelectItem>
+            <SelectItem value="needs_recording" className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700">
+              Falta grabar
+            </SelectItem>
+            <SelectItem value="needs_editing" className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700">
+              Falta editar
+            </SelectItem>
+            <SelectItem value="in_editing" className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700">
+              En edición
+            </SelectItem>
+            <SelectItem value="in_review" className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700">
+              En revisión
+            </SelectItem>
+            <SelectItem value="approved" className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700">
+              Aprobado
+            </SelectItem>
+            <SelectItem value="published" className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700">
+              Publicado
+            </SelectItem>
+          </ScrollArea>
         </SelectContent>
       </Select>
 
@@ -97,11 +151,21 @@ export const FilterPanel = ({
         <SelectTrigger className="min-w-[200px]">
           <SelectValue placeholder="Todos los tipos" />
         </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all_types">Todos los tipos</SelectItem>
-          <SelectItem value="reel">Reel</SelectItem>
-          <SelectItem value="carousel">Carrusel</SelectItem>
-          <SelectItem value="image">Imagen</SelectItem>
+        <SelectContent position="popper" className="max-h-60 overflow-auto z-50 bg-white dark:bg-gray-800 shadow-lg border border-gray-200 dark:border-gray-700">
+          <ScrollArea className="h-full py-1">
+            <SelectItem value="all_types" className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700">
+              Todos los tipos
+            </SelectItem>
+            <SelectItem value="reel" className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700">
+              Reel
+            </SelectItem>
+            <SelectItem value="carousel" className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700">
+              Carrusel
+            </SelectItem>
+            <SelectItem value="image" className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700">
+              Imagen
+            </SelectItem>
+          </ScrollArea>
         </SelectContent>
       </Select>
 
