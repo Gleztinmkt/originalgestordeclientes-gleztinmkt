@@ -115,3 +115,14 @@
   background: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(8px);
 }
+
+/* iOS Touch Scrolling Fix */
+.overflow-y-auto {
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (pointer: coarse) {
+  .overflow-y-auto {
+    touch-action: pan-y;
+  }
+}
