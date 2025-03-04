@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -76,6 +77,21 @@
 
   .loading-screen .copyright {
     @apply text-sm text-gray-500 dark:text-gray-400;
+  }
+  
+  /* Universal Touch Scrolling */
+  .select-content {
+    @apply max-h-[60vh] !important;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+    overscroll-behavior-y: contain;
+  }
+  
+  [data-radix-scroll-area-viewport] {
+    @apply touch-auto;
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-y !important;
+    overscroll-behavior-y: contain;
   }
 }
 

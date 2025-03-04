@@ -16,11 +16,11 @@ interface ClientFilterProps {
 export const ClientFilter = ({ onFilterChange, className }: ClientFilterProps) => {
   return (
     <Select onValueChange={onFilterChange}>
-      <SelectTrigger className={className || "w-[200px]"}>
+      <SelectTrigger className={className || "w-full sm:w-[200px]"}>
         <SelectValue placeholder="Filtrar por día de pago" />
       </SelectTrigger>
-      <SelectContent className="max-h-[300px] w-[var(--radix-select-trigger-width)]">
-        <ScrollArea className="h-[290px] py-1">
+      <SelectContent className="select-content">
+        <ScrollArea className="h-[60vh] max-h-[350px] py-1">
           <SelectItem value="all">Todos los días</SelectItem>
           {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
             <SelectItem key={day} value={day.toString()}>
