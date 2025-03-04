@@ -21,7 +21,7 @@ export const ClientFilter = ({ onFilterChange, className }: ClientFilterProps) =
         <SelectValue placeholder="Filtrar por día de pago" />
       </SelectTrigger>
       <SelectContent className="max-h-[var(--radix-select-content-available-height)] overflow-hidden">
-        <ScrollArea className="h-full max-h-[300px] overflow-y-auto">
+        <ScrollArea className="h-full max-h-[400px] overflow-y-auto">
           <div className="pb-1" style={{ WebkitOverflowScrolling: 'touch' }}>
             <SelectItem value="all">Todos los días</SelectItem>
             {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
