@@ -205,9 +205,7 @@ export const CalendarView = ({
   const FilterContent = () => <div>
       <div className="flex justify-between items-center mb-4">
         <h3 className="font-medium">Filtros</h3>
-        <Badge variant="outline" className="bg-primary/10 py-0 my-[43px]">
-          {filteredPublications.length} publicaciones
-        </Badge>
+        
       </div>
       <FilterPanel clients={clients} designers={designers} selectedClient={selectedClient} selectedDesigner={selectedDesigner} selectedStatus={selectedStatus} selectedType={selectedType} selectedPackage={selectedPackage} onClientChange={setSelectedClient} onDesignerChange={setSelectedDesigner} onStatusChange={setSelectedStatus} onTypeChange={setSelectedType} onPackageChange={setSelectedPackage} onDesignerAdded={refetchDesigners} isDesigner={userRole === 'designer'} />
     </div>;
