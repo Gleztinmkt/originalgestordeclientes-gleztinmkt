@@ -117,12 +117,24 @@
 }
 
 /* iOS Touch Scrolling Fix */
-.overflow-y-auto {
-  -webkit-overflow-scrolling: touch;
+.overflow-y-auto,
+.scroll-area {
+  -webkit-overflow-scrolling: touch !important;
+  touch-action: pan-y !important;
 }
 
+/* Select dropdown height fix */
+[data-radix-select-content] {
+  max-height: 400px !important;
+  overflow-y: auto !important;
+}
+
+/* Enhanced scrolling for touch devices */
 @media (pointer: coarse) {
-  .overflow-y-auto {
-    touch-action: pan-y;
+  .overflow-y-auto,
+  [data-radix-select-viewport],
+  [data-radix-scroll-area-viewport] {
+    touch-action: pan-y !important;
+    -webkit-overflow-scrolling: touch !important;
   }
 }
