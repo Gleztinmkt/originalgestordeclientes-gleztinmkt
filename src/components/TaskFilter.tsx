@@ -1,3 +1,4 @@
+
 import {
   Select,
   SelectContent,
@@ -5,6 +6,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface TaskFilterProps {
   clients: Array<{ id: string; name: string }>;
@@ -20,15 +22,17 @@ export const TaskFilter = ({ clients = [], onFilterChange }: TaskFilterProps) =>
         <SelectTrigger className="w-[200px] bg-background text-foreground border-input hover:bg-accent hover:text-accent-foreground">
           <SelectValue placeholder="Filtrar por categoría" />
         </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all_types">Todas las categorías</SelectItem>
-          <SelectItem value="campaña">Campaña</SelectItem>
-          <SelectItem value="publicaciones">Publicaciones</SelectItem>
-          <SelectItem value="correcciones">Correcciones</SelectItem>
-          <SelectItem value="calendarios">Calendarios</SelectItem>
-          <SelectItem value="cobros">Cobros</SelectItem>
-          <SelectItem value="paginas web">Páginas Web</SelectItem>
-          <SelectItem value="otros">Otros</SelectItem>
+        <SelectContent className="max-h-[300px] w-[var(--radix-select-trigger-width)]">
+          <ScrollArea className="h-[290px] py-1">
+            <SelectItem value="all_types">Todas las categorías</SelectItem>
+            <SelectItem value="campaña">Campaña</SelectItem>
+            <SelectItem value="publicaciones">Publicaciones</SelectItem>
+            <SelectItem value="correcciones">Correcciones</SelectItem>
+            <SelectItem value="calendarios">Calendarios</SelectItem>
+            <SelectItem value="cobros">Cobros</SelectItem>
+            <SelectItem value="paginas web">Páginas Web</SelectItem>
+            <SelectItem value="otros">Otros</SelectItem>
+          </ScrollArea>
         </SelectContent>
       </Select>
 
@@ -38,15 +42,17 @@ export const TaskFilter = ({ clients = [], onFilterChange }: TaskFilterProps) =>
         <SelectTrigger className="w-[200px] bg-background text-foreground border-input hover:bg-accent hover:text-accent-foreground">
           <SelectValue placeholder="Filtrar por cliente" />
         </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all_clients">Todos los clientes</SelectItem>
-          {clients.map((client) => (
-            client.id ? (
-              <SelectItem key={client.id} value={client.id}>
-                {client.name || 'Cliente sin nombre'}
-              </SelectItem>
-            ) : null
-          ))}
+        <SelectContent className="max-h-[300px] w-[var(--radix-select-trigger-width)]">
+          <ScrollArea className="h-[290px] py-1">
+            <SelectItem value="all_clients">Todos los clientes</SelectItem>
+            {clients.map((client) => (
+              client.id ? (
+                <SelectItem key={client.id} value={client.id}>
+                  {client.name || 'Cliente sin nombre'}
+                </SelectItem>
+              ) : null
+            ))}
+          </ScrollArea>
         </SelectContent>
       </Select>
     </div>

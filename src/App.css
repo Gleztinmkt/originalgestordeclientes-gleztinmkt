@@ -1,3 +1,4 @@
+
 #root {
   max-width: 1280px;
   margin: 0 auto;
@@ -77,6 +78,16 @@
   
   .loading-screen img {
     height: 60px;
+  }
+  
+  /* Make sure touch scrolling works well on mobile */
+  * {
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Ensure select dropdowns are large enough to interact with on touch */
+  .select-content {
+    max-height: 50vh !important;
   }
 }
 

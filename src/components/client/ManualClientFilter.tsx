@@ -10,6 +10,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Client } from "../types/client";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface ManualClientFilterProps {
   clients: Client[];
@@ -81,7 +82,7 @@ export const ManualClientFilter = ({
           </Button>
         </div>
       </div>
-      <div className={isMobile ? "max-h-[60vh] overflow-y-auto px-2" : ""}>
+      <ScrollArea className="h-[350px] px-2">
         {filteredClients.map((client) => (
           <label
             key={client.id}
@@ -96,7 +97,7 @@ export const ManualClientFilter = ({
             <span className="text-sm">{client.name}</span>
           </label>
         ))}
-      </div>
+      </ScrollArea>
     </div>
   );
 
