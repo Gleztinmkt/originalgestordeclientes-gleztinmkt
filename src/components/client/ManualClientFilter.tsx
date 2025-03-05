@@ -81,7 +81,7 @@ export const ManualClientFilter = ({
           </Button>
         </div>
       </div>
-      <div className={isMobile ? "max-h-[60vh] overflow-y-auto px-2" : ""}>
+      <div className={isMobile ? "max-h-[60vh] overflow-y-auto touch-pan-y -webkit-overflow-scrolling-touch" : ""}>
         {filteredClients.map((client) => (
           <label
             key={client.id}

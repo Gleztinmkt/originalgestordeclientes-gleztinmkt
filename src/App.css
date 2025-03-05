@@ -116,6 +116,44 @@
   backdrop-filter: blur(8px);
 }
 
+/* iOS Touch Scrolling Fix - Enhanced */
+.overflow-y-auto,
+.scroll-area,
+[data-radix-select-content],
+[data-radix-scroll-area-viewport] {
+  -webkit-overflow-scrolling: touch !important;
+  touch-action: pan-y !important;
+}
+
+/* Select dropdown height and scroll fix */
+[data-radix-select-content] {
+  max-height: 50vh !important;
+  overflow-y: auto !important;
+}
+
+[data-radix-select-viewport] {
+  max-height: 100% !important;
+  -webkit-overflow-scrolling: touch !important;
+  touch-action: pan-y !important;
+}
+
+/* Enhanced scrolling for touch devices */
+@media (pointer: coarse) {
+  .overflow-y-auto,
+  [data-radix-select-viewport],
+  [data-radix-scroll-area-viewport],
+  [data-radix-select-content] {
+    touch-action: pan-y !important;
+    -webkit-overflow-scrolling: touch !important;
+    pointer-events: auto !important;
+  }
+  
+  [data-radix-select-content] {
+    max-height: 50vh !important;
+    overflow-y: auto !important;
+  }
+}
+
 /* iOS Touch Scrolling Fix */
 .overflow-y-auto,
 .scroll-area {
