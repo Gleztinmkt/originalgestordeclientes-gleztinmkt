@@ -176,3 +176,46 @@
     -webkit-overflow-scrolling: touch !important;
   }
 }
+
+/* Touch Screen Scrolling - Universal Fix */
+.touch-scroll {
+  max-height: 60vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch !important;
+  touch-action: pan-y !important;
+  pointer-events: auto !important;
+  overscroll-behavior-y: contain;
+}
+
+/* Select dropdown fix for touch devices */
+[data-radix-select-content] {
+  max-height: 60vh !important;
+}
+
+[data-radix-select-content] [data-radix-select-viewport] {
+  max-height: 100% !important;
+}
+
+/* Enhanced touch events for all scrollable containers */
+.overflow-y-auto,
+.scroll-area,
+[data-radix-scroll-area-viewport],
+[data-radix-select-viewport],
+[data-radix-select-content],
+.touch-scroll {
+  -webkit-overflow-scrolling: touch !important;
+  touch-action: pan-y !important;
+  pointer-events: auto !important;
+  overscroll-behavior-y: contain;
+}
+
+/* iOS momentum scrolling */
+@supports (-webkit-touch-callout: none) {
+  .touch-scroll,
+  .overflow-y-auto,
+  [data-radix-select-content],
+  [data-radix-select-viewport],
+  [data-radix-scroll-area-viewport] {
+    -webkit-overflow-scrolling: touch !important;
+  }
+}
