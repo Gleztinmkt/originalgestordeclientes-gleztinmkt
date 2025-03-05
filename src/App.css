@@ -176,3 +176,37 @@
     -webkit-overflow-scrolling: touch !important;
   }
 }
+
+/* Touch Scrolling - Universal */
+.touch-scroll {
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  touch-action: pan-y !important;
+  pointer-events: auto !important;
+  overscroll-behavior-y: contain !important;
+  padding-bottom: 30px !important; /* Extra space at the bottom for better UX */
+}
+
+/* Select dropdown height and scroll fix */
+[data-radix-select-content] {
+  max-height: 80vh !important;
+  overflow-y: auto !important;
+}
+
+/* Enhanced scrolling for touch devices */
+@media (pointer: coarse) {
+  .overflow-y-auto,
+  [data-radix-select-viewport],
+  [data-radix-scroll-area-viewport],
+  [data-radix-select-content] {
+    touch-action: pan-y !important;
+    -webkit-overflow-scrolling: touch !important;
+    pointer-events: auto !important;
+    overscroll-behavior-y: contain !important;
+  }
+  
+  [data-radix-select-content] {
+    max-height: 60vh !important;
+    overflow-y: auto !important;
+  }
+}

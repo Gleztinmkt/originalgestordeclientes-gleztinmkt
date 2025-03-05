@@ -1,12 +1,13 @@
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Info } from "lucide-react";
+import { Plus, Info, Search } from "lucide-react";
 import { DesignerDialog } from "./DesignerDialog";
 import { StatusLegend } from "./StatusLegend";
 import { useState } from "react";
 import { Button } from "../ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Input } from "../ui/input";
 
 interface FilterPanelProps {
   clients: Array<{
@@ -47,18 +48,44 @@ export const FilterPanel = ({
   children
 }: FilterPanelProps) => {
   const [showDesignerDialog, setShowDesignerDialog] = useState(false);
+  const [clientSearchQuery, setClientSearchQuery] = useState("");
   const isMobile = useIsMobile();
-  const filterContent = <>
+
+  const filteredClients = clients.filter(client => 
+    client.name.toLowerCase().includes(clientSearchQuery.toLowerCase())
+  );
+
+  const clientSelectContent = (
+    <SelectContent className="max-h-80">
+      <div className="sticky top-0 bg-popover p-2 border-b z-10">
+        <div className="relative">
+          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar clientes..." 
+            value={clientSearchQuery}
+            onChange={(e) => setClientSearchQuery(e.target.value)}
+            className="pl-8"
+          />
+        </div>
+      </div>
+      <div className="touch-scroll">
+        <SelectItem value="all_clients">Todos los clientes</SelectItem>
+        {filteredClients.map(client => (
+          <SelectItem key={client.id} value={client.id}>
+            {client.name}
+          </SelectItem>
+        ))}
+      </div>
+    </SelectContent>
+  );
+
+  const filterContent = (
+    <>
       <Select value={selectedClient || "all_clients"} onValueChange={value => onClientChange(value === "all_clients" ? null : value)}>
         <SelectTrigger className="min-w-[200px]">
           <SelectValue placeholder="Todos los clientes" />
         </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all_clients">Todos los clientes</SelectItem>
-          {clients.map(client => <SelectItem key={client.id} value={client.id}>
-              {client.name}
-            </SelectItem>)}
-        </SelectContent>
+        {clientSelectContent}
       </Select>
 
       <div className="flex items-center gap-2">
@@ -118,10 +145,12 @@ export const FilterPanel = ({
           </div>
         </PopoverContent>
       </Popover>
-    </>;
+    </>
+  );
+  
   return <div className={`${isMobile ? 'w-full' : ''}`}>
       {isMobile ? (
-        <div className="h-[calc(100vh-8rem)] px-4 pt-8 overflow-y-auto">
+        <div className="h-[calc(100vh-8rem)] px-4 pt-8 overflow-y-auto touch-scroll">
           <div className="flex flex-col space-y-4 py-[42px]">
             {filterContent}
           </div>
