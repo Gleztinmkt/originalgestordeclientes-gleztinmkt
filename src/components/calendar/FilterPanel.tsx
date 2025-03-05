@@ -54,12 +54,10 @@ export const FilterPanel = ({
           <SelectValue placeholder="Todos los clientes" />
         </SelectTrigger>
         <SelectContent>
-          <div className="touch-scroll">
-            <SelectItem value="all_clients">Todos los clientes</SelectItem>
-            {clients.map(client => <SelectItem key={client.id} value={client.id}>
-                {client.name}
-              </SelectItem>)}
-          </div>
+          <SelectItem value="all_clients">Todos los clientes</SelectItem>
+          {clients.map(client => <SelectItem key={client.id} value={client.id}>
+              {client.name}
+            </SelectItem>)}
         </SelectContent>
       </Select>
 
@@ -69,12 +67,10 @@ export const FilterPanel = ({
             <SelectValue placeholder="Todos los diseñadores" />
           </SelectTrigger>
           <SelectContent>
-            <div className="touch-scroll">
-              <SelectItem value="all_designers">Todos los diseñadores</SelectItem>
-              {designers.map(designer => <SelectItem key={designer.id} value={designer.name}>
-                  {designer.name}
-                </SelectItem>)}
-            </div>
+            <SelectItem value="all_designers">Todos los diseñadores</SelectItem>
+            {designers.map(designer => <SelectItem key={designer.id} value={designer.name}>
+                {designer.name}
+              </SelectItem>)}
           </SelectContent>
         </Select>
         {!isDesigner && <Button variant="outline" size="icon" onClick={() => setShowDesignerDialog(true)} className="flex-shrink-0">
@@ -125,7 +121,7 @@ export const FilterPanel = ({
     </>;
   return <div className={`${isMobile ? 'w-full' : ''}`}>
       {isMobile ? (
-        <div className="h-[calc(100vh-8rem)] px-4 pt-8 touch-scroll">
+        <div className="h-[calc(100vh-8rem)] px-4 pt-8 overflow-y-auto">
           <div className="flex flex-col space-y-4 py-[42px]">
             {filterContent}
           </div>

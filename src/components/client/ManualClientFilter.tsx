@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Check, X, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -80,7 +81,7 @@ export const ManualClientFilter = ({
           </Button>
         </div>
       </div>
-      <div className="touch-scroll">
+      <div className={isMobile ? "max-h-[60vh] overflow-y-auto touch-pan-y -webkit-overflow-scrolling-touch" : ""}>
         {filteredClients.map((client) => (
           <label
             key={client.id}
