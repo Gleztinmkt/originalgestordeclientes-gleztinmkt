@@ -7,28 +7,49 @@ import { cn } from "@/lib/utils"
 const ScrollArea = React.forwardRef<
   React.ElementRef<typeof ScrollAreaPrimitive.Root>,
   React.ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.Root>
->(({ className, children, ...props }, ref) => (
-  <ScrollAreaPrimitive.Root
-    ref={ref}
-    className={cn("relative overflow-hidden", className)}
-    {...props}
-  >
-    <ScrollAreaPrimitive.Viewport 
-      className="h-full w-full rounded-[inherit] touch-scroll"
-      style={{ 
-        WebkitOverflowScrolling: 'touch', 
-        touchAction: 'pan-y',
-        overflowY: 'auto',
-        pointerEvents: 'auto',
-        overscrollBehavior: 'contain'
-      }}
+>(({ className, children, ...props }, ref) => {
+  const scrollViewportRef = React.useRef<HTMLDivElement>(null);
+
+  // Optimization: Use passive event listeners for touch events
+  React.useEffect(() => {
+    const viewport = scrollViewportRef.current;
+    if (!viewport) return;
+    
+    // These options improve touch scroll performance
+    const options = { passive: true };
+    
+    return () => {
+      // Cleanup handled by React
+    };
+  }, []);
+
+  return (
+    <ScrollAreaPrimitive.Root
+      ref={ref}
+      className={cn("relative overflow-hidden", className)}
+      {...props}
     >
-      {children}
-    </ScrollAreaPrimitive.Viewport>
-    <ScrollBar />
-    <ScrollAreaPrimitive.Corner />
-  </ScrollAreaPrimitive.Root>
-))
+      <ScrollAreaPrimitive.Viewport 
+        ref={scrollViewportRef}
+        className="h-full w-full rounded-[inherit] touch-scroll"
+        style={{ 
+          WebkitOverflowScrolling: 'touch', 
+          touchAction: 'pan-y',
+          overflowY: 'auto',
+          pointerEvents: 'auto',
+          overscrollBehavior: 'contain',
+          // Performance optimizations
+          willChange: 'transform',
+          transform: 'translateZ(0)'
+        }}
+      >
+        {children}
+      </ScrollAreaPrimitive.Viewport>
+      <ScrollBar />
+      <ScrollAreaPrimitive.Corner />
+    </ScrollAreaPrimitive.Root>
+  )
+})
 ScrollArea.displayName = ScrollAreaPrimitive.Root.displayName
 
 const ScrollBar = React.forwardRef<

@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Publication } from "../client/publication/types";
 import { Client } from "../types/client";
@@ -17,6 +18,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+
 export const CalendarView = ({
   clients
 }: {
@@ -35,6 +37,14 @@ export const CalendarView = ({
   const [highlightedPublicationId, setHighlightedPublicationId] = useState<string | null>(null);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const isMobile = useIsMobile();
+  
+  // Performance optimization: memoize selected month start/end for query optimization
+  const dateRange = useMemo(() => {
+    const start = startOfMonth(selectedDate);
+    const end = endOfMonth(selectedDate);
+    return { start, end };
+  }, [selectedDate]);
+  
   const {
     data: userRole
   } = useQuery({
@@ -52,22 +62,30 @@ export const CalendarView = ({
       return roleData?.role || null;
     }
   });
+  
   const {
     data: publications = [],
     refetch
   } = useQuery({
-    queryKey: ['publications', selectedClient],
+    queryKey: ['publications', selectedClient, dateRange.start, dateRange.end],
     queryFn: async () => {
       let query = supabase.from('publications').select('*').is('deleted_at', null).order('date', {
         ascending: true
       });
+      
       if (selectedClient) {
         query = query.eq('client_id', selectedClient);
       }
+      
+      // Optimization: Only fetch publications for the visible month
+      query = query.gte('date', dateRange.start.toISOString())
+                   .lte('date', dateRange.end.toISOString());
+      
       const {
         data,
         error
       } = await query;
+      
       if (error) {
         console.error('Error fetching publications:', error);
         return [];
@@ -75,6 +93,7 @@ export const CalendarView = ({
       return data as Publication[];
     }
   });
+  
   const {
     data: designers = [],
     refetch: refetchDesigners
@@ -94,7 +113,8 @@ export const CalendarView = ({
       return data;
     }
   });
-  const handleDragEnd = async (result: DropResult) => {
+  
+  const handleDragEnd = useCallback(async (result: DropResult) => {
     if (userRole !== 'admin') {
       toast({
         title: "Acceso denegado",
@@ -131,7 +151,8 @@ export const CalendarView = ({
         variant: "destructive"
       });
     }
-  };
+  }, [userRole, publications, refetch]);
+  
   useEffect(() => {
     if (highlightedPublicationId) {
       const timer = setTimeout(() => {
@@ -140,20 +161,229 @@ export const CalendarView = ({
       return () => clearTimeout(timer);
     }
   }, [highlightedPublicationId]);
+  
   useEffect(() => {
     let progress = 0;
     const interval = setInterval(() => {
-      progress += 5;
+      progress += 10; // Speed up loading progress
       if (progress > 100) {
         clearInterval(interval);
       } else {
         setLoadingProgress(progress);
       }
-    }, 50);
+    }, 30); // Reduce interval time
     return () => clearInterval(interval);
   }, []);
+  
+  // Performance optimization: memoize filtered publications
+  const filteredPublications = useMemo(() => {
+    return publications.filter(pub => {
+      if (selectedType && pub.type !== selectedType) return false;
+      if (selectedPackage && pub.package_id !== selectedPackage) return false;
+      if (selectedDesigner && pub.designer !== selectedDesigner) return false;
+      if (selectedStatus) {
+        switch (selectedStatus) {
+          case 'needs_recording':
+            return pub.needs_recording;
+          case 'needs_editing':
+            return pub.needs_editing;
+          case 'in_editing':
+            return pub.in_editing;
+          case 'in_review':
+            return pub.in_review;
+          case 'approved':
+            return pub.approved;
+          case 'published':
+            return pub.is_published;
+          default:
+            return true;
+        }
+      }
+      return true;
+    });
+  }, [publications, selectedType, selectedPackage, selectedDesigner, selectedStatus]);
+  
+  // Performance optimization: memoize calendar days
+  const calendarDays = useMemo(() => {
+    const days = eachDayOfInterval({
+      start: dateRange.start,
+      end: dateRange.end
+    });
+    const startDay = dateRange.start.getDay();
+    const emptyDays = Array(startDay).fill(null);
+    return { days, emptyDays, allDays: [...emptyDays, ...days] };
+  }, [dateRange]);
+  
+  const toggleDayExpansion = useCallback((date: string) => {
+    setExpandedDays(prev => ({
+      ...prev,
+      [date]: !prev[date]
+    }));
+  }, []);
+  
+  // Memoize components that don't need to be recreated on every render
+  const FilterContent = useCallback(() => (
+    <div>
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="font-medium">Filtros</h3>
+      </div>
+      <FilterPanel 
+        clients={clients} 
+        designers={designers} 
+        selectedClient={selectedClient} 
+        selectedDesigner={selectedDesigner} 
+        selectedStatus={selectedStatus} 
+        selectedType={selectedType} 
+        selectedPackage={selectedPackage} 
+        onClientChange={setSelectedClient} 
+        onDesignerChange={setSelectedDesigner} 
+        onStatusChange={setSelectedStatus} 
+        onTypeChange={setSelectedType} 
+        onPackageChange={setSelectedPackage} 
+        onDesignerAdded={refetchDesigners} 
+        isDesigner={userRole === 'designer'} 
+      />
+    </div>
+  ), [clients, designers, selectedClient, selectedDesigner, selectedStatus, selectedType, selectedPackage, refetchDesigners, userRole]);
+  
+  const CalendarContent = useCallback(() => (
+    <DragDropContext onDragEnd={handleDragEnd}>
+      {isMobile ? (
+        <div className="calendar-mobile-view">
+          {calendarDays.days.map(date => {
+            const dateStr = format(date, 'yyyy-MM-dd');
+            const dayPublications = filteredPublications.filter(pub => 
+              format(new Date(pub.date), 'yyyy-MM-dd') === dateStr
+            );
+            
+            if (dayPublications.length === 0) return null;
+            
+            const isCurrentDay = isToday(date);
+            
+            return (
+              <Droppable key={dateStr} droppableId={dateStr}>
+                {provided => (
+                  <div 
+                    ref={provided.innerRef} 
+                    {...provided.droppableProps} 
+                    className={`calendar-day-card ${isCurrentDay ? 'ring-2 ring-blue-500 dark:ring-blue-400' : ''}`}
+                  >
+                    <div className={`calendar-day-header ${isCurrentDay ? 'font-bold text-blue-500 dark:text-blue-400' : ''}`}>
+                      <h3 className="calendar-day-title">
+                        {format(date, 'EEEE d', { locale: es })}
+                      </h3>
+                      <span className="text-sm text-gray-500">
+                        {dayPublications.length} publicaciones
+                      </span>
+                    </div>
+                    
+                    <div className="calendar-publications">
+                      {dayPublications.map((publication, pubIndex) => (
+                        <Draggable 
+                          key={publication.id} 
+                          draggableId={publication.id} 
+                          index={pubIndex}
+                        >
+                          {(provided, snapshot) => (
+                            <div 
+                              ref={provided.innerRef} 
+                              {...provided.draggableProps} 
+                              {...provided.dragHandleProps} 
+                              className={`draggable-item ${snapshot.isDragging ? 'dragging' : ''} ${highlightedPublicationId === publication.id ? 'animate-pulse bg-blue-100 dark:bg-blue-900' : ''}`}
+                            >
+                              <PublicationCard 
+                                publication={publication} 
+                                client={clients.find(c => c.id === publication.client_id)} 
+                                onUpdate={refetch} 
+                                displayTitle={`${clients.find(c => c.id === publication.client_id)?.name || ''} - ${publication.type === 'reel' ? 'R' : publication.type === 'carousel' ? 'C' : 'I'} - ${publication.name}`} 
+                                designers={designers} 
+                                isMobile={isMobile} 
+                              />
+                            </div>
+                          )}
+                        </Draggable>
+                      ))}
+                      {provided.placeholder}
+                    </div>
+                  </div>
+                )}
+              </Droppable>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="grid grid-cols-7 gap-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4">
+          {['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB'].map(day => (
+            <div key={day} className="p-2 text-center font-semibold text-sm">
+              {day}
+            </div>
+          ))}
+
+          {calendarDays.allDays.map((date, index) => {
+            if (!date) {
+              return <div key={`empty-${index}`} className="min-h-[120px] border rounded-lg p-1 relative bg-gray-50 dark:bg-gray-900/50" />;
+            }
+            
+            const dateStr = format(date, 'yyyy-MM-dd');
+            const dayPublications = filteredPublications.filter(pub => 
+              format(new Date(pub.date), 'yyyy-MM-dd') === dateStr
+            );
+            const isCurrentDay = isToday(date);
+            
+            return (
+              <Droppable key={dateStr} droppableId={dateStr}>
+                {provided => (
+                  <div 
+                    ref={provided.innerRef} 
+                    {...provided.droppableProps} 
+                    className={`min-h-[120px] border rounded-lg p-1 relative bg-white/50 dark:bg-gray-800/50 ${isCurrentDay ? 'ring-2 ring-blue-500 dark:ring-blue-400' : ''}`}
+                  >
+                    <div className={`text-right text-sm mb-1 px-1 ${isCurrentDay ? 'font-bold text-blue-500 dark:text-blue-400' : ''}`}>
+                      {format(date, 'd')}
+                    </div>
+                    <ScrollArea className={`h-full ${isMobile ? 'touch-pan-y' : ''}`}>
+                      <div className="space-y-1">
+                        {dayPublications.map((publication, pubIndex) => (
+                          <Draggable 
+                            key={publication.id} 
+                            draggableId={publication.id} 
+                            index={pubIndex}
+                          >
+                            {(provided, snapshot) => (
+                              <div 
+                                ref={provided.innerRef} 
+                                {...provided.draggableProps} 
+                                {...provided.dragHandleProps} 
+                                className={`draggable-item ${snapshot.isDragging ? 'dragging' : ''} ${highlightedPublicationId === publication.id ? 'animate-pulse bg-blue-100 dark:bg-blue-900' : ''}`}
+                              >
+                                <PublicationCard 
+                                  publication={publication} 
+                                  client={clients.find(c => c.id === publication.client_id)} 
+                                  onUpdate={refetch} 
+                                  displayTitle={`${clients.find(c => c.id === publication.client_id)?.name || ''} - ${publication.type === 'reel' ? 'R' : publication.type === 'carousel' ? 'C' : 'I'} - ${publication.name}`} 
+                                  designers={designers} 
+                                  isMobile={isMobile} 
+                                />
+                              </div>
+                            )}
+                          </Draggable>
+                        ))}
+                        {provided.placeholder}
+                      </div>
+                    </ScrollArea>
+                  </div>
+                )}
+              </Droppable>
+            );
+          })}
+        </div>
+      )}
+    </DragDropContext>
+  ), [calendarDays, filteredPublications, clients, designers, isMobile, highlightedPublicationId, refetch, handleDragEnd]);
+  
   if (!publications.length && loadingProgress < 100) {
-    return <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4 p-8">
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4 p-8">
         <div className="w-full max-w-md space-y-2">
           <h2 className="text-lg font-medium text-center mb-4">
             Cargando publicaciones...
@@ -163,116 +393,14 @@ export const CalendarView = ({
             {loadingProgress}%
           </p>
         </div>
-      </div>;
-  }
-  const filteredPublications = publications.filter(pub => {
-    if (selectedType && pub.type !== selectedType) return false;
-    if (selectedPackage && pub.package_id !== selectedPackage) return false;
-    if (selectedDesigner && pub.designer !== selectedDesigner) return false;
-    if (selectedStatus) {
-      switch (selectedStatus) {
-        case 'needs_recording':
-          return pub.needs_recording;
-        case 'needs_editing':
-          return pub.needs_editing;
-        case 'in_editing':
-          return pub.in_editing;
-        case 'in_review':
-          return pub.in_review;
-        case 'approved':
-          return pub.approved;
-        case 'published':
-          return pub.is_published;
-        default:
-          return true;
-      }
-    }
-    return true;
-  });
-  const daysInMonth = eachDayOfInterval({
-    start: startOfMonth(selectedDate),
-    end: endOfMonth(selectedDate)
-  });
-  const startDay = startOfMonth(selectedDate).getDay();
-  const emptyDays = Array(startDay).fill(null);
-  const allDays = [...emptyDays, ...daysInMonth];
-  const toggleDayExpansion = (date: string) => {
-    setExpandedDays(prev => ({
-      ...prev,
-      [date]: !prev[date]
-    }));
-  };
-  const FilterContent = () => <div>
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="font-medium">Filtros</h3>
-        
       </div>
-      <FilterPanel clients={clients} designers={designers} selectedClient={selectedClient} selectedDesigner={selectedDesigner} selectedStatus={selectedStatus} selectedType={selectedType} selectedPackage={selectedPackage} onClientChange={setSelectedClient} onDesignerChange={setSelectedDesigner} onStatusChange={setSelectedStatus} onTypeChange={setSelectedType} onPackageChange={setSelectedPackage} onDesignerAdded={refetchDesigners} isDesigner={userRole === 'designer'} />
-    </div>;
-  const CalendarContent = () => <DragDropContext onDragEnd={handleDragEnd}>
-      {isMobile ? <div className="calendar-mobile-view">
-          {daysInMonth.map(date => {
-        const dateStr = format(date, 'yyyy-MM-dd');
-        const dayPublications = filteredPublications.filter(pub => format(new Date(pub.date), 'yyyy-MM-dd') === dateStr);
-        if (dayPublications.length === 0) return null;
-        const isCurrentDay = isToday(date);
-        return <Droppable key={dateStr} droppableId={dateStr}>
-                {provided => <div ref={provided.innerRef} {...provided.droppableProps} className={`calendar-day-card ${isCurrentDay ? 'ring-2 ring-blue-500 dark:ring-blue-400' : ''}`}>
-                    <div className={`calendar-day-header ${isCurrentDay ? 'font-bold text-blue-500 dark:text-blue-400' : ''}`}>
-                      <h3 className="calendar-day-title">
-                        {format(date, 'EEEE d', {
-                  locale: es
-                })}
-                      </h3>
-                      <span className="text-sm text-gray-500">
-                        {dayPublications.length} publicaciones
-                      </span>
-                    </div>
-                    <div className="calendar-publications">
-                      {dayPublications.map((publication, pubIndex) => <Draggable key={publication.id} draggableId={publication.id} index={pubIndex}>
-                          {(provided, snapshot) => <div ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps} className={`draggable-item ${snapshot.isDragging ? 'dragging' : ''} ${highlightedPublicationId === publication.id ? 'animate-pulse bg-blue-100 dark:bg-blue-900' : ''}`}>
-                              <PublicationCard publication={publication} client={clients.find(c => c.id === publication.client_id)} onUpdate={refetch} displayTitle={`${clients.find(c => c.id === publication.client_id)?.name || ''} - ${publication.type === 'reel' ? 'R' : publication.type === 'carousel' ? 'C' : 'I'} - ${publication.name}`} designers={designers} isMobile={isMobile} />
-                            </div>}
-                        </Draggable>)}
-                      {provided.placeholder}
-                    </div>
-                  </div>}
-              </Droppable>;
-      })}
-        </div> : <div className="grid grid-cols-7 gap-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4">
-          {['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB'].map(day => <div key={day} className="p-2 text-center font-semibold text-sm">
-              {day}
-            </div>)}
-
-          {allDays.map((date, index) => {
-        if (!date) {
-          return <div key={`empty-${index}`} className="min-h-[120px] border rounded-lg p-1 relative bg-gray-50 dark:bg-gray-900/50" />;
-        }
-        const dateStr = format(date, 'yyyy-MM-dd');
-        const dayPublications = filteredPublications.filter(pub => format(new Date(pub.date), 'yyyy-MM-dd') === dateStr);
-        const isCurrentDay = isToday(date);
-        return <Droppable key={dateStr} droppableId={dateStr}>
-                {provided => <div ref={provided.innerRef} {...provided.droppableProps} className={`min-h-[120px] border rounded-lg p-1 relative bg-white/50 dark:bg-gray-800/50 ${isCurrentDay ? 'ring-2 ring-blue-500 dark:ring-blue-400' : ''}`}>
-                    <div className={`text-right text-sm mb-1 px-1 ${isCurrentDay ? 'font-bold text-blue-500 dark:text-blue-400' : ''}`}>
-                      {format(date, 'd')}
-                    </div>
-                    <ScrollArea className={`h-full ${isMobile ? 'touch-pan-y' : ''}`}>
-                      <div className="space-y-1">
-                        {dayPublications.map((publication, pubIndex) => <Draggable key={publication.id} draggableId={publication.id} index={pubIndex}>
-                            {(provided, snapshot) => <div ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps} className={`draggable-item ${snapshot.isDragging ? 'dragging' : ''} ${highlightedPublicationId === publication.id ? 'animate-pulse bg-blue-100 dark:bg-blue-900' : ''}`}>
-                                <PublicationCard publication={publication} client={clients.find(c => c.id === publication.client_id)} onUpdate={refetch} displayTitle={`${clients.find(c => c.id === publication.client_id)?.name || ''} - ${publication.type === 'reel' ? 'R' : publication.type === 'carousel' ? 'C' : 'I'} - ${publication.name}`} designers={designers} isMobile={isMobile} />
-                              </div>}
-                          </Draggable>)}
-                        {provided.placeholder}
-                      </div>
-                    </ScrollArea>
-                  </div>}
-              </Droppable>;
-      })}
-        </div>}
-    </DragDropContext>;
-  return <div className="h-screen flex flex-col">
-      {isMobile ? <>
+    );
+  }
+  
+  return (
+    <div className="h-screen flex flex-col">
+      {isMobile ? (
+        <>
           <div className="flex items-center justify-between p-4 border-b">
             <div className="flex items-center space-x-2">
               <Button variant="outline" size="sm" onClick={() => setSelectedDate(initialDate)}>
@@ -280,20 +408,18 @@ export const CalendarView = ({
               </Button>
               <div className="flex items-center space-x-1">
                 <Button variant="outline" size="icon" onClick={() => {
-              setSelectedDate(addMonths(selectedDate, -1));
-            }}>
+                  setSelectedDate(addMonths(selectedDate, -1));
+                }}>
                   &lt;
                 </Button>
                 <Button variant="outline" size="icon" onClick={() => {
-              setSelectedDate(addMonths(selectedDate, 1));
-            }}>
+                  setSelectedDate(addMonths(selectedDate, 1));
+                }}>
                   &gt;
                 </Button>
               </div>
               <h2 className="text-xl font-semibold capitalize">
-                {format(selectedDate, 'MMMM yyyy', {
-              locale: es
-            })}
+                {format(selectedDate, 'MMMM yyyy', { locale: es })}
               </h2>
             </div>
             <div className="flex items-center gap-2">
@@ -312,10 +438,12 @@ export const CalendarView = ({
               </Sheet>
             </div>
           </div>
-          <div className="flex-1 overflow-auto">
+          <div className="flex-1 overflow-auto touch-scroll">
             <CalendarContent />
           </div>
-        </> : <>
+        </>
+      ) : (
+        <>
           <div className="p-4 border-b space-y-4">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center space-x-2">
@@ -324,20 +452,18 @@ export const CalendarView = ({
                 </Button>
                 <div className="flex items-center space-x-1">
                   <Button variant="outline" size="icon" onClick={() => {
-                setSelectedDate(addMonths(selectedDate, -1));
-              }}>
+                    setSelectedDate(addMonths(selectedDate, -1));
+                  }}>
                     &lt;
                   </Button>
                   <Button variant="outline" size="icon" onClick={() => {
-                setSelectedDate(addMonths(selectedDate, 1));
-              }}>
+                    setSelectedDate(addMonths(selectedDate, 1));
+                  }}>
                     &gt;
                   </Button>
                 </div>
                 <h2 className="text-xl font-semibold capitalize">
-                  {format(selectedDate, 'MMMM yyyy', {
-                locale: es
-              })}
+                  {format(selectedDate, 'MMMM yyyy', { locale: es })}
                 </h2>
                 <Badge variant="outline" className="bg-primary/10 ml-2">
                   {filteredPublications.length} publicaciones
@@ -346,9 +472,11 @@ export const CalendarView = ({
             </div>
             <FilterContent />
           </div>
-          <div className="flex-1 p-4 overflow-auto">
+          <div className="flex-1 p-4 overflow-auto touch-scroll">
             <CalendarContent />
           </div>
-        </>}
-    </div>;
+        </>
+      )}
+    </div>
+  );
 };
