@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useMemo } from "react";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -45,7 +46,7 @@ export const PublicationCalendarDialog = ({
       return data as Publication[];
     },
     enabled: isOpen,
-    keepPreviousData: true
+    placeholderData: previousData => previousData
   });
 
   const handleDelete = useCallback(async (publicationId: string) => {
