@@ -1,5 +1,5 @@
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   Select,
   SelectContent,
@@ -17,25 +17,15 @@ interface ClientFilterProps {
 export const ClientFilter = ({ onFilterChange, className }: ClientFilterProps) => {
   const isMobile = useIsMobile();
   
-  // Optimize with memoization
-  const daysArray = useMemo(() => 
-    Array.from({ length: 31 }, (_, i) => i + 1), 
-  []);
-  
-  // Optimize the change handler
-  const handleValueChange = useCallback((value: string) => {
-    onFilterChange(value);
-  }, [onFilterChange]);
-  
   return (
-    <Select onValueChange={handleValueChange}>
+    <Select onValueChange={onFilterChange}>
       <SelectTrigger className={className || "w-[200px]"}>
         <SelectValue placeholder="Filtrar por día de pago" />
       </SelectTrigger>
-      <SelectContent className="max-h-[400px] touch-scroll">
-        <div className="touch-scroll" style={{ WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}>
+      <SelectContent className="max-h-[400px]">
+        <div className="touch-scroll">
           <SelectItem value="all">Todos los días</SelectItem>
-          {daysArray.map((day) => (
+          {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
             <SelectItem key={day} value={day.toString()}>
               Día {day}
             </SelectItem>

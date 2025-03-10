@@ -1,5 +1,4 @@
-
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { Client } from "@/components/types/client";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { format } from "date-fns";
@@ -37,23 +36,13 @@ export const PlanningCalendar = ({
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Optimization: memoize the month value that's used in queries
-  const monthQueryValue = useMemo(() => {
-    const startOfMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
-    return startOfMonth.toISOString();
-  }, [selectedDate]);
-
-  const fetchPlanningData = useCallback(async () => {
+  const fetchPlanningData = async () => {
     try {
+      const startOfMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
       const {
         data,
         error
-      } = await supabase
-        .from('publication_planning')
-        .select('*')
-        .is('deleted_at', null)
-        .eq('month', monthQueryValue);
-        
+      } = await supabase.from('publication_planning').select('*').is('deleted_at', null).eq('month', startOfMonth.toISOString());
       if (error) {
         console.error('Error fetching planning data:', error);
         toast({
@@ -63,8 +52,6 @@ export const PlanningCalendar = ({
         });
         return;
       }
-      
-      // Optimization: process data more efficiently
       const planningMap: Record<string, PlanningEntry> = {};
       data?.forEach(entry => {
         planningMap[entry.client_id] = {
@@ -76,7 +63,6 @@ export const PlanningCalendar = ({
           completed: entry.completed
         };
       });
-      
       setPlanningData(planningMap);
     } catch (error) {
       console.error('Error in fetchPlanningData:', error);
@@ -86,14 +72,13 @@ export const PlanningCalendar = ({
         variant: "destructive"
       });
     }
-  }, [monthQueryValue]);
+  };
 
   useEffect(() => {
     fetchPlanningData();
-  }, [fetchPlanningData]);
+  }, [selectedDate]);
 
-  // Optimization: memoize the status color function
-  const getStatusColor = useCallback((status: 'hacer' | 'no_hacer' | 'consultar') => {
+  const getStatusColor = (status: 'hacer' | 'no_hacer' | 'consultar') => {
     switch (status) {
       case 'hacer':
         return 'bg-green-500';
@@ -103,66 +88,45 @@ export const PlanningCalendar = ({
       default:
         return 'bg-yellow-500';
     }
-  }, []);
+  };
 
   const handleStatusChange = async (clientId: string, newStatus: 'hacer' | 'no_hacer' | 'consultar') => {
     if (isSaving) return;
     setIsSaving(true);
-    
+    const startOfMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
+    const currentEntry = planningData[clientId];
     try {
-      const currentEntry = planningData[clientId];
-      
       const {
         data: existingData,
         error: checkError
-      } = await supabase
-        .from('publication_planning')
-        .select('id')
-        .eq('client_id', clientId)
-        .eq('month', monthQueryValue)
-        .is('deleted_at', null)
-        .maybeSingle();
-      
+      } = await supabase.from('publication_planning').select('id').eq('client_id', clientId).eq('month', startOfMonth.toISOString()).is('deleted_at', null).maybeSingle();
       if (checkError) throw checkError;
-      
       let result;
       if (existingData) {
-        result = await supabase
-          .from('publication_planning')
-          .update({
-            status: newStatus,
-            description: currentEntry?.description || ''
-          })
-          .eq('id', existingData.id)
-          .select()
-          .single();
+        result = await supabase.from('publication_planning').update({
+          status: newStatus,
+          description: currentEntry?.description || ''
+        }).eq('id', existingData.id).select().single();
       } else {
-        result = await supabase
-          .from('publication_planning')
-          .insert({
-            client_id: clientId,
-            month: monthQueryValue,
-            status: newStatus,
-            description: currentEntry?.description || ''
-          })
-          .select()
-          .single();
+        result = await supabase.from('publication_planning').insert({
+          client_id: clientId,
+          month: startOfMonth.toISOString(),
+          status: newStatus,
+          description: currentEntry?.description || ''
+        }).select().single();
       }
-      
       if (result.error) throw result.error;
 
-      // Optimization: update only the changed item instead of refetching everything
       setPlanningData(prev => ({
         ...prev,
         [clientId]: {
           ...result.data,
           id: result.data.id,
           client_id: clientId,
-          month: monthQueryValue,
+          month: startOfMonth.toISOString(),
           status: newStatus
         }
       }));
-      
       toast({
         title: "Estado actualizado",
         description: "El estado se ha actualizado correctamente"
@@ -182,63 +146,42 @@ export const PlanningCalendar = ({
   const handleCompletion = async (clientId: string, completed: boolean) => {
     if (isSaving) return;
     setIsSaving(true);
-    
+    const startOfMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
+    const currentEntry = planningData[clientId];
     try {
-      const currentEntry = planningData[clientId];
-      
       const {
         data: existingData,
         error: checkError
-      } = await supabase
-        .from('publication_planning')
-        .select('id')
-        .eq('client_id', clientId)
-        .eq('month', monthQueryValue)
-        .is('deleted_at', null)
-        .maybeSingle();
-      
+      } = await supabase.from('publication_planning').select('id').eq('client_id', clientId).eq('month', startOfMonth.toISOString()).is('deleted_at', null).maybeSingle();
       if (checkError) throw checkError;
-      
       let result;
       if (existingData) {
-        result = await supabase
-          .from('publication_planning')
-          .update({
-            completed,
-            status: currentEntry?.status || 'consultar',
-            description: currentEntry?.description || ''
-          })
-          .eq('id', existingData.id)
-          .select()
-          .single();
+        result = await supabase.from('publication_planning').update({
+          completed,
+          status: currentEntry?.status || 'consultar',
+          description: currentEntry?.description || ''
+        }).eq('id', existingData.id).select().single();
       } else {
-        result = await supabase
-          .from('publication_planning')
-          .insert({
-            client_id: clientId,
-            month: monthQueryValue,
-            status: currentEntry?.status || 'consultar',
-            description: currentEntry?.description || '',
-            completed
-          })
-          .select()
-          .single();
+        result = await supabase.from('publication_planning').insert({
+          client_id: clientId,
+          month: startOfMonth.toISOString(),
+          status: currentEntry?.status || 'consultar',
+          description: currentEntry?.description || '',
+          completed
+        }).select().single();
       }
-      
       if (result.error) throw result.error;
 
-      // Optimization: update only the changed item
       setPlanningData(prev => ({
         ...prev,
         [clientId]: {
           ...result.data,
           id: result.data.id,
           client_id: clientId,
-          month: monthQueryValue,
+          month: startOfMonth.toISOString(),
           completed: result.data.completed
         }
       }));
-      
       toast({
         title: completed ? "Tarea marcada como completada" : "Tarea marcada como pendiente",
         description: "El estado se ha actualizado correctamente"
@@ -258,63 +201,42 @@ export const PlanningCalendar = ({
   const handleDescriptionSave = async () => {
     if (!selectedClient || isSaving) return;
     setIsSaving(true);
-    
+    const startOfMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
     try {
       const {
         data: existingData,
         error: checkError
-      } = await supabase
-        .from('publication_planning')
-        .select('id')
-        .eq('client_id', selectedClient)
-        .eq('month', monthQueryValue)
-        .is('deleted_at', null)
-        .maybeSingle();
-      
+      } = await supabase.from('publication_planning').select('id').eq('client_id', selectedClient).eq('month', startOfMonth.toISOString()).is('deleted_at', null).maybeSingle();
       if (checkError) throw checkError;
-      
       let result;
       if (existingData) {
-        result = await supabase
-          .from('publication_planning')
-          .update({
-            description,
-            status: planningData[selectedClient]?.status || 'consultar'
-          })
-          .eq('id', existingData.id)
-          .select()
-          .single();
+        result = await supabase.from('publication_planning').update({
+          description,
+          status: planningData[selectedClient]?.status || 'consultar'
+        }).eq('id', existingData.id).select().single();
       } else {
-        result = await supabase
-          .from('publication_planning')
-          .insert({
-            client_id: selectedClient,
-            month: monthQueryValue,
-            status: planningData[selectedClient]?.status || 'consultar',
-            description
-          })
-          .select()
-          .single();
+        result = await supabase.from('publication_planning').insert({
+          client_id: selectedClient,
+          month: startOfMonth.toISOString(),
+          status: planningData[selectedClient]?.status || 'consultar',
+          description
+        }).select().single();
       }
-      
       if (result.error) throw result.error;
 
-      // Optimization: update only the changed item
       setPlanningData(prev => ({
         ...prev,
         [selectedClient]: {
           ...result.data,
           id: result.data.id,
           client_id: selectedClient,
-          month: monthQueryValue
+          month: startOfMonth.toISOString()
         }
       }));
-      
       toast({
         title: "Descripción guardada",
         description: "La descripción se ha guardado correctamente"
       });
-      
       setIsDialogOpen(false);
     } catch (error) {
       console.error('Error saving description:', error);
@@ -328,27 +250,25 @@ export const PlanningCalendar = ({
     }
   };
 
-  // Memoize the client grid
-  const clientGrid = useMemo(() => {
-    return (
+  return <div className="space-y-6 p-6 bg-gray-50 dark:bg-gray-900 min-h-screen px-0">
+      <MonthSelector selectedDate={selectedDate} onDateChange={setSelectedDate} />
+      <StatusLegend getStatusColor={getStatusColor} />
+
       <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4">
         {clients.map(client => {
-          const planningEntry = planningData[client.id];
-          const paymentDay = client.paymentDay || 1;
-          const currentMonth = selectedDate.getMonth();
-          const currentYear = selectedDate.getFullYear();
-          const creationDate = new Date(currentYear, currentMonth, Math.max(1, paymentDay - 7));
-          
-          return (
-            <Card key={client.id} 
-              onContextMenu={e => {
-                e.preventDefault();
-                const status = planningData[client.id]?.status || 'consultar';
-                const nextStatus = status === 'hacer' ? 'no_hacer' : status === 'no_hacer' ? 'consultar' : 'hacer';
-                handleStatusChange(client.id, nextStatus);
-              }} 
-              className="hover:shadow-md transition-shadow duration-200 relative md:p-3 p-2 w-[calc(100vw-3rem)] md:w-auto mx-auto md:mx-0"
-            >
+        const planningEntry = planningData[client.id];
+        const paymentDay = client.paymentDay || 1;
+        const currentMonth = selectedDate.getMonth();
+        const currentYear = selectedDate.getFullYear();
+        const creationDate = new Date(currentYear, currentMonth, Math.max(1, paymentDay - 7));
+        return <Card key={client.id} 
+                onContextMenu={e => {
+                  e.preventDefault();
+                  const status = planningData[client.id]?.status || 'consultar';
+                  const nextStatus = status === 'hacer' ? 'no_hacer' : status === 'no_hacer' ? 'consultar' : 'hacer';
+                  handleStatusChange(client.id, nextStatus);
+                }} 
+                className="hover:shadow-md transition-shadow duration-200 relative md:p-3 p-2 w-[calc(100vw-3rem)] md:w-auto mx-auto md:mx-0">
               <div className="absolute top-2 right-2">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -380,38 +300,26 @@ export const PlanningCalendar = ({
                 </div>
                 <div className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
                   <CalendarIcon className="h-3 w-3" />
-                  <span>Creación: {format(creationDate, 'd MMM', { locale: es })}</span>
+                  <span>Creación: {format(creationDate, 'd MMM', {
+                  locale: es
+                })}</span>
                 </div>
               </div>
 
               <Button variant="ghost" className="w-full text-left justify-start h-auto py-1 px-2 mt-2 text-xs" onClick={() => {
-                setSelectedClient(client.id);
-                setDescription(planningData[client.id]?.description || '');
-                setIsDialogOpen(true);
-              }}>
-                {planningData[client.id]?.description ? (
-                  <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">
+            setSelectedClient(client.id);
+            setDescription(planningData[client.id]?.description || '');
+            setIsDialogOpen(true);
+          }}>
+                {planningData[client.id]?.description ? <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">
                     {planningData[client.id].description}
-                  </p>
-                ) : (
-                  <p className="text-xs text-gray-400 dark:text-gray-600">
+                  </p> : <p className="text-xs text-gray-400 dark:text-gray-600">
                     Agregar descripción...
-                  </p>
-                )}
+                  </p>}
               </Button>
-            </Card>
-          );
-        })}
+            </Card>;
+      })}
       </div>
-    );
-  }, [clients, planningData, selectedDate, getStatusColor, handleCompletion]);
-
-  return (
-    <div className="space-y-6 p-6 bg-gray-50 dark:bg-gray-900 min-h-screen px-0">
-      <MonthSelector selectedDate={selectedDate} onDateChange={setSelectedDate} />
-      <StatusLegend getStatusColor={getStatusColor} />
-
-      {clientGrid}
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent>
@@ -429,6 +337,5 @@ export const PlanningCalendar = ({
           </div>
         </DialogContent>
       </Dialog>
-    </div>
-  );
+    </div>;
 };

@@ -1,5 +1,4 @@
-
-import { useState, useCallback, useMemo } from "react";
+import { useState } from "react";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -45,11 +44,9 @@ export const PublicationCalendarDialog = ({
       if (error) throw error;
       return data as Publication[];
     },
-    enabled: isOpen,
-    placeholderData: previousData => previousData
   });
 
-  const handleDelete = useCallback(async (publicationId: string) => {
+  const handleDelete = async (publicationId: string) => {
     try {
       const { error } = await supabase
         .from('publications')
@@ -71,9 +68,9 @@ export const PublicationCalendarDialog = ({
         variant: "destructive",
       });
     }
-  }, [refetch]);
+  };
 
-  const handleSubmit = useCallback(async (values: PublicationFormValues) => {
+  const handleSubmit = async (values: PublicationFormValues) => {
     if (!values.date || !values.name) {
       toast({
         title: "Error",
@@ -84,6 +81,7 @@ export const PublicationCalendarDialog = ({
     }
 
     const typeShorthand = values.type === 'reel' ? 'r' : values.type === 'carousel' ? 'c' : 'i';
+    const eventTitle = `${clientName} - ${typeShorthand} - ${values.name}`;
 
     const publicationData = {
       client_id: clientId,
@@ -120,9 +118,9 @@ export const PublicationCalendarDialog = ({
     } finally {
       setIsSubmitting(false);
     }
-  }, [clientId, packageId, refetch]);
+  };
 
-  const handleTogglePublished = useCallback(async (publicationId: string, isPublished: boolean) => {
+  const handleTogglePublished = async (publicationId: string, isPublished: boolean) => {
     try {
       const { error } = await supabase
         .from('publications')
@@ -144,30 +142,20 @@ export const PublicationCalendarDialog = ({
         variant: "destructive",
       });
     }
-  }, [refetch]);
-
-  const handleTriggerHover = useCallback(() => {
-    refetch();
-  }, [refetch]);
+  };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => {
-      setIsOpen(open);
-      if (open) {
-        refetch();
-      }
-    }}>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button
           variant="ghost"
           size="icon"
           className="h-8 w-8 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-colors duration-200"
-          onMouseEnter={handleTriggerHover}
         >
           <CalendarIcon className="h-4 w-4" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px] max-h-[80vh] overflow-y-auto dark:bg-gray-900 touch-scroll">
+      <DialogContent className="sm:max-w-[425px] max-h-[80vh] overflow-y-auto dark:bg-gray-900">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold dark:text-white">
             Calendario de publicaciones - {clientName}
