@@ -13,27 +13,11 @@ const Dialog = React.forwardRef<
     preventAutoClose?: boolean;
   }
 >(({ forceMount, preventAutoClose, ...props }, ref) => {
-  // Track if the dialog should stay open when window blurs
-  const [stayOpen, setStayOpen] = React.useState(preventAutoClose || false);
-
-  // Set up event listeners for window blur/focus when component mounts
-  React.useEffect(() => {
-    if (!preventAutoClose) return;
-    
-    // Function to prevent dialog from closing when tab changes
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') {
-        setStayOpen(true);
-      }
-    };
-    
-    // Add event listeners
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    
-    // Clean up event listeners
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
+  // Prevent dialog from closing automatically
+  const preventClose = React.useCallback((event: Event) => {
+    if (preventAutoClose) {
+      event.preventDefault();
+    }
   }, [preventAutoClose]);
 
   return (
@@ -41,9 +25,9 @@ const Dialog = React.forwardRef<
       {...props}
       modal={true}
       onOpenChange={(open) => {
-        // If we're preventing auto-close and something is trying to close it
-        if (preventAutoClose && !open && stayOpen) {
-          return; // Prevent closing
+        // If we're preventing auto-close and something is trying to close it programmatically
+        if (preventAutoClose && !open && props.open) {
+          return; // Do nothing, keeping dialog open
         }
         props.onOpenChange?.(open);
       }}
@@ -95,6 +79,44 @@ const DialogContent = React.forwardRef<
     if (preventAutoClose) {
       event.preventDefault();
     }
+  }, [preventAutoClose]);
+
+  // Set up event listeners to prevent auto-close when tab changes
+  React.useEffect(() => {
+    if (!preventAutoClose) return;
+
+    // Create a focused flag to track focus state
+    let dialogFocused = true;
+
+    // Handler for visibility change (tab switching)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        dialogFocused = false;
+      } else if (document.visibilityState === 'visible' && !dialogFocused) {
+        dialogFocused = true;
+      }
+    };
+
+    // Handlers for window blur/focus
+    const handleWindowBlur = () => {
+      dialogFocused = false;
+    };
+
+    const handleWindowFocus = () => {
+      dialogFocused = true;
+    };
+
+    // Add event listeners
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('blur', handleWindowBlur);
+    window.addEventListener('focus', handleWindowFocus);
+
+    // Clean up
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('blur', handleWindowBlur);
+      window.removeEventListener('focus', handleWindowFocus);
+    };
   }, [preventAutoClose]);
 
   return (

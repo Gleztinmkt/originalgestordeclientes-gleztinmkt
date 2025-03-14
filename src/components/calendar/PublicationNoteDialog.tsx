@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -149,8 +150,8 @@ export const PublicationNoteDialog = ({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+    <Dialog open={open} onOpenChange={onOpenChange} preventAutoClose={true}>
+      <DialogContent className="sm:max-w-md" preventAutoClose={true}>
         <DialogHeader>
           <DialogTitle>
             {isEditing ? "Editar nota" : "Agregar nota"}
