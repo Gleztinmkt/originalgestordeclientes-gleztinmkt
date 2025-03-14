@@ -69,6 +69,8 @@ export const FilterPanel = ({
               value={clientSearchQuery}
               onChange={(e) => setClientSearchQuery(e.target.value)}
               className="pl-8"
+              onClick={(e) => e.stopPropagation()}
+              onKeyDown={(e) => e.stopPropagation()}
             />
           </div>
         </div>
