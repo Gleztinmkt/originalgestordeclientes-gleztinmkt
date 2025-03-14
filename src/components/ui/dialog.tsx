@@ -12,27 +12,14 @@ const Dialog = React.forwardRef<
     preventAutoClose?: boolean;
   }
 >(({ forceMount, preventAutoClose, ...props }, ref) => {
-  // If preventAutoClose is true, we don't want the dialog to close automatically
-  // when the window loses focus or when clicking outside
-  const onOpenChangeHandler = React.useCallback(
-    (open: boolean) => {
-      if (preventAutoClose && !open) {
-        // If we're preventing auto-close and something is trying to close the dialog,
-        // we prevent the default behavior by not calling onOpenChange
-        return;
-      }
-      
-      // Otherwise, we call the original onOpenChange handler
-      props.onOpenChange?.(open);
-    },
-    [preventAutoClose, props.onOpenChange]
-  );
-
   return (
     <DialogPrimitive.Root
       {...props}
-      onOpenChange={preventAutoClose ? onOpenChangeHandler : props.onOpenChange}
       modal={true}
+      onOpenChange={(open) => {
+        if (preventAutoClose && !open) return;
+        props.onOpenChange?.(open);
+      }}
     />
   );
 });
@@ -65,22 +52,21 @@ const DialogContent = React.forwardRef<
     preventAutoClose?: boolean;
   }
 >(({ className, children, preventAutoClose, ...props }, ref) => {
-  // Use a React.useCallback to ensure consistent behavior
-  const handlePointerDownOutside = React.useCallback((e: Event) => {
+  const handlePointerDownOutside = React.useCallback((event: Event) => {
     if (preventAutoClose) {
-      e.preventDefault();
+      event.preventDefault();
     }
   }, [preventAutoClose]);
 
-  const handleInteractOutside = React.useCallback((e: Event) => {
+  const handleInteractOutside = React.useCallback((event: Event) => {
     if (preventAutoClose) {
-      e.preventDefault();
+      event.preventDefault();
     }
   }, [preventAutoClose]);
 
-  const handleEscapeKeyDown = React.useCallback((e: KeyboardEvent) => {
+  const handleEscapeKeyDown = React.useCallback((event: KeyboardEvent) => {
     if (preventAutoClose) {
-      e.preventDefault();
+      event.preventDefault();
     }
   }, [preventAutoClose]);
 
@@ -96,8 +82,7 @@ const DialogContent = React.forwardRef<
         onPointerDownOutside={preventAutoClose ? handlePointerDownOutside : undefined}
         onInteractOutside={preventAutoClose ? handleInteractOutside : undefined}
         onEscapeKeyDown={preventAutoClose ? handleEscapeKeyDown : undefined}
-        // Use onFocus to keep the dialog focused
-        tabIndex={-1}
+        onFocusOutside={preventAutoClose ? (e) => e.preventDefault() : undefined}
         {...props}
       >
         {children}

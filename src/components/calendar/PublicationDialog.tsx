@@ -254,21 +254,15 @@ export const PublicationDialog = ({
   };
 
   return <>
-      <Dialog open={open} onOpenChange={handleOpenChange} modal={true}>
+      <Dialog 
+        open={open} 
+        onOpenChange={handleOpenChange} 
+        modal={true}
+        preventAutoClose={true}
+      >
         <DialogContent 
           className="sm:max-w-[425px] max-h-[80vh] overflow-y-auto dark:bg-gray-900" 
-          onPointerDownOutside={e => {
-            e.preventDefault();
-          }}
-          onInteractOutside={e => {
-            e.preventDefault();
-          }}
-          onEscapeKeyDown={e => {
-            if (hasChanges()) {
-              e.preventDefault();
-              setShowConfirmDialog(true);
-            }
-          }}
+          preventAutoClose={true}
         >
           <DialogHeader>
             <div className="flex items-center justify-between">
