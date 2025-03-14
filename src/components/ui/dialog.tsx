@@ -59,11 +59,17 @@ const DialogContent = React.forwardRef<
   React.useEffect(() => {
     if (!preventAutoClose) return;
 
+    // Keep track of the dialog's open state
+    let isDialogOpen = true;
+
     // Handle visibility and focus changes
     const handleVisibilityChange = () => {
       // Keep dialog open when tab loses focus
       if (document.visibilityState === 'hidden' || document.hidden) {
         console.log("Tab visibility changed, preventing dialog close");
+        
+        // Force dialog to stay open
+        isDialogOpen = true;
         
         // Find all open dialogs and mark them
         const dialogElements = document.querySelectorAll('[role="dialog"]');
@@ -81,6 +87,29 @@ const DialogContent = React.forwardRef<
       handleVisibilityChange();
     };
 
+    // Create a MutationObserver to monitor dialog state
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.attributeName === 'data-state') {
+          const dialogElement = mutation.target as HTMLElement;
+          const newState = dialogElement.getAttribute('data-state');
+          
+          // If the dialog was marked to prevent close and is trying to close
+          if (isDialogOpen && dialogElement.getAttribute('data-prevent-close') === 'true' && newState === 'closed') {
+            // Attempt to re-open the dialog
+            console.log("Dialog attempting to close while preventAutoClose is true, preventing");
+            dialogElement.setAttribute('data-state', 'open');
+          }
+        }
+      });
+    });
+
+    // Start observing all dialogs
+    const dialogElements = document.querySelectorAll('[role="dialog"]');
+    dialogElements.forEach(el => {
+      observer.observe(el, { attributes: true });
+    });
+
     // Prevent tab switching from closing the dialog
     window.addEventListener('blur', handleBlur);
     window.addEventListener('visibilitychange', handleVisibilityChange);
@@ -90,6 +119,7 @@ const DialogContent = React.forwardRef<
       window.removeEventListener('blur', handleBlur);
       window.removeEventListener('visibilitychange', handleVisibilityChange);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      observer.disconnect();
     };
   }, [preventAutoClose]);
 
