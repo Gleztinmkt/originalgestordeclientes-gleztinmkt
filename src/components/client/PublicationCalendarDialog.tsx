@@ -26,17 +26,6 @@ export const PublicationCalendarDialog = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedPublication, setSelectedPublication] = useState<Publication | null>(null);
 
-  // Force dialog to stay open regardless of external events
-  const handleOpenChange = (open: boolean) => {
-    // Only allow explicitly closing the dialog through the close button
-    // If trying to close by clicking outside or losing focus, prevent it
-    if (!open && !isSubmitting) {
-      setIsOpen(false);
-    } else if (open) {
-      setIsOpen(true);
-    }
-  };
-
   const { data: publications = [], refetch } = useQuery({
     queryKey: ['publications', clientId, packageId],
     queryFn: async () => {
@@ -156,8 +145,17 @@ export const PublicationCalendarDialog = ({
     }
   };
 
+  // This ensures the dialog only closes when explicitly triggered through normal interaction
+  const handleManualClose = () => {
+    setIsOpen(false);
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
+    <Dialog 
+      open={isOpen} 
+      onOpenChange={setIsOpen}
+      preventAutoClose={true}
+    >
       <DialogTrigger asChild>
         <Button
           variant="ghost"
@@ -170,18 +168,7 @@ export const PublicationCalendarDialog = ({
       </DialogTrigger>
       <DialogContent 
         className="sm:max-w-[425px] max-h-[80vh] overflow-y-auto dark:bg-gray-900"
-        onPointerDownOutside={(e) => {
-          // Prevent closing when clicking outside
-          e.preventDefault();
-        }}
-        onEscapeKeyDown={(e) => {
-          // Prevent closing when pressing escape
-          e.preventDefault();
-        }}
-        onInteractOutside={(e) => {
-          // Prevent any interaction outside from closing the dialog
-          e.preventDefault();
-        }}
+        preventAutoClose={true}
       >
         <DialogHeader>
           <DialogTitle className="text-xl font-bold dark:text-white">
