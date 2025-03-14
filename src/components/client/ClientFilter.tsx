@@ -8,7 +8,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Touch } from "lucide-react";
+import { PointerIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ClientFilterProps {
@@ -35,7 +35,7 @@ export const ClientFilter = ({ onFilterChange, className }: ClientFilterProps) =
         >
           <SelectValue placeholder="Filtrar por día de pago" />
           {isMobile && (
-            <Touch className="h-4 w-4 text-muted-foreground ml-2" />
+            <PointerIcon className="h-4 w-4 text-muted-foreground ml-2" />
           )}
         </SelectTrigger>
         <SelectContent 

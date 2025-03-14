@@ -6,7 +6,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Touch } from "lucide-react";
+import { PointerIcon } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 
@@ -28,7 +28,7 @@ export const TaskFilter = ({ clients = [], onFilterChange }: TaskFilterProps) =>
           isMobile && "w-full h-12"
         )}>
           <SelectValue placeholder="Filtrar por categoría" />
-          {isMobile && <Touch className="h-4 w-4 text-muted-foreground ml-2" />}
+          {isMobile && <PointerIcon className="h-4 w-4 text-muted-foreground ml-2" />}
         </SelectTrigger>
         <SelectContent className={cn(
           isMobile && "w-[calc(100vw-2rem)]"
@@ -54,7 +54,7 @@ export const TaskFilter = ({ clients = [], onFilterChange }: TaskFilterProps) =>
           isMobile && "w-full h-12"
         )}>
           <SelectValue placeholder="Filtrar por cliente" />
-          {isMobile && <Touch className="h-4 w-4 text-muted-foreground ml-2" />}
+          {isMobile && <PointerIcon className="h-4 w-4 text-muted-foreground ml-2" />}
         </SelectTrigger>
         <SelectContent className={cn(
           isMobile && "w-[calc(100vw-2rem)]"

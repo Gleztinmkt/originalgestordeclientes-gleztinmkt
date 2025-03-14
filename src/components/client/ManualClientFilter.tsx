@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Check, X, Search, Touch } from "lucide-react";
+import { Check, X, Search, PointerIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -119,7 +119,7 @@ export const ManualClientFilter = ({
           size={isMobile ? "default" : "sm"}
         >
           Seleccionar clientes
-          {isMobile && <Touch className="ml-2 h-4 w-4 text-muted-foreground" />}
+          {isMobile && <PointerIcon className="ml-2 h-4 w-4 text-muted-foreground" />}
           {selectedClientIds.length > 0 && (
             <span className="absolute -top-1 -right-1 bg-blue-500 text-white w-5 h-5 rounded-full text-xs flex items-center justify-center">
               {selectedClientIds.length}

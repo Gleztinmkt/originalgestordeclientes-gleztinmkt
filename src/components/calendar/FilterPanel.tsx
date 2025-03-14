@@ -1,6 +1,6 @@
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Info, Search, Touch } from "lucide-react";
+import { Plus, Info, Search, PointerIcon } from "lucide-react";
 import { DesignerDialog } from "./DesignerDialog";
 import { StatusLegend } from "./StatusLegend";
 import { useState } from "react";
@@ -61,7 +61,7 @@ export const FilterPanel = ({
       <Select value={selectedClient || "all_clients"} onValueChange={value => onClientChange(value === "all_clients" ? null : value)}>
         <SelectTrigger className={cn("min-w-[200px]", isMobile && "h-12")}>
           <SelectValue placeholder="Todos los clientes" />
-          {isMobile && <Touch className="h-4 w-4 text-muted-foreground ml-2" />}
+          {isMobile && <PointerIcon className="h-4 w-4 text-muted-foreground ml-2" />}
         </SelectTrigger>
         <SelectContent className={isMobile ? "w-[calc(100vw-2rem)]" : ""}>
           <div className="sticky top-0 bg-popover p-2 border-b z-10">
@@ -90,7 +90,7 @@ export const FilterPanel = ({
         <Select value={selectedDesigner || "all_designers"} onValueChange={value => onDesignerChange(value === "all_designers" ? null : value)}>
           <SelectTrigger className={cn("min-w-[200px]", isMobile && "h-12")}>
             <SelectValue placeholder="Todos los diseñadores" />
-            {isMobile && <Touch className="h-4 w-4 text-muted-foreground ml-2" />}
+            {isMobile && <PointerIcon className="h-4 w-4 text-muted-foreground ml-2" />}
           </SelectTrigger>
           <SelectContent className={isMobile ? "w-[calc(100vw-2rem)]" : ""}>
             <div className={cn("touch-scroll", isMobile && "max-h-[40vh] overflow-y-auto py-2")}>
@@ -111,7 +111,7 @@ export const FilterPanel = ({
       <Select value={selectedStatus || "all_status"} onValueChange={value => onStatusChange(value === "all_status" ? null : value)}>
         <SelectTrigger className={cn("min-w-[200px]", isMobile && "h-12")}>
           <SelectValue placeholder="Todos los estados" />
-          {isMobile && <Touch className="h-4 w-4 text-muted-foreground ml-2" />}
+          {isMobile && <PointerIcon className="h-4 w-4 text-muted-foreground ml-2" />}
         </SelectTrigger>
         <SelectContent className={isMobile ? "w-[calc(100vw-2rem)]" : ""}>
           <div className={cn("touch-scroll", isMobile && "py-2")}>
@@ -129,7 +129,7 @@ export const FilterPanel = ({
       <Select value={selectedType || "all_types"} onValueChange={value => onTypeChange(value === "all_types" ? null : value)}>
         <SelectTrigger className={cn("min-w-[200px]", isMobile && "h-12")}>
           <SelectValue placeholder="Todos los tipos" />
-          {isMobile && <Touch className="h-4 w-4 text-muted-foreground ml-2" />}
+          {isMobile && <PointerIcon className="h-4 w-4 text-muted-foreground ml-2" />}
         </SelectTrigger>
         <SelectContent className={isMobile ? "w-[calc(100vw-2rem)]" : ""}>
           <div className={cn("touch-scroll", isMobile && "py-2")}>
