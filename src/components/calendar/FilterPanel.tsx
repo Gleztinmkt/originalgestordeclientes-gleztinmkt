@@ -8,7 +8,6 @@ import { Button } from "../ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "../ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface FilterPanelProps {
   clients: Array<{
@@ -56,39 +55,33 @@ export const FilterPanel = ({
     client.name.toLowerCase().includes(clientSearchQuery.toLowerCase())
   );
 
-  const clientSelectContent = (
-    <SelectContent className="max-h-80 p-0">
-      <div className="sticky top-0 bg-popover p-2 border-b z-10">
-        <div className="relative">
-          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar clientes..." 
-            value={clientSearchQuery}
-            onChange={(e) => setClientSearchQuery(e.target.value)}
-            className="pl-8"
-          />
-        </div>
-      </div>
-      <ScrollArea className="max-h-[220px] py-1">
-        <div className="px-1">
-          <SelectItem value="all_clients">Todos los clientes</SelectItem>
-          {filteredClients.map(client => (
-            <SelectItem key={client.id} value={client.id} className="my-1">
-              {client.name}
-            </SelectItem>
-          ))}
-        </div>
-      </ScrollArea>
-    </SelectContent>
-  );
-
   const filterContent = (
     <>
       <Select value={selectedClient || "all_clients"} onValueChange={value => onClientChange(value === "all_clients" ? null : value)}>
         <SelectTrigger className="min-w-[200px]">
           <SelectValue placeholder="Todos los clientes" />
         </SelectTrigger>
-        {clientSelectContent}
+        <SelectContent>
+          <div className="sticky top-0 bg-popover p-2 border-b z-10">
+            <div className="relative">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar clientes..." 
+                value={clientSearchQuery}
+                onChange={(e) => setClientSearchQuery(e.target.value)}
+                className="pl-8"
+              />
+            </div>
+          </div>
+          <div>
+            <SelectItem value="all_clients">Todos los clientes</SelectItem>
+            {filteredClients.map(client => (
+              <SelectItem key={client.id} value={client.id}>
+                {client.name}
+              </SelectItem>
+            ))}
+          </div>
+        </SelectContent>
       </Select>
 
       <div className="flex items-center gap-2">
