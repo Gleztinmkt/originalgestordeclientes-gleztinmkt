@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,17 @@ export const PublicationCalendarDialog = ({
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedPublication, setSelectedPublication] = useState<Publication | null>(null);
+
+  // Force dialog to stay open regardless of external events
+  const handleOpenChange = (open: boolean) => {
+    // Only allow explicitly closing the dialog through the close button
+    // If trying to close by clicking outside or losing focus, prevent it
+    if (!open && !isSubmitting) {
+      setIsOpen(false);
+    } else if (open) {
+      setIsOpen(true);
+    }
+  };
 
   const { data: publications = [], refetch } = useQuery({
     queryKey: ['publications', clientId, packageId],
@@ -145,17 +157,32 @@ export const PublicationCalendarDialog = ({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button
           variant="ghost"
           size="icon"
           className="h-8 w-8 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-colors duration-200"
+          onClick={() => setIsOpen(true)}
         >
           <CalendarIcon className="h-4 w-4" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px] max-h-[80vh] overflow-y-auto dark:bg-gray-900">
+      <DialogContent 
+        className="sm:max-w-[425px] max-h-[80vh] overflow-y-auto dark:bg-gray-900"
+        onPointerDownOutside={(e) => {
+          // Prevent closing when clicking outside
+          e.preventDefault();
+        }}
+        onEscapeKeyDown={(e) => {
+          // Prevent closing when pressing escape
+          e.preventDefault();
+        }}
+        onInteractOutside={(e) => {
+          // Prevent any interaction outside from closing the dialog
+          e.preventDefault();
+        }}
+      >
         <DialogHeader>
           <DialogTitle className="text-xl font-bold dark:text-white">
             Calendario de publicaciones - {clientName}
