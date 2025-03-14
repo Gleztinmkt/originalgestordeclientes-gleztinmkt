@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -266,19 +265,13 @@ export const PublicationDialog = ({
           className="sm:max-w-[425px] max-h-[80vh] overflow-y-auto dark:bg-gray-900" 
           preventAutoClose={true}
           onInteractOutside={(e) => {
-            if (preventAutoClose) {
-              e.preventDefault();
-            }
+            e.preventDefault();
           }}
           onEscapeKeyDown={(e) => {
-            if (preventAutoClose) {
-              e.preventDefault();
-            }
+            e.preventDefault();
           }}
           onPointerDownOutside={(e) => {
-            if (preventAutoClose) {
-              e.preventDefault();
-            }
+            e.preventDefault();
           }}
         >
           <DialogHeader>
