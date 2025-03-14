@@ -13,13 +13,6 @@ const Dialog = React.forwardRef<
     preventAutoClose?: boolean;
   }
 >(({ forceMount, preventAutoClose, ...props }, ref) => {
-  // Prevent dialog from closing automatically
-  const preventClose = React.useCallback((event: Event) => {
-    if (preventAutoClose) {
-      event.preventDefault();
-    }
-  }, [preventAutoClose]);
-
   return (
     <DialogPrimitive.Root
       {...props}
@@ -63,59 +56,30 @@ const DialogContent = React.forwardRef<
     preventAutoClose?: boolean;
   }
 >(({ className, children, preventAutoClose, ...props }, ref) => {
-  const handlePointerDownOutside = React.useCallback((event: Event) => {
-    if (preventAutoClose) {
-      event.preventDefault();
-    }
-  }, [preventAutoClose]);
-
-  const handleInteractOutside = React.useCallback((event: Event) => {
-    if (preventAutoClose) {
-      event.preventDefault();
-    }
-  }, [preventAutoClose]);
-
-  const handleEscapeKeyDown = React.useCallback((event: KeyboardEvent) => {
-    if (preventAutoClose) {
-      event.preventDefault();
-    }
-  }, [preventAutoClose]);
-
   // Set up event listeners to prevent auto-close when tab changes
   React.useEffect(() => {
     if (!preventAutoClose) return;
 
-    // Create a focused flag to track focus state
-    let dialogFocused = true;
-
-    // Handler for visibility change (tab switching)
+    // Fix for dialog closing on tab switch
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'hidden') {
-        dialogFocused = false;
-      } else if (document.visibilityState === 'visible' && !dialogFocused) {
-        dialogFocused = true;
+        // This prevents the dialog from closing when tab loses focus
+        const dialogElements = document.querySelectorAll('[role="dialog"]');
+        dialogElements.forEach(el => {
+          if (el.getAttribute('data-state') === 'open') {
+            el.setAttribute('data-prevent-close', 'true');
+          }
+        });
       }
     };
 
-    // Handlers for window blur/focus
-    const handleWindowBlur = () => {
-      dialogFocused = false;
-    };
-
-    const handleWindowFocus = () => {
-      dialogFocused = true;
-    };
-
-    // Add event listeners
+    // Prevent tab switching from closing the dialog
+    window.addEventListener('blur', handleVisibilityChange);
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('blur', handleWindowBlur);
-    window.addEventListener('focus', handleWindowFocus);
 
-    // Clean up
     return () => {
+      window.removeEventListener('blur', handleVisibilityChange);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('blur', handleWindowBlur);
-      window.removeEventListener('focus', handleWindowFocus);
     };
   }, [preventAutoClose]);
 
@@ -128,10 +92,11 @@ const DialogContent = React.forwardRef<
           "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg",
           className
         )}
-        onPointerDownOutside={preventAutoClose ? handlePointerDownOutside : undefined}
-        onInteractOutside={preventAutoClose ? handleInteractOutside : undefined}
-        onEscapeKeyDown={preventAutoClose ? handleEscapeKeyDown : undefined}
+        onPointerDownOutside={preventAutoClose ? (e) => e.preventDefault() : undefined}
+        onInteractOutside={preventAutoClose ? (e) => e.preventDefault() : undefined}
+        onEscapeKeyDown={preventAutoClose ? (e) => e.preventDefault() : undefined}
         onFocusOutside={preventAutoClose ? (e) => e.preventDefault() : undefined}
+        data-prevent-autoclose={preventAutoClose ? "true" : "false"}
         {...props}
       >
         {children}

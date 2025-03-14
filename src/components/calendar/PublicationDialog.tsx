@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -258,17 +259,36 @@ export const PublicationDialog = ({
         open={open} 
         onOpenChange={handleOpenChange} 
         modal={true}
+        forceMount={true}
         preventAutoClose={true}
       >
         <DialogContent 
           className="sm:max-w-[425px] max-h-[80vh] overflow-y-auto dark:bg-gray-900" 
           preventAutoClose={true}
+          onInteractOutside={(e) => {
+            if (preventAutoClose) {
+              e.preventDefault();
+            }
+          }}
+          onEscapeKeyDown={(e) => {
+            if (preventAutoClose) {
+              e.preventDefault();
+            }
+          }}
+          onPointerDownOutside={(e) => {
+            if (preventAutoClose) {
+              e.preventDefault();
+            }
+          }}
         >
           <DialogHeader>
             <div className="flex items-center justify-between">
               <DialogTitle className="text-xl font-bold dark:text-white">
                 Editar Publicación
               </DialogTitle>
+              <DialogDescription className="sr-only">
+                Editar detalles de la publicación
+              </DialogDescription>
               {client && <Button variant="ghost" size="icon" onClick={handleOpenSocialLinks} className="ml-2" title="Abrir redes sociales">
                   <Share2 className="h-4 w-4" />
                 </Button>}
@@ -471,4 +491,3 @@ export const PublicationDialog = ({
       </AlertDialog>
     </>;
 };
-
