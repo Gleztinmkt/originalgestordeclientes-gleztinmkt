@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Check, X, Search } from "lucide-react";
+import { Check, X, Search, Touch } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -10,6 +10,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Client } from "../types/client";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
 
 interface ManualClientFilterProps {
   clients: Client[];
@@ -81,19 +82,28 @@ export const ManualClientFilter = ({
           </Button>
         </div>
       </div>
-      <div className="touch-scroll">
+      <div className={cn(
+        "touch-scroll", 
+        isMobile && "max-h-[50vh] overflow-y-auto"
+      )}>
         {filteredClients.map((client) => (
           <label
             key={client.id}
-            className="flex items-center space-x-2 hover:bg-accent rounded-lg p-2 cursor-pointer"
+            className={cn(
+              "flex items-center space-x-2 hover:bg-accent rounded-lg cursor-pointer",
+              isMobile ? "p-3" : "p-2"
+            )}
           >
             <input
               type="checkbox"
-              className="rounded border-gray-300 text-primary-600 shadow-sm focus:border-primary-300 focus:ring focus:ring-primary-200 focus:ring-opacity-50"
+              className={cn(
+                "rounded border-gray-300 text-primary-600 shadow-sm focus:border-primary-300 focus:ring focus:ring-primary-200 focus:ring-opacity-50",
+                isMobile && "h-5 w-5"
+              )}
               checked={selectedClientIds.includes(client.id)}
               onChange={() => handleClientToggle(client.id)}
             />
-            <span className="text-sm">{client.name}</span>
+            <span className={cn("text-sm", isMobile && "text-base")}>{client.name}</span>
           </label>
         ))}
       </div>
@@ -105,10 +115,11 @@ export const ManualClientFilter = ({
       <PopoverTrigger asChild>
         <Button 
           variant="outline" 
-          className={`relative ${className}`}
-          size="sm"
+          className={cn(`relative ${className}`, isMobile && "w-full h-12 text-base")}
+          size={isMobile ? "default" : "sm"}
         >
           Seleccionar clientes
+          {isMobile && <Touch className="ml-2 h-4 w-4 text-muted-foreground" />}
           {selectedClientIds.length > 0 && (
             <span className="absolute -top-1 -right-1 bg-blue-500 text-white w-5 h-5 rounded-full text-xs flex items-center justify-center">
               {selectedClientIds.length}
@@ -116,7 +127,11 @@ export const ManualClientFilter = ({
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-80 p-0" align="start">
+      <PopoverContent 
+        className={cn("p-0", isMobile ? "w-[calc(100vw-2rem)]" : "w-80")} 
+        align={isMobile ? "center" : "start"}
+        sideOffset={isMobile ? 5 : 4}
+      >
         {clientList}
       </PopoverContent>
     </Popover>
