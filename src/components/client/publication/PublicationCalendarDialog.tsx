@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Calendar as CalendarIcon, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -231,6 +232,7 @@ export const PublicationCalendarDialog = ({
       open={isOpen} 
       onOpenChange={setIsOpen}
       preventAutoClose={true}
+      forceMount={true}
     >
       <DialogTrigger asChild>
         <Button
@@ -244,6 +246,9 @@ export const PublicationCalendarDialog = ({
       <DialogContent 
         className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto dark:bg-gray-900"
         preventAutoClose={true}
+        onInteractOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
+        onPointerDownOutside={(e) => e.preventDefault()}
       >
         <DialogHeader>
           <div className="flex items-center justify-between">

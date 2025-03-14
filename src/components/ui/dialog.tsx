@@ -1,4 +1,3 @@
-
 import * as React from "react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { X } from "lucide-react"
@@ -60,10 +59,13 @@ const DialogContent = React.forwardRef<
   React.useEffect(() => {
     if (!preventAutoClose) return;
 
-    // Fix for dialog closing on tab switch
+    // Handle visibility and focus changes
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') {
-        // This prevents the dialog from closing when tab loses focus
+      // Keep dialog open when tab loses focus
+      if (document.visibilityState === 'hidden' || document.hidden) {
+        console.log("Tab visibility changed, preventing dialog close");
+        
+        // Find all open dialogs and mark them
         const dialogElements = document.querySelectorAll('[role="dialog"]');
         dialogElements.forEach(el => {
           if (el.getAttribute('data-state') === 'open') {
@@ -73,12 +75,20 @@ const DialogContent = React.forwardRef<
       }
     };
 
+    // More robust handling with multiple events
+    const handleBlur = () => {
+      console.log("Window blur event, preventing dialog close");
+      handleVisibilityChange();
+    };
+
     // Prevent tab switching from closing the dialog
-    window.addEventListener('blur', handleVisibilityChange);
+    window.addEventListener('blur', handleBlur);
+    window.addEventListener('visibilitychange', handleVisibilityChange);
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
-      window.removeEventListener('blur', handleVisibilityChange);
+      window.removeEventListener('blur', handleBlur);
+      window.removeEventListener('visibilitychange', handleVisibilityChange);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [preventAutoClose]);
