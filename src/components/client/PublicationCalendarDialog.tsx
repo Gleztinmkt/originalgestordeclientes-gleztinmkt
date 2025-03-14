@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,7 +8,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogDescription
+  DialogDescription,
+  DialogClose
 } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -152,7 +154,13 @@ export const PublicationCalendarDialog = ({
   return (
     <Dialog 
       open={isOpen} 
-      onOpenChange={setIsOpen}
+      onOpenChange={(open) => {
+        // Only allow opening, prevent automatic closing
+        if (open) {
+          setIsOpen(true);
+        }
+        // Let user manually close by clicking the Close button
+      }}
       preventAutoClose={true}
       forceMount={true}
     >
@@ -169,10 +177,6 @@ export const PublicationCalendarDialog = ({
       <DialogContent 
         className="sm:max-w-[425px] max-h-[80vh] overflow-y-auto dark:bg-gray-900"
         preventAutoClose={true}
-        onInteractOutside={(e) => e.preventDefault()}
-        onEscapeKeyDown={(e) => e.preventDefault()}
-        onPointerDownOutside={(e) => e.preventDefault()}
-        data-prevent-autoclose="true"
       >
         <DialogHeader>
           <DialogTitle className="text-xl font-bold dark:text-white">
@@ -204,6 +208,16 @@ export const PublicationCalendarDialog = ({
             isSubmitting={isSubmitting}
             packageId={packageId}
           />
+          
+          {/* Add explicit close button */}
+          <div className="flex justify-end">
+            <Button 
+              variant="outline" 
+              onClick={handleManualClose}
+            >
+              Cerrar
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
