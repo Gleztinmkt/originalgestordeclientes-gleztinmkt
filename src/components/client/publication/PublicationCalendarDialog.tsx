@@ -152,7 +152,6 @@ export const PublicationCalendarDialog = ({
     const calendarElement = document.createElement('div');
     calendarElement.className = 'p-8 bg-white text-black min-w-[800px]';
     
-    // Header
     const header = document.createElement('div');
     header.className = 'text-center mb-8';
     header.innerHTML = `
@@ -162,7 +161,6 @@ export const PublicationCalendarDialog = ({
     `;
     calendarElement.appendChild(header);
 
-    // Publications list
     const list = document.createElement('div');
     list.className = 'space-y-4';
     
@@ -192,23 +190,20 @@ export const PublicationCalendarDialog = ({
     
     calendarElement.appendChild(list);
 
-    // Footer
     const footer = document.createElement('div');
     footer.className = 'mt-8 text-center text-sm text-gray-500';
     footer.innerHTML = 'Gestor de clientes Gleztin Marketing Digital';
     calendarElement.appendChild(footer);
 
-    // Add to document temporarily
     document.body.appendChild(calendarElement);
 
     try {
       const canvas = await html2canvas(calendarElement, {
-        scale: 2, // Higher resolution
+        scale: 2,
         backgroundColor: '#ffffff',
         logging: false,
       });
 
-      // Convert to image and download
       const image = canvas.toDataURL('image/png');
       const link = document.createElement('a');
       link.download = `calendario-${clientName.toLowerCase().replace(/\s+/g, '-')}.png`;
@@ -232,7 +227,11 @@ export const PublicationCalendarDialog = ({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog 
+      open={isOpen} 
+      onOpenChange={setIsOpen}
+      preventAutoClose={true}
+    >
       <DialogTrigger asChild>
         <Button
           variant="ghost"
@@ -242,7 +241,10 @@ export const PublicationCalendarDialog = ({
           <CalendarIcon className="h-4 w-4" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto dark:bg-gray-900">
+      <DialogContent 
+        className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto dark:bg-gray-900"
+        preventAutoClose={true}
+      >
         <DialogHeader>
           <div className="flex items-center justify-between">
             <DialogTitle className="text-xl font-bold dark:text-white">

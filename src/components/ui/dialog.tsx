@@ -1,3 +1,4 @@
+
 import * as React from "react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { X } from "lucide-react"
@@ -12,12 +13,38 @@ const Dialog = React.forwardRef<
     preventAutoClose?: boolean;
   }
 >(({ forceMount, preventAutoClose, ...props }, ref) => {
+  // Track if the dialog should stay open when window blurs
+  const [stayOpen, setStayOpen] = React.useState(preventAutoClose || false);
+
+  // Set up event listeners for window blur/focus when component mounts
+  React.useEffect(() => {
+    if (!preventAutoClose) return;
+    
+    // Function to prevent dialog from closing when tab changes
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        setStayOpen(true);
+      }
+    };
+    
+    // Add event listeners
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    // Clean up event listeners
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [preventAutoClose]);
+
   return (
     <DialogPrimitive.Root
       {...props}
       modal={true}
       onOpenChange={(open) => {
-        if (preventAutoClose && !open) return;
+        // If we're preventing auto-close and something is trying to close it
+        if (preventAutoClose && !open && stayOpen) {
+          return; // Prevent closing
+        }
         props.onOpenChange?.(open);
       }}
     />

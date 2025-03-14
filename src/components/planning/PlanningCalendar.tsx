@@ -321,8 +321,8 @@ export const PlanningCalendar = ({
       })}
       </div>
 
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent>
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen} preventAutoClose={true}>
+        <DialogContent preventAutoClose={true}>
           <DialogHeader>
             <DialogTitle>Descripción de planificación</DialogTitle>
           </DialogHeader>
