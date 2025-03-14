@@ -53,6 +53,9 @@ const SelectContent = React.forwardRef<
           position === "popper" &&
             "h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]"
         )}
+        style={{
+          overscrollBehavior: 'contain'
+        }}
       >
         {children}
       </SelectPrimitive.Viewport>
