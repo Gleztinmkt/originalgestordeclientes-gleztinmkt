@@ -1,3 +1,4 @@
+
 import * as React from "react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { X } from "lucide-react"
@@ -12,6 +13,13 @@ const Dialog = React.forwardRef<
     preventAutoClose?: boolean;
   }
 >(({ forceMount, preventAutoClose, ...props }, ref) => {
+  // Use a ref to track if the dialog was open before blur
+  const wasOpenRef = React.useRef(props.open);
+  
+  React.useEffect(() => {
+    wasOpenRef.current = props.open;
+  }, [props.open]);
+
   return (
     <DialogPrimitive.Root
       {...props}
@@ -19,6 +27,7 @@ const Dialog = React.forwardRef<
       onOpenChange={(open) => {
         // If we're preventing auto-close and something is trying to close it programmatically
         if (preventAutoClose && !open && props.open) {
+          console.log("Preventing dialog from closing automatically");
           return; // Do nothing, keeping dialog open
         }
         props.onOpenChange?.(open);
@@ -61,12 +70,19 @@ const DialogContent = React.forwardRef<
 
     // Keep track of the dialog's open state
     let isDialogOpen = true;
+    let isFocusLost = false;
+
+    // This flag helps us track if we're in the middle of a tab change
+    let isTabChanging = false;
 
     // Handle visibility and focus changes
     const handleVisibilityChange = () => {
       // Keep dialog open when tab loses focus
       if (document.visibilityState === 'hidden' || document.hidden) {
         console.log("Tab visibility changed, preventing dialog close");
+        
+        // Mark that we're changing tabs
+        isTabChanging = true;
         
         // Force dialog to stay open
         isDialogOpen = true;
@@ -78,13 +94,46 @@ const DialogContent = React.forwardRef<
             el.setAttribute('data-prevent-close', 'true');
           }
         });
+      } else if (document.visibilityState === 'visible' && isTabChanging) {
+        // We've returned to the tab
+        console.log("Tab now visible again, ensuring dialog stays open");
+        isTabChanging = false;
+        
+        // Ensure all dialogs marked to prevent close stay open
+        setTimeout(() => {
+          const dialogElements = document.querySelectorAll('[role="dialog"][data-prevent-close="true"]');
+          dialogElements.forEach(el => {
+            if (el.getAttribute('data-state') !== 'open') {
+              console.log("Forcing dialog back to open state");
+              el.setAttribute('data-state', 'open');
+            }
+          });
+        }, 50); // Small delay to catch potential race conditions
       }
     };
 
     // More robust handling with multiple events
     const handleBlur = () => {
       console.log("Window blur event, preventing dialog close");
+      isFocusLost = true;
       handleVisibilityChange();
+    };
+
+    const handleFocus = () => {
+      console.log("Window regained focus");
+      if (isFocusLost) {
+        isFocusLost = false;
+        // When focus returns, make sure our dialogs are still open
+        setTimeout(() => {
+          const dialogElements = document.querySelectorAll('[role="dialog"][data-prevent-close="true"]');
+          dialogElements.forEach(el => {
+            if (el.getAttribute('data-state') !== 'open') {
+              console.log("Forcing dialog back to open state after focus return");
+              el.setAttribute('data-state', 'open');
+            }
+          });
+        }, 100); // Slightly longer delay to ensure everything has settled
+      }
     };
 
     // Create a MutationObserver to monitor dialog state
@@ -93,12 +142,24 @@ const DialogContent = React.forwardRef<
         if (mutation.attributeName === 'data-state') {
           const dialogElement = mutation.target as HTMLElement;
           const newState = dialogElement.getAttribute('data-state');
+          const shouldPreventClose = dialogElement.getAttribute('data-prevent-close') === 'true';
           
           // If the dialog was marked to prevent close and is trying to close
-          if (isDialogOpen && dialogElement.getAttribute('data-prevent-close') === 'true' && newState === 'closed') {
+          if (isDialogOpen && shouldPreventClose && newState === 'closed') {
             // Attempt to re-open the dialog
             console.log("Dialog attempting to close while preventAutoClose is true, preventing");
             dialogElement.setAttribute('data-state', 'open');
+            
+            // Re-apply any classes or attributes that might have been changed
+            dialogElement.classList.add('data-[state=open]:animate-in');
+            dialogElement.classList.remove('data-[state=closed]:animate-out');
+            
+            // Dispatch a custom event to notify that we prevented a close
+            const preventCloseEvent = new CustomEvent('preventedAutoClose', { 
+              bubbles: true,
+              detail: { element: dialogElement }
+            });
+            dialogElement.dispatchEvent(preventCloseEvent);
           }
         }
       });
@@ -112,14 +173,30 @@ const DialogContent = React.forwardRef<
 
     // Prevent tab switching from closing the dialog
     window.addEventListener('blur', handleBlur);
+    window.addEventListener('focus', handleFocus);
     window.addEventListener('visibilitychange', handleVisibilityChange);
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
+    // Periodically check if our dialog should be open but isn't
+    const intervalCheck = setInterval(() => {
+      if (isDialogOpen && preventAutoClose) {
+        const dialogElements = document.querySelectorAll('[role="dialog"][data-prevent-close="true"]');
+        dialogElements.forEach(el => {
+          if (el.getAttribute('data-state') !== 'open') {
+            console.log("Periodic check: forcing dialog to stay open");
+            el.setAttribute('data-state', 'open');
+          }
+        });
+      }
+    }, 500);
+
     return () => {
       window.removeEventListener('blur', handleBlur);
+      window.removeEventListener('focus', handleFocus);
       window.removeEventListener('visibilitychange', handleVisibilityChange);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       observer.disconnect();
+      clearInterval(intervalCheck);
     };
   }, [preventAutoClose]);
 

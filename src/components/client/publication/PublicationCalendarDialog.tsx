@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Calendar as CalendarIcon, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -249,6 +248,7 @@ export const PublicationCalendarDialog = ({
         onInteractOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
         onPointerDownOutside={(e) => e.preventDefault()}
+        data-prevent-autoclose="true"
       >
         <DialogHeader>
           <div className="flex items-center justify-between">

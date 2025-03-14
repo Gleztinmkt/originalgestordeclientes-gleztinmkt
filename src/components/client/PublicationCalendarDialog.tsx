@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -173,6 +172,7 @@ export const PublicationCalendarDialog = ({
         onInteractOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
         onPointerDownOutside={(e) => e.preventDefault()}
+        data-prevent-autoclose="true"
       >
         <DialogHeader>
           <DialogTitle className="text-xl font-bold dark:text-white">
