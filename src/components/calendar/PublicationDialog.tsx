@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
-import { ExternalLink, Link as LinkIcon, Plus, Trash2, Copy, Check, Share2 } from "lucide-react";
+import { ExternalLink, Link as LinkIcon, Plus, Trash2, Copy, Check, Share2, X } from "lucide-react";
 import { Publication } from "../client/publication/types";
 import { Client } from "../types/client";
 import { toast } from "@/hooks/use-toast";
@@ -279,12 +280,23 @@ export const PublicationDialog = ({
               <DialogTitle className="text-xl font-bold dark:text-white">
                 Editar Publicación
               </DialogTitle>
+              <div className="flex items-center">
+                {client && <Button variant="ghost" size="icon" onClick={handleOpenSocialLinks} className="ml-2" title="Abrir redes sociales">
+                  <Share2 className="h-4 w-4" />
+                </Button>}
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={handleClose} 
+                  className="ml-2" 
+                  title="Cerrar"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
               <DialogDescription className="sr-only">
                 Editar detalles de la publicación
               </DialogDescription>
-              {client && <Button variant="ghost" size="icon" onClick={handleOpenSocialLinks} className="ml-2" title="Abrir redes sociales">
-                  <Share2 className="h-4 w-4" />
-                </Button>}
             </div>
           </DialogHeader>
 
