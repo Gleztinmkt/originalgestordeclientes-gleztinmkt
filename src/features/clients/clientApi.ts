@@ -1,3 +1,4 @@
+
 import { supabase } from "@/lib/supabase";
 import { Client } from "@/components/types/client";
 import { formatClientForDatabase, formatDatabaseClient } from "@/lib/database-utils";
@@ -67,14 +68,44 @@ export const updateClient = async (id: string, clientData: Partial<Client>) => {
 
 export const deleteClient = async (id: string) => {
   console.log('Deleting client:', id);
-  const { error } = await supabase
+  
+  // Primero obtenemos los datos del cliente para guardarlos en deleted_items
+  const { data: client, error: fetchError } = await supabase
+    .from('clients')
+    .select('name')
+    .eq('id', id)
+    .single();
+  
+  if (fetchError) {
+    console.error('Error fetching client for deletion:', fetchError);
+    throw new Error('No se pudo obtener los datos del cliente para eliminar');
+  }
+  
+  // Actualizamos el campo deleted_at
+  const { error: updateError } = await supabase
     .from('clients')
     .update({ deleted_at: new Date().toISOString() })
     .eq('id', id);
 
-  if (error) {
-    console.error('Error deleting client:', error);
+  if (updateError) {
+    console.error('Error deleting client:', updateError);
     throw new Error('No se pudo eliminar el cliente');
   }
+  
+  // Guardamos en la tabla deleted_items
+  const { error: insertError } = await supabase
+    .from('deleted_items')
+    .insert({
+      type: 'client',
+      id: id,
+      content: client.name,
+      deleted_at: new Date().toISOString()
+    });
+  
+  if (insertError) {
+    console.error('Error saving client to deleted_items:', insertError);
+    // No lanzamos error para no interrumpir el flujo principal
+  }
+  
   console.log('Client deleted successfully');
 };

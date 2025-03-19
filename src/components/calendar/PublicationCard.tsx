@@ -212,12 +212,36 @@ export const PublicationCard = ({
 
   const handleDelete = async () => {
     try {
-      const { error } = await supabase
+      const { data: pub, error: fetchError } = await supabase
+        .from('publications')
+        .select('name')
+        .eq('id', publication.id)
+        .single();
+      
+      if (fetchError) {
+        console.error('Error fetching publication for deletion:', fetchError);
+        throw fetchError;
+      }
+      
+      const { error: updateError } = await supabase
         .from('publications')
         .update({ deleted_at: new Date().toISOString() })
         .eq('id', publication.id);
 
-      if (error) throw error;
+      if (updateError) throw updateError;
+      
+      const { error: insertError } = await supabase
+        .from('deleted_items')
+        .insert({
+          type: 'publication',
+          id: publication.id,
+          content: pub.name,
+          deleted_at: new Date().toISOString()
+        });
+      
+      if (insertError) {
+        console.error('Error saving publication to deleted_items:', insertError);
+      }
 
       toast({
         title: "Publicación eliminada",

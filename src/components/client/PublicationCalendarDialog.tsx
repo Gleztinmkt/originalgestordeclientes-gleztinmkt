@@ -1,4 +1,5 @@
 
+
 import { useState } from "react";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -51,12 +52,40 @@ export const PublicationCalendarDialog = ({
 
   const handleDelete = async (publicationId: string) => {
     try {
-      const { error } = await supabase
+      // Primero obtenemos los datos de la publicación para guardarlos en deleted_items
+      const { data: publication, error: fetchError } = await supabase
+        .from('publications')
+        .select('name')
+        .eq('id', publicationId)
+        .single();
+      
+      if (fetchError) {
+        console.error('Error fetching publication for deletion:', fetchError);
+        throw fetchError;
+      }
+      
+      // Actualizamos el campo deleted_at
+      const { error: updateError } = await supabase
         .from('publications')
         .update({ deleted_at: new Date().toISOString() })
         .eq('id', publicationId);
 
-      if (error) throw error;
+      if (updateError) throw updateError;
+      
+      // Guardamos en la tabla deleted_items
+      const { error: insertError } = await supabase
+        .from('deleted_items')
+        .insert({
+          type: 'publication',
+          id: publicationId,
+          content: publication.name,
+          deleted_at: new Date().toISOString()
+        });
+      
+      if (insertError) {
+        console.error('Error saving publication to deleted_items:', insertError);
+      }
+      
       await refetch();
       
       toast({
