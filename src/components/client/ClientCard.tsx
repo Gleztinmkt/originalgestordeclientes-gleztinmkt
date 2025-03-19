@@ -60,7 +60,10 @@ export const ClientCard = ({
   const [isUpdating, setIsUpdating] = useState(false);
 
   const handleUpdateClientInfo = async (clientId: string, info: ClientInfo) => {
+    if (isUpdating) return;
+    
     try {
+      setIsUpdating(true);
       await onUpdateClient(clientId, { clientInfo: info });
     } catch (error) {
       console.error('Error updating client info:', error);
@@ -69,6 +72,8 @@ export const ClientCard = ({
         description: "No se pudo actualizar la información del cliente.",
         variant: "destructive",
       });
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -164,8 +169,13 @@ export const ClientCard = ({
   };
 
   const confirmDelete = () => {
+    if (isUpdating) return;
+    
+    setIsUpdating(true);
     onDeleteClient(client.id);
     setShowDeleteDialog(false);
+    setIsUpdating(false);
+    
     if (viewMode === "grid") {
       setIsExpanded(false);
     }
@@ -192,7 +202,7 @@ export const ClientCard = ({
 
         <PackageSection
           client={client}
-          isCapturing={isCapturing}
+          isCapturing={isCapturing || isUpdating}
           onUpdatePackage={onUpdatePackage}
           onUpdatePaid={handleUpdatePackagePaid}
           onEditPackage={handleEditPackage}
@@ -232,7 +242,11 @@ export const ClientCard = ({
           <Card 
             className={cardClasses}
             style={{ background: getSubtleGradient() }}
-            onClick={() => setIsExpanded(true)}
+            onClick={() => {
+              if (!isUpdating) {
+                setIsExpanded(true);
+              }
+            }}
           >
             <CardContent className="p-4">
               <h3 className="text-lg font-heading font-semibold text-gray-800 dark:text-white truncate">
@@ -241,7 +255,14 @@ export const ClientCard = ({
             </CardContent>
           </Card>
 
-          <Dialog open={isExpanded} onOpenChange={setIsExpanded}>
+          <Dialog 
+            open={isExpanded} 
+            onOpenChange={(newOpen) => {
+              if (!isUpdating && !isCapturing) {
+                setIsExpanded(newOpen);
+              }
+            }}
+          >
             <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto dark:bg-gray-800">
               {content}
             </DialogContent>
@@ -256,7 +277,14 @@ export const ClientCard = ({
         </Card>
       )}
 
-      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+      <AlertDialog 
+        open={showDeleteDialog} 
+        onOpenChange={(newOpen) => {
+          if (!isUpdating) {
+            setShowDeleteDialog(newOpen);
+          }
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
@@ -266,7 +294,7 @@ export const ClientCard = ({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-red-500 hover:bg-red-600">
+            <AlertDialogAction onClick={confirmDelete} className="bg-red-500 hover:bg-red-600" disabled={isUpdating}>
               Eliminar
             </AlertDialogAction>
           </AlertDialogFooter>

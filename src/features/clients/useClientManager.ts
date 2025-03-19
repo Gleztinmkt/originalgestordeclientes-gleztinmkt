@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Client } from "@/components/types/client";
 import { toast } from "@/hooks/use-toast";
@@ -97,7 +98,8 @@ export const useClientManager = () => {
       const updatedClient = await updateClient(id, mergedData);
       console.log('Cliente actualizado:', updatedClient);
       
-      setClients(prev => prev.map(c => c.id === id ? updatedClient : c));
+      // Optimistic update with immutable data patterns
+      setClients(prev => prev.map(c => c.id === id ? {...updatedClient} : c));
       
       toast({
         title: "Cliente actualizado",
@@ -127,7 +129,7 @@ export const useClientManager = () => {
         pkg.id === packageId ? { ...pkg, usedPublications } : pkg
       );
 
-      await updateClientData(clientId, { ...client, packages: updatedPackages });
+      await updateClientData(clientId, { packages: updatedPackages });
     } catch (error) {
       console.error('Error updating package:', error);
       toast({
@@ -159,7 +161,7 @@ export const useClientManager = () => {
       };
 
       const updatedPackages = [...client.packages, newPackage];
-      await updateClientData(clientId, { ...client, packages: updatedPackages });
+      await updateClientData(clientId, { packages: updatedPackages });
       console.log('Paquete agregado exitosamente');
     } catch (error) {
       console.error('Error adding package:', error);

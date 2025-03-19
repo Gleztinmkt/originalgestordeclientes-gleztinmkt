@@ -40,7 +40,12 @@ export const AddPackageDialog = ({ clientId, onAddPackage }: AddPackageDialogPro
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={(newOpen) => {
+      // Don't allow state changes while submitting
+      if (!isSubmitting) {
+        setIsOpen(newOpen);
+      }
+    }}>
       <DialogTrigger asChild>
         <Button variant="outline" size="icon" className="h-8 w-8">
           <Plus className="h-4 w-4" />

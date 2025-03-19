@@ -99,7 +99,12 @@ export const EditClientDialog = ({ client, onUpdateClient, onDeleteClient }: Edi
 
   return (
     <>
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={open} onOpenChange={(newOpen) => {
+        // Don't allow state changes while submitting
+        if (!isSubmitting) {
+          setOpen(newOpen);
+        }
+      }}>
         <DialogTrigger asChild>
           <Button variant="ghost" size="icon" className="h-8 w-8">
             <Pencil className="h-4 w-4" />
@@ -141,6 +146,7 @@ export const EditClientDialog = ({ client, onUpdateClient, onDeleteClient }: Edi
                 size="sm"
                 onClick={handleDelete}
                 className="flex items-center gap-1"
+                disabled={isSubmitting}
               >
                 <Trash2 className="h-4 w-4" />
                 Eliminar Cliente
@@ -150,7 +156,12 @@ export const EditClientDialog = ({ client, onUpdateClient, onDeleteClient }: Edi
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+      <AlertDialog open={showDeleteDialog} onOpenChange={(newOpen) => {
+        // Don't allow state changes while submitting
+        if (!isSubmitting) {
+          setShowDeleteDialog(newOpen);
+        }
+      }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
