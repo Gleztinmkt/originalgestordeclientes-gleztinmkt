@@ -60,7 +60,7 @@ export const EditClientDialog = ({ client, onUpdateClient, onDeleteClient }: Edi
     } finally {
       setIsSubmitting(false);
     }
-  }, [client, onUpdateClient]);
+  }, [client.id, onUpdateClient]);
 
   const handleClientInfoSubmit = useCallback(async (values: ClientInfo) => {
     try {
@@ -83,7 +83,7 @@ export const EditClientDialog = ({ client, onUpdateClient, onDeleteClient }: Edi
     } finally {
       setIsSubmitting(false);
     }
-  }, [client, onUpdateClient]);
+  }, [client.id, onUpdateClient]);
 
   const handleDelete = () => {
     setShowDeleteDialog(true);

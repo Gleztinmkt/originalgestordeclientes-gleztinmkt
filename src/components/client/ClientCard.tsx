@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { PaymentReminder } from "./PaymentReminder";
@@ -76,10 +77,14 @@ export const ClientCard = ({
     
     try {
       setIsUpdating(true);
+      // Create a new array instead of modifying the existing one
       const updatedPackages = client.packages.map(pkg =>
         pkg.id === packageId ? { ...pkg, paid } : pkg
       );
-      await onUpdateClient(client.id, { ...client, packages: updatedPackages });
+      
+      await onUpdateClient(client.id, { 
+        packages: updatedPackages 
+      });
     } catch (error) {
       console.error('Error updating package paid status:', error);
       toast({
@@ -97,10 +102,15 @@ export const ClientCard = ({
     
     try {
       setIsUpdating(true);
+      // Create a new array instead of modifying the existing one
       const updatedPackages = client.packages.map(pkg =>
         pkg.id === packageId ? { ...pkg, ...values } : pkg
       );
-      await onUpdateClient(client.id, { ...client, packages: updatedPackages });
+      
+      await onUpdateClient(client.id, { 
+        packages: updatedPackages 
+      });
+      
       toast({
         title: "Paquete actualizado",
         description: "Los cambios se han guardado correctamente.",
@@ -122,8 +132,13 @@ export const ClientCard = ({
     
     try {
       setIsUpdating(true);
+      // Create a new array by filtering out the package to delete
       const updatedPackages = client.packages.filter(pkg => pkg.id !== packageId);
-      await onUpdateClient(client.id, { ...client, packages: updatedPackages });
+      
+      await onUpdateClient(client.id, { 
+        packages: updatedPackages 
+      });
+      
       toast({
         title: "Paquete eliminado",
         description: "El paquete se ha eliminado correctamente.",
