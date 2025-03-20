@@ -23,14 +23,17 @@ export const AddPackageDialog = ({ clientId, onAddPackage }: AddPackageDialogPro
   const handleSubmit = async (values: any) => {
     try {
       setIsSubmitting(true);
-      await onAddPackage(clientId, {
+      // Create a new object for the package data
+      const packageData = {
         id: crypto.randomUUID(),
         name: values.name,
         totalPublications: parseInt(values.totalPublications),
         usedPublications: 0,
         month: values.month,
         paid: values.paid,
-      });
+      };
+      
+      await onAddPackage(clientId, packageData);
       setIsOpen(false);
     } catch (error) {
       console.error('Error adding package:', error);
@@ -40,12 +43,15 @@ export const AddPackageDialog = ({ clientId, onAddPackage }: AddPackageDialogPro
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(newOpen) => {
-      // Don't allow state changes while submitting
-      if (!isSubmitting) {
-        setIsOpen(newOpen);
-      }
-    }}>
+    <Dialog 
+      open={isOpen} 
+      onOpenChange={(newOpen) => {
+        // Don't allow state changes while submitting
+        if (!isSubmitting) {
+          setIsOpen(newOpen);
+        }
+      }}
+    >
       <DialogTrigger asChild>
         <Button variant="outline" size="icon" className="h-8 w-8">
           <Plus className="h-4 w-4" />

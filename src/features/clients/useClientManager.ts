@@ -40,6 +40,7 @@ export const useClientManager = () => {
       });
 
       console.log('Cliente agregado:', newClient);
+      // Use functional update to avoid race conditions
       setClients(prev => [newClient, ...prev]);
       toast({
         title: "Cliente agregado",
@@ -58,6 +59,7 @@ export const useClientManager = () => {
   const deleteClientData = async (id: string) => {
     try {
       await deleteClient(id);
+      // Use functional update to avoid race conditions
       setClients(prev => prev.filter(client => client.id !== id));
       toast({
         title: "Cliente eliminado",
@@ -84,6 +86,7 @@ export const useClientManager = () => {
         throw new Error('Cliente no encontrado');
       }
 
+      // Create a new object with deep copies to ensure immutability
       const mergedData = {
         ...existingClient,
         ...data,
@@ -91,7 +94,17 @@ export const useClientManager = () => {
           ...existingClient.clientInfo,
           ...data.clientInfo,
         } : existingClient.clientInfo,
-        packages: data.packages || existingClient.packages,
+        // Make sure we're creating a new array for packages
+        packages: data.packages ? 
+          // Convert any string numbers to actual numbers if needed
+          data.packages.map(pkg => ({
+            ...pkg,
+            totalPublications: typeof pkg.totalPublications === 'string' ? 
+              parseInt(pkg.totalPublications) : pkg.totalPublications,
+            usedPublications: typeof pkg.usedPublications === 'string' ? 
+              parseInt(pkg.usedPublications) : pkg.usedPublications
+          })) : 
+          [...existingClient.packages]
       };
 
       console.log('Datos fusionados:', mergedData);
@@ -125,8 +138,9 @@ export const useClientManager = () => {
         return;
       }
 
+      // Create a new array of packages
       const updatedPackages = client.packages.map(pkg => 
-        pkg.id === packageId ? { ...pkg, usedPublications } : pkg
+        pkg.id === packageId ? { ...pkg, usedPublications } : {...pkg}
       );
 
       await updateClientData(clientId, { packages: updatedPackages });
@@ -151,15 +165,16 @@ export const useClientManager = () => {
         return;
       }
 
+      // Ensure numeric values
       const newPackage = {
-        id: crypto.randomUUID(),
-        name: packageData.name,
-        totalPublications: parseInt(packageData.totalPublications),
-        usedPublications: 0,
-        month: packageData.month,
-        paid: packageData.paid
+        ...packageData,
+        totalPublications: typeof packageData.totalPublications === 'string' ? 
+          parseInt(packageData.totalPublications) : packageData.totalPublications,
+        usedPublications: typeof packageData.usedPublications === 'string' ? 
+          parseInt(packageData.usedPublications) : packageData.usedPublications
       };
 
+      // Create a new array with the new package
       const updatedPackages = [...client.packages, newPackage];
       await updateClientData(clientId, { packages: updatedPackages });
       console.log('Paquete agregado exitosamente');

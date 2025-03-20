@@ -28,7 +28,7 @@ import { Client, ClientInfo } from "../types/client";
 
 interface EditClientDialogProps {
   client: Client;
-  onUpdateClient: (id: string, data: Partial<Client>) => void;
+  onUpdateClient: (id: string, data: Partial<Client>) => Promise<void>;
   onDeleteClient?: () => void;
 }
 
@@ -38,18 +38,25 @@ export const EditClientDialog = ({ client, onUpdateClient, onDeleteClient }: Edi
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleBasicSubmit = useCallback(async (values: BasicFormValues) => {
+    if (isSubmitting) return;
+    
     try {
       setIsSubmitting(true);
-      await onUpdateClient(client.id, {
+      
+      const updateData = {
         name: values.name,
         phone: values.phone,
         paymentDay: values.nextPayment,
-      });
-      setOpen(false);
+      };
+      
+      await onUpdateClient(client.id, updateData);
+      
       toast({
         title: "Cliente actualizado",
         description: "La información básica del cliente se ha actualizado correctamente.",
       });
+      
+      setOpen(false);
     } catch (error) {
       console.error('Error updating client:', error);
       toast({
@@ -60,19 +67,27 @@ export const EditClientDialog = ({ client, onUpdateClient, onDeleteClient }: Edi
     } finally {
       setIsSubmitting(false);
     }
-  }, [client.id, onUpdateClient]);
+  }, [client.id, onUpdateClient, isSubmitting]);
 
   const handleClientInfoSubmit = useCallback(async (values: ClientInfo) => {
+    if (isSubmitting) return;
+    
     try {
       setIsSubmitting(true);
-      await onUpdateClient(client.id, {
-        clientInfo: values
-      });
-      setOpen(false);
+      
+      // Create a new object for the update to ensure immutability
+      const updateData = {
+        clientInfo: { ...values }
+      };
+      
+      await onUpdateClient(client.id, updateData);
+      
       toast({
         title: "Cliente actualizado",
         description: "La información adicional se ha actualizado correctamente.",
       });
+      
+      setOpen(false);
     } catch (error) {
       console.error('Error updating client:', error);
       toast({
@@ -83,16 +98,23 @@ export const EditClientDialog = ({ client, onUpdateClient, onDeleteClient }: Edi
     } finally {
       setIsSubmitting(false);
     }
-  }, [client.id, onUpdateClient]);
+  }, [client.id, onUpdateClient, isSubmitting]);
 
   const handleDelete = () => {
     setShowDeleteDialog(true);
   };
 
-  const confirmDelete = () => {
-    if (onDeleteClient) {
-      onDeleteClient();
-      setOpen(false);
+  const confirmDelete = async () => {
+    if (onDeleteClient && !isSubmitting) {
+      setIsSubmitting(true);
+      try {
+        await onDeleteClient();
+        setOpen(false);
+      } catch (error) {
+        console.error('Error deleting client:', error);
+      } finally {
+        setIsSubmitting(false);
+      }
     }
     setShowDeleteDialog(false);
   };
@@ -170,9 +192,13 @@ export const EditClientDialog = ({ client, onUpdateClient, onDeleteClient }: Edi
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-red-500 hover:bg-red-600">
-              Eliminar
+            <AlertDialogCancel disabled={isSubmitting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDelete} 
+              className="bg-red-500 hover:bg-red-600"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Eliminando..." : "Eliminar"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
