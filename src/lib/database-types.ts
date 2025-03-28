@@ -1,3 +1,4 @@
+
 import { Client } from "@/components/types/client";
 import { Task } from "@/components/TaskList";
 import { Json } from "@/integrations/supabase/types";
@@ -64,7 +65,7 @@ export const convertDatabaseTask = (task: DatabaseTask): Task => ({
   content: task.content,
   type: task.type || "otros",
   date: task.date || null,
-  client_id: task.client_id,
+  clientId: task.client_id,
   completed: task.completed || false,
   executionDate: task.execution_date ? new Date(task.execution_date) : undefined,
   reminderDate: task.reminder_date ? new Date(task.reminder_date) : undefined,
