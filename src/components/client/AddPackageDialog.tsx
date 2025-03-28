@@ -10,10 +10,11 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { AddPackageForm } from "./AddPackageForm";
 import { useState } from "react";
+import { toast } from "@/hooks/use-toast";
 
 interface AddPackageDialogProps {
   clientId: string;
-  onAddPackage: (clientId: string, packageData: any) => void;
+  onAddPackage: (clientId: string, packageData: any) => Promise<void>;
 }
 
 export const AddPackageDialog = ({ clientId, onAddPackage }: AddPackageDialogProps) => {
@@ -21,6 +22,8 @@ export const AddPackageDialog = ({ clientId, onAddPackage }: AddPackageDialogPro
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (values: any) => {
+    if (isSubmitting) return;
+    
     try {
       setIsSubmitting(true);
       // Create a new object for the package data
@@ -31,12 +34,23 @@ export const AddPackageDialog = ({ clientId, onAddPackage }: AddPackageDialogPro
         usedPublications: 0,
         month: values.month,
         paid: values.paid,
+        last_update: new Date().toISOString()
       };
       
       await onAddPackage(clientId, packageData);
       setIsOpen(false);
+      
+      toast({
+        title: "Paquete agregado",
+        description: "El paquete se ha creado correctamente.",
+      });
     } catch (error) {
       console.error('Error adding package:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo agregar el paquete. Por favor, intenta de nuevo.",
+        variant: "destructive",
+      });
     } finally {
       setIsSubmitting(false);
     }

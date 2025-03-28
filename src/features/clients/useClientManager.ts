@@ -7,6 +7,7 @@ import { fetchClients, createClient, updateClient, deleteClient } from "./client
 export const useClientManager = () => {
   const [clients, setClients] = useState<Client[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const loadClients = async () => {
     try {
@@ -57,7 +58,10 @@ export const useClientManager = () => {
   };
 
   const deleteClientData = async (id: string) => {
+    if (isUpdating) return Promise.reject("Operación en curso");
+    
     try {
+      setIsUpdating(true);
       await deleteClient(id);
       // Use functional update to avoid race conditions
       setClients(prev => prev.filter(client => client.id !== id));
@@ -74,11 +78,18 @@ export const useClientManager = () => {
       });
       // Recargar los clientes para asegurar consistencia
       await loadClients();
+    } finally {
+      setIsUpdating(false);
     }
+    
+    return Promise.resolve();
   };
 
   const updateClientData = async (id: string, data: Partial<Client>) => {
+    if (isUpdating) return Promise.reject("Operación en curso");
+    
     try {
+      setIsUpdating(true);
       console.log('Actualizando cliente:', id, data);
       
       const existingClient = clients.find(c => c.id === id);
@@ -102,7 +113,9 @@ export const useClientManager = () => {
             totalPublications: typeof pkg.totalPublications === 'string' ? 
               parseInt(pkg.totalPublications) : pkg.totalPublications,
             usedPublications: typeof pkg.usedPublications === 'string' ? 
-              parseInt(pkg.usedPublications) : pkg.usedPublications
+              parseInt(pkg.usedPublications) : pkg.usedPublications,
+            // Asegurar que se incluye el timestamp de la última actualización
+            last_update: new Date().toISOString()
           })) : 
           [...existingClient.packages]
       };
@@ -118,6 +131,8 @@ export const useClientManager = () => {
         title: "Cliente actualizado",
         description: "La información del cliente se ha actualizado correctamente.",
       });
+      
+      return Promise.resolve();
     } catch (error) {
       console.error('Error updating client:', error);
       toast({
@@ -127,23 +142,42 @@ export const useClientManager = () => {
       });
       // Recargar los clientes para asegurar consistencia
       await loadClients();
+      
+      return Promise.reject(error);
+    } finally {
+      setIsUpdating(false);
     }
   };
 
   const updatePackage = async (clientId: string, packageId: string, usedPublications: number) => {
+    if (isUpdating) return Promise.reject("Operación en curso");
+    
     try {
+      setIsUpdating(true);
+      console.log(`Actualizando paquete: clientId=${clientId}, packageId=${packageId}, usedPublications=${usedPublications}`);
+      
       const client = clients.find(c => c.id === clientId);
       if (!client) {
         console.error('Cliente no encontrado:', clientId);
-        return;
+        return Promise.reject("Cliente no encontrado");
       }
 
-      // Create a new array of packages
+      // Create a new array of packages with the updated package
       const updatedPackages = client.packages.map(pkg => 
-        pkg.id === packageId ? { ...pkg, usedPublications } : {...pkg}
+        pkg.id === packageId ? { 
+          ...pkg, 
+          usedPublications,
+          // Agregar timestamp de la última actualización
+          last_update: new Date().toISOString()
+        } : {...pkg}
       );
 
+      console.log('Paquetes actualizados:', updatedPackages);
+      
+      // Usar función de actualización de cliente para garantizar persistencia
       await updateClientData(clientId, { packages: updatedPackages });
+      
+      return Promise.resolve();
     } catch (error) {
       console.error('Error updating package:', error);
       toast({
@@ -153,16 +187,23 @@ export const useClientManager = () => {
       });
       // Recargar los clientes para asegurar consistencia
       await loadClients();
+      
+      return Promise.reject(error);
+    } finally {
+      setIsUpdating(false);
     }
   };
 
   const addPackage = async (clientId: string, packageData: any) => {
+    if (isUpdating) return Promise.reject("Operación en curso");
+    
     try {
+      setIsUpdating(true);
       console.log('Agregando paquete:', clientId, packageData);
       const client = clients.find(c => c.id === clientId);
       if (!client) {
         console.error('Cliente no encontrado:', clientId);
-        return;
+        return Promise.reject("Cliente no encontrado");
       }
 
       // Ensure numeric values
@@ -171,13 +212,17 @@ export const useClientManager = () => {
         totalPublications: typeof packageData.totalPublications === 'string' ? 
           parseInt(packageData.totalPublications) : packageData.totalPublications,
         usedPublications: typeof packageData.usedPublications === 'string' ? 
-          parseInt(packageData.usedPublications) : packageData.usedPublications
+          parseInt(packageData.usedPublications) : packageData.usedPublications,
+        // Agregar timestamp de la creación
+        last_update: new Date().toISOString()
       };
 
       // Create a new array with the new package
       const updatedPackages = [...client.packages, newPackage];
       await updateClientData(clientId, { packages: updatedPackages });
       console.log('Paquete agregado exitosamente');
+      
+      return Promise.resolve();
     } catch (error) {
       console.error('Error adding package:', error);
       toast({
@@ -187,12 +232,17 @@ export const useClientManager = () => {
       });
       // Recargar los clientes para asegurar consistencia
       await loadClients();
+      
+      return Promise.reject(error);
+    } finally {
+      setIsUpdating(false);
     }
   };
 
   return {
     clients,
     isLoading,
+    isUpdating,
     loadClients,
     addClient,
     updateClient: updateClientData,

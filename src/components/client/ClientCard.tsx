@@ -28,9 +28,9 @@ import { toast } from "@/hooks/use-toast";
 interface ClientCardProps {
   client: Client;
   onDeleteClient: (id: string) => void;
-  onUpdateClient: (id: string, data: any) => void;
-  onUpdatePackage: (clientId: string, packageId: string, usedPublications: number) => void;
-  onAddPackage: (clientId: string, packageData: any) => void;
+  onUpdateClient: (id: string, data: any) => Promise<void>;
+  onUpdatePackage: (clientId: string, packageId: string, usedPublications: number) => Promise<void>;
+  onAddPackage: (clientId: string, packageData: any) => Promise<void>;
   tasks: Task[];
   onAddTask: (content: string, clientId?: string) => void;
   onDeleteTask: (id: string) => void;
@@ -78,18 +78,24 @@ export const ClientCard = ({
   };
 
   const handleUpdatePackagePaid = async (packageId: string, paid: boolean) => {
-    if (isUpdating) return;
+    if (isUpdating) return Promise.reject("Operación en curso");
     
     try {
       setIsUpdating(true);
       // Create a new array instead of modifying the existing one
       const updatedPackages = client.packages.map(pkg =>
-        pkg.id === packageId ? { ...pkg, paid } : pkg
+        pkg.id === packageId ? { 
+          ...pkg, 
+          paid,
+          last_update: new Date().toISOString() 
+        } : pkg
       );
       
       await onUpdateClient(client.id, { 
         packages: updatedPackages 
       });
+      
+      return Promise.resolve();
     } catch (error) {
       console.error('Error updating package paid status:', error);
       toast({
@@ -97,19 +103,25 @@ export const ClientCard = ({
         description: "No se pudo actualizar el estado del pago.",
         variant: "destructive",
       });
+      
+      return Promise.reject(error);
     } finally {
       setIsUpdating(false);
     }
   };
 
   const handleEditPackage = async (packageId: string, values: any) => {
-    if (isUpdating) return;
+    if (isUpdating) return Promise.reject("Operación en curso");
     
     try {
       setIsUpdating(true);
       // Create a new array instead of modifying the existing one
       const updatedPackages = client.packages.map(pkg =>
-        pkg.id === packageId ? { ...pkg, ...values } : pkg
+        pkg.id === packageId ? { 
+          ...pkg, 
+          ...values,
+          last_update: new Date().toISOString() 
+        } : pkg
       );
       
       await onUpdateClient(client.id, { 
@@ -120,6 +132,8 @@ export const ClientCard = ({
         title: "Paquete actualizado",
         description: "Los cambios se han guardado correctamente.",
       });
+      
+      return Promise.resolve();
     } catch (error) {
       console.error('Error editing package:', error);
       toast({
@@ -127,13 +141,15 @@ export const ClientCard = ({
         description: "No se pudo actualizar el paquete.",
         variant: "destructive",
       });
+      
+      return Promise.reject(error);
     } finally {
       setIsUpdating(false);
     }
   };
 
   const handleDeletePackage = async (packageId: string) => {
-    if (isUpdating) return;
+    if (isUpdating) return Promise.reject("Operación en curso");
     
     try {
       setIsUpdating(true);
@@ -148,6 +164,8 @@ export const ClientCard = ({
         title: "Paquete eliminado",
         description: "El paquete se ha eliminado correctamente.",
       });
+      
+      return Promise.resolve();
     } catch (error) {
       console.error('Error deleting package:', error);
       toast({
@@ -155,6 +173,8 @@ export const ClientCard = ({
         description: "No se pudo eliminar el paquete.",
         variant: "destructive",
       });
+      
+      return Promise.reject(error);
     } finally {
       setIsUpdating(false);
     }
@@ -264,7 +284,53 @@ export const ClientCard = ({
             }}
           >
             <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto dark:bg-gray-800">
-              {content}
+              <ClientCardHeader
+                client={client}
+                viewMode={viewMode}
+                onUpdateClientInfo={handleUpdateClientInfo}
+                onDeleteClient={handleDelete}
+                onUpdateClient={onUpdateClient}
+                onAddPackage={onAddPackage}
+                isExpanded={isExpanded}
+                onClose={() => setIsExpanded(false)}
+              />
+              <CardContent className="space-y-4">
+                <PaymentReminder
+                  clientName={client.name}
+                  paymentDay={client.paymentDay}
+                  phone={client.phone}
+                />
+
+                <PackageSection
+                  client={client}
+                  isCapturing={isCapturing || isUpdating}
+                  onUpdatePackage={onUpdatePackage}
+                  onUpdatePaid={handleUpdatePackagePaid}
+                  onEditPackage={handleEditPackage}
+                  onDeletePackage={handleDeletePackage}
+                  onCaptureStart={() => setIsCapturing(true)}
+                  onCaptureEnd={() => setIsCapturing(false)}
+                />
+
+                <div className="mt-6 space-y-4">
+                  <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-200">Tareas Pendientes</h3>
+                  <TaskInput 
+                    onAddTask={(content) => onAddTask(content, client.id)}
+                    clients={[{ id: client.id, name: client.name }]}
+                  />
+                  <TaskList
+                    tasks={getClientTasks()}
+                    onDeleteTask={onDeleteTask}
+                    onCompleteTask={onCompleteTask}
+                    onUpdateTask={onUpdateTask}
+                    clients={[{ id: client.id, name: client.name }]}
+                  />
+                </div>
+
+                <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed mt-4">
+                  {client.marketingInfo}
+                </p>
+              </CardContent>
             </DialogContent>
           </Dialog>
         </>
@@ -273,7 +339,53 @@ export const ClientCard = ({
           className={cardClasses}
           style={{ background: getSubtleGradient() }}
         >
-          {content}
+          <ClientCardHeader
+            client={client}
+            viewMode={viewMode}
+            onUpdateClientInfo={handleUpdateClientInfo}
+            onDeleteClient={handleDelete}
+            onUpdateClient={onUpdateClient}
+            onAddPackage={onAddPackage}
+            isExpanded={isExpanded}
+            onClose={() => setIsExpanded(false)}
+          />
+          <CardContent className="space-y-4">
+            <PaymentReminder
+              clientName={client.name}
+              paymentDay={client.paymentDay}
+              phone={client.phone}
+            />
+
+            <PackageSection
+              client={client}
+              isCapturing={isCapturing || isUpdating}
+              onUpdatePackage={onUpdatePackage}
+              onUpdatePaid={handleUpdatePackagePaid}
+              onEditPackage={handleEditPackage}
+              onDeletePackage={handleDeletePackage}
+              onCaptureStart={() => setIsCapturing(true)}
+              onCaptureEnd={() => setIsCapturing(false)}
+            />
+
+            <div className="mt-6 space-y-4">
+              <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-200">Tareas Pendientes</h3>
+              <TaskInput 
+                onAddTask={(content) => onAddTask(content, client.id)}
+                clients={[{ id: client.id, name: client.name }]}
+              />
+              <TaskList
+                tasks={getClientTasks()}
+                onDeleteTask={onDeleteTask}
+                onCompleteTask={onCompleteTask}
+                onUpdateTask={onUpdateTask}
+                clients={[{ id: client.id, name: client.name }]}
+              />
+            </div>
+
+            <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed mt-4">
+              {client.marketingInfo}
+            </p>
+          </CardContent>
         </Card>
       )}
 
