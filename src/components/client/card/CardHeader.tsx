@@ -10,10 +10,10 @@ import { Client, ClientInfo } from "../../types/client";
 interface CardHeaderProps {
   client: Client;
   viewMode: "list" | "grid";
-  onUpdateClientInfo: (clientId: string, info: ClientInfo) => void;
+  onUpdateClientInfo: (clientId: string, info: ClientInfo) => Promise<void>;
   onDeleteClient: () => void;
-  onUpdateClient: (id: string, data: any) => void;
-  onAddPackage: (clientId: string, packageData: any) => void;
+  onUpdateClient: (id: string, data: Partial<Client>) => Promise<void>;
+  onAddPackage: (clientId: string, packageData: any) => Promise<void>;
   isExpanded: boolean;
   onClose: () => void;
 }

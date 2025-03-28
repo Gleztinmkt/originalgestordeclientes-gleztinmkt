@@ -43,7 +43,8 @@ export const convertDatabaseClient = (client: DatabaseClient): Client => ({
     totalPublications: pkg.totalPublications || 0,
     usedPublications: pkg.usedPublications || 0,
     month: pkg.month || "",
-    paid: pkg.paid || false
+    paid: pkg.paid || false,
+    last_update: pkg.last_update || new Date().toISOString()
   })),
 });
 
@@ -63,7 +64,7 @@ export const convertDatabaseTask = (task: DatabaseTask): Task => ({
   content: task.content,
   type: task.type || "otros",
   date: task.date || null,
-  clientId: task.client_id,
+  client_id: task.client_id,
   completed: task.completed || false,
   executionDate: task.execution_date ? new Date(task.execution_date) : undefined,
   reminderDate: task.reminder_date ? new Date(task.reminder_date) : undefined,

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { PaymentReminder } from "./PaymentReminder";
@@ -27,7 +26,7 @@ import { toast } from "@/hooks/use-toast";
 
 interface ClientCardProps {
   client: Client;
-  onDeleteClient: (id: string) => void;
+  onDeleteClient: (id: string) => Promise<void>;
   onUpdateClient: (id: string, data: any) => Promise<void>;
   onUpdatePackage: (clientId: string, packageId: string, usedPublications: number) => Promise<void>;
   onAddPackage: (clientId: string, packageData: any) => Promise<void>;
@@ -82,7 +81,6 @@ export const ClientCard = ({
     
     try {
       setIsUpdating(true);
-      // Create a new array instead of modifying the existing one
       const updatedPackages = client.packages.map(pkg =>
         pkg.id === packageId ? { 
           ...pkg, 
@@ -115,7 +113,6 @@ export const ClientCard = ({
     
     try {
       setIsUpdating(true);
-      // Create a new array instead of modifying the existing one
       const updatedPackages = client.packages.map(pkg =>
         pkg.id === packageId ? { 
           ...pkg, 
@@ -153,7 +150,6 @@ export const ClientCard = ({
     
     try {
       setIsUpdating(true);
-      // Create a new array by filtering out the package to delete
       const updatedPackages = client.packages.filter(pkg => pkg.id !== packageId);
       
       await onUpdateClient(client.id, { 

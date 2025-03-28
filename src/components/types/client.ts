@@ -1,3 +1,4 @@
+
 export type SocialPlatform = "instagram" | "facebook" | "linkedin" | "tiktok" | "twitter" | "youtube";
 
 export interface SocialNetwork {
@@ -36,6 +37,7 @@ export interface Client {
     usedPublications: number;
     month: string;
     paid: boolean;
+    last_update?: string;
   }>;
   clientInfo?: ClientInfo;
 }
