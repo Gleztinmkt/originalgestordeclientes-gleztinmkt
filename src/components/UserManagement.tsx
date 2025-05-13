@@ -80,28 +80,32 @@ export const UserManagement = () => {
           }
         }
       });
+      
       if (signUpError) throw signUpError;
       if (!user?.id) {
         throw new Error('No se pudo crear el usuario');
       }
 
-      // Asignar rol
-      const {
-        error: roleError
-      } = await supabase.from('user_roles').insert({
-        user_id: user.id,
-        role
-      });
-      if (roleError) throw roleError;
-
-      // Crear perfil
+      // Crear perfil primero
       const {
         error: profileError
       } = await supabase.from('profiles').insert({
         id: user.id,
         full_name: email.split('@')[0]
       });
+      
       if (profileError) throw profileError;
+
+      // Asignar rol después de crear el perfil
+      const {
+        error: roleError
+      } = await supabase.from('user_roles').insert({
+        user_id: user.id,
+        role
+      });
+      
+      if (roleError) throw roleError;
+
       toast({
         title: "Usuario creado",
         description: "El usuario ha sido creado exitosamente."
@@ -131,13 +135,13 @@ export const UserManagement = () => {
           Gestionar usuarios
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md max-h-[90vh]" style={{ overflow: 'hidden' }}>
+      <DialogContent className="sm:max-w-md" style={{ overflow: 'hidden', maxHeight: '90vh' }}>
         <DialogHeader>
           <DialogTitle>Gestión de usuarios</DialogTitle>
           <DialogDescription>Añade nuevos usuarios y gestiona los existentes.</DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="max-h-[70vh] px-1">
+        <ScrollArea className="max-h-[70vh] px-1 pr-4">
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
               <Input placeholder="Email" type="email" value={email} onChange={e => setEmail(e.target.value)} />
