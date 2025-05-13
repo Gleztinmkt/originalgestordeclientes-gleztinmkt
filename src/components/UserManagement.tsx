@@ -64,11 +64,9 @@ export const UserManagement = () => {
     try {
       setIsLoading(true);
 
-      // Crear usuario en Supabase Auth
+      // 1. Crear usuario en Supabase Auth
       const {
-        data: {
-          user
-        },
+        data: { user },
         error: signUpError
       } = await supabase.auth.signUp({
         email,
@@ -86,7 +84,7 @@ export const UserManagement = () => {
         throw new Error('No se pudo crear el usuario');
       }
 
-      // Crear perfil primero
+      // 2. Crear perfil primero - IMPORTANTE para evitar violaciones de seguridad
       const {
         error: profileError
       } = await supabase.from('profiles').insert({
@@ -96,7 +94,7 @@ export const UserManagement = () => {
       
       if (profileError) throw profileError;
 
-      // Asignar rol después de crear el perfil
+      // 3. Asignar rol después de crear el perfil con el ID correcto
       const {
         error: roleError
       } = await supabase.from('user_roles').insert({
@@ -108,7 +106,7 @@ export const UserManagement = () => {
 
       toast({
         title: "Usuario creado",
-        description: "El usuario ha sido creado exitosamente."
+        description: `El usuario ha sido creado exitosamente con rol de ${role === 'admin' ? 'administrador' : 'diseñador'}.`
       });
       setIsOpen(false);
       setEmail("");
