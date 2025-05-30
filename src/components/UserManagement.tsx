@@ -28,12 +28,19 @@ export const UserManagement = () => {
           data: roles,
           error: rolesError
         } = await supabase.from('user_roles').select('user_id, role');
-        if (rolesError) throw rolesError;
+        if (rolesError) {
+          console.error('Error fetching roles:', rolesError);
+          throw rolesError;
+        }
+        
         const {
           data: profiles,
           error: profilesError
         } = await supabase.from('profiles').select('id, full_name');
-        if (profilesError) throw profilesError;
+        if (profilesError) {
+          console.error('Error fetching profiles:', profilesError);
+          throw profilesError;
+        }
 
         // Combinar la información de roles y perfiles
         return roles?.map(roleData => {
@@ -45,7 +52,7 @@ export const UserManagement = () => {
           };
         }) || [];
       } catch (error) {
-        console.error('Error fetching users:', error);
+        console.error('Error in users query:', error);
         throw error;
       }
     },
@@ -61,6 +68,9 @@ export const UserManagement = () => {
       });
       return;
     }
+
+    console.log('Iniciando creación de usuario:', { email, role });
+    
     try {
       setIsLoading(true);
 
@@ -79,10 +89,17 @@ export const UserManagement = () => {
         }
       });
       
-      if (signUpError) throw signUpError;
+      if (signUpError) {
+        console.error('Error en signUp:', signUpError);
+        throw signUpError;
+      }
+      
       if (!user?.id) {
+        console.error('No se obtuvo ID de usuario');
         throw new Error('No se pudo crear el usuario');
       }
+
+      console.log('Usuario creado en Auth:', user.id);
 
       // 2. Crear perfil primero - IMPORTANTE para evitar violaciones de seguridad
       const {
@@ -92,7 +109,12 @@ export const UserManagement = () => {
         full_name: email.split('@')[0]
       });
       
-      if (profileError) throw profileError;
+      if (profileError) {
+        console.error('Error creando perfil:', profileError);
+        throw profileError;
+      }
+
+      console.log('Perfil creado exitosamente');
 
       // 3. Asignar rol después de crear el perfil con el ID correcto
       const {
@@ -102,17 +124,26 @@ export const UserManagement = () => {
         role
       });
       
-      if (roleError) throw roleError;
+      if (roleError) {
+        console.error('Error asignando rol:', roleError);
+        throw roleError;
+      }
+
+      console.log('Rol asignado exitosamente:', role);
 
       toast({
         title: "Usuario creado",
         description: `El usuario ha sido creado exitosamente con rol de ${role === 'admin' ? 'administrador' : 'diseñador'}.`
       });
+      
       setIsOpen(false);
       setEmail("");
       setPassword("");
       setRole("designer");
-      refetch();
+      
+      // Refrescar la lista de usuarios
+      await refetch();
+      
     } catch (error: any) {
       console.error('Error creating user:', error);
       toast({
