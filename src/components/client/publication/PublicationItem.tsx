@@ -15,6 +15,13 @@ interface PublicationItemProps {
   onSelect: (publication: Publication) => void;
 }
 
+const ADMIN_EMAILS = [
+  'agustincarreras266@gmail.com',
+  'aloha@gleztin.com',
+  'aloha3@gleztin.com.ar',
+  'aloha2@gleztin.com.ar'
+];
+
 export const PublicationItem = ({ 
   publication, 
   onDelete, 
@@ -22,28 +29,20 @@ export const PublicationItem = ({
   onSelect 
 }: PublicationItemProps) => {
   // Query to check if user is admin
-  const { data: userRole } = useQuery({
-    queryKey: ['userRole'],
+  const { data: currentUser } = useQuery({
+    queryKey: ['currentUser'],
     queryFn: async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return null;
-
-        const { data: roleData } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', user.id)
-          .single();
-
-        return roleData?.role || null;
+        return user;
       } catch (error) {
-        console.error("Error fetching user role:", error);
+        console.error("Error fetching current user:", error);
         return null;
       }
     },
   });
 
-  const isAdmin = userRole === 'admin';
+  const isAdmin = currentUser?.email && ADMIN_EMAILS.includes(currentUser.email);
 
   // Query for notes
   const { data: noteData, refetch: refetchNotes } = useQuery({

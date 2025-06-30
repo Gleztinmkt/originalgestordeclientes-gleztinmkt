@@ -41,6 +41,13 @@ interface PublicationCardProps {
   isMobile?: boolean;
 }
 
+const ADMIN_EMAILS = [
+  'agustincarreras266@gmail.com',
+  'aloha@gleztin.com',
+  'aloha3@gleztin.com.ar',
+  'aloha2@gleztin.com.ar'
+];
+
 export const PublicationCard = ({ 
   publication, 
   client, 
@@ -56,23 +63,15 @@ export const PublicationCard = ({
   const [showNoteView, setShowNoteView] = useState(false);
   const [editNoteId, setEditNoteId] = useState<string | undefined>(undefined);
 
-  const { data: userRole } = useQuery({
-    queryKey: ['userRole'],
+  const { data: currentUser } = useQuery({
+    queryKey: ['currentUser'],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return null;
-
-      const { data: roleData } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .single();
-
-      return roleData?.role || null;
+      return user;
     },
   });
 
-  const isAdmin = userRole === 'admin';
+  const isAdmin = currentUser?.email && ADMIN_EMAILS.includes(currentUser.email);
 
   const { data: noteData, refetch: refetchNotes } = useQuery({
     queryKey: ['publicationNotes', publication.id],
