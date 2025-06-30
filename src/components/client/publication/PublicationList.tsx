@@ -31,22 +31,62 @@ const getStatusIcon = (publication: Publication) => {
 };
 
 const PublicationListComponent = ({ publications = [], packageId }: PublicationListProps) => {
-  const safePublications = useMemo(() => 
-    Array.isArray(publications) ? publications : [], 
-    [publications]
-  );
+  // Defensive validation to prevent freezing
+  const safePublications = useMemo(() => {
+    if (!Array.isArray(publications)) {
+      console.warn('Publications is not an array:', publications);
+      return [];
+    }
+    
+    // Validate each publication object
+    return publications.filter(pub => {
+      if (!pub || typeof pub !== 'object') {
+        console.warn('Invalid publication object:', pub);
+        return false;
+      }
+      
+      // Ensure required fields exist
+      if (!pub.id || !pub.name || !pub.date || !pub.type) {
+        console.warn('Publication missing required fields:', pub);
+        return false;
+      }
+      
+      return true;
+    });
+  }, [publications]);
   
-  const filteredPublications = useMemo(() => 
-    packageId 
-      ? safePublications.filter(pub => pub.package_id === packageId)
-      : safePublications,
-    [safePublications, packageId]
-  );
+  const filteredPublications = useMemo(() => {
+    if (!packageId) return safePublications;
+    
+    return safePublications.filter(pub => {
+      try {
+        return pub.package_id === packageId;
+      } catch (error) {
+        console.error('Error filtering publication:', error, pub);
+        return false;
+      }
+    });
+  }, [safePublications, packageId]);
 
-  const sortedPublications = useMemo(() =>
-    [...filteredPublications].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()),
-    [filteredPublications]
-  );
+  const sortedPublications = useMemo(() => {
+    try {
+      return [...filteredPublications].sort((a, b) => {
+        const dateA = new Date(a.date);
+        const dateB = new Date(b.date);
+        
+        // Validate dates
+        if (isNaN(dateA.getTime()) || isNaN(dateB.getTime())) {
+          console.warn('Invalid dates found:', { a: a.date, b: b.date });
+          return 0;
+        }
+        
+        return dateA.getTime() - dateB.getTime();
+      });
+    } catch (error) {
+      console.error('Error sorting publications:', error);
+      return filteredPublications;
+    }
+  }, [filteredPublications]);
 
   if (filteredPublications.length === 0) {
     return (
@@ -59,19 +99,41 @@ const PublicationListComponent = ({ publications = [], packageId }: PublicationL
   return (
     <ScrollArea className="h-[300px] rounded-md border">
       <div className="p-4 space-y-3">
-        {sortedPublications.map((pub) => (
-          <PublicationListItem key={pub.id} publication={pub} />
-        ))}
+        {sortedPublications.map((pub) => {
+          // Additional safety check for each publication
+          if (!pub || !pub.id) {
+            console.warn('Skipping invalid publication:', pub);
+            return null;
+          }
+          
+          return (
+            <PublicationListItem key={pub.id} publication={pub} />
+          );
+        })}
       </div>
     </ScrollArea>
   );
 };
 
 const PublicationListItem = memo(({ publication }: { publication: Publication }) => {
-  const formattedDate = useMemo(() => 
-    format(new Date(publication.date), "EEEE, d 'de' MMMM 'de' yyyy", { locale: es }),
-    [publication.date]
-  );
+  const formattedDate = useMemo(() => {
+    try {
+      const date = new Date(publication.date);
+      if (isNaN(date.getTime())) {
+        console.warn('Invalid date for publication:', publication.id, publication.date);
+        return 'Fecha inválida';
+      }
+      return format(date, "EEEE, d 'de' MMMM 'de' yyyy", { locale: es });
+    } catch (error) {
+      console.error('Error formatting date:', error, publication.date);
+      return 'Error en fecha';
+    }
+  }, [publication.date]);
+
+  // Defensive validation
+  if (!publication || !publication.id) {
+    return null;
+  }
 
   return (
     <div
@@ -83,11 +145,11 @@ const PublicationListItem = memo(({ publication }: { publication: Publication })
       )}
     >
       <div className="flex-shrink-0">
-        {getTypeIcon(publication.type)}
+        {getTypeIcon(publication.type || 'image')}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <h4 className="font-medium text-sm truncate">{publication.name}</h4>
+          <h4 className="font-medium text-sm truncate">{publication.name || 'Sin nombre'}</h4>
           {getStatusIcon(publication)}
         </div>
         <p className="text-xs text-gray-500 dark:text-gray-400">

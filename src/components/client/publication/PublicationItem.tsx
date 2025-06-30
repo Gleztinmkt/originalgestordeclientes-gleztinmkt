@@ -28,20 +28,34 @@ const PublicationItemComponent = ({
   onTogglePublished,
   onSelect 
 }: PublicationItemProps) => {
-  // Query to check if user is admin
+  // Defensive validation
+  if (!publication || !publication.id) {
+    console.warn('PublicationItem: Invalid publication prop');
+    return null;
+  }
+
+  // Query to check if user is admin with error handling
   const { data: currentUser } = useQuery({
     queryKey: ['currentUser'],
     queryFn: async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (error) {
+          console.error("Error fetching current user:", error);
+          return null;
+        }
         return user;
       } catch (error) {
-        console.error("Error fetching current user:", error);
+        console.error("Error in user query:", error);
         return null;
       }
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
+    retry: (failureCount, error) => {
+      console.warn(`User query failed ${failureCount} times:`, error);
+      return failureCount < 2; // Only retry once
+    }
   });
 
   const isAdmin = useMemo(() => 
@@ -49,11 +63,11 @@ const PublicationItemComponent = ({
     [currentUser?.email]
   );
 
-  // Query for notes
+  // Query for notes with defensive programming
   const { data: noteData, refetch: refetchNotes } = useQuery({
     queryKey: ['publicationItemNotes', publication.id],
     queryFn: async () => {
-      if (!isAdmin) return null;
+      if (!isAdmin || !publication?.id) return [];
       
       try {
         const { data, error } = await supabase
@@ -62,10 +76,23 @@ const PublicationItemComponent = ({
           .eq('publication_id', publication.id)
           .order('created_at', { ascending: false });
         
-        if (error) throw error;
+        if (error) {
+          console.error("Error fetching notes:", error);
+          return [];
+        }
         
-        // Ensure each note has a valid status
-        const typedNotes: PublicationNote[] = (data || []).map(note => {
+        // Defensive validation and type conversion
+        if (!Array.isArray(data)) {
+          console.warn("Notes data is not an array:", data);
+          return [];
+        }
+        
+        const typedNotes: PublicationNote[] = data.map(note => {
+          if (!note || typeof note !== 'object') {
+            console.warn("Invalid note object:", note);
+            return null;
+          }
+          
           let validStatus: "new" | "done" | "received" = "new";
           if (note.status === "new" || note.status === "done" || note.status === "received") {
             validStatus = note.status as "new" | "done" | "received";
@@ -75,27 +102,39 @@ const PublicationItemComponent = ({
             ...note,
             status: validStatus
           };
-        });
+        }).filter(note => note !== null);
         
         return typedNotes;
       } catch (error) {
-        console.error("Error fetching notes:", error);
+        console.error("Error in notes query:", error);
         return [];
       }
     },
-    enabled: isAdmin,
+    enabled: Boolean(isAdmin && publication?.id),
     staleTime: 2 * 60 * 1000, // 2 minutes
+    retry: (failureCount, error) => {
+      console.warn(`Notes query failed ${failureCount} times:`, error);
+      return failureCount < 2;
+    }
   });
 
   // Refresh notes when the component mounts to ensure we have the latest data
   useEffect(() => {
-    if (isAdmin) {
-      refetchNotes();
+    if (isAdmin && publication?.id && refetchNotes) {
+      refetchNotes().catch(error => {
+        console.error("Error refetching notes:", error);
+      });
     }
-  }, [isAdmin, refetchNotes]);
+  }, [isAdmin, publication?.id, refetchNotes]);
 
-  const hasNotes = useMemo(() => noteData && noteData.length > 0, [noteData]);
-  const latestNoteStatus = useMemo(() => hasNotes ? noteData[0]?.status : null, [hasNotes, noteData]);
+  const hasNotes = useMemo(() => {
+    return Array.isArray(noteData) && noteData.length > 0;
+  }, [noteData]);
+  
+  const latestNoteStatus = useMemo(() => {
+    if (!hasNotes || !Array.isArray(noteData) || noteData.length === 0) return null;
+    return noteData[0]?.status || null;
+  }, [hasNotes, noteData]);
 
   const getNoteStatusColor = useCallback(() => {
     if (!latestNoteStatus) return "text-gray-400";
@@ -110,23 +149,51 @@ const PublicationItemComponent = ({
   }, [latestNoteStatus]);
 
   const handleToggleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    e.stopPropagation();
-    onTogglePublished(publication.id, e.target.checked);
-  }, [publication.id, onTogglePublished]);
+    try {
+      e.stopPropagation();
+      if (publication?.id && onTogglePublished) {
+        onTogglePublished(publication.id, e.target.checked);
+      }
+    } catch (error) {
+      console.error("Error in toggle change:", error);
+    }
+  }, [publication?.id, onTogglePublished]);
 
   const handleDeleteClick = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    onDelete(publication.id);
-  }, [publication.id, onDelete]);
+    try {
+      e.stopPropagation();
+      if (publication?.id && onDelete) {
+        onDelete(publication.id);
+      }
+    } catch (error) {
+      console.error("Error in delete click:", error);
+    }
+  }, [publication?.id, onDelete]);
 
   const handleSelect = useCallback(() => {
-    onSelect(publication);
+    try {
+      if (publication && onSelect) {
+        onSelect(publication);
+      }
+    } catch (error) {
+      console.error("Error in select:", error);
+    }
   }, [publication, onSelect]);
 
-  const formattedDate = useMemo(() => 
-    format(new Date(publication.date), "dd/MM/yyyy"), 
-    [publication.date]
-  );
+  const formattedDate = useMemo(() => {
+    try {
+      if (!publication?.date) return 'Sin fecha';
+      const date = new Date(publication.date);
+      if (isNaN(date.getTime())) {
+        console.warn('Invalid date for publication:', publication.id, publication.date);
+        return 'Fecha inválida';
+      }
+      return format(date, "dd/MM/yyyy");
+    } catch (error) {
+      console.error("Error formatting date:", error, publication?.date);
+      return 'Error en fecha';
+    }
+  }, [publication?.date]);
 
   return (
     <div 
@@ -137,19 +204,19 @@ const PublicationItemComponent = ({
         <div className="flex items-center gap-2">
           <input
             type="checkbox"
-            checked={publication.is_published}
+            checked={Boolean(publication?.is_published)}
             onChange={handleToggleChange}
             className="h-4 w-4 rounded border-gray-300"
           />
           <p className="font-medium dark:text-white">
-            {publication.name}
+            {publication?.name || 'Sin nombre'}
           </p>
           {isAdmin && hasNotes && (
             <StickyNote className={cn("h-4 w-4", getNoteStatusColor())} />
           )}
         </div>
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          {formattedDate} • {publication.type}
+          {formattedDate} • {publication?.type || 'Sin tipo'}
         </p>
       </div>
       <Button
