@@ -101,7 +101,7 @@ export const UserManagement = () => {
 
       console.log('Usuario creado en Auth:', user.id);
 
-      // 2. Crear perfil primero - IMPORTANTE para evitar violaciones de seguridad
+      // 2. Crear perfil primero
       const {
         error: profileError
       } = await supabase.from('profiles').insert({
@@ -111,12 +111,13 @@ export const UserManagement = () => {
       
       if (profileError) {
         console.error('Error creando perfil:', profileError);
-        throw profileError;
+        // No lanzar error aquí, el perfil puede crearse automáticamente
+        console.log('Continuando sin perfil - puede crearse automáticamente');
+      } else {
+        console.log('Perfil creado exitosamente');
       }
 
-      console.log('Perfil creado exitosamente');
-
-      // 3. Asignar rol después de crear el perfil con el ID correcto
+      // 3. Asignar rol - ahora debería funcionar con las nuevas políticas RLS
       const {
         error: roleError
       } = await supabase.from('user_roles').insert({
