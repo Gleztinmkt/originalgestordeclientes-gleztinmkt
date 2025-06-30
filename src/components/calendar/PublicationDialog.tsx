@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -122,8 +123,12 @@ export const PublicationDialog = ({
 
   const isDesigner = userRole === 'designer';
   const hasChanges = useCallback(() => {
+    if (isDesigner) {
+      // Los diseñadores solo pueden cambiar el estado
+      return status !== (publication.needs_recording ? 'needs_recording' : publication.needs_editing ? 'needs_editing' : publication.in_editing ? 'in_editing' : publication.in_review ? 'in_review' : publication.approved ? 'approved' : publication.is_published ? 'published' : 'needs_recording');
+    }
     return name !== publication.name || type !== publication.type || description !== (publication.description || "") || copywriting !== (publication.copywriting || "") || designer !== (publication.designer || "no_designer") || status !== (publication.needs_recording ? 'needs_recording' : publication.needs_editing ? 'needs_editing' : publication.in_editing ? 'in_editing' : publication.in_review ? 'in_review' : publication.approved ? 'approved' : publication.is_published ? 'published' : 'needs_recording') || JSON.stringify(links) !== (publication.links || "[]");
-  }, [name, type, description, copywriting, designer, status, links, publication]);
+  }, [name, type, description, copywriting, designer, status, links, publication, isDesigner]);
 
   useEffect(() => {
     return () => {
@@ -173,7 +178,7 @@ export const PublicationDialog = ({
   };
 
   const handleAddLink = () => {
-    if (newLinkLabel && newLinkUrl) {
+    if (newLinkLabel && newLinkUrl && !isDesigner) {
       setLinks([...links, {
         label: newLinkLabel,
         url: newLinkUrl
@@ -190,6 +195,7 @@ export const PublicationDialog = ({
     try {
       const updates: any = {};
       if (isDesigner) {
+        // Los diseñadores solo pueden actualizar el estado
         updates.needs_recording = status === 'needs_recording';
         updates.needs_editing = status === 'needs_editing';
         updates.in_editing = status === 'in_editing';
@@ -197,6 +203,7 @@ export const PublicationDialog = ({
         updates.approved = status === 'approved';
         updates.is_published = status === 'published';
       } else {
+        // Los admins pueden actualizar todo
         updates.name = name;
         updates.type = type;
         updates.description = description;
@@ -277,12 +284,12 @@ export const PublicationDialog = ({
           <DialogHeader>
             <div className="flex items-center justify-between">
               <DialogTitle className="text-xl font-bold dark:text-white">
-                Editar Publicación
+                {isDesigner ? "Ver Publicación" : "Editar Publicación"}
               </DialogTitle>
               <DialogDescription className="sr-only">
-                Editar detalles de la publicación
+                {isDesigner ? "Ver detalles de la publicación" : "Editar detalles de la publicación"}
               </DialogDescription>
-              {client && <Button variant="ghost" size="icon" onClick={handleOpenSocialLinks} className="ml-2" title="Abrir redes sociales">
+              {client && !isDesigner && <Button variant="ghost" size="icon" onClick={handleOpenSocialLinks} className="ml-2" title="Abrir redes sociales">
                   <Share2 className="h-4 w-4" />
                 </Button>}
             </div>
@@ -290,7 +297,7 @@ export const PublicationDialog = ({
 
           <ScrollArea className="h-[calc(80vh-120px)] pr-2 sm:pr-4">
             <form onSubmit={handleSubmit} className="space-y-4">
-              {client && <div className="space-y-2 mb-4 border-b pb-4">
+              {client && !isDesigner && <div className="space-y-2 mb-4 border-b pb-4">
                   {client.clientInfo?.branding && <a href={client.clientInfo.branding} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
                       <LinkIcon className="h-4 w-4" />
                       <span className="truncate">Branding</span>
@@ -299,7 +306,14 @@ export const PublicationDialog = ({
 
               <div className="space-y-2">
                 <Label htmlFor="name" className="text-sm sm:text-base">Nombre de la publicación</Label>
-                <Input id="name" value={name} onChange={e => setName(e.target.value)} disabled={isDesigner} readOnly={isDesigner} className="w-full text-sm sm:text-base" />
+                <Input 
+                  id="name" 
+                  value={name} 
+                  onChange={e => setName(e.target.value)} 
+                  disabled={isDesigner} 
+                  readOnly={isDesigner} 
+                  className="w-full text-sm sm:text-base" 
+                />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -348,17 +362,30 @@ export const PublicationDialog = ({
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label className="text-sm sm:text-base">Fecha de publicación</Label>
-                <div className="border rounded-lg p-2 max-h-[250px] overflow-y-auto">
-                  <Calendar mode="single" selected={selectedDate} onSelect={date => date && setSelectedDate(date)} locale={es} disabled={isDesigner} className="rounded-md border" />
+              {!isDesigner && (
+                <div className="space-y-2">
+                  <Label className="text-sm sm:text-base">Fecha de publicación</Label>
+                  <div className="border rounded-lg p-2 max-h-[250px] overflow-y-auto">
+                    <Calendar mode="single" selected={selectedDate} onSelect={date => date && setSelectedDate(date)} locale={es} className="rounded-md border" />
+                  </div>
+                  <div className="text-xs sm:text-sm text-muted-foreground">
+                    Fecha seleccionada: {format(selectedDate, "EEEE d 'de' MMMM 'de' yyyy", {
+                    locale: es
+                  })}
+                  </div>
                 </div>
-                <div className="text-xs sm:text-sm text-muted-foreground">
-                  Fecha seleccionada: {format(selectedDate, "EEEE d 'de' MMMM 'de' yyyy", {
-                  locale: es
-                })}
+              )}
+
+              {isDesigner && (
+                <div className="space-y-2">
+                  <Label className="text-sm sm:text-base">Fecha de publicación</Label>
+                  <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                    <p className="text-sm text-gray-700 dark:text-gray-300">
+                      {format(selectedDate, "EEEE d 'de' MMMM 'de' yyyy", { locale: es })}
+                    </p>
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div className="space-y-2">
                 <Label className="text-sm sm:text-base">Links</Label>
@@ -403,7 +430,14 @@ export const PublicationDialog = ({
                     {copyingCopywriting ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
                   </Button>
                 </div>
-                <Textarea id="copywriting" value={copywriting} onChange={e => setCopywriting(e.target.value)} className="min-h-[150px] touch-manipulation text-sm sm:text-base" disabled={isDesigner} readOnly={isDesigner} />
+                <Textarea 
+                  id="copywriting" 
+                  value={copywriting} 
+                  onChange={e => setCopywriting(e.target.value)} 
+                  className="min-h-[150px] touch-manipulation text-sm sm:text-base" 
+                  disabled={isDesigner} 
+                  readOnly={isDesigner} 
+                />
               </div>
 
               <div className="space-y-2">
@@ -413,7 +447,14 @@ export const PublicationDialog = ({
                     {copyingDescription ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
                   </Button>
                 </div>
-                <Textarea id="description" value={description} onChange={e => setDescription(e.target.value)} disabled={isDesigner} readOnly={isDesigner} className="min-h-[200px] touch-manipulation text-sm sm:text-base py-[192px]" />
+                <Textarea 
+                  id="description" 
+                  value={description} 
+                  onChange={e => setDescription(e.target.value)} 
+                  disabled={isDesigner} 
+                  readOnly={isDesigner} 
+                  className="min-h-[200px] touch-manipulation text-sm sm:text-base py-[192px]" 
+                />
               </div>
 
               <div className="flex flex-col sm:flex-row justify-end gap-2 pt-4">
@@ -425,7 +466,7 @@ export const PublicationDialog = ({
                   Cerrar
                 </Button>
                 <Button type="submit" className="w-full sm:w-auto text-sm">
-                  Guardar cambios
+                  {isDesigner ? "Actualizar Estado" : "Guardar cambios"}
                 </Button>
               </div>
             </form>

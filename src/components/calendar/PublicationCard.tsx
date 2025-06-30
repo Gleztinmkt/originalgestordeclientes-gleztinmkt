@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Publication } from "../client/publication/types";
@@ -73,6 +74,7 @@ export const PublicationCard = ({
   });
 
   const isAdmin = userRole === 'admin';
+  const isDesigner = userRole === 'designer';
 
   const { data: noteData, refetch: refetchNotes } = useQuery({
     queryKey: ['publicationNotes', publication.id],
@@ -412,7 +414,7 @@ export const PublicationCard = ({
         publication={publication}
         client={client}
         onUpdate={onUpdate}
-        onDelete={handleDelete}
+        onDelete={!isDesigner ? handleDelete : undefined}
         designers={designers}
       />
 
