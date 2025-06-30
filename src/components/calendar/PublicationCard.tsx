@@ -1,5 +1,4 @@
-
-import { useState, useMemo, useCallback, memo } from "react";
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Publication } from "../client/publication/types";
 import { Client } from "../types/client";
@@ -42,14 +41,7 @@ interface PublicationCardProps {
   isMobile?: boolean;
 }
 
-const ADMIN_EMAILS = [
-  'agustincarreras266@gmail.com',
-  'aloha@gleztin.com',
-  'aloha3@gleztin.com.ar',
-  'aloha2@gleztin.com.ar'
-];
-
-const PublicationCardComponent = ({ 
+export const PublicationCard = ({ 
   publication, 
   client, 
   onUpdate,
@@ -64,20 +56,23 @@ const PublicationCardComponent = ({
   const [showNoteView, setShowNoteView] = useState(false);
   const [editNoteId, setEditNoteId] = useState<string | undefined>(undefined);
 
-  const { data: currentUser } = useQuery({
-    queryKey: ['currentUser'],
+  const { data: userRole } = useQuery({
+    queryKey: ['userRole'],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      return user;
+      if (!user) return null;
+
+      const { data: roleData } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .single();
+
+      return roleData?.role || null;
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes
   });
 
-  const isAdmin = useMemo(() => 
-    currentUser?.email && ADMIN_EMAILS.includes(currentUser.email), 
-    [currentUser?.email]
-  );
+  const isAdmin = userRole === 'admin';
 
   const { data: noteData, refetch: refetchNotes } = useQuery({
     queryKey: ['publicationNotes', publication.id],
@@ -94,13 +89,13 @@ const PublicationCardComponent = ({
       return data;
     },
     enabled: isAdmin,
-    staleTime: 2 * 60 * 1000, // 2 minutes
   });
 
-  const hasNotes = useMemo(() => noteData && noteData.length > 0, [noteData]);
-  const latestNoteStatus = useMemo(() => hasNotes ? noteData[0]?.status : null, [hasNotes, noteData]);
+  const hasNotes = noteData && noteData.length > 0;
+  
+  const latestNoteStatus = hasNotes ? noteData[0]?.status : null;
 
-  const getNoteStatusColor = useCallback(() => {
+  const getNoteStatusColor = () => {
     if (!latestNoteStatus) return "text-gray-400";
     switch (latestNoteStatus) {
       case "done":
@@ -110,9 +105,9 @@ const PublicationCardComponent = ({
       default:
         return "text-yellow-500";
     }
-  }, [latestNoteStatus]);
+  };
 
-  const handleTouch = useCallback(() => {
+  const handleTouch = () => {
     if (isMobile) {
       setTouchCount(prev => prev + 1);
       
@@ -132,21 +127,29 @@ const PublicationCardComponent = ({
         if (touchTimer) clearTimeout(touchTimer);
       }
     }
-  }, [isMobile, touchCount, touchTimer]);
+  };
 
-  const statusConfig = useMemo(() => {
-    if (publication.is_published) return { color: "bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100", icon: Upload };
-    if (publication.approved) return { color: "bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100", icon: CheckCircle2 };
-    if (publication.in_review) return { color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100", icon: AlertCircle };
-    if (publication.in_editing) return { color: "bg-purple-100 text-purple-800 dark:bg-purple-800 dark:text-purple-100", icon: Edit };
-    if (publication.needs_editing) return { color: "bg-orange-100 text-orange-800 dark:bg-orange-800 dark:text-orange-100", icon: Edit };
-    if (publication.needs_recording) return { color: "bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100", icon: Video };
-    return { color: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100", icon: Clock };
-  }, [publication]);
+  const getStatusColor = () => {
+    if (publication.is_published) return "bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100";
+    if (publication.approved) return "bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100";
+    if (publication.in_review) return "bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100";
+    if (publication.in_editing) return "bg-purple-100 text-purple-800 dark:bg-purple-800 dark:text-purple-100";
+    if (publication.needs_editing) return "bg-orange-100 text-orange-800 dark:bg-orange-800 dark:text-orange-100";
+    if (publication.needs_recording) return "bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100";
+    return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100";
+  };
 
-  const StatusIcon = statusConfig.icon;
+  const getStatusIcon = () => {
+    if (publication.is_published) return <Upload className="h-3 w-3" />;
+    if (publication.approved) return <CheckCircle2 className="h-3 w-3" />;
+    if (publication.in_review) return <AlertCircle className="h-3 w-3" />;
+    if (publication.in_editing) return <Edit className="h-3 w-3" />;
+    if (publication.needs_editing) return <Edit className="h-3 w-3" />;
+    if (publication.needs_recording) return <Video className="h-3 w-3" />;
+    return <Clock className="h-3 w-3" />;
+  };
 
-  const handleStatusChange = useCallback(async (status: string) => {
+  const handleStatusChange = async (status: string) => {
     try {
       const updates: any = {
         needs_recording: false,
@@ -180,9 +183,9 @@ const PublicationCardComponent = ({
         variant: "destructive",
       });
     }
-  }, [publication.id, onUpdate]);
+  };
 
-  const handleDesignerAssign = useCallback(async (designerName: string) => {
+  const handleDesignerAssign = async (designerName: string) => {
     try {
       const { error } = await supabase
         .from('publications')
@@ -205,40 +208,16 @@ const PublicationCardComponent = ({
         variant: "destructive",
       });
     }
-  }, [publication.id, onUpdate]);
+  };
 
-  const handleDelete = useCallback(async () => {
+  const handleDelete = async () => {
     try {
-      const { data: pub, error: fetchError } = await supabase
-        .from('publications')
-        .select('name')
-        .eq('id', publication.id)
-        .single();
-      
-      if (fetchError) {
-        console.error('Error fetching publication for deletion:', fetchError);
-        throw fetchError;
-      }
-      
-      const { error: updateError } = await supabase
+      const { error } = await supabase
         .from('publications')
         .update({ deleted_at: new Date().toISOString() })
         .eq('id', publication.id);
 
-      if (updateError) throw updateError;
-      
-      const { error: insertError } = await supabase
-        .from('deleted_items')
-        .insert({
-          type: 'publication',
-          id: publication.id,
-          content: pub.name,
-          deleted_at: new Date().toISOString()
-        });
-      
-      if (insertError) {
-        console.error('Error saving publication to deleted_items:', insertError);
-      }
+      if (error) throw error;
 
       toast({
         title: "Publicación eliminada",
@@ -255,34 +234,34 @@ const PublicationCardComponent = ({
         variant: "destructive",
       });
     }
-  }, [publication.id, publication.name, onUpdate]);
+  };
 
-  const handleAddNote = useCallback(() => {
+  const handleAddNote = () => {
     setEditNoteId(undefined);
     setShowNoteView(false);
     setTimeout(() => {
       setShowNoteDialog(true);
     }, 50);
-  }, []);
+  };
 
-  const handleViewNotes = useCallback(() => {
+  const handleViewNotes = () => {
     setShowNoteDialog(false);
     setTimeout(() => {
       setShowNoteView(true);
     }, 50);
-  }, []);
+  };
 
-  const handleEditNote = useCallback((noteId: string) => {
+  const handleEditNote = (noteId: string) => {
     setEditNoteId(noteId);
     setShowNoteDialog(true);
     setShowNoteView(false);
-  }, []);
+  };
 
-  const handleNoteSuccess = useCallback(() => {
+  const handleNoteSuccess = () => {
     setTimeout(() => {
       refetchNotes();
     }, 50);
-  }, [refetchNotes]);
+  };
 
   return (
     <>
@@ -291,7 +270,7 @@ const PublicationCardComponent = ({
           <Card 
             className={cn(
               "mb-1 hover:shadow-md transition-shadow cursor-pointer group",
-              statusConfig.color
+              getStatusColor()
             )}
             onClick={isMobile ? handleTouch : () => setShowDialog(true)}
           >
@@ -299,7 +278,7 @@ const PublicationCardComponent = ({
               <div className="flex flex-col gap-1">
                 <div className="flex items-start gap-1 min-w-0">
                   <div className="flex-shrink-0 mt-1">
-                    <StatusIcon className="h-3 w-3" />
+                    {getStatusIcon()}
                   </div>
                   <p className={cn(
                     "text-xs font-medium",
@@ -440,5 +419,3 @@ const PublicationCardComponent = ({
     </>
   );
 };
-
-export const PublicationCard = memo(PublicationCardComponent);

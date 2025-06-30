@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Trash2, RotateCcw, Search } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
@@ -55,24 +54,12 @@ export const TrashDialog = () => {
 
       const tableName = getTableName(item.type);
       
-      // Restaurar el elemento en su tabla original estableciendo deleted_at a null
       const { error } = await supabase
         .from(tableName)
         .update({ deleted_at: null })
         .eq('id', item.id);
 
       if (error) throw error;
-      
-      // Eliminar el elemento de la tabla deleted_items
-      const { error: deleteError } = await supabase
-        .from('deleted_items')
-        .delete()
-        .eq('id', item.id);
-        
-      if (deleteError) {
-        console.error('Error removing item from deleted_items:', deleteError);
-      }
-      
       await refetch();
       
       toast({

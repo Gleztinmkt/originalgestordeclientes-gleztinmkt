@@ -13,13 +13,19 @@ const Dialog = React.forwardRef<
     preventAutoClose?: boolean;
   }
 >(({ forceMount, preventAutoClose, ...props }, ref) => {
+  // Prevent dialog from closing automatically
+  const preventClose = React.useCallback((event: Event) => {
+    if (preventAutoClose) {
+      event.preventDefault();
+    }
+  }, [preventAutoClose]);
+
   return (
     <DialogPrimitive.Root
       {...props}
       modal={true}
       onOpenChange={(open) => {
         // If we're preventing auto-close and something is trying to close it programmatically
-        // Always prevent automatic closing behavior when preventAutoClose is true
         if (preventAutoClose && !open && props.open) {
           return; // Do nothing, keeping dialog open
         }
@@ -57,44 +63,59 @@ const DialogContent = React.forwardRef<
     preventAutoClose?: boolean;
   }
 >(({ className, children, preventAutoClose, ...props }, ref) => {
-  // Use a ref to store the dialog portal element
-  const dialogRef = React.useRef<HTMLDivElement | null>(null);
+  const handlePointerDownOutside = React.useCallback((event: Event) => {
+    if (preventAutoClose) {
+      event.preventDefault();
+    }
+  }, [preventAutoClose]);
 
-  // This effect completely disables all automatic closing behaviors
+  const handleInteractOutside = React.useCallback((event: Event) => {
+    if (preventAutoClose) {
+      event.preventDefault();
+    }
+  }, [preventAutoClose]);
+
+  const handleEscapeKeyDown = React.useCallback((event: KeyboardEvent) => {
+    if (preventAutoClose) {
+      event.preventDefault();
+    }
+  }, [preventAutoClose]);
+
+  // Set up event listeners to prevent auto-close when tab changes
   React.useEffect(() => {
     if (!preventAutoClose) return;
 
-    // Function to prevent closing dialog when tab changes
-    const handleVisibilityChange = (e: Event) => {
-      if (preventAutoClose) {
-        e.preventDefault();
-        e.stopPropagation();
+    // Create a focused flag to track focus state
+    let dialogFocused = true;
+
+    // Handler for visibility change (tab switching)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        dialogFocused = false;
+      } else if (document.visibilityState === 'visible' && !dialogFocused) {
+        dialogFocused = true;
       }
     };
 
-    // We want to capture ALL events that might close the dialog
-    window.addEventListener('visibilitychange', handleVisibilityChange, true);
-    window.addEventListener('blur', handleVisibilityChange, true);
-    window.addEventListener('focus', handleVisibilityChange, true);
-    
-    // Re-add tabindex=-1 to dialog elements to prevent focus/blur issues
-    const maintainFocus = setInterval(() => {
-      if (preventAutoClose && dialogRef.current) {
-        const dialogElements = document.querySelectorAll('[role="dialog"]');
-        dialogElements.forEach(el => {
-          if (el.getAttribute('data-state') === 'open') {
-            // Ensure dialog can't be closed by tab focus
-            el.setAttribute('tabindex', '-1');
-          }
-        });
-      }
-    }, 100);
+    // Handlers for window blur/focus
+    const handleWindowBlur = () => {
+      dialogFocused = false;
+    };
 
+    const handleWindowFocus = () => {
+      dialogFocused = true;
+    };
+
+    // Add event listeners
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('blur', handleWindowBlur);
+    window.addEventListener('focus', handleWindowFocus);
+
+    // Clean up
     return () => {
-      window.removeEventListener('visibilitychange', handleVisibilityChange, true);
-      window.removeEventListener('blur', handleVisibilityChange, true);
-      window.removeEventListener('focus', handleVisibilityChange, true);
-      clearInterval(maintainFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('blur', handleWindowBlur);
+      window.removeEventListener('focus', handleWindowFocus);
     };
   }, [preventAutoClose]);
 
@@ -102,40 +123,22 @@ const DialogContent = React.forwardRef<
     <DialogPortal>
       <DialogOverlay />
       <DialogPrimitive.Content
-        ref={(el) => {
-          // Store ref for our own use
-          dialogRef.current = el;
-          // Forward ref if provided
-          if (typeof ref === 'function') {
-            ref(el);
-          } else if (ref) {
-            ref.current = el;
-          }
-        }}
+        ref={ref}
         className={cn(
           "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg",
           className
         )}
-        // Completely disable all outside interactions when preventAutoClose is true
-        onPointerDownOutside={preventAutoClose ? (e) => e.preventDefault() : undefined}
-        onInteractOutside={preventAutoClose ? (e) => e.preventDefault() : undefined}
-        onEscapeKeyDown={preventAutoClose ? (e) => e.preventDefault() : undefined}
+        onPointerDownOutside={preventAutoClose ? handlePointerDownOutside : undefined}
+        onInteractOutside={preventAutoClose ? handleInteractOutside : undefined}
+        onEscapeKeyDown={preventAutoClose ? handleEscapeKeyDown : undefined}
         onFocusOutside={preventAutoClose ? (e) => e.preventDefault() : undefined}
-        // Add data attribute for styling
-        data-prevent-autoclose={preventAutoClose ? "true" : "false"}
-        // Prevent any close behavior on tab change
-        onBlur={preventAutoClose ? (e) => e.preventDefault() : undefined}
-        tabIndex={preventAutoClose ? -1 : undefined}
         {...props}
       >
         {children}
-        {/* Only show close button if we're not preventing auto-close */}
-        {!preventAutoClose && (
-          <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
-            <X className="h-4 w-4" />
-            <span className="sr-only">Close</span>
-          </DialogPrimitive.Close>
-        )}
+        <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
+          <X className="h-4 w-4" />
+          <span className="sr-only">Close</span>
+        </DialogPrimitive.Close>
       </DialogPrimitive.Content>
     </DialogPortal>
   )

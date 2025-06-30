@@ -26,10 +26,10 @@ import { toast } from "@/hooks/use-toast";
 
 interface ClientCardProps {
   client: Client;
-  onDeleteClient: (id: string) => Promise<void>;
-  onUpdateClient: (id: string, data: any) => Promise<void>;
-  onUpdatePackage: (clientId: string, packageId: string, usedPublications: number) => Promise<void>;
-  onAddPackage: (clientId: string, packageData: any) => Promise<void>;
+  onDeleteClient: (id: string) => void;
+  onUpdateClient: (id: string, data: any) => void;
+  onUpdatePackage: (clientId: string, packageId: string, usedPublications: number) => void;
+  onAddPackage: (clientId: string, packageData: any) => void;
   tasks: Task[];
   onAddTask: (content: string, clientId?: string) => void;
   onDeleteTask: (id: string) => void;
@@ -59,10 +59,7 @@ export const ClientCard = ({
   const [isUpdating, setIsUpdating] = useState(false);
 
   const handleUpdateClientInfo = async (clientId: string, info: ClientInfo) => {
-    if (isUpdating) return;
-    
     try {
-      setIsUpdating(true);
       await onUpdateClient(clientId, { clientInfo: info });
     } catch (error) {
       console.error('Error updating client info:', error);
@@ -71,29 +68,18 @@ export const ClientCard = ({
         description: "No se pudo actualizar la información del cliente.",
         variant: "destructive",
       });
-    } finally {
-      setIsUpdating(false);
     }
   };
 
   const handleUpdatePackagePaid = async (packageId: string, paid: boolean) => {
-    if (isUpdating) return Promise.reject("Operación en curso");
+    if (isUpdating) return;
     
     try {
       setIsUpdating(true);
       const updatedPackages = client.packages.map(pkg =>
-        pkg.id === packageId ? { 
-          ...pkg, 
-          paid,
-          last_update: new Date().toISOString() 
-        } : pkg
+        pkg.id === packageId ? { ...pkg, paid } : pkg
       );
-      
-      await onUpdateClient(client.id, { 
-        packages: updatedPackages 
-      });
-      
-      return Promise.resolve();
+      await onUpdateClient(client.id, { ...client, packages: updatedPackages });
     } catch (error) {
       console.error('Error updating package paid status:', error);
       toast({
@@ -101,36 +87,24 @@ export const ClientCard = ({
         description: "No se pudo actualizar el estado del pago.",
         variant: "destructive",
       });
-      
-      return Promise.reject(error);
     } finally {
       setIsUpdating(false);
     }
   };
 
   const handleEditPackage = async (packageId: string, values: any) => {
-    if (isUpdating) return Promise.reject("Operación en curso");
+    if (isUpdating) return;
     
     try {
       setIsUpdating(true);
       const updatedPackages = client.packages.map(pkg =>
-        pkg.id === packageId ? { 
-          ...pkg, 
-          ...values,
-          last_update: new Date().toISOString() 
-        } : pkg
+        pkg.id === packageId ? { ...pkg, ...values } : pkg
       );
-      
-      await onUpdateClient(client.id, { 
-        packages: updatedPackages 
-      });
-      
+      await onUpdateClient(client.id, { ...client, packages: updatedPackages });
       toast({
         title: "Paquete actualizado",
         description: "Los cambios se han guardado correctamente.",
       });
-      
-      return Promise.resolve();
     } catch (error) {
       console.error('Error editing package:', error);
       toast({
@@ -138,30 +112,22 @@ export const ClientCard = ({
         description: "No se pudo actualizar el paquete.",
         variant: "destructive",
       });
-      
-      return Promise.reject(error);
     } finally {
       setIsUpdating(false);
     }
   };
 
   const handleDeletePackage = async (packageId: string) => {
-    if (isUpdating) return Promise.reject("Operación en curso");
+    if (isUpdating) return;
     
     try {
       setIsUpdating(true);
       const updatedPackages = client.packages.filter(pkg => pkg.id !== packageId);
-      
-      await onUpdateClient(client.id, { 
-        packages: updatedPackages 
-      });
-      
+      await onUpdateClient(client.id, { ...client, packages: updatedPackages });
       toast({
         title: "Paquete eliminado",
         description: "El paquete se ha eliminado correctamente.",
       });
-      
-      return Promise.resolve();
     } catch (error) {
       console.error('Error deleting package:', error);
       toast({
@@ -169,8 +135,6 @@ export const ClientCard = ({
         description: "No se pudo eliminar el paquete.",
         variant: "destructive",
       });
-      
-      return Promise.reject(error);
     } finally {
       setIsUpdating(false);
     }
@@ -185,13 +149,8 @@ export const ClientCard = ({
   };
 
   const confirmDelete = () => {
-    if (isUpdating) return;
-    
-    setIsUpdating(true);
     onDeleteClient(client.id);
     setShowDeleteDialog(false);
-    setIsUpdating(false);
-    
     if (viewMode === "grid") {
       setIsExpanded(false);
     }
@@ -218,7 +177,7 @@ export const ClientCard = ({
 
         <PackageSection
           client={client}
-          isCapturing={isCapturing || isUpdating}
+          isCapturing={isCapturing}
           onUpdatePackage={onUpdatePackage}
           onUpdatePaid={handleUpdatePackagePaid}
           onEditPackage={handleEditPackage}
@@ -258,11 +217,7 @@ export const ClientCard = ({
           <Card 
             className={cardClasses}
             style={{ background: getSubtleGradient() }}
-            onClick={() => {
-              if (!isUpdating) {
-                setIsExpanded(true);
-              }
-            }}
+            onClick={() => setIsExpanded(true)}
           >
             <CardContent className="p-4">
               <h3 className="text-lg font-heading font-semibold text-gray-800 dark:text-white truncate">
@@ -271,62 +226,9 @@ export const ClientCard = ({
             </CardContent>
           </Card>
 
-          <Dialog 
-            open={isExpanded} 
-            onOpenChange={(newOpen) => {
-              if (!isUpdating && !isCapturing) {
-                setIsExpanded(newOpen);
-              }
-            }}
-          >
+          <Dialog open={isExpanded} onOpenChange={setIsExpanded}>
             <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto dark:bg-gray-800">
-              <ClientCardHeader
-                client={client}
-                viewMode={viewMode}
-                onUpdateClientInfo={handleUpdateClientInfo}
-                onDeleteClient={handleDelete}
-                onUpdateClient={onUpdateClient}
-                onAddPackage={onAddPackage}
-                isExpanded={isExpanded}
-                onClose={() => setIsExpanded(false)}
-              />
-              <CardContent className="space-y-4">
-                <PaymentReminder
-                  clientName={client.name}
-                  paymentDay={client.paymentDay}
-                  phone={client.phone}
-                />
-
-                <PackageSection
-                  client={client}
-                  isCapturing={isCapturing || isUpdating}
-                  onUpdatePackage={onUpdatePackage}
-                  onUpdatePaid={handleUpdatePackagePaid}
-                  onEditPackage={handleEditPackage}
-                  onDeletePackage={handleDeletePackage}
-                  onCaptureStart={() => setIsCapturing(true)}
-                  onCaptureEnd={() => setIsCapturing(false)}
-                />
-
-                <div className="mt-6 space-y-4">
-                  <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-200">Tareas Pendientes</h3>
-                  <TaskInput 
-                    onAddTask={(content) => onAddTask(content, client.id)}
-                    clients={[{ id: client.id, name: client.name }]}
-                  />
-                  <TaskList
-                    tasks={getClientTasks()}
-                    onDeleteTask={onDeleteTask}
-                    onCompleteTask={onCompleteTask}
-                    onUpdateTask={onUpdateTask}
-                    clients={[{ id: client.id, name: client.name }]}
-                  />
-                </div>
-
-                <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed mt-4">
-                  {client.marketingInfo}
-                </p>
-              </CardContent>
+              {content}
             </DialogContent>
           </Dialog>
         </>
@@ -335,64 +237,11 @@ export const ClientCard = ({
           className={cardClasses}
           style={{ background: getSubtleGradient() }}
         >
-          <ClientCardHeader
-            client={client}
-            viewMode={viewMode}
-            onUpdateClientInfo={handleUpdateClientInfo}
-            onDeleteClient={handleDelete}
-            onUpdateClient={onUpdateClient}
-            onAddPackage={onAddPackage}
-            isExpanded={isExpanded}
-            onClose={() => setIsExpanded(false)}
-          />
-          <CardContent className="space-y-4">
-            <PaymentReminder
-              clientName={client.name}
-              paymentDay={client.paymentDay}
-              phone={client.phone}
-            />
-
-            <PackageSection
-              client={client}
-              isCapturing={isCapturing || isUpdating}
-              onUpdatePackage={onUpdatePackage}
-              onUpdatePaid={handleUpdatePackagePaid}
-              onEditPackage={handleEditPackage}
-              onDeletePackage={handleDeletePackage}
-              onCaptureStart={() => setIsCapturing(true)}
-              onCaptureEnd={() => setIsCapturing(false)}
-            />
-
-            <div className="mt-6 space-y-4">
-              <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-200">Tareas Pendientes</h3>
-              <TaskInput 
-                onAddTask={(content) => onAddTask(content, client.id)}
-                clients={[{ id: client.id, name: client.name }]}
-              />
-              <TaskList
-                tasks={getClientTasks()}
-                onDeleteTask={onDeleteTask}
-                onCompleteTask={onCompleteTask}
-                onUpdateTask={onUpdateTask}
-                clients={[{ id: client.id, name: client.name }]}
-              />
-            </div>
-
-            <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed mt-4">
-              {client.marketingInfo}
-            </p>
-          </CardContent>
+          {content}
         </Card>
       )}
 
-      <AlertDialog 
-        open={showDeleteDialog} 
-        onOpenChange={(newOpen) => {
-          if (!isUpdating) {
-            setShowDeleteDialog(newOpen);
-          }
-        }}
-      >
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
@@ -402,7 +251,7 @@ export const ClientCard = ({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-red-500 hover:bg-red-600" disabled={isUpdating}>
+            <AlertDialogAction onClick={confirmDelete} className="bg-red-500 hover:bg-red-600">
               Eliminar
             </AlertDialogAction>
           </AlertDialogFooter>

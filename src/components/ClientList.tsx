@@ -12,10 +12,10 @@ import { ManualClientFilter } from "./client/ManualClientFilter";
 
 interface ClientListProps {
   clients: Client[];
-  onDeleteClient: (id: string) => Promise<void>;
-  onUpdateClient: (id: string, data: any) => Promise<void>;
-  onUpdatePackage: (clientId: string, packageId: string, usedPublications: number) => Promise<void>;
-  onAddPackage: (clientId: string, packageData: any) => Promise<void>;
+  onDeleteClient: (id: string) => void;
+  onUpdateClient: (id: string, data: any) => void;
+  onUpdatePackage: (clientId: string, packageId: string, usedPublications: number) => void;
+  onAddPackage: (clientId: string, packageData: any) => void;
   tasks: Task[];
   onAddTask: (content: string, clientId?: string) => void;
   onDeleteTask: (id: string) => void;

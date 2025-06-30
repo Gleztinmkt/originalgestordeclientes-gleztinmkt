@@ -1,7 +1,6 @@
-
 import { CardHeader as UICardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { X } from "lucide-react";
+import { Trash2, X } from "lucide-react";
 import { ClientInfoDialog } from "../ClientInfoDialog";
 import { EditClientDialog } from "../EditClientDialog";
 import { AddPackageDialog } from "../AddPackageDialog";
@@ -10,10 +9,10 @@ import { Client, ClientInfo } from "../../types/client";
 interface CardHeaderProps {
   client: Client;
   viewMode: "list" | "grid";
-  onUpdateClientInfo: (clientId: string, info: ClientInfo) => Promise<void>;
+  onUpdateClientInfo: (clientId: string, info: ClientInfo) => void;
   onDeleteClient: () => void;
-  onUpdateClient: (id: string, data: Partial<Client>) => Promise<void>;
-  onAddPackage: (clientId: string, packageData: any) => Promise<void>;
+  onUpdateClient: (id: string, data: any) => void;
+  onAddPackage: (clientId: string, packageData: any) => void;
   isExpanded: boolean;
   onClose: () => void;
 }
@@ -42,12 +41,19 @@ export const ClientCardHeader = ({
         <EditClientDialog 
           client={client}
           onUpdateClient={onUpdateClient}
-          onDeleteClient={onDeleteClient}
         />
         <AddPackageDialog
           clientId={client.id}
           onAddPackage={onAddPackage}
         />
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onDeleteClient}
+          className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
         {viewMode === "grid" && isExpanded && (
           <Button
             variant="ghost"

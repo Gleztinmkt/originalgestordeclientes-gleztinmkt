@@ -55,67 +55,57 @@ export const FilterPanel = ({
     client.name.toLowerCase().includes(clientSearchQuery.toLowerCase())
   );
 
-  const clientFilter = (
-    <Select value={selectedClient || "all_clients"} onValueChange={value => onClientChange(value === "all_clients" ? null : value)}>
-      <SelectTrigger className="min-w-[200px]">
-        <SelectValue placeholder="Todos los clientes" />
-      </SelectTrigger>
-      <SelectContent>
-        <div className="sticky top-0 bg-popover p-2 border-b z-10">
-          <div className="relative">
-            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar clientes..." 
-              value={clientSearchQuery}
-              onChange={(e) => setClientSearchQuery(e.target.value)}
-              className="pl-8"
-              onClick={(e) => e.stopPropagation()}
-              onKeyDown={(e) => e.stopPropagation()}
-            />
-          </div>
-        </div>
-        <div className="touch-scroll">
-          <SelectItem value="all_clients">Todos los clientes</SelectItem>
-          {filteredClients.map(client => (
-            <SelectItem key={client.id} value={client.id}>
-              {client.name}
-            </SelectItem>
-          ))}
-        </div>
-      </SelectContent>
-    </Select>
-  );
-
-  const designerFilter = (
-    <div className="flex items-center gap-2">
-      <Select value={selectedDesigner || "all_designers"} onValueChange={value => onDesignerChange(value === "all_designers" ? null : value)}>
+  const filterContent = (
+    <>
+      <Select value={selectedClient || "all_clients"} onValueChange={value => onClientChange(value === "all_clients" ? null : value)}>
         <SelectTrigger className="min-w-[200px]">
-          <SelectValue placeholder="Todos los diseñadores" />
+          <SelectValue placeholder="Todos los clientes" />
         </SelectTrigger>
         <SelectContent>
-          <div className="touch-scroll">
-            <SelectItem value="all_designers">Todos los diseñadores</SelectItem>
-            {designers.map(designer => (
-              <SelectItem key={designer.id} value={designer.name}>
-                {designer.name}
+          <div className="sticky top-0 bg-popover p-2 border-b z-10">
+            <div className="relative">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar clientes..." 
+                value={clientSearchQuery}
+                onChange={(e) => setClientSearchQuery(e.target.value)}
+                className="pl-8"
+              />
+            </div>
+          </div>
+          <div>
+            <SelectItem value="all_clients">Todos los clientes</SelectItem>
+            {filteredClients.map(client => (
+              <SelectItem key={client.id} value={client.id}>
+                {client.name}
               </SelectItem>
             ))}
           </div>
         </SelectContent>
       </Select>
-      {!isDesigner && <Button variant="outline" size="icon" onClick={() => setShowDesignerDialog(true)} className="flex-shrink-0">
-          <Plus className="h-4 w-4" />
-        </Button>}
-    </div>
-  );
 
-  const statusFilter = (
-    <Select value={selectedStatus || "all_status"} onValueChange={value => onStatusChange(value === "all_status" ? null : value)}>
-      <SelectTrigger className="min-w-[200px]">
-        <SelectValue placeholder="Todos los estados" />
-      </SelectTrigger>
-      <SelectContent>
-        <div className="touch-scroll">
+      <div className="flex items-center gap-2">
+        <Select value={selectedDesigner || "all_designers"} onValueChange={value => onDesignerChange(value === "all_designers" ? null : value)}>
+          <SelectTrigger className="min-w-[200px]">
+            <SelectValue placeholder="Todos los diseñadores" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all_designers">Todos los diseñadores</SelectItem>
+            {designers.map(designer => <SelectItem key={designer.id} value={designer.name}>
+                {designer.name}
+              </SelectItem>)}
+          </SelectContent>
+        </Select>
+        {!isDesigner && <Button variant="outline" size="icon" onClick={() => setShowDesignerDialog(true)} className="flex-shrink-0">
+            <Plus className="h-4 w-4" />
+          </Button>}
+      </div>
+
+      <Select value={selectedStatus || "all_status"} onValueChange={value => onStatusChange(value === "all_status" ? null : value)}>
+        <SelectTrigger className="min-w-[200px]">
+          <SelectValue placeholder="Todos los estados" />
+        </SelectTrigger>
+        <SelectContent>
           <SelectItem value="all_status">Todos los estados</SelectItem>
           <SelectItem value="needs_recording">Falta grabar</SelectItem>
           <SelectItem value="needs_editing">Falta editar</SelectItem>
@@ -123,61 +113,47 @@ export const FilterPanel = ({
           <SelectItem value="in_review">En revisión</SelectItem>
           <SelectItem value="approved">Aprobado</SelectItem>
           <SelectItem value="published">Publicado</SelectItem>
-        </div>
-      </SelectContent>
-    </Select>
-  );
+        </SelectContent>
+      </Select>
 
-  const typeFilter = (
-    <Select value={selectedType || "all_types"} onValueChange={value => onTypeChange(value === "all_types" ? null : value)}>
-      <SelectTrigger className="min-w-[200px]">
-        <SelectValue placeholder="Todos los tipos" />
-      </SelectTrigger>
-      <SelectContent>
-        <div className="touch-scroll">
+      <Select value={selectedType || "all_types"} onValueChange={value => onTypeChange(value === "all_types" ? null : value)}>
+        <SelectTrigger className="min-w-[200px]">
+          <SelectValue placeholder="Todos los tipos" />
+        </SelectTrigger>
+        <SelectContent>
           <SelectItem value="all_types">Todos los tipos</SelectItem>
           <SelectItem value="reel">Reel</SelectItem>
           <SelectItem value="carousel">Carrusel</SelectItem>
           <SelectItem value="image">Imagen</SelectItem>
-        </div>
-      </SelectContent>
-    </Select>
-  );
+        </SelectContent>
+      </Select>
 
-  const infoButton = (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button variant="outline" size="icon">
-          <Info className="h-4 w-4" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-80">
-        <div className="space-y-4">
-          <StatusLegend />
-          {children}
-        </div>
-      </PopoverContent>
-    </Popover>
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button variant="outline" size="icon">
+            <Info className="h-4 w-4" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-80">
+          <div className="space-y-4">
+            <StatusLegend />
+            {children}
+          </div>
+        </PopoverContent>
+      </Popover>
+    </>
   );
   
   return <div className={`${isMobile ? 'w-full' : ''}`}>
       {isMobile ? (
         <div className="h-[calc(100vh-8rem)] px-4 pt-8 overflow-y-auto">
           <div className="flex flex-col space-y-4 py-[42px]">
-            {clientFilter}
-            {designerFilter}
-            {statusFilter}
-            {typeFilter}
-            {infoButton}
+            {filterContent}
           </div>
         </div>
       ) : (
         <div className="flex items-center gap-4">
-          {clientFilter}
-          {designerFilter}
-          {statusFilter}
-          {typeFilter}
-          {infoButton}
+          {filterContent}
         </div>
       )}
 

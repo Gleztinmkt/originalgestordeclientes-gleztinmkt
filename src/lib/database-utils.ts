@@ -1,4 +1,3 @@
-
 import { Client, ClientInfo, SocialNetwork } from "@/components/types/client";
 import { Json } from "@/integrations/supabase/types";
 
@@ -12,8 +11,7 @@ export const parsePackages = (packagesData: any) => {
       totalPublications: parseInt(pkg.totalPublications) || 0,
       usedPublications: parseInt(pkg.usedPublications) || 0,
       month: pkg.month || "",
-      paid: Boolean(pkg.paid),
-      last_update: pkg.last_update || new Date().toISOString()
+      paid: Boolean(pkg.paid)
     })) : [];
   } catch (error) {
     console.error('Error parsing packages:', error);
@@ -43,19 +41,6 @@ export const formatClientForDatabase = (client: Partial<Client>) => {
     console.log('Formatted client info:', formattedClientInfo);
   }
 
-  // Asegurarse de que todos los paquetes tengan sus valores numéricos correctamente formateados
-  let formattedPackages = null;
-  if (client.packages) {
-    formattedPackages = client.packages.map(pkg => ({
-      ...pkg,
-      totalPublications: typeof pkg.totalPublications === 'string' ? 
-        parseInt(pkg.totalPublications) : pkg.totalPublications,
-      usedPublications: typeof pkg.usedPublications === 'string' ? 
-        parseInt(pkg.usedPublications) : pkg.usedPublications,
-      last_update: pkg.last_update || new Date().toISOString()
-    }));
-  }
-
   const formatted = {
     name: client.name || '',
     phone: client.phone || null,
@@ -63,7 +48,7 @@ export const formatClientForDatabase = (client: Partial<Client>) => {
     marketing_info: client.marketingInfo || null,
     instagram: client.instagram || null,
     facebook: client.facebook || null,
-    packages: formattedPackages ? JSON.stringify(formattedPackages) : null,
+    packages: client.packages ? JSON.stringify(client.packages) : null,
     client_info: formattedClientInfo
   };
   

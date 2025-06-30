@@ -1,11 +1,9 @@
 
-import { useState } from "react";
 import { MinusCircle, PlusCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { toast } from "@/hooks/use-toast";
 
 interface PackageCounterProps {
   total: number;
@@ -16,69 +14,22 @@ interface PackageCounterProps {
 }
 
 export const PackageCounter = ({ total, used, onUpdateUsed, onUpdateLastUsed, disabled }: PackageCounterProps) => {
-  const [isUpdating, setIsUpdating] = useState(false);
   const remaining = total - used;
 
-  const handleIncrease = async () => {
-    if (used < total && !disabled && !isUpdating) {
-      try {
-        setIsUpdating(true);
-        
-        // Actualizar estado local antes para UI responsiva
-        const newCount = used + 1;
-        
-        // Actualizar en la base de datos
-        await onUpdateUsed(newCount);
-        
-        // Actualizar fecha de último uso si es necesario
-        if (onUpdateLastUsed) {
-          const now = new Date();
-          const formattedDate = format(now, "d 'de' MMMM, yyyy", { locale: es });
-          await onUpdateLastUsed(formattedDate);
-        }
-        
-        toast({
-          title: "Contador actualizado",
-          description: `Publicaciones usadas: ${newCount} de ${total}`,
-        });
-      } catch (error) {
-        console.error('Error al actualizar contador:', error);
-        toast({
-          title: "Error",
-          description: "No se pudo actualizar el contador. Por favor, intenta de nuevo.",
-          variant: "destructive",
-        });
-      } finally {
-        setIsUpdating(false);
+  const handleIncrease = () => {
+    if (used < total) {
+      onUpdateUsed(used + 1);
+      if (onUpdateLastUsed) {
+        const now = new Date();
+        const formattedDate = format(now, "d 'de' MMMM, yyyy", { locale: es });
+        onUpdateLastUsed(formattedDate);
       }
     }
   };
 
-  const handleDecrease = async () => {
-    if (used > 0 && !disabled && !isUpdating) {
-      try {
-        setIsUpdating(true);
-        
-        // Actualizar estado local antes para UI responsiva
-        const newCount = used - 1;
-        
-        // Actualizar en la base de datos
-        await onUpdateUsed(newCount);
-        
-        toast({
-          title: "Contador actualizado",
-          description: `Publicaciones usadas: ${newCount} de ${total}`,
-        });
-      } catch (error) {
-        console.error('Error al actualizar contador:', error);
-        toast({
-          title: "Error",
-          description: "No se pudo actualizar el contador. Por favor, intenta de nuevo.",
-          variant: "destructive",
-        });
-      } finally {
-        setIsUpdating(false);
-      }
+  const handleDecrease = () => {
+    if (used > 0) {
+      onUpdateUsed(used - 1);
     }
   };
 
@@ -88,7 +39,7 @@ export const PackageCounter = ({ total, used, onUpdateUsed, onUpdateLastUsed, di
         variant="ghost"
         size="icon"
         onClick={handleDecrease}
-        disabled={used === 0 || disabled || isUpdating}
+        disabled={used === 0 || disabled}
       >
         <MinusCircle className="h-4 w-4" />
       </Button>
@@ -105,7 +56,7 @@ export const PackageCounter = ({ total, used, onUpdateUsed, onUpdateLastUsed, di
         variant="ghost"
         size="icon"
         onClick={handleIncrease}
-        disabled={used === total || disabled || isUpdating}
+        disabled={used === total || disabled}
       >
         <PlusCircle className="h-4 w-4" />
       </Button>

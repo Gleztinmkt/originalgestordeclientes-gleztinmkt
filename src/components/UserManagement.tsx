@@ -1,22 +1,18 @@
-
 import { useState } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "./ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import { ScrollArea } from "./ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { Users } from "lucide-react";
-
 export const UserManagement = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<"admin" | "designer">("designer");
   const [isLoading, setIsLoading] = useState(false);
-
   const {
     data: users = [],
     refetch
@@ -28,19 +24,12 @@ export const UserManagement = () => {
           data: roles,
           error: rolesError
         } = await supabase.from('user_roles').select('user_id, role');
-        if (rolesError) {
-          console.error('Error fetching roles:', rolesError);
-          throw rolesError;
-        }
-        
+        if (rolesError) throw rolesError;
         const {
           data: profiles,
           error: profilesError
         } = await supabase.from('profiles').select('id, full_name');
-        if (profilesError) {
-          console.error('Error fetching profiles:', profilesError);
-          throw profilesError;
-        }
+        if (profilesError) throw profilesError;
 
         // Combinar la información de roles y perfiles
         return roles?.map(roleData => {
@@ -52,13 +41,12 @@ export const UserManagement = () => {
           };
         }) || [];
       } catch (error) {
-        console.error('Error in users query:', error);
+        console.error('Error fetching users:', error);
         throw error;
       }
     },
     retry: 1
   });
-
   const handleCreateUser = async () => {
     if (!email || !password) {
       toast({
@@ -68,15 +56,14 @@ export const UserManagement = () => {
       });
       return;
     }
-
-    console.log('Iniciando creación de usuario:', { email, role });
-    
     try {
       setIsLoading(true);
 
-      // 1. Crear usuario en Supabase Auth
+      // Crear usuario en Supabase Auth
       const {
-        data: { user },
+        data: {
+          user
+        },
         error: signUpError
       } = await supabase.auth.signUp({
         email,
@@ -88,63 +75,37 @@ export const UserManagement = () => {
           }
         }
       });
-      
-      if (signUpError) {
-        console.error('Error en signUp:', signUpError);
-        throw signUpError;
-      }
-      
+      if (signUpError) throw signUpError;
       if (!user?.id) {
-        console.error('No se obtuvo ID de usuario');
         throw new Error('No se pudo crear el usuario');
       }
 
-      console.log('Usuario creado en Auth:', user.id);
-
-      // 2. Crear perfil primero
-      const {
-        error: profileError
-      } = await supabase.from('profiles').insert({
-        id: user.id,
-        full_name: email.split('@')[0]
-      });
-      
-      if (profileError) {
-        console.error('Error creando perfil:', profileError);
-        // No lanzar error aquí, el perfil puede crearse automáticamente
-        console.log('Continuando sin perfil - puede crearse automáticamente');
-      } else {
-        console.log('Perfil creado exitosamente');
-      }
-
-      // 3. Asignar rol - ahora debería funcionar con las nuevas políticas RLS
+      // Asignar rol
       const {
         error: roleError
       } = await supabase.from('user_roles').insert({
         user_id: user.id,
         role
       });
-      
-      if (roleError) {
-        console.error('Error asignando rol:', roleError);
-        throw roleError;
-      }
+      if (roleError) throw roleError;
 
-      console.log('Rol asignado exitosamente:', role);
-
+      // Crear perfil
+      const {
+        error: profileError
+      } = await supabase.from('profiles').insert({
+        id: user.id,
+        full_name: email.split('@')[0]
+      });
+      if (profileError) throw profileError;
       toast({
         title: "Usuario creado",
-        description: `El usuario ha sido creado exitosamente con rol de ${role === 'admin' ? 'administrador' : 'diseñador'}.`
+        description: "El usuario ha sido creado exitosamente."
       });
-      
       setIsOpen(false);
       setEmail("");
       setPassword("");
       setRole("designer");
-      
-      // Refrescar la lista de usuarios
-      await refetch();
-      
+      refetch();
     } catch (error: any) {
       console.error('Error creating user:', error);
       toast({
@@ -156,62 +117,53 @@ export const UserManagement = () => {
       setIsLoading(false);
     }
   };
-
-  return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+  return <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm" className="gap-2 px-[2px]">
           <Users className="h-4 w-4" />
           Gestionar usuarios
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md" style={{ overflow: 'hidden', maxHeight: '90vh' }}>
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Gestión de usuarios</DialogTitle>
-          <DialogDescription>Añade nuevos usuarios y gestiona los existentes.</DialogDescription>
         </DialogHeader>
-
-        <ScrollArea className="max-h-[70vh] px-1 pr-4">
-          <div className="grid gap-4 py-4">
-            <div className="space-y-2">
-              <Input placeholder="Email" type="email" value={email} onChange={e => setEmail(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Input placeholder="Contraseña" type="password" value={password} onChange={e => setPassword(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Select value={role} onValueChange={(value: "admin" | "designer") => setRole(value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar rol" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="admin">Administrador</SelectItem>
-                  <SelectItem value="designer">Diseñador</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <Button onClick={handleCreateUser} disabled={isLoading}>
-              {isLoading ? "Creando..." : "Crear usuario"}
-            </Button>
+        <div className="grid gap-4 py-4">
+          <div className="space-y-2">
+            <Input placeholder="Email" type="email" value={email} onChange={e => setEmail(e.target.value)} />
           </div>
+          <div className="space-y-2">
+            <Input placeholder="Contraseña" type="password" value={password} onChange={e => setPassword(e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Select value={role} onValueChange={(value: "admin" | "designer") => setRole(value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Seleccionar rol" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="admin">Administrador</SelectItem>
+                <SelectItem value="designer">Diseñador</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <Button onClick={handleCreateUser} disabled={isLoading}>
+            {isLoading ? "Creando..." : "Crear usuario"}
+          </Button>
+        </div>
 
-          <div className="mt-6">
-            <h3 className="font-medium mb-4">Usuarios existentes</h3>
-            <div className="space-y-4">
-              {users.map((user: any) => (
-                <div key={user.id} className="flex items-center justify-between p-2 bg-secondary rounded-lg">
-                  <div>
-                    <p className="font-medium">{user.email}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {user.role === 'admin' ? 'Administrador' : 'Diseñador'}
-                    </p>
-                  </div>
+        <div className="mt-6">
+          <h3 className="font-medium mb-4">Usuarios existentes</h3>
+          <div className="space-y-4">
+            {users.map((user: any) => <div key={user.id} className="flex items-center justify-between p-2 bg-secondary rounded-lg">
+                <div>
+                  <p className="font-medium">{user.email}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {user.role === 'admin' ? 'Administrador' : 'Diseñador'}
+                  </p>
                 </div>
-              ))}
-            </div>
+              </div>)}
           </div>
-        </ScrollArea>
+        </div>
       </DialogContent>
-    </Dialog>
-  );
+    </Dialog>;
 };

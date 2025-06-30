@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,13 +27,6 @@ interface PublicationDialogProps {
   onDelete?: () => void;
   designers?: any[];
 }
-
-const ADMIN_EMAILS = [
-  'agustincarreras266@gmail.com',
-  'aloha@gleztin.com',
-  'aloha3@gleztin.com.ar',
-  'aloha2@gleztin.com.ar'
-];
 
 export const PublicationDialog = ({
   publication,
@@ -70,17 +62,6 @@ export const PublicationDialog = ({
   const [selectedDate, setSelectedDate] = useState<Date>(new Date(publication.date));
   const [copyingCopywriting, setCopyingCopywriting] = useState(false);
   const [copyingDescription, setCopyingDescription] = useState(false);
-
-  const { data: currentUser } = useQuery({
-    queryKey: ['currentUser'],
-    queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      return user;
-    },
-  });
-
-  const isAdmin = currentUser?.email && ADMIN_EMAILS.includes(currentUser.email);
-  const isDesigner = !isAdmin;
 
   const handleOpenSocialLinks = () => {
     if (!client?.clientInfo?.socialNetworks) {
@@ -121,6 +102,25 @@ export const PublicationDialog = ({
     });
   };
 
+  const {
+    data: userRole
+  } = useQuery({
+    queryKey: ['userRole'],
+    queryFn: async () => {
+      const {
+        data: {
+          user
+        }
+      } = await supabase.auth.getUser();
+      if (!user) return null;
+      const {
+        data: roleData
+      } = await supabase.from('user_roles').select('role').eq('user_id', user.id).single();
+      return roleData?.role || null;
+    }
+  });
+
+  const isDesigner = userRole === 'designer';
   const hasChanges = useCallback(() => {
     return name !== publication.name || type !== publication.type || description !== (publication.description || "") || copywriting !== (publication.copywriting || "") || designer !== (publication.designer || "no_designer") || status !== (publication.needs_recording ? 'needs_recording' : publication.needs_editing ? 'needs_editing' : publication.in_editing ? 'in_editing' : publication.in_review ? 'in_review' : publication.approved ? 'approved' : publication.is_published ? 'published' : 'needs_recording') || JSON.stringify(links) !== (publication.links || "[]");
   }, [name, type, description, copywriting, designer, status, links, publication]);
@@ -258,30 +258,17 @@ export const PublicationDialog = ({
         open={open} 
         onOpenChange={handleOpenChange} 
         modal={true}
-        forceMount={true}
         preventAutoClose={true}
       >
         <DialogContent 
           className="sm:max-w-[425px] max-h-[80vh] overflow-y-auto dark:bg-gray-900" 
           preventAutoClose={true}
-          onInteractOutside={(e) => {
-            e.preventDefault();
-          }}
-          onEscapeKeyDown={(e) => {
-            e.preventDefault();
-          }}
-          onPointerDownOutside={(e) => {
-            e.preventDefault();
-          }}
         >
           <DialogHeader>
             <div className="flex items-center justify-between">
               <DialogTitle className="text-xl font-bold dark:text-white">
                 Editar Publicación
               </DialogTitle>
-              <DialogDescription className="sr-only">
-                Editar detalles de la publicación
-              </DialogDescription>
               {client && <Button variant="ghost" size="icon" onClick={handleOpenSocialLinks} className="ml-2" title="Abrir redes sociales">
                   <Share2 className="h-4 w-4" />
                 </Button>}
@@ -484,3 +471,4 @@ export const PublicationDialog = ({
       </AlertDialog>
     </>;
 };
+

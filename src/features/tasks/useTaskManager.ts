@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { Task } from "@/components/TaskList";
@@ -119,40 +118,12 @@ export const useTaskManager = () => {
   const deleteTask = async (id: string) => {
     try {
       console.log('Eliminando tarea:', id);
-      
-      // Primero obtenemos los datos de la tarea para guardarlos en deleted_items
-      const { data: task, error: fetchError } = await supabase
-        .from('tasks')
-        .select('content')
-        .eq('id', id)
-        .single();
-      
-      if (fetchError) {
-        console.error('Error fetching task for deletion:', fetchError);
-        throw new Error('No se pudo obtener los datos de la tarea para eliminar');
-      }
-      
-      // Actualizamos el campo deleted_at
-      const { error: updateError } = await supabase
+      const { error } = await supabase
         .from('tasks')
         .update({ deleted_at: new Date().toISOString() })
         .eq('id', id);
       
-      if (updateError) throw updateError;
-      
-      // Guardamos en la tabla deleted_items
-      const { error: insertError } = await supabase
-        .from('deleted_items')
-        .insert({
-          type: 'task',
-          id: id,
-          content: task.content,
-          deleted_at: new Date().toISOString()
-        });
-      
-      if (insertError) {
-        console.error('Error saving task to deleted_items:', insertError);
-      }
+      if (error) throw error;
 
       setTasks(prev => prev.filter(task => task.id !== id));
       toast({

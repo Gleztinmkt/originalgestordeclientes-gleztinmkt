@@ -1,4 +1,3 @@
-
 import { Client } from "@/components/types/client";
 import { Task } from "@/components/TaskList";
 import { Json } from "@/integrations/supabase/types";
@@ -44,8 +43,7 @@ export const convertDatabaseClient = (client: DatabaseClient): Client => ({
     totalPublications: pkg.totalPublications || 0,
     usedPublications: pkg.usedPublications || 0,
     month: pkg.month || "",
-    paid: pkg.paid || false,
-    last_update: pkg.last_update || new Date().toISOString()
+    paid: pkg.paid || false
   })),
 });
 

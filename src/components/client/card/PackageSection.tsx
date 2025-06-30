@@ -11,7 +11,7 @@ import { useState } from "react";
 interface PackageSectionProps {
   client: Client;
   isCapturing: boolean;
-  onUpdatePackage: (clientId: string, packageId: string, usedPublications: number) => Promise<void>;
+  onUpdatePackage: (clientId: string, packageId: string, usedPublications: number) => void;
   onUpdatePaid: (packageId: string, paid: boolean) => Promise<void>;
   onEditPackage: (packageId: string, values: any) => Promise<void>;
   onDeletePackage: (packageId: string) => Promise<void>;
@@ -30,60 +30,38 @@ export const PackageSection = ({
   onCaptureEnd,
 }: PackageSectionProps) => {
   const [processingPackageId, setProcessingPackageId] = useState<string | null>(null);
-  const [isSendingReport, setIsSendingReport] = useState(false);
 
   const sendPackageReport = async (): Promise<void> => {
-    if (!client.phone || isSendingReport) {
-      if (!client.phone) {
-        toast({
-          title: "Error",
-          description: "Este cliente no tiene número de teléfono registrado",
-          variant: "destructive",
-        });
-      }
-      return Promise.resolve();
-    }
-
-    try {
-      setIsSendingReport(true);
-      
-      const currentDate = format(new Date(), "d 'de' MMMM 'de' yyyy", { locale: es });
-      let reportText = `*Reporte de Paquetes - ${client.name}*\n`;
-      reportText += `Generado el ${currentDate}\n\n`;
-
-      client.packages.forEach((pkg, index) => {
-        reportText += `*Paquete ${index + 1}:*\n`;
-        reportText += `*Nombre:* ${pkg.name}\n`;
-        reportText += `*Mes:* ${pkg.month}\n`;
-        reportText += `*Estado de pago:* ${pkg.paid ? 'Pagado' : 'Pendiente'}\n`;
-        reportText += `*Publicaciones usadas:* ${pkg.usedPublications}/${pkg.totalPublications}\n`;
-        reportText += `*Publicaciones restantes:* ${pkg.totalPublications - pkg.usedPublications}\n\n`;
-      });
-
-      reportText += `\n*¡Gracias por confiar en Gleztin Marketing Digital!*\n`;
-      reportText += `Estamos comprometidos con tu éxito en redes sociales.\n`;
-      reportText += `Si tenés alguna pregunta, no dudes en contactarnos.`;
-
-      const whatsappUrl = `https://wa.me/${client.phone.replace(/\D/g, '')}?text=${encodeURIComponent(reportText)}`;
-      window.open(whatsappUrl, '_blank');
-      
-      toast({
-        title: "Reporte enviado",
-        description: "Se ha abierto WhatsApp con el reporte generado.",
-      });
-      
-      return Promise.resolve();
-    } catch (error) {
-      console.error('Error al enviar reporte:', error);
+    if (!client.phone) {
       toast({
         title: "Error",
-        description: "No se pudo generar el reporte. Por favor, intenta de nuevo.",
+        description: "Este cliente no tiene número de teléfono registrado",
         variant: "destructive",
       });
-      return Promise.reject(error);
-    } finally {
-      setIsSendingReport(false);
+      return Promise.resolve();
     }
+
+    const currentDate = format(new Date(), "d 'de' MMMM 'de' yyyy", { locale: es });
+    let reportText = `*Reporte de Paquetes - ${client.name}*\n`;
+    reportText += `Generado el ${currentDate}\n\n`;
+
+    client.packages.forEach((pkg, index) => {
+      reportText += `*Paquete ${index + 1}:*\n`;
+      reportText += `*Nombre:* ${pkg.name}\n`;
+      reportText += `*Mes:* ${pkg.month}\n`;
+      reportText += `*Estado de pago:* ${pkg.paid ? 'Pagado' : 'Pendiente'}\n`;
+      reportText += `*Publicaciones usadas:* ${pkg.usedPublications}/${pkg.totalPublications}\n`;
+      reportText += `*Publicaciones restantes:* ${pkg.totalPublications - pkg.usedPublications}\n\n`;
+    });
+
+    reportText += `\n*¡Gracias por confiar en Gleztin Marketing Digital!*\n`;
+    reportText += `Estamos comprometidos con tu éxito en redes sociales.\n`;
+    reportText += `Si tenés alguna pregunta, no dudes en contactarnos.`;
+
+    const whatsappUrl = `https://wa.me/${client.phone.replace(/\D/g, '')}?text=${encodeURIComponent(reportText)}`;
+    window.open(whatsappUrl, '_blank');
+    
+    return Promise.resolve();
   };
 
   const handleUpdatePaid = async (packageId: string, paid: boolean) => {
@@ -91,8 +69,6 @@ export const PackageSection = ({
     try {
       setProcessingPackageId(packageId);
       await onUpdatePaid(packageId, paid);
-    } catch (error) {
-      console.error('Error al actualizar estado de pago:', error);
     } finally {
       setProcessingPackageId(null);
     }
@@ -103,8 +79,6 @@ export const PackageSection = ({
     try {
       setProcessingPackageId(packageId);
       await onEditPackage(packageId, values);
-    } catch (error) {
-      console.error('Error al editar paquete:', error);
     } finally {
       setProcessingPackageId(null);
     }
@@ -115,8 +89,6 @@ export const PackageSection = ({
     try {
       setProcessingPackageId(packageId);
       await onDeletePackage(packageId);
-    } catch (error) {
-      console.error('Error al eliminar paquete:', error);
     } finally {
       setProcessingPackageId(null);
     }
@@ -149,10 +121,9 @@ export const PackageSection = ({
         <Button
           onClick={sendPackageReport}
           className="w-full gap-2 bg-green-600 hover:bg-green-700 text-white"
-          disabled={isSendingReport}
         >
           <FileText className="h-4 w-4" />
-          {isSendingReport ? "Enviando..." : "Enviar reporte de paquetes"}
+          Enviar reporte de paquetes
         </Button>
       )}
     </div>

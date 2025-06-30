@@ -1,5 +1,3 @@
-
-
 import { useState } from "react";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,8 +7,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogDescription,
-  DialogClose
 } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -52,40 +48,12 @@ export const PublicationCalendarDialog = ({
 
   const handleDelete = async (publicationId: string) => {
     try {
-      // Primero obtenemos los datos de la publicación para guardarlos en deleted_items
-      const { data: publication, error: fetchError } = await supabase
-        .from('publications')
-        .select('name')
-        .eq('id', publicationId)
-        .single();
-      
-      if (fetchError) {
-        console.error('Error fetching publication for deletion:', fetchError);
-        throw fetchError;
-      }
-      
-      // Actualizamos el campo deleted_at
-      const { error: updateError } = await supabase
+      const { error } = await supabase
         .from('publications')
         .update({ deleted_at: new Date().toISOString() })
         .eq('id', publicationId);
 
-      if (updateError) throw updateError;
-      
-      // Guardamos en la tabla deleted_items
-      const { error: insertError } = await supabase
-        .from('deleted_items')
-        .insert({
-          type: 'publication',
-          id: publicationId,
-          content: publication.name,
-          deleted_at: new Date().toISOString()
-        });
-      
-      if (insertError) {
-        console.error('Error saving publication to deleted_items:', insertError);
-      }
-      
+      if (error) throw error;
       await refetch();
       
       toast({
@@ -183,15 +151,8 @@ export const PublicationCalendarDialog = ({
   return (
     <Dialog 
       open={isOpen} 
-      onOpenChange={(open) => {
-        // Only allow opening, prevent automatic closing
-        if (open) {
-          setIsOpen(true);
-        }
-        // Let user manually close by clicking the Close button
-      }}
+      onOpenChange={setIsOpen}
       preventAutoClose={true}
-      forceMount={true}
     >
       <DialogTrigger asChild>
         <Button
@@ -211,9 +172,6 @@ export const PublicationCalendarDialog = ({
           <DialogTitle className="text-xl font-bold dark:text-white">
             Calendario de publicaciones - {clientName}
           </DialogTitle>
-          <DialogDescription className="sr-only">
-            Administrar publicaciones para {clientName}
-          </DialogDescription>
         </DialogHeader>
         <div className="space-y-6">
           <div className="space-y-4">
@@ -237,16 +195,6 @@ export const PublicationCalendarDialog = ({
             isSubmitting={isSubmitting}
             packageId={packageId}
           />
-          
-          {/* Add explicit close button */}
-          <div className="flex justify-end">
-            <Button 
-              variant="outline" 
-              onClick={handleManualClose}
-            >
-              Cerrar
-            </Button>
-          </div>
         </div>
       </DialogContent>
     </Dialog>
