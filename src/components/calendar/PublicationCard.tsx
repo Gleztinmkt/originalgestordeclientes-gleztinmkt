@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import { useState, useMemo, useCallback, memo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Publication } from "../client/publication/types";
 import { Client } from "../types/client";
@@ -48,7 +49,7 @@ const ADMIN_EMAILS = [
   'aloha2@gleztin.com.ar'
 ];
 
-export const PublicationCard = ({ 
+const PublicationCardComponent = ({ 
   publication, 
   client, 
   onUpdate,
@@ -69,9 +70,14 @@ export const PublicationCard = ({
       const { data: { user } } = await supabase.auth.getUser();
       return user;
     },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
   });
 
-  const isAdmin = currentUser?.email && ADMIN_EMAILS.includes(currentUser.email);
+  const isAdmin = useMemo(() => 
+    currentUser?.email && ADMIN_EMAILS.includes(currentUser.email), 
+    [currentUser?.email]
+  );
 
   const { data: noteData, refetch: refetchNotes } = useQuery({
     queryKey: ['publicationNotes', publication.id],
@@ -88,13 +94,13 @@ export const PublicationCard = ({
       return data;
     },
     enabled: isAdmin,
+    staleTime: 2 * 60 * 1000, // 2 minutes
   });
 
-  const hasNotes = noteData && noteData.length > 0;
-  
-  const latestNoteStatus = hasNotes ? noteData[0]?.status : null;
+  const hasNotes = useMemo(() => noteData && noteData.length > 0, [noteData]);
+  const latestNoteStatus = useMemo(() => hasNotes ? noteData[0]?.status : null, [hasNotes, noteData]);
 
-  const getNoteStatusColor = () => {
+  const getNoteStatusColor = useCallback(() => {
     if (!latestNoteStatus) return "text-gray-400";
     switch (latestNoteStatus) {
       case "done":
@@ -104,9 +110,9 @@ export const PublicationCard = ({
       default:
         return "text-yellow-500";
     }
-  };
+  }, [latestNoteStatus]);
 
-  const handleTouch = () => {
+  const handleTouch = useCallback(() => {
     if (isMobile) {
       setTouchCount(prev => prev + 1);
       
@@ -126,29 +132,21 @@ export const PublicationCard = ({
         if (touchTimer) clearTimeout(touchTimer);
       }
     }
-  };
+  }, [isMobile, touchCount, touchTimer]);
 
-  const getStatusColor = () => {
-    if (publication.is_published) return "bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100";
-    if (publication.approved) return "bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100";
-    if (publication.in_review) return "bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100";
-    if (publication.in_editing) return "bg-purple-100 text-purple-800 dark:bg-purple-800 dark:text-purple-100";
-    if (publication.needs_editing) return "bg-orange-100 text-orange-800 dark:bg-orange-800 dark:text-orange-100";
-    if (publication.needs_recording) return "bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100";
-    return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100";
-  };
+  const statusConfig = useMemo(() => {
+    if (publication.is_published) return { color: "bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100", icon: Upload };
+    if (publication.approved) return { color: "bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100", icon: CheckCircle2 };
+    if (publication.in_review) return { color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100", icon: AlertCircle };
+    if (publication.in_editing) return { color: "bg-purple-100 text-purple-800 dark:bg-purple-800 dark:text-purple-100", icon: Edit };
+    if (publication.needs_editing) return { color: "bg-orange-100 text-orange-800 dark:bg-orange-800 dark:text-orange-100", icon: Edit };
+    if (publication.needs_recording) return { color: "bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100", icon: Video };
+    return { color: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100", icon: Clock };
+  }, [publication]);
 
-  const getStatusIcon = () => {
-    if (publication.is_published) return <Upload className="h-3 w-3" />;
-    if (publication.approved) return <CheckCircle2 className="h-3 w-3" />;
-    if (publication.in_review) return <AlertCircle className="h-3 w-3" />;
-    if (publication.in_editing) return <Edit className="h-3 w-3" />;
-    if (publication.needs_editing) return <Edit className="h-3 w-3" />;
-    if (publication.needs_recording) return <Video className="h-3 w-3" />;
-    return <Clock className="h-3 w-3" />;
-  };
+  const StatusIcon = statusConfig.icon;
 
-  const handleStatusChange = async (status: string) => {
+  const handleStatusChange = useCallback(async (status: string) => {
     try {
       const updates: any = {
         needs_recording: false,
@@ -182,9 +180,9 @@ export const PublicationCard = ({
         variant: "destructive",
       });
     }
-  };
+  }, [publication.id, onUpdate]);
 
-  const handleDesignerAssign = async (designerName: string) => {
+  const handleDesignerAssign = useCallback(async (designerName: string) => {
     try {
       const { error } = await supabase
         .from('publications')
@@ -207,9 +205,9 @@ export const PublicationCard = ({
         variant: "destructive",
       });
     }
-  };
+  }, [publication.id, onUpdate]);
 
-  const handleDelete = async () => {
+  const handleDelete = useCallback(async () => {
     try {
       const { data: pub, error: fetchError } = await supabase
         .from('publications')
@@ -257,34 +255,34 @@ export const PublicationCard = ({
         variant: "destructive",
       });
     }
-  };
+  }, [publication.id, publication.name, onUpdate]);
 
-  const handleAddNote = () => {
+  const handleAddNote = useCallback(() => {
     setEditNoteId(undefined);
     setShowNoteView(false);
     setTimeout(() => {
       setShowNoteDialog(true);
     }, 50);
-  };
+  }, []);
 
-  const handleViewNotes = () => {
+  const handleViewNotes = useCallback(() => {
     setShowNoteDialog(false);
     setTimeout(() => {
       setShowNoteView(true);
     }, 50);
-  };
+  }, []);
 
-  const handleEditNote = (noteId: string) => {
+  const handleEditNote = useCallback((noteId: string) => {
     setEditNoteId(noteId);
     setShowNoteDialog(true);
     setShowNoteView(false);
-  };
+  }, []);
 
-  const handleNoteSuccess = () => {
+  const handleNoteSuccess = useCallback(() => {
     setTimeout(() => {
       refetchNotes();
     }, 50);
-  };
+  }, [refetchNotes]);
 
   return (
     <>
@@ -293,7 +291,7 @@ export const PublicationCard = ({
           <Card 
             className={cn(
               "mb-1 hover:shadow-md transition-shadow cursor-pointer group",
-              getStatusColor()
+              statusConfig.color
             )}
             onClick={isMobile ? handleTouch : () => setShowDialog(true)}
           >
@@ -301,7 +299,7 @@ export const PublicationCard = ({
               <div className="flex flex-col gap-1">
                 <div className="flex items-start gap-1 min-w-0">
                   <div className="flex-shrink-0 mt-1">
-                    {getStatusIcon()}
+                    <StatusIcon className="h-3 w-3" />
                   </div>
                   <p className={cn(
                     "text-xs font-medium",
@@ -442,3 +440,5 @@ export const PublicationCard = ({
     </>
   );
 };
+
+export const PublicationCard = memo(PublicationCardComponent);

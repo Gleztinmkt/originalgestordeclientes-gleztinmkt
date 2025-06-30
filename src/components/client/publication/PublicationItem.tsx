@@ -6,7 +6,7 @@ import { Publication, PublicationNote } from "./types";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback, memo } from "react";
 
 interface PublicationItemProps {
   publication: Publication;
@@ -22,7 +22,7 @@ const ADMIN_EMAILS = [
   'aloha2@gleztin.com.ar'
 ];
 
-export const PublicationItem = ({ 
+const PublicationItemComponent = ({ 
   publication, 
   onDelete, 
   onTogglePublished,
@@ -40,9 +40,14 @@ export const PublicationItem = ({
         return null;
       }
     },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
   });
 
-  const isAdmin = currentUser?.email && ADMIN_EMAILS.includes(currentUser.email);
+  const isAdmin = useMemo(() => 
+    currentUser?.email && ADMIN_EMAILS.includes(currentUser.email), 
+    [currentUser?.email]
+  );
 
   // Query for notes
   const { data: noteData, refetch: refetchNotes } = useQuery({
@@ -79,6 +84,7 @@ export const PublicationItem = ({
       }
     },
     enabled: isAdmin,
+    staleTime: 2 * 60 * 1000, // 2 minutes
   });
 
   // Refresh notes when the component mounts to ensure we have the latest data
@@ -88,12 +94,10 @@ export const PublicationItem = ({
     }
   }, [isAdmin, refetchNotes]);
 
-  const hasNotes = noteData && noteData.length > 0;
-  
-  // Get the latest note status for the icon color
-  const latestNoteStatus = hasNotes ? noteData[0]?.status : null;
+  const hasNotes = useMemo(() => noteData && noteData.length > 0, [noteData]);
+  const latestNoteStatus = useMemo(() => hasNotes ? noteData[0]?.status : null, [hasNotes, noteData]);
 
-  const getNoteStatusColor = () => {
+  const getNoteStatusColor = useCallback(() => {
     if (!latestNoteStatus) return "text-gray-400";
     switch (latestNoteStatus) {
       case "done":
@@ -103,22 +107,38 @@ export const PublicationItem = ({
       default:
         return "text-yellow-500";
     }
-  };
+  }, [latestNoteStatus]);
+
+  const handleToggleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    e.stopPropagation();
+    onTogglePublished(publication.id, e.target.checked);
+  }, [publication.id, onTogglePublished]);
+
+  const handleDeleteClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    onDelete(publication.id);
+  }, [publication.id, onDelete]);
+
+  const handleSelect = useCallback(() => {
+    onSelect(publication);
+  }, [publication, onSelect]);
+
+  const formattedDate = useMemo(() => 
+    format(new Date(publication.date), "dd/MM/yyyy"), 
+    [publication.date]
+  );
 
   return (
     <div 
       className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm cursor-pointer"
-      onClick={() => onSelect(publication)}
+      onClick={handleSelect}
     >
       <div className="flex-1">
         <div className="flex items-center gap-2">
           <input
             type="checkbox"
             checked={publication.is_published}
-            onChange={(e) => {
-              e.stopPropagation();
-              onTogglePublished(publication.id, e.target.checked);
-            }}
+            onChange={handleToggleChange}
             className="h-4 w-4 rounded border-gray-300"
           />
           <p className="font-medium dark:text-white">
@@ -129,16 +149,13 @@ export const PublicationItem = ({
           )}
         </div>
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          {format(new Date(publication.date), "dd/MM/yyyy")} • {publication.type}
+          {formattedDate} • {publication.type}
         </p>
       </div>
       <Button
         variant="ghost"
         size="icon"
-        onClick={(e) => {
-          e.stopPropagation();
-          onDelete(publication.id);
-        }}
+        onClick={handleDeleteClick}
         className="text-red-500 hover:text-red-700"
       >
         <Trash2 className="h-4 w-4" />
@@ -146,3 +163,5 @@ export const PublicationItem = ({
     </div>
   );
 };
+
+export const PublicationItem = memo(PublicationItemComponent);
