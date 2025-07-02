@@ -258,6 +258,8 @@ export const PublicationDialog = ({
       >
         <DialogContent 
           className="sm:max-w-[425px] max-h-[80vh] overflow-y-auto dark:bg-gray-900"
+          onInteractOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => e.preventDefault()}
         >
           <DialogHeader>
             <div className="flex items-center justify-between">
