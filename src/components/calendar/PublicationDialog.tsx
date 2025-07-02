@@ -132,10 +132,11 @@ export const PublicationDialog = ({
   }, []);
 
   const handleOpenChange = (open: boolean) => {
-    // Only allow closing through explicit user actions (buttons)
-    // Prevent automatic closing from tab switching or focus changes
+    // Completamente bloquear cualquier intento de cerrar el diálogo automáticamente
+    // Solo permitir el cierre a través de acciones explícitas del usuario
     if (!open) {
-      return; // Block all programmatic close attempts
+      console.log('Intento de cerrar diálogo bloqueado - usar botones para cerrar');
+      return false; // Bloquear completamente
     }
     onOpenChange(open);
   };
@@ -274,6 +275,9 @@ export const PublicationDialog = ({
                   <Share2 className="h-4 w-4" />
                 </Button>}
             </div>
+            <DialogDescription className="sr-only">
+              Formulario para editar los detalles de una publicación de contenido
+            </DialogDescription>
           </DialogHeader>
 
           <ScrollArea className="h-[calc(80vh-120px)] pr-2 sm:pr-4">

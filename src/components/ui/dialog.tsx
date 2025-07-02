@@ -5,7 +5,6 @@ import { X } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
-// Create a custom Dialog component that doesn't close on window blur
 const Dialog = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Root>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Root> & {
@@ -13,24 +12,25 @@ const Dialog = React.forwardRef<
     preventAutoClose?: boolean;
   }
 >(({ forceMount, preventAutoClose, ...props }, ref) => {
-  // Prevent dialog from closing automatically
-  const preventClose = React.useCallback((event: Event) => {
-    if (preventAutoClose) {
-      event.preventDefault();
+  // Interceptar y bloquear cualquier intento de cerrar cuando preventAutoClose está activo
+  const handleOpenChange = React.useCallback((open: boolean) => {
+    if (preventAutoClose && !open) {
+      console.log('Dialog: Cierre automático bloqueado por preventAutoClose');
+      return; // No ejecutar ningún cambio de estado
     }
-  }, [preventAutoClose]);
+    
+    // Solo permitir cambios de estado cuando no estamos previniendo el cierre automático
+    // o cuando se está abriendo el diálogo
+    if (props.onOpenChange) {
+      props.onOpenChange(open);
+    }
+  }, [preventAutoClose, props]);
 
   return (
     <DialogPrimitive.Root
       {...props}
       modal={true}
-      onOpenChange={(open) => {
-        // If we're preventing auto-close and something is trying to close it programmatically
-        if (preventAutoClose && !open && props.open) {
-          return; // Do nothing, keeping dialog open
-        }
-        props.onOpenChange?.(open);
-      }}
+      onOpenChange={handleOpenChange}
     />
   );
 });
