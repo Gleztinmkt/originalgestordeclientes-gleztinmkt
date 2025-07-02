@@ -132,13 +132,8 @@ export const PublicationDialog = ({
   }, []);
 
   const handleOpenChange = (open: boolean) => {
-    // Completamente bloquear cualquier intento de cerrar el diálogo automáticamente
-    // Solo permitir el cierre a través de acciones explícitas del usuario
-    if (!open) {
-      console.log('Intento de cerrar diálogo bloqueado - usar botones para cerrar');
-      return false; // Bloquear completamente
-    }
-    onOpenChange(open);
+    // NUNCA permitir el cierre automático - CONTROL TOTAL
+    return; // Bloquear TODAS las llamadas a onOpenChange
   };
 
   const handleClose = () => {
@@ -260,11 +255,9 @@ export const PublicationDialog = ({
         open={open} 
         onOpenChange={handleOpenChange} 
         modal={true}
-        preventAutoClose={true}
       >
         <DialogContent 
-          className="sm:max-w-[425px] max-h-[80vh] overflow-y-auto dark:bg-gray-900" 
-          preventAutoClose={true}
+          className="sm:max-w-[425px] max-h-[80vh] overflow-y-auto dark:bg-gray-900"
         >
           <DialogHeader>
             <div className="flex items-center justify-between">

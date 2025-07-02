@@ -150,8 +150,8 @@ export const PublicationNoteDialog = ({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange} preventAutoClose={true}>
-      <DialogContent className="sm:max-w-md" preventAutoClose={true}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>
             {isEditing ? "Editar nota" : "Agregar nota"}

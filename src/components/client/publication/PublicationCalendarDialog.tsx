@@ -230,15 +230,10 @@ export const PublicationCalendarDialog = ({
   return (
     <Dialog 
       open={isOpen} 
-      onOpenChange={(open) => {
-        // Bloquear cierre automático - solo permitir cierre manual
-        if (!open) {
-          console.log('PublicationCalendarDialog: Cierre automático bloqueado');
-          return;
-        }
-        setIsOpen(open);
+      onOpenChange={() => {
+        // BLOQUEO TOTAL: Ignorar TODAS las llamadas de cierre automático
+        return; // No hacer NADA - control total del estado
       }}
-      preventAutoClose={true}
     >
       <DialogTrigger asChild>
         <Button
@@ -251,7 +246,6 @@ export const PublicationCalendarDialog = ({
       </DialogTrigger>
       <DialogContent 
         className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto dark:bg-gray-900"
-        preventAutoClose={true}
       >
         <DialogHeader>
           <div className="flex items-center justify-between">

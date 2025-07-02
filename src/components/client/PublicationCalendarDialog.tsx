@@ -152,7 +152,6 @@ export const PublicationCalendarDialog = ({
     <Dialog 
       open={isOpen} 
       onOpenChange={setIsOpen}
-      preventAutoClose={true}
     >
       <DialogTrigger asChild>
         <Button
@@ -166,7 +165,6 @@ export const PublicationCalendarDialog = ({
       </DialogTrigger>
       <DialogContent 
         className="sm:max-w-[425px] max-h-[80vh] overflow-y-auto dark:bg-gray-900"
-        preventAutoClose={true}
       >
         <DialogHeader>
           <DialogTitle className="text-xl font-bold dark:text-white">
