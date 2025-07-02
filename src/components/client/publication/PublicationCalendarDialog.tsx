@@ -7,6 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -229,7 +230,14 @@ export const PublicationCalendarDialog = ({
   return (
     <Dialog 
       open={isOpen} 
-      onOpenChange={setIsOpen}
+      onOpenChange={(open) => {
+        // Bloquear cierre automático - solo permitir cierre manual
+        if (!open) {
+          console.log('PublicationCalendarDialog: Cierre automático bloqueado');
+          return;
+        }
+        setIsOpen(open);
+      }}
       preventAutoClose={true}
     >
       <DialogTrigger asChild>
@@ -260,6 +268,9 @@ export const PublicationCalendarDialog = ({
               Descargar Calendario
             </Button>
           </div>
+          <DialogDescription className="sr-only">
+            Gestión de publicaciones de contenido para el cliente
+          </DialogDescription>
         </DialogHeader>
         
         <div className="space-y-6">
@@ -279,7 +290,7 @@ export const PublicationCalendarDialog = ({
             <PublicationDescription publication={selectedPublication} />
           )}
 
-          <div className="space-y-4">
+           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="copywriting">Copywriting</Label>
               <Textarea
@@ -296,6 +307,17 @@ export const PublicationCalendarDialog = ({
               isSubmitting={isSubmitting}
               packageId={packageId}
             />
+
+            {/* Botón de cerrar explícito */}
+            <div className="flex justify-end pt-4">
+              <Button
+                variant="outline"
+                onClick={() => setIsOpen(false)}
+                className="w-full sm:w-auto"
+              >
+                Cerrar
+              </Button>
+            </div>
           </div>
         </div>
       </DialogContent>
