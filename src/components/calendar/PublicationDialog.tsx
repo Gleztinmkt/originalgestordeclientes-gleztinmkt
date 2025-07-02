@@ -132,11 +132,8 @@ export const PublicationDialog = ({
   }, []);
 
   const handleOpenChange = (open: boolean) => {
-    if (!open && hasChanges()) {
-      setShowConfirmDialog(true);
-    } else {
-      onOpenChange(open);
-    }
+    // BLOQUEO TOTAL: No hacer nada - control manual completo
+    // Ignorar TODAS las llamadas automáticas de cierre
   };
 
   const handleClose = () => {
@@ -258,34 +255,22 @@ export const PublicationDialog = ({
         open={open} 
         onOpenChange={handleOpenChange} 
         modal={true}
-        forceMount={true}
-        preventAutoClose={true}
       >
         <DialogContent 
-          className="sm:max-w-[425px] max-h-[80vh] overflow-y-auto dark:bg-gray-900" 
-          preventAutoClose={true}
-          onInteractOutside={(e) => {
-            e.preventDefault();
-          }}
-          onEscapeKeyDown={(e) => {
-            e.preventDefault();
-          }}
-          onPointerDownOutside={(e) => {
-            e.preventDefault();
-          }}
+          className="sm:max-w-[425px] max-h-[80vh] overflow-y-auto dark:bg-gray-900"
         >
           <DialogHeader>
             <div className="flex items-center justify-between">
               <DialogTitle className="text-xl font-bold dark:text-white">
                 Editar Publicación
               </DialogTitle>
-              <DialogDescription className="sr-only">
-                Editar detalles de la publicación
-              </DialogDescription>
               {client && <Button variant="ghost" size="icon" onClick={handleOpenSocialLinks} className="ml-2" title="Abrir redes sociales">
                   <Share2 className="h-4 w-4" />
                 </Button>}
             </div>
+            <DialogDescription className="sr-only">
+              Formulario para editar los detalles de una publicación de contenido
+            </DialogDescription>
           </DialogHeader>
 
           <ScrollArea className="h-[calc(80vh-120px)] pr-2 sm:pr-4">
@@ -484,3 +469,4 @@ export const PublicationDialog = ({
       </AlertDialog>
     </>;
 };
+

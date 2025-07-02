@@ -7,7 +7,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogDescription
 } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -153,8 +152,6 @@ export const PublicationCalendarDialog = ({
     <Dialog 
       open={isOpen} 
       onOpenChange={setIsOpen}
-      preventAutoClose={true}
-      forceMount={true}
     >
       <DialogTrigger asChild>
         <Button
@@ -168,19 +165,11 @@ export const PublicationCalendarDialog = ({
       </DialogTrigger>
       <DialogContent 
         className="sm:max-w-[425px] max-h-[80vh] overflow-y-auto dark:bg-gray-900"
-        preventAutoClose={true}
-        onInteractOutside={(e) => e.preventDefault()}
-        onEscapeKeyDown={(e) => e.preventDefault()}
-        onPointerDownOutside={(e) => e.preventDefault()}
-        data-prevent-autoclose="true"
       >
         <DialogHeader>
           <DialogTitle className="text-xl font-bold dark:text-white">
             Calendario de publicaciones - {clientName}
           </DialogTitle>
-          <DialogDescription className="sr-only">
-            Administrar publicaciones para {clientName}
-          </DialogDescription>
         </DialogHeader>
         <div className="space-y-6">
           <div className="space-y-4">
