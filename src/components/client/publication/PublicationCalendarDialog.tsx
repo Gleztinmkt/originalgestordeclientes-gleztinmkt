@@ -7,7 +7,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogDescription,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -230,10 +229,9 @@ export const PublicationCalendarDialog = ({
   return (
     <Dialog 
       open={isOpen} 
-      onOpenChange={() => {
-        // BLOQUEO TOTAL: No hacer nada - control manual completo
-        // Ignorar TODAS las llamadas automáticas de cierre
-      }}
+      onOpenChange={setIsOpen}
+      preventAutoClose={true}
+      forceMount={true}
     >
       <DialogTrigger asChild>
         <Button
@@ -246,6 +244,11 @@ export const PublicationCalendarDialog = ({
       </DialogTrigger>
       <DialogContent 
         className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto dark:bg-gray-900"
+        preventAutoClose={true}
+        onInteractOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
+        onPointerDownOutside={(e) => e.preventDefault()}
+        data-prevent-autoclose="true"
       >
         <DialogHeader>
           <div className="flex items-center justify-between">
@@ -262,9 +265,6 @@ export const PublicationCalendarDialog = ({
               Descargar Calendario
             </Button>
           </div>
-          <DialogDescription className="sr-only">
-            Gestión de publicaciones de contenido para el cliente
-          </DialogDescription>
         </DialogHeader>
         
         <div className="space-y-6">
@@ -284,7 +284,7 @@ export const PublicationCalendarDialog = ({
             <PublicationDescription publication={selectedPublication} />
           )}
 
-           <div className="space-y-4">
+          <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="copywriting">Copywriting</Label>
               <Textarea
@@ -301,17 +301,6 @@ export const PublicationCalendarDialog = ({
               isSubmitting={isSubmitting}
               packageId={packageId}
             />
-
-            {/* Botón de cerrar explícito */}
-            <div className="flex justify-end pt-4">
-              <Button
-                variant="outline"
-                onClick={() => setIsOpen(false)}
-                className="w-full sm:w-auto"
-              >
-                Cerrar
-              </Button>
-            </div>
           </div>
         </div>
       </DialogContent>
