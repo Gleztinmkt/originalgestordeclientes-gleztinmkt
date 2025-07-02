@@ -132,8 +132,8 @@ export const PublicationDialog = ({
   }, []);
 
   const handleOpenChange = (open: boolean) => {
-    // NUNCA permitir el cierre automático - CONTROL TOTAL
-    return; // Bloquear TODAS las llamadas a onOpenChange
+    // BLOQUEO TOTAL: No hacer nada - control manual completo
+    // Ignorar TODAS las llamadas automáticas de cierre
   };
 
   const handleClose = () => {

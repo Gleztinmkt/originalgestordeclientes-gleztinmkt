@@ -231,8 +231,8 @@ export const PublicationCalendarDialog = ({
     <Dialog 
       open={isOpen} 
       onOpenChange={() => {
-        // BLOQUEO TOTAL: Ignorar TODAS las llamadas de cierre automático
-        return; // No hacer NADA - control total del estado
+        // BLOQUEO TOTAL: No hacer nada - control manual completo
+        // Ignorar TODAS las llamadas automáticas de cierre
       }}
     >
       <DialogTrigger asChild>
