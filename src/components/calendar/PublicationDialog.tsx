@@ -132,11 +132,12 @@ export const PublicationDialog = ({
   }, []);
 
   const handleOpenChange = (open: boolean) => {
-    if (!open && hasChanges()) {
-      setShowConfirmDialog(true);
-    } else {
-      onOpenChange(open);
+    // Only allow closing through explicit user actions (buttons)
+    // Prevent automatic closing from tab switching or focus changes
+    if (!open) {
+      return; // Block all programmatic close attempts
     }
+    onOpenChange(open);
   };
 
   const handleClose = () => {
