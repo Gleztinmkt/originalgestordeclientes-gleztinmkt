@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -62,6 +62,9 @@ export const PublicationDialog = ({
   const [selectedDate, setSelectedDate] = useState<Date>(new Date(publication.date));
   const [copyingCopywriting, setCopyingCopywriting] = useState(false);
   const [copyingDescription, setCopyingDescription] = useState(false);
+  
+  // Control de cierre del diálogo - solo se permite el cierre manual
+  const allowCloseRef = useRef(false);
 
   const handleOpenSocialLinks = () => {
     if (!client?.clientInfo?.socialNetworks) {
@@ -132,14 +135,20 @@ export const PublicationDialog = ({
   }, []);
 
   const handleOpenChange = (open: boolean) => {
-    // BLOQUEO TOTAL: No hacer nada - control manual completo
-    // Ignorar TODAS las llamadas automáticas de cierre
+    // Solo permitir el cierre si se ha autorizado explícitamente
+    if (!open && allowCloseRef.current) {
+      allowCloseRef.current = false; // Reset la bandera
+      onOpenChange(false);
+    }
+    // Ignorar todos los otros intentos de cierre automático
   };
 
   const handleClose = () => {
     if (hasChanges()) {
       setShowConfirmDialog(true);
     } else {
+      // Autorizar el cierre y ejecutar
+      allowCloseRef.current = true;
       onOpenChange(false);
     }
   };
@@ -166,6 +175,8 @@ export const PublicationDialog = ({
       }
     });
     setShowConfirmDialog(false);
+    // Autorizar el cierre y ejecutar
+    allowCloseRef.current = true;
     onOpenChange(false);
   };
 
@@ -438,6 +449,8 @@ export const PublicationDialog = ({
             <AlertDialogAction onClick={() => {
             handleSubmit();
             setShowConfirmDialog(false);
+            // Autorizar el cierre y ejecutar
+            allowCloseRef.current = true;
             onOpenChange(false);
           }} className="bg-primary hover:bg-primary/90">
               Guardar cambios
