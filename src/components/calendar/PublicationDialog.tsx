@@ -37,6 +37,8 @@ export const PublicationDialog = ({
   onDelete,
   designers = []
 }: PublicationDialogProps) => {
+  // Estado interno completamente controlado
+  const [internalOpen, setInternalOpen] = useState(false);
   const [name, setName] = useState(publication.name);
   const [type, setType] = useState<'reel' | 'carousel' | 'image'>(publication.type as 'reel' | 'carousel' | 'image');
   const [description, setDescription] = useState(publication.description || "");
@@ -63,8 +65,77 @@ export const PublicationDialog = ({
   const [copyingCopywriting, setCopyingCopywriting] = useState(false);
   const [copyingDescription, setCopyingDescription] = useState(false);
   
-  // Control total del diálogo - forzar apertura
-  const forceOpenRef = useRef(true);
+  // Refs para control total
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const preventCloseRef = useRef(true);
+
+  // Sincronizar estado interno con prop externa
+  useEffect(() => {
+    console.log('Syncing internal state with prop:', open);
+    setInternalOpen(open);
+    if (open) {
+      preventCloseRef.current = true;
+    }
+  }, [open]);
+
+  // Prevenir cierre por cualquier evento del navegador
+  useEffect(() => {
+    if (!internalOpen) return;
+
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      console.log('Before unload prevented');
+      e.preventDefault();
+      return '';
+    };
+
+    const handleVisibilityChange = () => {
+      console.log('Visibility change - keeping dialog open');
+      if (document.hidden) {
+        // El documento se está ocultando, pero mantenemos el diálogo abierto
+        setTimeout(() => {
+          if (preventCloseRef.current && !internalOpen) {
+            console.log('Forcing dialog to reopen after visibility change');
+            setInternalOpen(true);
+          }
+        }, 100);
+      }
+    };
+
+    const handleFocusOut = (e: FocusEvent) => {
+      console.log('Focus out prevented');
+      e.preventDefault();
+    };
+
+    const handleBlur = (e: FocusEvent) => {
+      console.log('Blur prevented');
+      e.preventDefault();
+    };
+
+    // Agregar múltiples listeners para capturar todos los eventos posibles
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('blur', handleBlur);
+    window.addEventListener('focusout', handleFocusOut);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('blur', handleBlur);
+      window.removeEventListener('focusout', handleFocusOut);
+    };
+  }, [internalOpen]);
+
+  // Monitorear cambios no autorizados del estado del diálogo
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (preventCloseRef.current && open && !internalOpen) {
+        console.log('Detected unauthorized dialog close - reopening');
+        setInternalOpen(true);
+      }
+    }, 100);
+
+    return () => clearInterval(interval);
+  }, [open, internalOpen]);
 
   const handleOpenSocialLinks = () => {
     if (!client?.clientInfo?.socialNetworks) {
@@ -129,34 +200,32 @@ export const PublicationDialog = ({
     return name !== publication.name || type !== publication.type || description !== (publication.description || "") || copywriting !== (publication.copywriting || "") || designer !== (publication.designer || "no_designer") || status !== (publication.needs_recording ? 'needs_recording' : publication.needs_editing ? 'needs_editing' : publication.in_editing ? 'in_editing' : publication.in_review ? 'in_review' : publication.approved ? 'approved' : publication.is_published ? 'published' : 'needs_recording') || JSON.stringify(links) !== (publication.links || "[]");
   }, [name, type, description, copywriting, designer, status, links, publication]);
 
-  // Forzar que el diálogo permanezca abierto
-  useEffect(() => {
-    if (open) {
-      forceOpenRef.current = true;
-    }
-  }, [open]);
-
-  // BLOQUEO TOTAL - Interceptar TODOS los intentos de cierre
-  const handleOpenChange = (requestedOpen: boolean) => {
-    console.log('Dialog close attempt intercepted:', requestedOpen, 'forceOpen:', forceOpenRef.current);
+  // CONTROL ABSOLUTO - Bloquear TODAS las formas de cierre automático
+  const handleRadixOpenChange = (requestedOpen: boolean) => {
+    console.log('Radix requested open change:', requestedOpen, 'prevented:', preventCloseRef.current);
     
-    // Solo permitir cierre si hemos autorizado explícitamente
-    if (!requestedOpen && !forceOpenRef.current) {
-      console.log('Dialog close allowed');
+    // Solo permitir si hemos autorizado explícitamente el cierre
+    if (!requestedOpen && preventCloseRef.current) {
+      console.log('BLOCKING Radix close request');
+      // No hacer nada - mantener abierto forzosamente
+      return;
+    }
+    
+    if (!requestedOpen && !preventCloseRef.current) {
+      console.log('Allowing authorized close');
+      setInternalOpen(false);
       onOpenChange(false);
-    } else if (!requestedOpen && forceOpenRef.current) {
-      console.log('Dialog close BLOCKED - staying open');
-      // No hacer nada - mantener abierto
     }
   };
 
-  const handleManualClose = () => {
-    console.log('Manual close initiated');
+  const handleAuthorizedClose = () => {
+    console.log('Authorized close initiated');
     if (hasChanges()) {
       setShowConfirmDialog(true);
     } else {
-      console.log('No changes - closing dialog');
-      forceOpenRef.current = false;
+      console.log('No changes - proceeding with authorized close');
+      preventCloseRef.current = false;
+      setInternalOpen(false);
       onOpenChange(false);
     }
   };
@@ -185,7 +254,8 @@ export const PublicationDialog = ({
     });
     
     setShowConfirmDialog(false);
-    forceOpenRef.current = false;
+    preventCloseRef.current = false;
+    setInternalOpen(false);
     onOpenChange(false);
   };
 
@@ -272,27 +342,32 @@ export const PublicationDialog = ({
 
   return <>
       <Dialog 
-        open={forceOpenRef.current && open} 
-        onOpenChange={handleOpenChange}
+        open={internalOpen} 
+        onOpenChange={handleRadixOpenChange}
         modal={true}
       >
         <DialogContent 
+          ref={dialogRef}
           className="sm:max-w-[425px] max-h-[80vh] overflow-y-auto dark:bg-gray-900"
           onInteractOutside={(e) => {
-            console.log('Interact outside prevented');
+            console.log('Interact outside BLOCKED');
             e.preventDefault();
+            e.stopPropagation();
           }}
           onEscapeKeyDown={(e) => {
-            console.log('Escape key prevented');
+            console.log('Escape key BLOCKED');
             e.preventDefault();
+            e.stopPropagation();
           }}
           onPointerDownOutside={(e) => {
-            console.log('Pointer down outside prevented');
+            console.log('Pointer down outside BLOCKED');
             e.preventDefault();
+            e.stopPropagation();
           }}
           onFocusOutside={(e) => {
-            console.log('Focus outside prevented');
+            console.log('Focus outside BLOCKED');
             e.preventDefault();
+            e.stopPropagation();
           }}
         >
           <DialogHeader>
@@ -442,7 +517,7 @@ export const PublicationDialog = ({
                     <Trash2 className="h-4 w-4 mr-2" />
                     Eliminar
                   </Button>}
-                <Button type="button" variant="outline" onClick={handleManualClose} className="w-full sm:w-auto text-sm">
+                <Button type="button" variant="outline" onClick={handleAuthorizedClose} className="w-full sm:w-auto text-sm">
                   Cerrar
                 </Button>
                 <Button type="submit" className="w-full sm:w-auto text-sm">
@@ -472,7 +547,8 @@ export const PublicationDialog = ({
             <AlertDialogAction onClick={() => {
             handleSubmit();
             setShowConfirmDialog(false);
-            forceOpenRef.current = false;
+            preventCloseRef.current = false;
+            setInternalOpen(false);
             onOpenChange(false);
           }} className="bg-primary hover:bg-primary/90">
               Guardar cambios
