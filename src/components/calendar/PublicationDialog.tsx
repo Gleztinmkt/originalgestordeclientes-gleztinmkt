@@ -63,8 +63,8 @@ export const PublicationDialog = ({
   const [copyingCopywriting, setCopyingCopywriting] = useState(false);
   const [copyingDescription, setCopyingDescription] = useState(false);
   
-  // Control de cierre del diálogo - solo se permite el cierre manual
-  const allowCloseRef = useRef(false);
+  // Control total del diálogo - forzar apertura
+  const forceOpenRef = useRef(true);
 
   const handleOpenSocialLinks = () => {
     if (!client?.clientInfo?.socialNetworks) {
@@ -124,31 +124,39 @@ export const PublicationDialog = ({
   });
 
   const isDesigner = userRole === 'designer';
+  
   const hasChanges = useCallback(() => {
     return name !== publication.name || type !== publication.type || description !== (publication.description || "") || copywriting !== (publication.copywriting || "") || designer !== (publication.designer || "no_designer") || status !== (publication.needs_recording ? 'needs_recording' : publication.needs_editing ? 'needs_editing' : publication.in_editing ? 'in_editing' : publication.in_review ? 'in_review' : publication.approved ? 'approved' : publication.is_published ? 'published' : 'needs_recording') || JSON.stringify(links) !== (publication.links || "[]");
   }, [name, type, description, copywriting, designer, status, links, publication]);
 
+  // Forzar que el diálogo permanezca abierto
   useEffect(() => {
-    return () => {
-      // Cleanup
-    };
-  }, []);
-
-  const handleOpenChange = (open: boolean) => {
-    // Solo permitir el cierre si se ha autorizado explícitamente
-    if (!open && allowCloseRef.current) {
-      allowCloseRef.current = false; // Reset la bandera
-      onOpenChange(false);
+    if (open) {
+      forceOpenRef.current = true;
     }
-    // Ignorar todos los otros intentos de cierre automático
+  }, [open]);
+
+  // BLOQUEO TOTAL - Interceptar TODOS los intentos de cierre
+  const handleOpenChange = (requestedOpen: boolean) => {
+    console.log('Dialog close attempt intercepted:', requestedOpen, 'forceOpen:', forceOpenRef.current);
+    
+    // Solo permitir cierre si hemos autorizado explícitamente
+    if (!requestedOpen && !forceOpenRef.current) {
+      console.log('Dialog close allowed');
+      onOpenChange(false);
+    } else if (!requestedOpen && forceOpenRef.current) {
+      console.log('Dialog close BLOCKED - staying open');
+      // No hacer nada - mantener abierto
+    }
   };
 
-  const handleClose = () => {
+  const handleManualClose = () => {
+    console.log('Manual close initiated');
     if (hasChanges()) {
       setShowConfirmDialog(true);
     } else {
-      // Autorizar el cierre y ejecutar
-      allowCloseRef.current = true;
+      console.log('No changes - closing dialog');
+      forceOpenRef.current = false;
       onOpenChange(false);
     }
   };
@@ -158,6 +166,7 @@ export const PublicationDialog = ({
   };
 
   const handleDiscardChanges = () => {
+    console.log('Discarding changes and closing');
     setName(publication.name);
     setType(publication.type as 'reel' | 'carousel' | 'image');
     setDescription(publication.description || "");
@@ -174,9 +183,9 @@ export const PublicationDialog = ({
         return [];
       }
     });
+    
     setShowConfirmDialog(false);
-    // Autorizar el cierre y ejecutar
-    allowCloseRef.current = true;
+    forceOpenRef.current = false;
     onOpenChange(false);
   };
 
@@ -263,14 +272,28 @@ export const PublicationDialog = ({
 
   return <>
       <Dialog 
-        open={open} 
-        onOpenChange={handleOpenChange} 
+        open={forceOpenRef.current && open} 
+        onOpenChange={handleOpenChange}
         modal={true}
       >
         <DialogContent 
           className="sm:max-w-[425px] max-h-[80vh] overflow-y-auto dark:bg-gray-900"
-          onInteractOutside={(e) => e.preventDefault()}
-          onEscapeKeyDown={(e) => e.preventDefault()}
+          onInteractOutside={(e) => {
+            console.log('Interact outside prevented');
+            e.preventDefault();
+          }}
+          onEscapeKeyDown={(e) => {
+            console.log('Escape key prevented');
+            e.preventDefault();
+          }}
+          onPointerDownOutside={(e) => {
+            console.log('Pointer down outside prevented');
+            e.preventDefault();
+          }}
+          onFocusOutside={(e) => {
+            console.log('Focus outside prevented');
+            e.preventDefault();
+          }}
         >
           <DialogHeader>
             <div className="flex items-center justify-between">
@@ -419,7 +442,7 @@ export const PublicationDialog = ({
                     <Trash2 className="h-4 w-4 mr-2" />
                     Eliminar
                   </Button>}
-                <Button type="button" variant="outline" onClick={handleClose} className="w-full sm:w-auto text-sm">
+                <Button type="button" variant="outline" onClick={handleManualClose} className="w-full sm:w-auto text-sm">
                   Cerrar
                 </Button>
                 <Button type="submit" className="w-full sm:w-auto text-sm">
@@ -449,8 +472,7 @@ export const PublicationDialog = ({
             <AlertDialogAction onClick={() => {
             handleSubmit();
             setShowConfirmDialog(false);
-            // Autorizar el cierre y ejecutar
-            allowCloseRef.current = true;
+            forceOpenRef.current = false;
             onOpenChange(false);
           }} className="bg-primary hover:bg-primary/90">
               Guardar cambios
@@ -484,4 +506,3 @@ export const PublicationDialog = ({
       </AlertDialog>
     </>;
 };
-
