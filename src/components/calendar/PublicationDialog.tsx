@@ -342,33 +342,14 @@ export const PublicationDialog = ({
 
   return <>
       <Dialog 
-        open={internalOpen} 
-        onOpenChange={handleRadixOpenChange}
+        open={open} 
+        onOpenChange={onOpenChange}
+        preventAutoClose={true}
         modal={true}
       >
         <DialogContent 
-          ref={dialogRef}
           className="sm:max-w-[425px] max-h-[80vh] overflow-y-auto dark:bg-gray-900"
-          onInteractOutside={(e) => {
-            console.log('Interact outside BLOCKED');
-            e.preventDefault();
-            e.stopPropagation();
-          }}
-          onEscapeKeyDown={(e) => {
-            console.log('Escape key BLOCKED');
-            e.preventDefault();
-            e.stopPropagation();
-          }}
-          onPointerDownOutside={(e) => {
-            console.log('Pointer down outside BLOCKED');
-            e.preventDefault();
-            e.stopPropagation();
-          }}
-          onFocusOutside={(e) => {
-            console.log('Focus outside BLOCKED');
-            e.preventDefault();
-            e.stopPropagation();
-          }}
+          preventAutoClose={true}
         >
           <DialogHeader>
             <div className="flex items-center justify-between">
@@ -517,7 +498,7 @@ export const PublicationDialog = ({
                     <Trash2 className="h-4 w-4 mr-2" />
                     Eliminar
                   </Button>}
-                <Button type="button" variant="outline" onClick={handleAuthorizedClose} className="w-full sm:w-auto text-sm">
+                <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto text-sm">
                   Cerrar
                 </Button>
                 <Button type="submit" className="w-full sm:w-auto text-sm">
