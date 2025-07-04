@@ -1,6 +1,5 @@
-
 import { useState } from "react";
-import { Calendar as CalendarIcon, Download } from "lucide-react";
+import { Calendar as CalendarIcon, Download, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -10,6 +9,12 @@ import {
   DialogTrigger,
   DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
@@ -19,7 +24,7 @@ import { PublicationItem } from "./publication/PublicationItem";
 import { PublicationDescription } from "./publication/PublicationDescription";
 import { Publication, PublicationFormValues, PublicationCalendarDialogProps } from "./publication/types";
 import { useQuery } from "@tanstack/react-query";
-import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, Table, TableRow, TableCell, WidthType } from "docx";
+import { Document, Packer, Paragraph, TextRun, AlignmentType, Table, TableRow, TableCell, WidthType } from "docx";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -150,49 +155,96 @@ export const PublicationCalendarDialog = ({
     }
   };
 
-  const generateCalendarDocument = async () => {
+  const generateTxtCalendar = () => {
     try {
-      // Sort publications by date
+      const sortedPublications = publications.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      
+      let txtContent = `CALENDARIO DE PUBLICACIONES\n`;
+      txtContent += `${clientName}\n`;
+      txtContent += `Generado el ${format(new Date(), "d 'de' MMMM 'de' yyyy", { locale: es })}\n\n`;
+      txtContent += `${'='.repeat(60)}\n\n`;
+
+      if (sortedPublications.length === 0) {
+        txtContent += `No hay publicaciones programadas.\n\n`;
+      } else {
+        sortedPublications.forEach((pub, index) => {
+          txtContent += `${index + 1}. ${pub.name}\n`;
+          txtContent += `   Fecha: ${format(new Date(pub.date), "EEEE d 'de' MMMM", { locale: es })}\n`;
+          txtContent += `   Tipo: ${pub.type === 'reel' ? 'Reel' : pub.type === 'carousel' ? 'Carrusel' : 'Imagen'}\n`;
+          if (pub.description) {
+            txtContent += `   Descripción: ${pub.description}\n`;
+          }
+          if (pub.copywriting) {
+            txtContent += `   Copywriting: ${pub.copywriting}\n`;
+          }
+          txtContent += `   Estado: ${pub.is_published ? 'Publicado' : 'Pendiente'}\n`;
+          txtContent += `\n`;
+        });
+      }
+
+      txtContent += `${'='.repeat(60)}\n`;
+      txtContent += `Gestor de clientes Gleztin Marketing Digital\n`;
+
+      const blob = new Blob([txtContent], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `calendario-${clientName.toLowerCase().replace(/\s+/g, '-')}.txt`;
+      link.click();
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: "Calendario descargado",
+        description: "El calendario en formato TXT se ha descargado correctamente.",
+      });
+    } catch (error) {
+      console.error('Error generating TXT calendar:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo generar el calendario en formato TXT.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const generateWordCalendar = async () => {
+    try {
       const sortedPublications = publications.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-      // Create document
       const doc = new Document({
         sections: [
           {
             properties: {},
             children: [
-              // Header
               new Paragraph({
                 children: [
                   new TextRun({
                     text: "Calendario de Publicaciones",
                     bold: true,
-                    size: 32,
+                    size: 28,
                   }),
                 ],
                 alignment: AlignmentType.CENTER,
-                spacing: { after: 300 },
+                spacing: { after: 200 },
               }),
               
-              // Client name
               new Paragraph({
                 children: [
                   new TextRun({
                     text: clientName,
                     bold: true,
-                    size: 24,
+                    size: 20,
                   }),
                 ],
                 alignment: AlignmentType.CENTER,
                 spacing: { after: 200 },
               }),
 
-              // Generation date
               new Paragraph({
                 children: [
                   new TextRun({
                     text: `Generado el ${format(new Date(), "d 'de' MMMM 'de' yyyy", { locale: es })}`,
-                    size: 20,
+                    size: 16,
                     italics: true,
                   }),
                 ],
@@ -200,92 +252,99 @@ export const PublicationCalendarDialog = ({
                 spacing: { after: 400 },
               }),
 
-              // Publications table
-              new Table({
-                width: {
-                  size: 100,
-                  type: WidthType.PERCENTAGE,
-                },
-                rows: [
-                  // Header row
-                  new TableRow({
+              ...(sortedPublications.length === 0 
+                ? [new Paragraph({
                     children: [
-                      new TableCell({
-                        children: [new Paragraph({
-                          children: [new TextRun({ text: "Fecha", bold: true })],
-                        })],
-                        width: { size: 25, type: WidthType.PERCENTAGE },
-                      }),
-                      new TableCell({
-                        children: [new Paragraph({
-                          children: [new TextRun({ text: "Nombre", bold: true })],
-                        })],
-                        width: { size: 35, type: WidthType.PERCENTAGE },
-                      }),
-                      new TableCell({
-                        children: [new Paragraph({
-                          children: [new TextRun({ text: "Tipo", bold: true })],
-                        })],
-                        width: { size: 15, type: WidthType.PERCENTAGE },
-                      }),
-                      new TableCell({
-                        children: [new Paragraph({
-                          children: [new TextRun({ text: "Descripción", bold: true })],
-                        })],
-                        width: { size: 25, type: WidthType.PERCENTAGE },
+                      new TextRun({
+                        text: "No hay publicaciones programadas.",
+                        size: 18,
                       }),
                     ],
-                  }),
-                  // Publication rows
-                  ...sortedPublications.map(pub => new TableRow({
-                    children: [
-                      new TableCell({
-                        children: [new Paragraph({
-                          children: [new TextRun({
-                            text: format(new Date(pub.date), "EEEE d 'de' MMMM", { locale: es }),
-                            size: 20,
-                          })],
-                        })],
+                    alignment: AlignmentType.CENTER,
+                    spacing: { after: 200 },
+                  })]
+                : [new Table({
+                    width: {
+                      size: 100,
+                      type: WidthType.PERCENTAGE,
+                    },
+                    rows: [
+                      new TableRow({
+                        children: [
+                          new TableCell({
+                            children: [new Paragraph({
+                              children: [new TextRun({ text: "Fecha", bold: true, size: 18 })],
+                            })],
+                            width: { size: 25, type: WidthType.PERCENTAGE },
+                          }),
+                          new TableCell({
+                            children: [new Paragraph({
+                              children: [new TextRun({ text: "Nombre", bold: true, size: 18 })],
+                            })],
+                            width: { size: 35, type: WidthType.PERCENTAGE },
+                          }),
+                          new TableCell({
+                            children: [new Paragraph({
+                              children: [new TextRun({ text: "Tipo", bold: true, size: 18 })],
+                            })],
+                            width: { size: 15, type: WidthType.PERCENTAGE },
+                          }),
+                          new TableCell({
+                            children: [new Paragraph({
+                              children: [new TextRun({ text: "Estado", bold: true, size: 18 })],
+                            })],
+                            width: { size: 25, type: WidthType.PERCENTAGE },
+                          }),
+                        ],
                       }),
-                      new TableCell({
-                        children: [new Paragraph({
-                          children: [new TextRun({
-                            text: pub.name,
-                            size: 20,
-                          })],
-                        })],
-                      }),
-                      new TableCell({
-                        children: [new Paragraph({
-                          children: [new TextRun({
-                            text: pub.type === 'reel' ? 'Reel' : pub.type === 'carousel' ? 'Carrusel' : 'Imagen',
-                            size: 20,
-                          })],
-                        })],
-                      }),
-                      new TableCell({
-                        children: [new Paragraph({
-                          children: [new TextRun({
-                            text: pub.description || '-',
-                            size: 20,
-                          })],
-                        })],
-                      }),
+                      ...sortedPublications.map(pub => new TableRow({
+                        children: [
+                          new TableCell({
+                            children: [new Paragraph({
+                              children: [new TextRun({
+                                text: format(new Date(pub.date), "d/MM/yyyy", { locale: es }),
+                                size: 16,
+                              })],
+                            })],
+                          }),
+                          new TableCell({
+                            children: [new Paragraph({
+                              children: [new TextRun({
+                                text: pub.name,
+                                size: 16,
+                              })],
+                            })],
+                          }),
+                          new TableCell({
+                            children: [new Paragraph({
+                              children: [new TextRun({
+                                text: pub.type === 'reel' ? 'Reel' : pub.type === 'carousel' ? 'Carrusel' : 'Imagen',
+                                size: 16,
+                              })],
+                            })],
+                          }),
+                          new TableCell({
+                            children: [new Paragraph({
+                              children: [new TextRun({
+                                text: pub.is_published ? 'Publicado' : 'Pendiente',
+                                size: 16,
+                              })],
+                            })],
+                          }),
+                        ],
+                      })),
                     ],
-                  })),
-                ],
+                  })]
               }),
 
-              // Footer space
               new Paragraph({ text: "" }),
               new Paragraph({ text: "" }),
 
-              // Footer
               new Paragraph({
                 children: [
                   new TextRun({
                     text: "Gestor de clientes Gleztin Marketing Digital",
-                    size: 18,
+                    size: 16,
                     italics: true,
                   }),
                 ],
@@ -297,7 +356,6 @@ export const PublicationCalendarDialog = ({
         ],
       });
 
-      // Generate and download document
       const buffer = await Packer.toBuffer(doc);
       const blob = new Blob([buffer], { 
         type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" 
@@ -308,7 +366,6 @@ export const PublicationCalendarDialog = ({
       link.href = url;
       link.download = `calendario-${clientName.toLowerCase().replace(/\s+/g, '-')}.docx`;
       link.click();
-      
       URL.revokeObjectURL(url);
 
       toast({
@@ -316,24 +373,22 @@ export const PublicationCalendarDialog = ({
         description: "El documento Word se ha descargado correctamente.",
       });
     } catch (error) {
-      console.error('Error generating calendar document:', error);
+      console.error('Error generating Word calendar:', error);
       toast({
-        title: "Error",
-        description: "No se pudo generar el documento del calendario.",
+        title: "Error en Word - Descargando TXT",
+        description: "Hubo un problema con el formato Word. Descargando calendario en formato TXT...",
         variant: "destructive",
       });
+      
+      // Automatic fallback to TXT
+      setTimeout(() => {
+        generateTxtCalendar();
+      }, 1000);
     }
   };
 
-  const handleManualClose = () => {
-    setIsOpen(false);
-  };
-
   return (
-    <Dialog 
-      open={isOpen} 
-      onOpenChange={setIsOpen}
-    >
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button
           variant="ghost"
@@ -344,23 +399,31 @@ export const PublicationCalendarDialog = ({
           <CalendarIcon className="h-4 w-4" />
         </Button>
       </DialogTrigger>
-      <DialogContent 
-        className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto dark:bg-gray-900"
-      >
+      <DialogContent className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto dark:bg-gray-900">
         <DialogHeader>
           <div className="flex items-center justify-between">
             <DialogTitle className="text-xl font-bold dark:text-white">
               Calendario de publicaciones - {clientName}
             </DialogTitle>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={generateCalendarDocument}
-              className="flex items-center gap-2"
-            >
-              <Download className="h-4 w-4" />
-              Descargar Calendario
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="flex items-center gap-2">
+                  <Download className="h-4 w-4" />
+                  Descargar
+                  <ChevronDown className="h-3 w-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={generateWordCalendar}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Formato Word (.docx)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={generateTxtCalendar}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Formato Texto (.txt)
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
           <DialogDescription className="sr-only">
             Gestión de publicaciones de contenido para el cliente
@@ -402,7 +465,6 @@ export const PublicationCalendarDialog = ({
               packageId={packageId}
             />
 
-            {/* Botón de cerrar explícito */}
             <div className="flex justify-end pt-4">
               <Button
                 variant="outline"
