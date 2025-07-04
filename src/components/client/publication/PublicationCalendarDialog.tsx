@@ -18,7 +18,7 @@ import { PublicationItem } from "./PublicationItem";
 import { PublicationDescription } from "./PublicationDescription";
 import { Publication, PublicationFormValues, PublicationCalendarDialogProps } from "./types";
 import { useQuery } from "@tanstack/react-query";
-import html2canvas from "html2canvas";
+import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, Table, TableRow, TableCell, WidthType } from "docx";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -149,81 +149,178 @@ export const PublicationCalendarDialog = ({
     }
   };
 
-  const generateCalendarImage = async () => {
-    const calendarElement = document.createElement('div');
-    calendarElement.className = 'p-8 bg-white text-black min-w-[800px]';
-    
-    const header = document.createElement('div');
-    header.className = 'text-center mb-8';
-    header.innerHTML = `
-      <h1 class="text-3xl font-bold mb-2">Calendario de Publicaciones</h1>
-      <h2 class="text-xl text-gray-600">${clientName}</h2>
-      <p class="text-sm text-gray-500">Generado el ${format(new Date(), "d 'de' MMMM 'de' yyyy", { locale: es })}</p>
-    `;
-    calendarElement.appendChild(header);
-
-    const list = document.createElement('div');
-    list.className = 'space-y-4';
-    
-    publications.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-      .forEach(pub => {
-        const item = document.createElement('div');
-        item.className = 'p-4 border rounded-lg';
-        item.innerHTML = `
-          <div class="flex items-center justify-between">
-            <div>
-              <h3 class="font-semibold">${pub.name}</h3>
-              <p class="text-sm text-gray-600">
-                ${format(new Date(pub.date), "EEEE d 'de' MMMM 'de' yyyy", { locale: es })}
-              </p>
-            </div>
-            <span class="px-3 py-1 rounded-full text-sm ${
-              pub.type === 'reel' ? 'bg-blue-100 text-blue-800' :
-              pub.type === 'carousel' ? 'bg-green-100 text-green-800' :
-              'bg-purple-100 text-purple-800'
-            }">
-              ${pub.type}
-            </span>
-          </div>
-        `;
-        list.appendChild(item);
-      });
-    
-    calendarElement.appendChild(list);
-
-    const footer = document.createElement('div');
-    footer.className = 'mt-8 text-center text-sm text-gray-500';
-    footer.innerHTML = 'Gestor de clientes Gleztin Marketing Digital';
-    calendarElement.appendChild(footer);
-
-    document.body.appendChild(calendarElement);
-
+  const generateCalendarDocument = async () => {
     try {
-      const canvas = await html2canvas(calendarElement, {
-        scale: 2,
-        backgroundColor: '#ffffff',
-        logging: false,
+      // Sort publications by date
+      const sortedPublications = publications.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+      // Create document
+      const doc = new Document({
+        sections: [
+          {
+            properties: {},
+            children: [
+              // Header
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: "Calendario de Publicaciones",
+                    bold: true,
+                    size: 32,
+                  }),
+                ],
+                alignment: AlignmentType.CENTER,
+                spacing: { after: 300 },
+              }),
+              
+              // Client name
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: clientName,
+                    bold: true,
+                    size: 24,
+                  }),
+                ],
+                alignment: AlignmentType.CENTER,
+                spacing: { after: 200 },
+              }),
+
+              // Generation date
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: `Generado el ${format(new Date(), "d 'de' MMMM 'de' yyyy", { locale: es })}`,
+                    size: 20,
+                    italics: true,
+                  }),
+                ],
+                alignment: AlignmentType.CENTER,
+                spacing: { after: 400 },
+              }),
+
+              // Publications table
+              new Table({
+                width: {
+                  size: 100,
+                  type: WidthType.PERCENTAGE,
+                },
+                rows: [
+                  // Header row
+                  new TableRow({
+                    children: [
+                      new TableCell({
+                        children: [new Paragraph({
+                          children: [new TextRun({ text: "Fecha", bold: true })],
+                        })],
+                        width: { size: 25, type: WidthType.PERCENTAGE },
+                      }),
+                      new TableCell({
+                        children: [new Paragraph({
+                          children: [new TextRun({ text: "Nombre", bold: true })],
+                        })],
+                        width: { size: 35, type: WidthType.PERCENTAGE },
+                      }),
+                      new TableCell({
+                        children: [new Paragraph({
+                          children: [new TextRun({ text: "Tipo", bold: true })],
+                        })],
+                        width: { size: 15, type: WidthType.PERCENTAGE },
+                      }),
+                      new TableCell({
+                        children: [new Paragraph({
+                          children: [new TextRun({ text: "Descripción", bold: true })],
+                        })],
+                        width: { size: 25, type: WidthType.PERCENTAGE },
+                      }),
+                    ],
+                  }),
+                  // Publication rows
+                  ...sortedPublications.map(pub => new TableRow({
+                    children: [
+                      new TableCell({
+                        children: [new Paragraph({
+                          children: [new TextRun({
+                            text: format(new Date(pub.date), "EEEE d 'de' MMMM", { locale: es }),
+                            size: 20,
+                          })],
+                        })],
+                      }),
+                      new TableCell({
+                        children: [new Paragraph({
+                          children: [new TextRun({
+                            text: pub.name,
+                            size: 20,
+                          })],
+                        })],
+                      }),
+                      new TableCell({
+                        children: [new Paragraph({
+                          children: [new TextRun({
+                            text: pub.type === 'reel' ? 'Reel' : pub.type === 'carousel' ? 'Carrusel' : 'Imagen',
+                            size: 20,
+                          })],
+                        })],
+                      }),
+                      new TableCell({
+                        children: [new Paragraph({
+                          children: [new TextRun({
+                            text: pub.description || '-',
+                            size: 20,
+                          })],
+                        })],
+                      }),
+                    ],
+                  })),
+                ],
+              }),
+
+              // Footer space
+              new Paragraph({ text: "" }),
+              new Paragraph({ text: "" }),
+
+              // Footer
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: "Gestor de clientes Gleztin Marketing Digital",
+                    size: 18,
+                    italics: true,
+                  }),
+                ],
+                alignment: AlignmentType.CENTER,
+                spacing: { before: 400 },
+              }),
+            ],
+          },
+        ],
       });
 
-      const image = canvas.toDataURL('image/png');
-      const link = document.createElement('a');
-      link.download = `calendario-${clientName.toLowerCase().replace(/\s+/g, '-')}.png`;
-      link.href = image;
+      // Generate and download document
+      const buffer = await Packer.toBuffer(doc);
+      const blob = new Blob([buffer], { 
+        type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" 
+      });
+      
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `calendario-${clientName.toLowerCase().replace(/\s+/g, '-')}.docx`;
       link.click();
+      
+      URL.revokeObjectURL(url);
 
       toast({
         title: "Calendario generado",
-        description: "La imagen se ha descargado correctamente.",
+        description: "El documento Word se ha descargado correctamente.",
       });
     } catch (error) {
-      console.error('Error generating calendar image:', error);
+      console.error('Error generating calendar document:', error);
       toast({
         title: "Error",
-        description: "No se pudo generar la imagen del calendario.",
+        description: "No se pudo generar el documento del calendario.",
         variant: "destructive",
       });
-    } finally {
-      document.body.removeChild(calendarElement);
     }
   };
 
@@ -255,7 +352,7 @@ export const PublicationCalendarDialog = ({
             <Button
               variant="outline"
               size="sm"
-              onClick={generateCalendarImage}
+              onClick={generateCalendarDocument}
               className="flex items-center gap-2"
             >
               <Download className="h-4 w-4" />
