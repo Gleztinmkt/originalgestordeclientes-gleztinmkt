@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Calendar as CalendarIcon, Download, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -335,7 +336,7 @@ export const PublicationCalendarDialog = ({
                       })),
                     ],
                   })]
-              }),
+              ),
 
               new Paragraph({ text: "" }),
               new Paragraph({ text: "" }),
