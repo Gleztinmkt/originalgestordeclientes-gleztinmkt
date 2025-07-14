@@ -17,6 +17,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+
 export const CalendarView = ({
   clients
 }: {
@@ -35,6 +36,7 @@ export const CalendarView = ({
   const [highlightedPublicationId, setHighlightedPublicationId] = useState<string | null>(null);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const isMobile = useIsMobile();
+
   const {
     data: userRole
   } = useQuery({
@@ -52,6 +54,7 @@ export const CalendarView = ({
       return roleData?.role || null;
     }
   });
+
   const {
     data: publications = [],
     refetch
@@ -59,29 +62,69 @@ export const CalendarView = ({
     queryKey: ['publications', selectedClient],
     queryFn: async () => {
       console.log('Fetching publications - selectedClient:', selectedClient);
-      let query = supabase.from('publications').select('*').is('deleted_at', null).order('date', {
-        ascending: true
-      });
-      if (selectedClient) {
-        query = query.eq('client_id', selectedClient);
-        console.log('Applied client filter:', selectedClient);
-      } else {
-        console.log('No client filter applied - fetching all publications');
-      }
-      const {
-        data,
-        error
-      } = await query;
-      if (error) {
+      
+      // Function to fetch all publications without limit
+      const fetchAllPublications = async () => {
+        let allPublications: Publication[] = [];
+        let from = 0;
+        const limit = 1000; // Fetch in batches of 1000
+        let hasMore = true;
+
+        while (hasMore) {
+          let query = supabase
+            .from('publications')
+            .select('*')
+            .is('deleted_at', null)
+            .order('date', { ascending: true })
+            .range(from, from + limit - 1);
+
+          if (selectedClient) {
+            query = query.eq('client_id', selectedClient);
+          }
+
+          const { data, error } = await query;
+
+          if (error) {
+            console.error('Error fetching publications batch:', error);
+            throw error;
+          }
+
+          if (data && data.length > 0) {
+            allPublications = [...allPublications, ...data];
+            from += limit;
+            hasMore = data.length === limit; // Continue if we got a full batch
+          } else {
+            hasMore = false;
+          }
+        }
+
+        return allPublications;
+      };
+
+      try {
+        const data = await fetchAllPublications();
+        
+        if (selectedClient) {
+          console.log('Applied client filter:', selectedClient);
+        } else {
+          console.log('No client filter applied - fetching all publications');
+        }
+        
+        console.log('Publications fetched:', data?.length || 0, 'items');
+        console.log('Date range of publications:', {
+          earliest: data.length > 0 ? data[0]?.date : 'N/A',
+          latest: data.length > 0 ? data[data.length - 1]?.date : 'N/A'
+        });
+        
+        return data as Publication[];
+      } catch (error) {
         console.error('Error fetching publications:', error);
         return [];
       }
-      console.log('Publications fetched:', data?.length || 0, 'items');
-      console.log('Publications data:', data);
-      return data as Publication[];
     },
     staleTime: 0 // Ensure fresh data
   });
+
   const {
     data: designers = [],
     refetch: refetchDesigners
@@ -101,6 +144,7 @@ export const CalendarView = ({
       return data;
     }
   });
+
   const handleDragEnd = async (result: DropResult) => {
     if (userRole !== 'admin') {
       toast({
@@ -139,6 +183,7 @@ export const CalendarView = ({
       });
     }
   };
+
   useEffect(() => {
     if (highlightedPublicationId) {
       const timer = setTimeout(() => {
@@ -147,6 +192,7 @@ export const CalendarView = ({
       return () => clearTimeout(timer);
     }
   }, [highlightedPublicationId]);
+
   useEffect(() => {
     let progress = 0;
     const interval = setInterval(() => {
@@ -159,6 +205,7 @@ export const CalendarView = ({
     }, 50);
     return () => clearInterval(interval);
   }, []);
+
   if (!publications.length && loadingProgress < 100) {
     return <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4 p-8">
         <div className="w-full max-w-md space-y-2">
@@ -172,6 +219,7 @@ export const CalendarView = ({
         </div>
       </div>;
   }
+
   const filteredPublications = publications.filter(pub => {
     if (selectedType && pub.type !== selectedType) return false;
     if (selectedPackage && pub.package_id !== selectedPackage) return false;
@@ -196,19 +244,23 @@ export const CalendarView = ({
     }
     return true;
   });
+
   const daysInMonth = eachDayOfInterval({
     start: startOfMonth(selectedDate),
     end: endOfMonth(selectedDate)
   });
+
   const startDay = startOfMonth(selectedDate).getDay();
   const emptyDays = Array(startDay).fill(null);
   const allDays = [...emptyDays, ...daysInMonth];
+
   const toggleDayExpansion = (date: string) => {
     setExpandedDays(prev => ({
       ...prev,
       [date]: !prev[date]
     }));
   };
+
   const FilterContent = () => <div>
       <div className="flex justify-between items-center mb-4">
         <h3 className="font-medium">Filtros</h3>
@@ -216,6 +268,7 @@ export const CalendarView = ({
       </div>
       <FilterPanel clients={clients} designers={designers} selectedClient={selectedClient} selectedDesigner={selectedDesigner} selectedStatus={selectedStatus} selectedType={selectedType} selectedPackage={selectedPackage} onClientChange={setSelectedClient} onDesignerChange={setSelectedDesigner} onStatusChange={setSelectedStatus} onTypeChange={setSelectedType} onPackageChange={setSelectedPackage} onDesignerAdded={refetchDesigners} isDesigner={userRole === 'designer'} />
     </div>;
+
   const CalendarContent = () => <DragDropContext onDragEnd={handleDragEnd}>
       {isMobile ? <div className="calendar-mobile-view">
           {daysInMonth.map(date => {
@@ -278,6 +331,7 @@ export const CalendarView = ({
       })}
         </div>}
     </DragDropContext>;
+
   return <div className="h-screen flex flex-col">
       {isMobile ? <>
           <div className="flex items-center justify-between p-4 border-b">
