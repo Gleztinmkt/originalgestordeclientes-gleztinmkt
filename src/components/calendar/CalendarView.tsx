@@ -73,7 +73,8 @@ export const CalendarView = ({
         return [];
       }
       return data as Publication[];
-    }
+    },
+    staleTime: 0 // Ensure fresh data
   });
   const {
     data: designers = [],
