@@ -58,11 +58,15 @@ export const CalendarView = ({
   } = useQuery({
     queryKey: ['publications', selectedClient],
     queryFn: async () => {
+      console.log('Fetching publications - selectedClient:', selectedClient);
       let query = supabase.from('publications').select('*').is('deleted_at', null).order('date', {
         ascending: true
       });
       if (selectedClient) {
         query = query.eq('client_id', selectedClient);
+        console.log('Applied client filter:', selectedClient);
+      } else {
+        console.log('No client filter applied - fetching all publications');
       }
       const {
         data,
@@ -72,6 +76,8 @@ export const CalendarView = ({
         console.error('Error fetching publications:', error);
         return [];
       }
+      console.log('Publications fetched:', data?.length || 0, 'items');
+      console.log('Publications data:', data);
       return data as Publication[];
     },
     staleTime: 0 // Ensure fresh data
