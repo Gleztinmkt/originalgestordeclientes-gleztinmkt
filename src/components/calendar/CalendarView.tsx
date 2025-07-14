@@ -90,7 +90,7 @@ export const CalendarView = ({
           }
 
           if (data && data.length > 0) {
-            allPublications = [...allPublications, ...data];
+            allPublications = [...allPublications, ...data as Publication[]];
             from += limit;
             hasMore = data.length === limit; // Continue if we got a full batch
           } else {
