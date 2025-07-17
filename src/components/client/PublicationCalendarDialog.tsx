@@ -81,7 +81,7 @@ export const PublicationCalendarDialog = ({
       type: values.type,
       date: values.date.toISOString(),
       description: values.description || null,
-      copywriting: copywriting || null,
+      copywriting: values.copywriting || null,
       package_id: packageId || null,
       is_published: false
     };
