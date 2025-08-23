@@ -324,7 +324,7 @@ export const PlanningCalendar = ({
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[80vh] h-auto">
+        <DialogContent className="max-w-4xl min-h-[600px] h-auto">
           <DialogHeader>
             <DialogTitle>Descripción de planificación</DialogTitle>
           </DialogHeader>
@@ -332,7 +332,7 @@ export const PlanningCalendar = ({
             value={description} 
             onChange={e => setDescription(e.target.value)} 
             placeholder="Ingrese la descripción..." 
-            className="min-h-[200px] text-base leading-relaxed"
+            className="min-h-[400px] text-base leading-relaxed"
             readOnly={!isEditing}
           />
           <div className="flex justify-between gap-2">
