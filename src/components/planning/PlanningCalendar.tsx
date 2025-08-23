@@ -12,9 +12,11 @@ import { MonthSelector } from "./MonthSelector";
 import { StatusLegend } from "./StatusLegend";
 import { Card } from "@/components/ui/card";
 import { CalendarIcon, CheckSquare, Square } from "lucide-react";
+
 interface PlanningCalendarProps {
   clients: Client[];
 }
+
 interface PlanningEntry {
   id: string;
   client_id: string;
@@ -23,6 +25,7 @@ interface PlanningEntry {
   description?: string;
   completed?: boolean;
 }
+
 export const PlanningCalendar = ({
   clients
 }: PlanningCalendarProps) => {
@@ -32,6 +35,8 @@ export const PlanningCalendar = ({
   const [description, setDescription] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+
   const fetchPlanningData = async () => {
     try {
       const startOfMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
@@ -69,9 +74,11 @@ export const PlanningCalendar = ({
       });
     }
   };
+
   useEffect(() => {
     fetchPlanningData();
   }, [selectedDate]);
+
   const getStatusColor = (status: 'hacer' | 'no_hacer' | 'consultar') => {
     switch (status) {
       case 'hacer':
@@ -83,6 +90,7 @@ export const PlanningCalendar = ({
         return 'bg-yellow-500';
     }
   };
+
   const handleStatusChange = async (clientId: string, newStatus: 'hacer' | 'no_hacer' | 'consultar') => {
     if (isSaving) return;
     setIsSaving(true);
@@ -109,6 +117,7 @@ export const PlanningCalendar = ({
         }).select().single();
       }
       if (result.error) throw result.error;
+
       setPlanningData(prev => ({
         ...prev,
         [clientId]: {
@@ -134,6 +143,7 @@ export const PlanningCalendar = ({
       setIsSaving(false);
     }
   };
+
   const handleCompletion = async (clientId: string, completed: boolean) => {
     if (isSaving) return;
     setIsSaving(true);
@@ -162,6 +172,7 @@ export const PlanningCalendar = ({
         }).select().single();
       }
       if (result.error) throw result.error;
+
       setPlanningData(prev => ({
         ...prev,
         [clientId]: {
@@ -187,6 +198,7 @@ export const PlanningCalendar = ({
       setIsSaving(false);
     }
   };
+
   const handleDescriptionSave = async () => {
     if (!selectedClient || isSaving) return;
     setIsSaving(true);
@@ -212,6 +224,7 @@ export const PlanningCalendar = ({
         }).select().single();
       }
       if (result.error) throw result.error;
+
       setPlanningData(prev => ({
         ...prev,
         [selectedClient]: {
@@ -237,6 +250,7 @@ export const PlanningCalendar = ({
       setIsSaving(false);
     }
   };
+
   return <div className="space-y-6 p-6 bg-gray-50 dark:bg-gray-900 min-h-screen px-0">
       <MonthSelector selectedDate={selectedDate} onDateChange={setSelectedDate} />
       <StatusLegend getStatusColor={getStatusColor} />
@@ -248,12 +262,14 @@ export const PlanningCalendar = ({
         const currentMonth = selectedDate.getMonth();
         const currentYear = selectedDate.getFullYear();
         const creationDate = new Date(currentYear, currentMonth, Math.max(1, paymentDay - 7));
-        return <Card key={client.id} onContextMenu={e => {
-          e.preventDefault();
-          const status = planningData[client.id]?.status || 'consultar';
-          const nextStatus = status === 'hacer' ? 'no_hacer' : status === 'no_hacer' ? 'consultar' : 'hacer';
-          handleStatusChange(client.id, nextStatus);
-        }} className="hover:shadow-md transition-shadow duration-200 relative md:p-3 p-2 w-[calc(100vw-3rem)] md:w-auto mx-auto md:mx-0">
+        return <Card key={client.id} 
+                onContextMenu={e => {
+                  e.preventDefault();
+                  const status = planningData[client.id]?.status || 'consultar';
+                  const nextStatus = status === 'hacer' ? 'no_hacer' : status === 'no_hacer' ? 'consultar' : 'hacer';
+                  handleStatusChange(client.id, nextStatus);
+                }} 
+                className="hover:shadow-md transition-shadow duration-200 relative md:p-3 p-2 w-[calc(100vw-3rem)] md:w-auto mx-auto md:mx-0">
               <div className="absolute top-2 right-2">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -294,6 +310,7 @@ export const PlanningCalendar = ({
               <Button variant="ghost" className="w-full text-left justify-start h-auto py-1 px-2 mt-2 text-xs" onClick={() => {
             setSelectedClient(client.id);
             setDescription(planningData[client.id]?.description || '');
+            setIsEditing(false);
             setIsDialogOpen(true);
           }}>
                 {planningData[client.id]?.description ? <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">
@@ -307,18 +324,33 @@ export const PlanningCalendar = ({
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle className="mx-0 my-0 py-[90px]">Descripción de planificación</DialogTitle>
+            <DialogTitle>Descripción de planificación</DialogTitle>
           </DialogHeader>
-          <Textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Ingrese la descripción..." className="min-h-[100px]" />
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-              Cancelar
+          <Textarea 
+            value={description} 
+            onChange={e => setDescription(e.target.value)} 
+            placeholder="Ingrese la descripción..." 
+            className="min-h-[200px] text-base leading-relaxed"
+            readOnly={!isEditing}
+          />
+          <div className="flex justify-between gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setIsEditing(!isEditing)}
+              className={isEditing ? "bg-blue-50 border-blue-200 text-blue-700" : ""}
+            >
+              {isEditing ? "Vista previa" : "Editar"}
             </Button>
-            <Button onClick={handleDescriptionSave} disabled={isSaving}>
-              {isSaving ? 'Guardando...' : 'Guardar'}
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={handleDescriptionSave} disabled={isSaving || !isEditing}>
+                {isSaving ? 'Guardando...' : 'Guardar'}
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
