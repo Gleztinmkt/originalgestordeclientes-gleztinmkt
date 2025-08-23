@@ -324,7 +324,7 @@ export const PlanningCalendar = ({
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="max-w-4xl max-h-[80vh] h-auto">
           <DialogHeader>
             <DialogTitle>Descripción de planificación</DialogTitle>
           </DialogHeader>
