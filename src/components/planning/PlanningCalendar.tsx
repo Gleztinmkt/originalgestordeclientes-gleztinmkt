@@ -35,6 +35,7 @@ export const PlanningCalendar = ({
   const [description, setDescription] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
   const fetchPlanningData = async () => {
     try {
@@ -309,6 +310,7 @@ export const PlanningCalendar = ({
               <Button variant="ghost" className="w-full text-left justify-start h-auto py-1 px-2 mt-2 text-xs" onClick={() => {
             setSelectedClient(client.id);
             setDescription(planningData[client.id]?.description || '');
+            setIsEditing(false);
             setIsDialogOpen(true);
           }}>
                 {planningData[client.id]?.description ? <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">
@@ -322,18 +324,33 @@ export const PlanningCalendar = ({
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Descripción de planificación</DialogTitle>
           </DialogHeader>
-          <Textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Ingrese la descripción..." className="min-h-[100px]" />
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-              Cancelar
+          <Textarea 
+            value={description} 
+            onChange={e => setDescription(e.target.value)} 
+            placeholder="Ingrese la descripción..." 
+            className="min-h-[200px] text-base leading-relaxed"
+            readOnly={!isEditing}
+          />
+          <div className="flex justify-between gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setIsEditing(!isEditing)}
+              className={isEditing ? "bg-blue-50 border-blue-200 text-blue-700" : ""}
+            >
+              {isEditing ? "Vista previa" : "Editar"}
             </Button>
-            <Button onClick={handleDescriptionSave} disabled={isSaving}>
-              {isSaving ? 'Guardando...' : 'Guardar'}
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={handleDescriptionSave} disabled={isSaving || !isEditing}>
+                {isSaving ? 'Guardando...' : 'Guardar'}
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
