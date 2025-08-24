@@ -22,7 +22,7 @@ import {
   DropdownMenuSubContent,
   DropdownMenuPortal,
 } from "@/components/ui/dropdown-menu";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface Client {
   id: string;
@@ -68,6 +68,53 @@ const createPaymentMessage = (clientName: string, paymentDay: number, includePer
   return message;
 };
 
+// Default templates
+const DEFAULT_TEMPLATES = {
+  paymentReminder: `*Buenos días, {nombre}.*
+
+Este es un mensaje automático.
+
+Les recordamos que la fecha de pago es el día {paymentDay} de cada mes.
+
+Los valores actualizados pueden encontrarlos en el siguiente enlace:
+*Link:* https://gleztin.com.ar/index.php/valores-de-redes-sociales/
+*Contraseña:* Gleztin (con mayúscula al inicio).
+
+Si ya realizó el pago o la fecha indicada es incorrecta, le pedimos que nos lo informe.
+
+En caso de tener alguna duda o no poder realizar el pago dentro de la fecha establecida, por favor, contáctenos.
+
+Muchas gracias.`,
+  paymentReminderWithPeriod: `*Buenos días, {nombre}.*
+
+Este es un mensaje automático.
+
+Les recordamos la fecha de pago del día {reminderDay} al {paymentDay} de cada mes.
+
+Los valores actualizados pueden encontrarlos en el siguiente enlace:
+*Link:* https://gleztin.com.ar/index.php/valores-de-redes-sociales/
+*Contraseña:* Gleztin (con mayúscula al inicio).
+
+Si ya realizó el pago o la fecha indicada es incorrecta, le pedimos que nos lo informe.
+
+En caso de tener alguna duda o no poder realizar el pago dentro de la fecha establecida, por favor, contáctenos.
+
+Muchas gracias.`,
+  valuesUpdate: `Hola {nombre}, a partir de mañana 25 van a entrar en vigencia los valores actualizados. Los mismos los vas a encontrar en el siguiente link:
+
+*Link*: https://gleztin.com.ar/index.php/valores-de-redes-sociales/
+
+*Contraseña*: Gleztin (con mayúscula al inicio)
+
+*En caso de no haber abonado el paquete anterior se cobrará con los valores actuales.*
+
+Todos los *25 de cada mes* vamos a actualizar los valores en este mismo link.
+
+Que tengas un buen día
+
+ATTE: Gleztin Marketing Digital`
+};
+
 export const BulkMessageButton = ({ 
   clients, 
   selectedPaymentDay,
@@ -76,7 +123,23 @@ export const BulkMessageButton = ({
   selectedClientIds = []
 }: BulkMessageButtonProps) => {
   const [isCustomMessageDialogOpen, setIsCustomMessageDialogOpen] = useState(false);
+  const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
   const [customMessage, setCustomMessage] = useState("");
+  const [currentTemplate, setCurrentTemplate] = useState("");
+  const [currentMessageType, setCurrentMessageType] = useState<'paymentReminder' | 'paymentReminderWithPeriod' | 'valuesUpdate' | 'custom'>('paymentReminder');
+  const [templates, setTemplates] = useState(DEFAULT_TEMPLATES);
+
+  useEffect(() => {
+    const savedTemplates = localStorage.getItem('bulkMessageTemplates');
+    if (savedTemplates) {
+      setTemplates(JSON.parse(savedTemplates));
+    }
+  }, []);
+
+  const saveTemplates = (newTemplates: typeof DEFAULT_TEMPLATES) => {
+    setTemplates(newTemplates);
+    localStorage.setItem('bulkMessageTemplates', JSON.stringify(newTemplates));
+  };
 
   const getFilteredClients = () => {
     return clients.filter(client => {
@@ -100,33 +163,35 @@ export const BulkMessageButton = ({
     });
   };
 
-  const sendBulkMessages = (includePeriod: boolean = false) => {
-    const filteredClients = getFilteredClients();
-
-    if (filteredClients.length === 0) {
-      toast({
-        title: "No hay clientes",
-        description: "No hay clientes que cumplan con los filtros seleccionados",
-        variant: "destructive",
-      });
-      return;
+  const openTemplateDialog = (messageType: 'paymentReminder' | 'paymentReminderWithPeriod' | 'valuesUpdate', includePeriod: boolean = false) => {
+    setCurrentMessageType(messageType);
+    let template = templates[messageType];
+    
+    if (messageType === 'paymentReminder' || messageType === 'paymentReminderWithPeriod') {
+      const today = new Date();
+      const currentMonth = today.getMonth();
+      const currentYear = today.getFullYear();
+      const paymentDay = selectedPaymentDay || 1;
+      const reminderDate = format(addDays(new Date(currentYear, currentMonth, paymentDay), -5), "d", { locale: es });
+      
+      template = template.replace(/\{reminderDay\}/g, reminderDate.toString());
+      template = template.replace(/\{paymentDay\}/g, paymentDay.toString());
     }
+    
+    setCurrentTemplate(template);
+    setIsTemplateDialogOpen(true);
+  };
 
-    filteredClients.forEach(client => {
-      if (client.phone) {
-        const message = createPaymentMessage(client.name, client.paymentDay, includePeriod);
-        const whatsappUrl = `https://wa.me/${client.phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
-        window.open(whatsappUrl, '_blank');
-      }
-    });
-
-    toast({
-      title: "Mensajes enviados",
-      description: `Se abrieron ${filteredClients.length} chats de WhatsApp`,
-    });
+  const sendBulkMessages = (includePeriod: boolean = false) => {
+    const messageType = includePeriod ? 'paymentReminderWithPeriod' : 'paymentReminder';
+    openTemplateDialog(messageType, includePeriod);
   };
 
   const sendValuesUpdateMessage = () => {
+    openTemplateDialog('valuesUpdate');
+  };
+
+  const confirmAndSendMessages = () => {
     const filteredClients = getFilteredClients();
 
     if (filteredClients.length === 0) {
@@ -138,16 +203,39 @@ export const BulkMessageButton = ({
       return;
     }
 
+    if (!currentTemplate.trim()) {
+      toast({
+        title: "Mensaje vacío",
+        description: "Por favor, escribe un mensaje para enviar",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Save template if it was modified
+    if (currentMessageType !== 'custom') {
+      const updatedTemplates = { ...templates };
+      updatedTemplates[currentMessageType as keyof typeof DEFAULT_TEMPLATES] = currentTemplate;
+      saveTemplates(updatedTemplates);
+    }
+
     filteredClients.forEach(client => {
       if (client.phone) {
-        const message = `Hola ${client.name}, a partir de mañana 25 van a entrar en vigencia los valores actualizados. Los mismos los vas a encontrar en el siguiente link:\n\n` +
-          `*Link*: https://gleztin.com.ar/index.php/valores-de-redes-sociales/\n\n` +
-          `*Contraseña*: Gleztin (con mayúscula al inicio)\n\n` +
-          `*En caso de no haber abonado el paquete anterior se cobrará con los valores actuales.*\n\n` +
-          `Todos los *25 de cada mes* vamos a actualizar los valores en este mismo link.\n\n` +
-          `Que tengas un buen día\n\n` +
-          `ATTE: Gleztin Marketing Digital`;
-        const whatsappUrl = `https://wa.me/${client.phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
+        let personalizedMessage = currentTemplate.replace(/\{nombre\}/g, client.name);
+        
+        if (currentMessageType === 'paymentReminder' || currentMessageType === 'paymentReminderWithPeriod') {
+          personalizedMessage = personalizedMessage.replace(/\{paymentDay\}/g, client.paymentDay.toString());
+          
+          if (currentMessageType === 'paymentReminderWithPeriod') {
+            const today = new Date();
+            const currentMonth = today.getMonth();
+            const currentYear = today.getFullYear();
+            const reminderDate = format(addDays(new Date(currentYear, currentMonth, client.paymentDay), -5), "d", { locale: es });
+            personalizedMessage = personalizedMessage.replace(/\{reminderDay\}/g, reminderDate);
+          }
+        }
+        
+        const whatsappUrl = `https://wa.me/${client.phone.replace(/\D/g, '')}?text=${encodeURIComponent(personalizedMessage)}`;
         window.open(whatsappUrl, '_blank');
       }
     });
@@ -156,6 +244,9 @@ export const BulkMessageButton = ({
       title: "Mensajes enviados",
       description: `Se abrieron ${filteredClients.length} chats de WhatsApp`,
     });
+
+    setIsTemplateDialogOpen(false);
+    setCurrentTemplate("");
   };
 
   const sendCustomMessage = () => {
@@ -230,6 +321,44 @@ export const BulkMessageButton = ({
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+
+      <Dialog open={isTemplateDialogOpen} onOpenChange={setIsTemplateDialogOpen}>
+        <DialogContent className="sm:max-w-[700px]">
+          <DialogHeader>
+            <DialogTitle>Confirmar plantilla de mensaje</DialogTitle>
+            <DialogDescription>
+              Revisa y edita la plantilla antes de enviar. Los cambios se guardarán automáticamente.
+              {currentMessageType !== 'custom' && (
+                <>
+                  <br />Variables disponibles: {"{nombre}"} para el nombre del cliente
+                  {(currentMessageType === 'paymentReminder' || currentMessageType === 'paymentReminderWithPeriod') && 
+                    ', {paymentDay} para el día de pago'
+                  }
+                  {currentMessageType === 'paymentReminderWithPeriod' && 
+                    ', {reminderDay} para el día de recordatorio'
+                  }
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Textarea
+              value={currentTemplate}
+              onChange={(e) => setCurrentTemplate(e.target.value)}
+              placeholder="Escribe tu mensaje aquí..."
+              className="min-h-[300px]"
+            />
+            <div className="flex gap-2">
+              <Button onClick={confirmAndSendMessages} className="flex-1">
+                Confirmar y enviar mensajes
+              </Button>
+              <Button variant="outline" onClick={() => setIsTemplateDialogOpen(false)}>
+                Cancelar
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={isCustomMessageDialogOpen} onOpenChange={setIsCustomMessageDialogOpen}>
         <DialogContent className="sm:max-w-[600px]">
