@@ -352,6 +352,22 @@ export const BulkMessageButton = ({
               <Button onClick={confirmAndSendMessages} className="flex-1">
                 Confirmar y enviar mensajes
               </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  if (currentMessageType !== 'custom') {
+                    const updatedTemplates = { ...templates };
+                    updatedTemplates[currentMessageType as keyof typeof DEFAULT_TEMPLATES] = currentTemplate;
+                    saveTemplates(updatedTemplates);
+                    toast({
+                      title: "Plantilla guardada",
+                      description: "Los cambios en la plantilla se han guardado correctamente",
+                    });
+                  }
+                }}
+              >
+                Guardar plantilla
+              </Button>
               <Button variant="outline" onClick={() => setIsTemplateDialogOpen(false)}>
                 Cancelar
               </Button>
