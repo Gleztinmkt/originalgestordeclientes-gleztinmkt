@@ -235,7 +235,15 @@ export const BulkMessageButton = ({
           }
         }
         
-        const whatsappUrl = `https://wa.me/${client.phone.replace(/\D/g, '')}?text=${encodeURIComponent(personalizedMessage)}`;
+        // Clean phone number and ensure it starts with country code
+        let cleanPhone = client.phone.replace(/\D/g, '');
+        if (cleanPhone.startsWith('0')) {
+          cleanPhone = '54' + cleanPhone.substring(1); // Argentina country code
+        } else if (!cleanPhone.startsWith('54')) {
+          cleanPhone = '54' + cleanPhone;
+        }
+        
+        const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(personalizedMessage)}`;
         window.open(whatsappUrl, '_blank');
       }
     });
@@ -273,7 +281,16 @@ export const BulkMessageButton = ({
     filteredClients.forEach(client => {
       if (client.phone) {
         const personalizedMessage = customMessage.replace(/\{nombre\}/g, client.name);
-        const whatsappUrl = `https://wa.me/${client.phone.replace(/\D/g, '')}?text=${encodeURIComponent(personalizedMessage)}`;
+        
+        // Clean phone number and ensure it starts with country code
+        let cleanPhone = client.phone.replace(/\D/g, '');
+        if (cleanPhone.startsWith('0')) {
+          cleanPhone = '54' + cleanPhone.substring(1); // Argentina country code
+        } else if (!cleanPhone.startsWith('54')) {
+          cleanPhone = '54' + cleanPhone;
+        }
+        
+        const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(personalizedMessage)}`;
         window.open(whatsappUrl, '_blank');
       }
     });
