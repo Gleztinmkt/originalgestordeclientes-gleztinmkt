@@ -1,5 +1,5 @@
 
-import { MessageSquare } from "lucide-react";
+import { MessageSquare, Copy, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { addDays, format } from "date-fns";
@@ -22,6 +22,7 @@ import {
   DropdownMenuSubContent,
   DropdownMenuPortal,
 } from "@/components/ui/dropdown-menu";
+import { Progress } from "@/components/ui/progress";
 import { useState, useEffect } from "react";
 
 interface Client {
@@ -128,6 +129,12 @@ export const BulkMessageButton = ({
   const [currentTemplate, setCurrentTemplate] = useState("");
   const [currentMessageType, setCurrentMessageType] = useState<'paymentReminder' | 'paymentReminderWithPeriod' | 'valuesUpdate' | 'custom'>('paymentReminder');
   const [templates, setTemplates] = useState(DEFAULT_TEMPLATES);
+  
+  // Estado para el sistema de envío mejorado
+  const [isSending, setIsSending] = useState(false);
+  const [sendingProgress, setSendingProgress] = useState(0);
+  const [totalMessages, setTotalMessages] = useState(0);
+  const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
 
   useEffect(() => {
     const savedTemplates = localStorage.getItem('bulkMessageTemplates');
@@ -139,6 +146,108 @@ export const BulkMessageButton = ({
   const saveTemplates = (newTemplates: typeof DEFAULT_TEMPLATES) => {
     setTemplates(newTemplates);
     localStorage.setItem('bulkMessageTemplates', JSON.stringify(newTemplates));
+  };
+
+  // Función para formatear números de teléfono
+  const formatPhoneNumber = (phone: string): string => {
+    let cleanPhone = phone.replace(/\D/g, '');
+    
+    // Handle Argentina phone number formatting
+    if (cleanPhone.startsWith('549')) {
+      // Already has correct format: 549XXXXXXXX
+      return cleanPhone;
+    } else if (cleanPhone.startsWith('54')) {
+      // Has 54 but missing 9: 54XXXXXXXX -> 549XXXXXXXX
+      return '549' + cleanPhone.substring(2);
+    } else if (cleanPhone.startsWith('0')) {
+      // Starts with 0: 0XXXXXXXX -> 549XXXXXXXX
+      return '549' + cleanPhone.substring(1);
+    } else {
+      // Just the number: XXXXXXXX -> 549XXXXXXXX
+      return '549' + cleanPhone;
+    }
+  };
+
+  // Función para copiar enlaces al portapapeles
+  const copyLinksToClipboard = async (links: string[]) => {
+    const text = links.join('\n\n');
+    try {
+      await navigator.clipboard.writeText(text);
+      toast({
+        title: "Enlaces copiados",
+        description: "Los enlaces de WhatsApp se copiaron al portapapeles",
+      });
+    } catch (err) {
+      console.error('Error al copiar al portapapeles:', err);
+      toast({
+        title: "Error",
+        description: "No se pudieron copiar los enlaces al portapapeles",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Función para enviar mensajes de forma secuencial con delay
+  const sendMessagesSequentially = async (messages: Array<{client: Client, message: string, url: string}>) => {
+    setIsSending(true);
+    setTotalMessages(messages.length);
+    setCurrentMessageIndex(0);
+    setSendingProgress(0);
+
+    let successCount = 0;
+    let failedCount = 0;
+
+    for (let i = 0; i < messages.length; i++) {
+      const { client, url } = messages[i];
+      setCurrentMessageIndex(i + 1);
+      setSendingProgress(((i + 1) / messages.length) * 100);
+
+      try {
+        // Intentar abrir la ventana con configuración específica para evitar CORP
+        const newWindow = window.open(
+          url, 
+          '_blank',
+          'noopener=yes,noreferrer=yes,width=800,height=600'
+        );
+        
+        if (!newWindow) {
+          throw new Error('Ventana bloqueada por el navegador');
+        }
+        
+        successCount++;
+      } catch (error) {
+        console.error(`Error al enviar mensaje a ${client.name}:`, error);
+        failedCount++;
+      }
+
+      // Delay entre mensajes para evitar bloqueo del navegador
+      if (i < messages.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 800));
+      }
+    }
+
+    setIsSending(false);
+    setSendingProgress(0);
+    setCurrentMessageIndex(0);
+    setTotalMessages(0);
+
+    // Mostrar resultado final
+    if (failedCount > 0) {
+      toast({
+        title: "Envío completado con errores",
+        description: `${successCount} mensajes enviados, ${failedCount} fallaron. Los enlaces se copiaron al portapapeles como respaldo.`,
+        variant: "destructive",
+      });
+      
+      // Copiar todos los enlaces como respaldo
+      const allLinks = messages.map(m => m.url);
+      await copyLinksToClipboard(allLinks);
+    } else {
+      toast({
+        title: "Mensajes enviados exitosamente",
+        description: `Se abrieron ${successCount} chats de WhatsApp`,
+      });
+    }
   };
 
   const getFilteredClients = () => {
@@ -191,7 +300,7 @@ export const BulkMessageButton = ({
     openTemplateDialog('valuesUpdate');
   };
 
-  const confirmAndSendMessages = () => {
+  const confirmAndSendMessages = async () => {
     const filteredClients = getFilteredClients();
 
     if (filteredClients.length === 0) {
@@ -219,8 +328,10 @@ export const BulkMessageButton = ({
       saveTemplates(updatedTemplates);
     }
 
-    filteredClients.forEach(client => {
-      if (client.phone) {
+    // Preparar mensajes para envío secuencial
+    const messages = filteredClients
+      .filter(client => client.phone)
+      .map(client => {
         let personalizedMessage = currentTemplate.replace(/\{nombre\}/g, client.name);
         
         if (currentMessageType === 'paymentReminder' || currentMessageType === 'paymentReminderWithPeriod') {
@@ -235,39 +346,33 @@ export const BulkMessageButton = ({
           }
         }
         
-        // Clean phone number and format for WhatsApp (Argentina)
-        let cleanPhone = client.phone.replace(/\D/g, '');
-        
-        // Handle Argentina phone number formatting
-        if (cleanPhone.startsWith('549')) {
-          // Already has correct format: 549XXXXXXXX
-          cleanPhone = cleanPhone;
-        } else if (cleanPhone.startsWith('54')) {
-          // Has 54 but missing 9: 54XXXXXXXX -> 549XXXXXXXX
-          cleanPhone = '549' + cleanPhone.substring(2);
-        } else if (cleanPhone.startsWith('0')) {
-          // Starts with 0: 0XXXXXXXX -> 549XXXXXXXX
-          cleanPhone = '549' + cleanPhone.substring(1);
-        } else {
-          // Just the number: XXXXXXXX -> 549XXXXXXXX
-          cleanPhone = '549' + cleanPhone;
-        }
-        
+        const cleanPhone = formatPhoneNumber(client.phone);
         const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(personalizedMessage)}`;
-        window.open(whatsappUrl, '_blank');
-      }
-    });
+        
+        return {
+          client,
+          message: personalizedMessage,
+          url: whatsappUrl
+        };
+      });
 
-    toast({
-      title: "Mensajes enviados",
-      description: `Se abrieron ${filteredClients.length} chats de WhatsApp`,
-    });
+    if (messages.length === 0) {
+      toast({
+        title: "No hay números válidos",
+        description: "No se encontraron clientes con números de teléfono válidos",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Enviar mensajes de forma secuencial
+    await sendMessagesSequentially(messages);
 
     setIsTemplateDialogOpen(false);
     setCurrentTemplate("");
   };
 
-  const sendCustomMessage = () => {
+  const sendCustomMessage = async () => {
     const filteredClients = getFilteredClients();
 
     if (filteredClients.length === 0) {
@@ -288,37 +393,32 @@ export const BulkMessageButton = ({
       return;
     }
 
-    filteredClients.forEach(client => {
-      if (client.phone) {
+    // Preparar mensajes para envío secuencial
+    const messages = filteredClients
+      .filter(client => client.phone)
+      .map(client => {
         const personalizedMessage = customMessage.replace(/\{nombre\}/g, client.name);
-        
-        // Clean phone number and format for WhatsApp (Argentina)
-        let cleanPhone = client.phone.replace(/\D/g, '');
-        
-        // Handle Argentina phone number formatting
-        if (cleanPhone.startsWith('549')) {
-          // Already has correct format: 549XXXXXXXX
-          cleanPhone = cleanPhone;
-        } else if (cleanPhone.startsWith('54')) {
-          // Has 54 but missing 9: 54XXXXXXXX -> 549XXXXXXXX
-          cleanPhone = '549' + cleanPhone.substring(2);
-        } else if (cleanPhone.startsWith('0')) {
-          // Starts with 0: 0XXXXXXXX -> 549XXXXXXXX
-          cleanPhone = '549' + cleanPhone.substring(1);
-        } else {
-          // Just the number: XXXXXXXX -> 549XXXXXXXX
-          cleanPhone = '549' + cleanPhone;
-        }
-        
+        const cleanPhone = formatPhoneNumber(client.phone);
         const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(personalizedMessage)}`;
-        window.open(whatsappUrl, '_blank');
-      }
-    });
+        
+        return {
+          client,
+          message: personalizedMessage,
+          url: whatsappUrl
+        };
+      });
 
-    toast({
-      title: "Mensajes enviados",
-      description: `Se abrieron ${filteredClients.length} chats de WhatsApp`,
-    });
+    if (messages.length === 0) {
+      toast({
+        title: "No hay números válidos",
+        description: "No se encontraron clientes con números de teléfono válidos",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Enviar mensajes de forma secuencial
+    await sendMessagesSequentially(messages);
 
     setIsCustomMessageDialogOpen(false);
     setCustomMessage("");
@@ -384,13 +484,39 @@ export const BulkMessageButton = ({
               onChange={(e) => setCurrentTemplate(e.target.value)}
               placeholder="Escribe tu mensaje aquí..."
               className="min-h-[300px]"
+              disabled={isSending}
             />
+            
+            {isSending && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span className="text-sm text-muted-foreground">
+                    Enviando mensajes... ({currentMessageIndex} de {totalMessages})
+                  </span>
+                </div>
+                <Progress value={sendingProgress} className="w-full" />
+              </div>
+            )}
+            
             <div className="flex gap-2">
-              <Button onClick={confirmAndSendMessages} className="flex-1">
-                Confirmar y enviar mensajes
+              <Button 
+                onClick={confirmAndSendMessages} 
+                className="flex-1" 
+                disabled={isSending}
+              >
+                {isSending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Enviando...
+                  </>
+                ) : (
+                  "Confirmar y enviar mensajes"
+                )}
               </Button>
               <Button 
                 variant="outline" 
+                disabled={isSending}
                 onClick={() => {
                   if (currentMessageType !== 'custom') {
                     const updatedTemplates = { ...templates };
@@ -405,7 +531,11 @@ export const BulkMessageButton = ({
               >
                 Guardar plantilla
               </Button>
-              <Button variant="outline" onClick={() => setIsTemplateDialogOpen(false)}>
+              <Button 
+                variant="outline" 
+                onClick={() => setIsTemplateDialogOpen(false)}
+                disabled={isSending}
+              >
                 Cancelar
               </Button>
             </div>
@@ -427,10 +557,44 @@ export const BulkMessageButton = ({
               onChange={(e) => setCustomMessage(e.target.value)}
               placeholder="Escribe tu mensaje aquí..."
               className="min-h-[200px]"
+              disabled={isSending}
             />
-            <Button onClick={sendCustomMessage} className="w-full">
-              Enviar mensajes
-            </Button>
+            
+            {isSending && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span className="text-sm text-muted-foreground">
+                    Enviando mensajes... ({currentMessageIndex} de {totalMessages})
+                  </span>
+                </div>
+                <Progress value={sendingProgress} className="w-full" />
+              </div>
+            )}
+            
+            <div className="flex gap-2">
+              <Button 
+                onClick={sendCustomMessage} 
+                className="flex-1"
+                disabled={isSending}
+              >
+                {isSending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Enviando...
+                  </>
+                ) : (
+                  "Enviar mensajes"
+                )}
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => setIsCustomMessageDialogOpen(false)}
+                disabled={isSending}
+              >
+                Cancelar
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
