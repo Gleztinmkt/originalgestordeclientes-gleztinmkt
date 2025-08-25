@@ -235,12 +235,22 @@ export const BulkMessageButton = ({
           }
         }
         
-        // Clean phone number and ensure it starts with country code
+        // Clean phone number and format for WhatsApp (Argentina)
         let cleanPhone = client.phone.replace(/\D/g, '');
-        if (cleanPhone.startsWith('0')) {
-          cleanPhone = '54' + cleanPhone.substring(1); // Argentina country code
-        } else if (!cleanPhone.startsWith('54')) {
-          cleanPhone = '54' + cleanPhone;
+        
+        // Handle Argentina phone number formatting
+        if (cleanPhone.startsWith('549')) {
+          // Already has correct format: 549XXXXXXXX
+          cleanPhone = cleanPhone;
+        } else if (cleanPhone.startsWith('54')) {
+          // Has 54 but missing 9: 54XXXXXXXX -> 549XXXXXXXX
+          cleanPhone = '549' + cleanPhone.substring(2);
+        } else if (cleanPhone.startsWith('0')) {
+          // Starts with 0: 0XXXXXXXX -> 549XXXXXXXX
+          cleanPhone = '549' + cleanPhone.substring(1);
+        } else {
+          // Just the number: XXXXXXXX -> 549XXXXXXXX
+          cleanPhone = '549' + cleanPhone;
         }
         
         const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(personalizedMessage)}`;
@@ -282,12 +292,22 @@ export const BulkMessageButton = ({
       if (client.phone) {
         const personalizedMessage = customMessage.replace(/\{nombre\}/g, client.name);
         
-        // Clean phone number and ensure it starts with country code
+        // Clean phone number and format for WhatsApp (Argentina)
         let cleanPhone = client.phone.replace(/\D/g, '');
-        if (cleanPhone.startsWith('0')) {
-          cleanPhone = '54' + cleanPhone.substring(1); // Argentina country code
-        } else if (!cleanPhone.startsWith('54')) {
-          cleanPhone = '54' + cleanPhone;
+        
+        // Handle Argentina phone number formatting
+        if (cleanPhone.startsWith('549')) {
+          // Already has correct format: 549XXXXXXXX
+          cleanPhone = cleanPhone;
+        } else if (cleanPhone.startsWith('54')) {
+          // Has 54 but missing 9: 54XXXXXXXX -> 549XXXXXXXX
+          cleanPhone = '549' + cleanPhone.substring(2);
+        } else if (cleanPhone.startsWith('0')) {
+          // Starts with 0: 0XXXXXXXX -> 549XXXXXXXX
+          cleanPhone = '549' + cleanPhone.substring(1);
+        } else {
+          // Just the number: XXXXXXXX -> 549XXXXXXXX
+          cleanPhone = '549' + cleanPhone;
         }
         
         const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(personalizedMessage)}`;
