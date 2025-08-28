@@ -91,8 +91,35 @@ export const NotificationCenter = ({
   });
 
   useEffect(() => {
-    setupRealtimeSubscription();
-    setupTaskReminders();
+    let realtimeCleanup: (() => void) | undefined;
+    let reminderCleanup: (() => void) | undefined;
+
+    const initializeSubscriptions = async () => {
+      try {
+        // Check authentication before setting up real-time subscriptions
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          console.warn('No active session, skipping real-time subscriptions');
+          return;
+        }
+
+        realtimeCleanup = setupRealtimeSubscription();
+        reminderCleanup = setupTaskReminders();
+      } catch (error) {
+        console.error('Error initializing subscriptions:', error);
+      }
+    };
+
+    initializeSubscriptions();
+
+    return () => {
+      if (realtimeCleanup) {
+        realtimeCleanup();
+      }
+      if (reminderCleanup) {
+        reminderCleanup();
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -117,24 +144,36 @@ export const NotificationCenter = ({
   };
 
   const setupRealtimeSubscription = () => {
-    const channel = supabase
-      .channel('schema-db-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'notifications'
-        },
-        () => {
-          refetch();
-        }
-      )
-      .subscribe();
+    try {
+      const channel = supabase
+        .channel('notifications-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'notifications'
+          },
+          (payload) => {
+            console.log('Notification change received:', payload);
+            refetch();
+          }
+        )
+        .subscribe((status) => {
+          console.log('Realtime subscription status:', status);
+        });
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+      return () => {
+        try {
+          supabase.removeChannel(channel);
+        } catch (error) {
+          console.error('Error removing channel:', error);
+        }
+      };
+    } catch (error) {
+      console.error('Error setting up realtime subscription:', error);
+      return () => {}; // Return empty cleanup function on error
+    }
   };
 
   const setupTaskReminders = () => {
