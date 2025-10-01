@@ -17,6 +17,7 @@ import { es } from "date-fns/locale";
 import { format } from "date-fns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { PackageSelectionDialog } from "./PackageSelectionDialog";
 
 interface PublicationDialogProps {
   publication: Publication;
@@ -64,6 +65,8 @@ export const PublicationDialog = ({
   const [selectedDate, setSelectedDate] = useState<Date>(new Date(publication.date));
   const [copyingCopywriting, setCopyingCopywriting] = useState(false);
   const [copyingDescription, setCopyingDescription] = useState(false);
+  const [showPackageDialog, setShowPackageDialog] = useState(false);
+  const [pendingStatusChange, setPendingStatusChange] = useState<string | null>(null);
   
   // Refs para control total
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -274,6 +277,23 @@ export const PublicationDialog = ({
     if (e) {
       e.preventDefault();
     }
+
+    // Verificar si se está cambiando el estado a "publicado" y el estado anterior NO era publicado
+    const wasPublished = publication.is_published;
+    const willBePublished = status === 'published';
+
+    if (!wasPublished && willBePublished && client) {
+      // Guardar el estado pendiente y mostrar el popup de paquetes
+      setPendingStatusChange(status);
+      setShowPackageDialog(true);
+      return;
+    }
+
+    // Si no es un cambio a "publicado" o ya estaba publicado, proceder normalmente
+    await performUpdate();
+  };
+
+  const performUpdate = async () => {
     try {
       const updates: any = {};
       if (isDesigner) {
@@ -312,6 +332,44 @@ export const PublicationDialog = ({
       toast({
         title: "Error",
         description: "No se pudo actualizar la publicación. Por favor, intenta de nuevo.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handlePackageConfirm = async (packageId: string, newUsedCount: number, lastUpdate: string) => {
+    try {
+      // Si se seleccionó un paquete, actualizarlo
+      if (packageId && client) {
+        const updatedPackages = client.packages?.map(pkg =>
+          pkg.id === packageId
+            ? { ...pkg, usedPublications: newUsedCount, lastUpdated: lastUpdate }
+            : pkg
+        );
+
+        const { error: clientError } = await supabase
+          .from('clients')
+          .update({ packages: JSON.stringify(updatedPackages) })
+          .eq('id', client.id);
+
+        if (clientError) throw clientError;
+
+        toast({
+          title: "Paquete actualizado",
+          description: `Publicaciones usadas: ${newUsedCount}`,
+        });
+      }
+
+      // Proceder con el cambio de estado a "publicado"
+      await performUpdate();
+      
+      setShowPackageDialog(false);
+      setPendingStatusChange(null);
+    } catch (error) {
+      console.error('Error updating package:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el paquete",
         variant: "destructive"
       });
     }
@@ -561,5 +619,17 @@ export const PublicationDialog = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <PackageSelectionDialog
+        open={showPackageDialog}
+        onOpenChange={(open) => {
+          setShowPackageDialog(open);
+          if (!open) {
+            setPendingStatusChange(null);
+          }
+        }}
+        client={client}
+        onConfirm={handlePackageConfirm}
+      />
     </>;
 };
