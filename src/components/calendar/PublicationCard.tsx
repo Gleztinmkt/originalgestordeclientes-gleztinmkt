@@ -31,6 +31,8 @@ import { toast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { PublicationNoteDialog } from "./PublicationNoteDialog";
 import { PublicationNoteView } from "./PublicationNoteView";
+import { PackageSelectionDialog } from "./PackageSelectionDialog";
+import { supabase as supabaseClient } from "@/integrations/supabase/client";
 
 interface PublicationCardProps {
   publication: Publication;
@@ -55,6 +57,8 @@ export const PublicationCard = ({
   const [showNoteDialog, setShowNoteDialog] = useState(false);
   const [showNoteView, setShowNoteView] = useState(false);
   const [editNoteId, setEditNoteId] = useState<string | undefined>(undefined);
+  const [showPackageSelection, setShowPackageSelection] = useState(false);
+  const [pendingStatusChange, setPendingStatusChange] = useState<string | null>(null);
 
   const { data: userRole } = useQuery({
     queryKey: ['userRole'],
@@ -150,6 +154,18 @@ export const PublicationCard = ({
   };
 
   const handleStatusChange = async (status: string) => {
+    // Si el estado es "is_published" y tenemos un cliente, mostrar el popup de paquetes
+    if (status === "is_published" && client) {
+      setPendingStatusChange(status);
+      setShowPackageSelection(true);
+      return;
+    }
+
+    // Para otros estados, proceder normalmente
+    await executeStatusChange(status);
+  };
+
+  const executeStatusChange = async (status: string) => {
     try {
       const updates: any = {
         needs_recording: false,
@@ -180,6 +196,44 @@ export const PublicationCard = ({
       toast({
         title: "Error",
         description: "No se pudo actualizar el estado de la publicación.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handlePackageSelectionConfirm = async (
+    packageId: string, 
+    newUsedCount: number,
+    lastUpdate: string
+  ) => {
+    try {
+      // Si se seleccionó un paquete, actualizar el paquete
+      if (packageId && client) {
+        const updatedPackages = client.packages.map(pkg => 
+          pkg.id === packageId 
+            ? { ...pkg, usedPublications: newUsedCount, last_update: lastUpdate } 
+            : pkg
+        );
+
+        const { error: clientError } = await supabaseClient
+          .from('clients')
+          .update({ packages: updatedPackages })
+          .eq('id', client.id);
+
+        if (clientError) throw clientError;
+      }
+
+      // Proceder con el cambio de estado a "publicado"
+      if (pendingStatusChange) {
+        await executeStatusChange(pendingStatusChange);
+      }
+
+      setPendingStatusChange(null);
+    } catch (error) {
+      console.error('Error updating package:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el paquete.",
         variant: "destructive",
       });
     }
@@ -416,6 +470,18 @@ export const PublicationCard = ({
           />
         </>
       )}
+
+      <PackageSelectionDialog
+        open={showPackageSelection}
+        onOpenChange={(open) => {
+          setShowPackageSelection(open);
+          if (!open) {
+            setPendingStatusChange(null);
+          }
+        }}
+        client={client}
+        onConfirm={handlePackageSelectionConfirm}
+      />
     </>
   );
 };
