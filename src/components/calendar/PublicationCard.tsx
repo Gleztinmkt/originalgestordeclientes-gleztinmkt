@@ -217,10 +217,18 @@ export const PublicationCard = ({
 
         const { error: clientError } = await supabaseClient
           .from('clients')
-          .update({ packages: updatedPackages })
+          .update({ packages: JSON.stringify(updatedPackages) })
           .eq('id', client.id);
 
         if (clientError) throw clientError;
+
+        toast({
+          title: "Paquete actualizado",
+          description: `Publicaciones usadas: ${newUsedCount}`,
+        });
+        
+        // Refrescar los datos del cliente
+        onUpdate();
       }
 
       // Proceder con el cambio de estado a "publicado"
