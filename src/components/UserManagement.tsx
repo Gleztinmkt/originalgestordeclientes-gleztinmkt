@@ -59,6 +59,16 @@ export const UserManagement = () => {
     try {
       setIsLoading(true);
 
+      // Obtener el agency_id del usuario actual
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      if (!currentUser) throw new Error('No se pudo obtener el usuario actual');
+      
+      const { data: currentProfile } = await supabase
+        .from('profiles')
+        .select('agency_id')
+        .eq('id', currentUser.id)
+        .single();
+
       // Crear usuario en Supabase Auth
       const {
         data: {
@@ -89,12 +99,13 @@ export const UserManagement = () => {
       });
       if (roleError) throw roleError;
 
-      // Crear perfil
+      // Crear perfil con el mismo agency_id del usuario actual
       const {
         error: profileError
       } = await supabase.from('profiles').insert({
         id: user.id,
-        full_name: email.split('@')[0]
+        full_name: email.split('@')[0],
+        agency_id: currentProfile?.agency_id || null
       });
       if (profileError) throw profileError;
       toast({
