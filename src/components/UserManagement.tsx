@@ -69,45 +69,16 @@ export const UserManagement = () => {
         .eq('id', currentUser.id)
         .single();
 
-      // Crear usuario en Supabase Auth
-      const {
-        data: {
-          user
-        },
-        error: signUpError
-      } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: window.location.origin,
-          data: {
-            full_name: email.split('@')[0]
-          }
-        }
+      // Crear usuario mediante Edge Function (no afecta la sesión actual y asigna rol y perfil)
+      const { data: result, error: fnError } = await supabase.functions.invoke('admin-create-user', {
+        body: { email, password, role }
       });
-      if (signUpError) throw signUpError;
-      if (!user?.id) {
+
+      if (fnError) throw fnError;
+
+      if (!result?.ok) {
         throw new Error('No se pudo crear el usuario');
       }
-
-      // Asignar rol
-      const {
-        error: roleError
-      } = await supabase.from('user_roles').insert({
-        user_id: user.id,
-        role
-      });
-      if (roleError) throw roleError;
-
-      // Crear perfil con el mismo agency_id del usuario actual
-      const {
-        error: profileError
-      } = await supabase.from('profiles').insert({
-        id: user.id,
-        full_name: email.split('@')[0],
-        agency_id: currentProfile?.agency_id || null
-      });
-      if (profileError) throw profileError;
       toast({
         title: "Usuario creado",
         description: "El usuario ha sido creado exitosamente."
