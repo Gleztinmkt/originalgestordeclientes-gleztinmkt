@@ -52,16 +52,18 @@ const Index = () => {
     queryKey: ['userRole'],
     queryFn: async () => {
       const {
-        data: {
-          user
-        }
+        data: { user }
       } = await supabase.auth.getUser();
       if (!user) return null;
-      const {
-        data: roleData
-      } = await supabase.from('user_roles').select('role').eq('user_id', user.id).single();
-      return roleData?.role || null;
-    }
+
+      // Verificar rol admin de forma confiable vía RPC (evita problemas de RLS y resultados múltiples)
+      const { data: isAdmin, error } = await supabase.rpc('check_admin_role', { user_id: user.id });
+      if (error) {
+        console.error('Error checking admin role:', error);
+      }
+      return isAdmin ? 'admin' : null;
+    },
+    retry: 1,
   });
   const handleLogout = async () => {
     try {
