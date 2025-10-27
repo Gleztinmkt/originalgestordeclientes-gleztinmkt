@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -164,7 +164,7 @@ export type Database = {
           packages: Json | null
           payment_day: number | null
           phone: string | null
-          search_text: unknown | null
+          search_text: unknown
         }
         Insert: {
           agency_id?: string | null
@@ -180,7 +180,7 @@ export type Database = {
           packages?: Json | null
           payment_day?: number | null
           phone?: string | null
-          search_text?: unknown | null
+          search_text?: unknown
         }
         Update: {
           agency_id?: string | null
@@ -196,7 +196,7 @@ export type Database = {
           packages?: Json | null
           payment_day?: number | null
           phone?: string | null
-          search_text?: unknown | null
+          search_text?: unknown
         }
         Relationships: [
           {
@@ -729,18 +729,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      check_admin_role: {
-        Args: { user_id: string }
-        Returns: boolean
-      }
+      check_admin_role: { Args: { user_id: string }; Returns: boolean }
       create_initial_super_admin: {
-        Args: { user_id: string; full_name: string }
+        Args: { full_name: string; user_id: string }
         Returns: undefined
       }
-      is_super_admin: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
+      is_super_admin: { Args: never; Returns: boolean }
     }
     Enums: {
       tax_id_type: "CUIT" | "Consumidor Final"
