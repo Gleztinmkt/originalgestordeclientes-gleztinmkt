@@ -7,43 +7,63 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+function getBearerToken(req: Request): string | null {
+  const auth = req.headers.get("Authorization") || req.headers.get("authorization");
+  if (!auth) return null;
+  const parts = auth.split(" ");
+  return parts.length === 2 ? parts[1] : null;
+}
+
+function decodeJwtSub(token: string): string | null {
+  try {
+    const payload = token.split(".")[1];
+    const decoded = JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/")));
+    return decoded?.sub || null;
+  } catch (_) {
+    return null;
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { email, password, role } = await req.json();
-
-    if (!email || !password || !role) {
-      return new Response(JSON.stringify({ error: "Missing fields" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
-    }
-
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const anonKey = Deno.env.get("SUPABASE_PUBLISHABLE_KEY")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // Client with caller's auth to validate permissions and read their profile
-    const callerClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: req.headers.get("Authorization") || "" } },
-    });
+    if (!supabaseUrl || !serviceKey) {
+      throw new Error("Faltan variables de entorno necesarias");
+    }
 
-    // Verify caller is admin using secure RPC
-    const { data: isAdmin, error: adminErr } = await callerClient.rpc("check_admin_role", {
-      user_id: (await callerClient.auth.getUser()).data.user?.id,
-    });
+    const adminClient = createClient(supabaseUrl, serviceKey);
 
-    if (adminErr) {
-      console.error("Admin check error:", adminErr);
-      return new Response(JSON.stringify({ error: "No se pudo verificar permisos" }), {
+    const token = getBearerToken(req);
+    if (!token) {
+      return new Response(JSON.stringify({ error: "Falta token de autenticación" }), {
         status: 401,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     }
 
+    const callerId = decodeJwtSub(token);
+    if (!callerId) {
+      return new Response(JSON.stringify({ error: "Token inválido" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    // Verificar que el solicitante sea admin
+    const { data: isAdmin, error: adminErr } = await adminClient.rpc("check_admin_role", { user_id: callerId });
+    if (adminErr) {
+      console.error("RPC check_admin_role error:", adminErr);
+      return new Response(JSON.stringify({ error: "No se pudo verificar permisos" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
     if (!isAdmin) {
       return new Response(JSON.stringify({ error: "Solo administradores pueden crear usuarios" }), {
         status: 403,
@@ -51,16 +71,20 @@ serve(async (req) => {
       });
     }
 
-    // Get creator agency_id
-    const { data: callerUser } = await callerClient.auth.getUser();
-    const creatorId = callerUser?.user?.id;
+    const { email, password, role } = await req.json();
+    if (!email || !password || !role) {
+      return new Response(JSON.stringify({ error: "Campos incompletos" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
 
-    const { data: creatorProfile, error: profErr } = await callerClient
+    // Obtener agency_id del creador
+    const { data: creatorProfile, error: profErr } = await adminClient
       .from("profiles")
       .select("agency_id")
-      .eq("id", creatorId)
+      .eq("id", callerId)
       .single();
-
     if (profErr) {
       console.error("Profile read error:", profErr);
       return new Response(JSON.stringify({ error: "No se pudo obtener la agencia del creador" }), {
@@ -69,18 +93,14 @@ serve(async (req) => {
       });
     }
 
-    // Admin client with service role for privileged ops
-    const adminClient = createClient(supabaseUrl, serviceKey);
-
-    // Create auth user without affecting caller session
+    // Crear usuario auth
     const { data: created, error: createErr } = await adminClient.auth.admin.createUser({
       email,
       password,
       email_confirm: true,
       user_metadata: { full_name: email.split("@")[0] },
     });
-
-    if (createErr || !created.user) {
+    if (createErr || !created?.user) {
       console.error("Create user error:", createErr);
       return new Response(JSON.stringify({ error: createErr?.message || "No se pudo crear el usuario" }), {
         status: 400,
@@ -90,11 +110,8 @@ serve(async (req) => {
 
     const newUserId = created.user.id;
 
-    // Assign role
-    const { error: roleErr } = await adminClient.from("user_roles").insert({
-      user_id: newUserId,
-      role,
-    });
+    // Asignar rol
+    const { error: roleErr } = await adminClient.from("user_roles").insert({ user_id: newUserId, role });
     if (roleErr) {
       console.error("Insert role error:", roleErr);
       return new Response(JSON.stringify({ error: "No se pudo asignar el rol" }), {
@@ -103,7 +120,7 @@ serve(async (req) => {
       });
     }
 
-    // Create profile inheriting agency
+    // Crear perfil con misma agencia
     const { error: profInsErr } = await adminClient.from("profiles").insert({
       id: newUserId,
       full_name: email.split("@")[0],
