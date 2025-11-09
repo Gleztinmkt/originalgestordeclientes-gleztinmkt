@@ -217,7 +217,10 @@ export const PublicationCard = ({
 
         const { error: clientError } = await supabaseClient
           .from('clients')
-          .update({ packages: JSON.stringify(updatedPackages) })
+          .update({ 
+            packages: JSON.stringify(updatedPackages),
+            last_post: lastUpdate
+          })
           .eq('id', client.id);
 
         if (clientError) throw clientError;

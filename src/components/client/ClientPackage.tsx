@@ -312,6 +312,11 @@ export const ClientPackage = ({
               Último Post:
             </Label>
             <Input id="lastPost" value={lastPost} onChange={e => handleLastPostChange(e.target.value)} className="w-full" placeholder="Ingrese el último post..." disabled={disabled} />
+            {lastPost && (
+              <p className="text-xs text-muted-foreground">
+                Actualización anterior: {lastPost}
+              </p>
+            )}
           </div>
 
           <div className="flex gap-2">
