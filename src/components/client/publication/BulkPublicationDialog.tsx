@@ -124,9 +124,18 @@ export function BulkPublicationDialog({ clientId, packageId, existingPublication
     }
   };
 
-  const hasPublicationOnDate = (date: Date) => {
+  const hasPublicationOnDate = (date: Date, currentIndex?: number) => {
     const dateStr = format(date, 'yyyy-MM-dd');
-    return existingPublications.some(pub => pub.date.startsWith(dateStr));
+    
+    // Check existing publications
+    const hasExisting = existingPublications.some(pub => pub.date.startsWith(dateStr));
+    
+    // Check publications already assigned in this bulk load (excluding current one being edited)
+    const hasInBulk = publications.some((pub, idx) => 
+      idx !== currentIndex && pub.date && format(pub.date, 'yyyy-MM-dd') === dateStr
+    );
+    
+    return hasExisting || hasInBulk;
   };
 
   return (
@@ -269,7 +278,7 @@ export function BulkPublicationDialog({ clientId, packageId, existingPublication
                             locale={es}
                             className="rounded-md border mt-2"
                             modifiers={{
-                              hasPublication: (date) => hasPublicationOnDate(date)
+                              hasPublication: (date) => hasPublicationOnDate(date, index)
                             }}
                             modifiersStyles={{
                               hasPublication: {
