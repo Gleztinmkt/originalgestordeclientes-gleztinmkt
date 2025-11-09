@@ -17,6 +17,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Sparkles, ChevronDown, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { BulkPublicationDialog } from "./BulkPublicationDialog";
 
 interface PublicationFormProps {
   onSubmit: (values: {
@@ -31,6 +32,9 @@ interface PublicationFormProps {
   editingPublication?: Publication | null;
   onCancelEdit?: () => void;
   publicationDates?: Date[];
+  clientId: string;
+  existingPublications: Array<{ date: string }>;
+  onPublicationsChange: () => void;
 }
 
 export const PublicationForm = ({ 
@@ -39,7 +43,10 @@ export const PublicationForm = ({
   packageId, 
   editingPublication,
   onCancelEdit,
-  publicationDates = []
+  publicationDates = [],
+  clientId,
+  existingPublications,
+  onPublicationsChange
 }: PublicationFormProps) => {
   const { toast } = useToast();
   const [name, setName] = useState("");
@@ -148,12 +155,22 @@ export const PublicationForm = ({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {/* Carga Automática con IA */}
+      {/* Botones de carga con IA */}
+      <div className="flex gap-2">
+        <BulkPublicationDialog
+          clientId={clientId}
+          packageId={packageId}
+          existingPublications={existingPublications}
+          onSuccess={onPublicationsChange}
+        />
+      </div>
+
+      {/* Carga Individual con IA */}
       <Collapsible open={isAiOpen} onOpenChange={setIsAiOpen} className="border border-border rounded-lg p-4 bg-muted/30">
         <CollapsibleTrigger className="flex items-center justify-between w-full">
           <div className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-primary" />
-            <span className="font-medium text-foreground">🪄 Carga Automática con IA</span>
+            <span className="font-medium text-foreground">🪄 Carga Individual con IA</span>
           </div>
           <ChevronDown className={`h-4 w-4 transition-transform ${isAiOpen ? 'rotate-180' : ''}`} />
         </CollapsibleTrigger>

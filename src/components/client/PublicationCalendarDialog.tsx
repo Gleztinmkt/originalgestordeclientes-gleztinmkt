@@ -440,6 +440,9 @@ export const PublicationCalendarDialog = ({
               editingPublication={editingPublication}
               onCancelEdit={() => setEditingPublication(null)}
               publicationDates={publications.map(p => new Date(p.date))}
+              clientId={clientId}
+              existingPublications={publications.map(p => ({ date: p.date }))}
+              onPublicationsChange={refetch}
             />
 
             <div className="flex justify-end pt-4">
