@@ -1,1 +1,4 @@
 project_id = "rnwlqsnvswuecmqhsfww"
+
+[functions.analyze-publication]
+verify_jwt = true

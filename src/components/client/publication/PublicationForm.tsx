@@ -13,6 +13,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Sparkles, ChevronDown, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface PublicationFormProps {
   onSubmit: (values: {
@@ -37,11 +41,15 @@ export const PublicationForm = ({
   onCancelEdit,
   publicationDates = []
 }: PublicationFormProps) => {
+  const { toast } = useToast();
   const [name, setName] = useState("");
   const [type, setType] = useState<'reel' | 'carousel' | 'image'>('image');
   const [date, setDate] = useState<Date>();
   const [description, setDescription] = useState("");
   const [copywriting, setCopywriting] = useState("");
+  const [aiContent, setAiContent] = useState("");
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isAiOpen, setIsAiOpen] = useState(false);
 
   // Load publication data when editing
   useEffect(() => {
@@ -75,7 +83,58 @@ export const PublicationForm = ({
     setDate(undefined);
     setDescription("");
     setCopywriting("");
+    setAiContent("");
     onCancelEdit?.();
+  };
+
+  const handleAiAnalysis = async () => {
+    if (!aiContent.trim()) {
+      toast({
+        title: "Error",
+        description: "Por favor pega el contenido a analizar",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsAnalyzing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('analyze-publication', {
+        body: { content: aiContent }
+      });
+
+      if (error) {
+        console.error('Error al analizar:', error);
+        throw error;
+      }
+
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
+      // Auto-rellenar los campos
+      if (data.title) setName(data.title);
+      if (data.type) setType(data.type);
+      if (data.description) setDescription(data.description);
+      if (data.copywriting) setCopywriting(data.copywriting);
+
+      toast({
+        title: "✨ Análisis completado",
+        description: "Los campos se han rellenado automáticamente. Puedes editarlos antes de guardar.",
+      });
+
+      // Colapsar el componente después del análisis exitoso
+      setIsAiOpen(false);
+    } catch (error) {
+      console.error('Error:', error);
+      toast({
+        title: "Error al analizar",
+        description: error instanceof Error ? error.message : "No se pudo analizar el contenido. Intenta de nuevo.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   // Check if a date has publications
@@ -89,6 +148,50 @@ export const PublicationForm = ({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Carga Automática con IA */}
+      <Collapsible open={isAiOpen} onOpenChange={setIsAiOpen} className="border border-border rounded-lg p-4 bg-muted/30">
+        <CollapsibleTrigger className="flex items-center justify-between w-full">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-primary" />
+            <span className="font-medium text-foreground">🪄 Carga Automática con IA</span>
+          </div>
+          <ChevronDown className={`h-4 w-4 transition-transform ${isAiOpen ? 'rotate-180' : ''}`} />
+        </CollapsibleTrigger>
+        <CollapsibleContent className="mt-4 space-y-3">
+          <div className="space-y-2">
+            <Label htmlFor="ai-content" className="text-sm text-muted-foreground">
+              Pega aquí el contenido completo de la publicación
+            </Label>
+            <Textarea
+              id="ai-content"
+              value={aiContent}
+              onChange={(e) => setAiContent(e.target.value)}
+              placeholder="Ejemplo:&#10;1. Video Institucional con Denise...&#10;Duración: 45-60 segundos&#10;...&#10;Texto publicación:&#10;💪 En Glúteos de Acero..."
+              className="min-h-[150px] font-mono text-sm"
+              disabled={isAnalyzing}
+            />
+          </div>
+          <Button
+            type="button"
+            onClick={handleAiAnalysis}
+            disabled={isAnalyzing || !aiContent.trim()}
+            className="w-full"
+          >
+            {isAnalyzing ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Analizando con IA...
+              </>
+            ) : (
+              <>
+                <Sparkles className="mr-2 h-4 w-4" />
+                Analizar y Auto-rellenar
+              </>
+            )}
+          </Button>
+        </CollapsibleContent>
+      </Collapsible>
+
       <div className="space-y-2">
         <Label htmlFor="name">Nombre de la publicación</Label>
         <Input
