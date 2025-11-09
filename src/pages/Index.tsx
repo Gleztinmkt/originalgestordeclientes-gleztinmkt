@@ -194,7 +194,7 @@ const Index = () => {
                   </TabsContent>
                 </>}
               <TabsContent value="calendar">
-                <CalendarView clients={clients} />
+                <CalendarView clients={clients} onClientsUpdate={loadClients} />
               </TabsContent>
             </div>
           </Tabs>
