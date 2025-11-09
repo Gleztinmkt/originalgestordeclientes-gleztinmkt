@@ -1,6 +1,6 @@
 
 import { format } from "date-fns";
-import { Trash2, StickyNote } from "lucide-react";
+import { Trash2, StickyNote, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Publication, PublicationNote } from "./types";
 import { useQuery } from "@tanstack/react-query";
@@ -13,13 +13,15 @@ interface PublicationItemProps {
   onDelete: (id: string) => void;
   onTogglePublished: (id: string, isPublished: boolean) => void;
   onSelect: (publication: Publication) => void;
+  onEdit: (publication: Publication) => void;
 }
 
 export const PublicationItem = ({ 
   publication, 
   onDelete, 
   onTogglePublished,
-  onSelect 
+  onSelect,
+  onEdit
 }: PublicationItemProps) => {
   // Query to check if user is admin
   const { data: userRole } = useQuery({
@@ -133,17 +135,30 @@ export const PublicationItem = ({
           {format(new Date(publication.date), "dd/MM/yyyy")} • {publication.type}
         </p>
       </div>
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={(e) => {
-          e.stopPropagation();
-          onDelete(publication.id);
-        }}
-        className="text-red-500 hover:text-red-700"
-      >
-        <Trash2 className="h-4 w-4" />
-      </Button>
+      <div className="flex gap-2">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit(publication);
+          }}
+          className="text-blue-500 hover:text-blue-700"
+        >
+          <Pencil className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete(publication.id);
+          }}
+          className="text-red-500 hover:text-red-700"
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </div>
     </div>
   );
 };

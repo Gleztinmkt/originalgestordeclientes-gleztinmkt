@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { es } from "date-fns/locale";
+import { Publication } from "./types";
 import {
   Select,
   SelectContent,
@@ -23,24 +24,67 @@ interface PublicationFormProps {
   }) => void;
   isSubmitting?: boolean;
   packageId?: string;
+  editingPublication?: Publication | null;
+  onCancelEdit?: () => void;
+  publicationDates?: Date[];
 }
 
-export const PublicationForm = ({ onSubmit, isSubmitting, packageId }: PublicationFormProps) => {
+export const PublicationForm = ({ 
+  onSubmit, 
+  isSubmitting, 
+  packageId, 
+  editingPublication,
+  onCancelEdit,
+  publicationDates = []
+}: PublicationFormProps) => {
   const [name, setName] = useState("");
   const [type, setType] = useState<'reel' | 'carousel' | 'image'>('image');
   const [date, setDate] = useState<Date>();
   const [description, setDescription] = useState("");
   const [copywriting, setCopywriting] = useState("");
 
+  // Load publication data when editing
+  useEffect(() => {
+    if (editingPublication) {
+      setName(editingPublication.name);
+      setType(editingPublication.type as 'reel' | 'carousel' | 'image');
+      setDate(new Date(editingPublication.date));
+      setDescription(editingPublication.description || "");
+      setCopywriting(editingPublication.copywriting || "");
+    }
+  }, [editingPublication]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!date || !name) return;
     onSubmit({ name, type, date, description, copywriting });
+    
+    // Reset form only if not editing
+    if (!editingPublication) {
+      setName("");
+      setType("image");
+      setDate(undefined);
+      setDescription("");
+      setCopywriting("");
+    }
+  };
+
+  const handleCancel = () => {
     setName("");
     setType("image");
     setDate(undefined);
     setDescription("");
     setCopywriting("");
+    onCancelEdit?.();
+  };
+
+  // Check if a date has publications
+  const hasPublicationOnDate = (checkDate: Date) => {
+    return publicationDates.some(pubDate => 
+      pubDate.getDate() === checkDate.getDate() &&
+      pubDate.getMonth() === checkDate.getMonth() &&
+      pubDate.getFullYear() === checkDate.getFullYear()
+    );
   };
 
   return (
@@ -78,6 +122,16 @@ export const PublicationForm = ({ onSubmit, isSubmitting, packageId }: Publicati
             onSelect={setDate}
             locale={es}
             className="rounded-md border dark:bg-gray-800 dark:text-white"
+            modifiers={{
+              hasPublication: (date) => hasPublicationOnDate(date)
+            }}
+            modifiersStyles={{
+              hasPublication: { 
+                backgroundColor: 'hsl(var(--primary) / 0.2)',
+                fontWeight: 'bold',
+                border: '2px solid hsl(var(--primary))'
+              }
+            }}
           />
         </div>
       </div>
@@ -103,9 +157,14 @@ export const PublicationForm = ({ onSubmit, isSubmitting, packageId }: Publicati
         />
       </div>
 
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2">
+        {editingPublication && (
+          <Button type="button" variant="outline" onClick={handleCancel}>
+            Cancelar
+          </Button>
+        )}
         <Button type="submit" disabled={isSubmitting}>
-          Agregar publicación
+          {editingPublication ? 'Actualizar publicación' : 'Agregar publicación'}
         </Button>
       </div>
     </form>

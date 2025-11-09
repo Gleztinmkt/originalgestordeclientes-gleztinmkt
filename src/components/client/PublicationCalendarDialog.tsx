@@ -23,6 +23,7 @@ export const PublicationCalendarDialog = ({
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedPublication, setSelectedPublication] = useState<Publication | null>(null);
+  const [editingPublication, setEditingPublication] = useState<Publication | null>(null);
   const [copywriting, setCopywriting] = useState("");
   const {
     data: publications = [],
@@ -75,6 +76,7 @@ export const PublicationCalendarDialog = ({
       });
       return;
     }
+    
     const publicationData = {
       client_id: clientId,
       name: values.name,
@@ -83,25 +85,44 @@ export const PublicationCalendarDialog = ({
       description: values.description || null,
       copywriting: values.copywriting || null,
       package_id: packageId || null,
-      is_published: false
+      is_published: editingPublication?.is_published || false
     };
+    
     try {
       setIsSubmitting(true);
-      const {
-        error
-      } = await supabase.from('publications').insert(publicationData);
-      if (error) throw error;
-      toast({
-        title: "Publicación agregada",
-        description: "La publicación se ha agregado correctamente."
-      });
+      
+      if (editingPublication) {
+        // Update existing publication
+        const { error } = await supabase
+          .from('publications')
+          .update(publicationData)
+          .eq('id', editingPublication.id);
+        
+        if (error) throw error;
+        
+        toast({
+          title: "Publicación actualizada",
+          description: "La publicación se ha actualizado correctamente."
+        });
+        setEditingPublication(null);
+      } else {
+        // Insert new publication
+        const { error } = await supabase.from('publications').insert(publicationData);
+        if (error) throw error;
+        
+        toast({
+          title: "Publicación agregada",
+          description: "La publicación se ha agregado correctamente."
+        });
+      }
+      
       await refetch();
       setCopywriting("");
     } catch (error) {
-      console.error('Error adding publication:', error);
+      console.error('Error saving publication:', error);
       toast({
         title: "Error",
-        description: "No se pudo agregar la publicación. Por favor, intenta de nuevo.",
+        description: "No se pudo guardar la publicación. Por favor, intenta de nuevo.",
         variant: "destructive"
       });
     } finally {
@@ -401,7 +422,7 @@ export const PublicationCalendarDialog = ({
         
         <div className="space-y-6">
           <div className="space-y-4">
-            {publications.map(publication => <PublicationItem key={publication.id} publication={publication} onDelete={handleDelete} onTogglePublished={handleTogglePublished} onSelect={setSelectedPublication} />)}
+            {publications.map(publication => <PublicationItem key={publication.id} publication={publication} onDelete={handleDelete} onTogglePublished={handleTogglePublished} onSelect={setSelectedPublication} onEdit={setEditingPublication} />)}
           </div>
           
           {selectedPublication && <PublicationDescription publication={selectedPublication} />}
@@ -412,7 +433,14 @@ export const PublicationCalendarDialog = ({
               
             </div>
 
-            <PublicationForm onSubmit={handleSubmit} isSubmitting={isSubmitting} packageId={packageId} />
+            <PublicationForm 
+              onSubmit={handleSubmit} 
+              isSubmitting={isSubmitting} 
+              packageId={packageId}
+              editingPublication={editingPublication}
+              onCancelEdit={() => setEditingPublication(null)}
+              publicationDates={publications.map(p => new Date(p.date))}
+            />
 
             <div className="flex justify-end pt-4">
               <Button variant="outline" onClick={() => setIsOpen(false)} className="w-full sm:w-auto">
