@@ -343,13 +343,16 @@ export const PublicationDialog = ({
       if (packageId && client) {
         const updatedPackages = client.packages?.map(pkg =>
           pkg.id === packageId
-            ? { ...pkg, usedPublications: newUsedCount, lastUpdated: lastUpdate }
+            ? { ...pkg, usedPublications: newUsedCount }
             : pkg
         );
 
         const { error: clientError } = await supabase
           .from('clients')
-          .update({ packages: JSON.stringify(updatedPackages) })
+          .update({ 
+            packages: JSON.stringify(updatedPackages),
+            last_post: lastUpdate
+          })
           .eq('id', client.id);
 
         if (clientError) throw clientError;

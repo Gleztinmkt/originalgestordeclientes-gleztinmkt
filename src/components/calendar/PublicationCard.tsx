@@ -209,11 +209,11 @@ export const PublicationCard = ({
     try {
       // Si se seleccionó un paquete, actualizar el paquete
       if (packageId && client) {
-        const updatedPackages = client.packages.map(pkg => 
-          pkg.id === packageId 
-            ? { ...pkg, usedPublications: newUsedCount, last_update: lastUpdate } 
-            : pkg
-        );
+      const updatedPackages = client.packages.map(pkg => 
+        pkg.id === packageId 
+          ? { ...pkg, usedPublications: newUsedCount } 
+          : pkg
+      );
 
         const { error: clientError } = await supabaseClient
           .from('clients')
