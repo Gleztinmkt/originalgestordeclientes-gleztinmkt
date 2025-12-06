@@ -32,13 +32,15 @@ export const PackageSelectionDialog = ({
   const [lastUpdateDates, setLastUpdateDates] = useState<Record<string, string>>({});
 
   const handleConfirm = () => {
+    // Siempre usar la fecha actual cuando se confirma
+    const lastUpdate = format(new Date(), "d 'de' MMMM, yyyy", { locale: es });
+    
     if (selectedPackageId) {
       const newCount = updatedCounts[selectedPackageId];
-      const lastUpdate = lastUpdateDates[selectedPackageId] || format(new Date(), "d 'de' MMMM, yyyy", { locale: es });
       onConfirm(selectedPackageId, newCount, lastUpdate);
     } else {
       // Si no se seleccionó ningún paquete, confirmar sin actualizar paquetes
-      onConfirm("", 0, "");
+      onConfirm("", 0, lastUpdate);
     }
     onOpenChange(false);
   };
