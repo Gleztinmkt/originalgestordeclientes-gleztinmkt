@@ -300,6 +300,39 @@ export type Database = {
           },
         ]
       }
+      message_templates: {
+        Row: {
+          category: string | null
+          content: string
+          created_at: string
+          description: string | null
+          id: string
+          is_default: boolean | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          content: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_default?: boolean | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          content?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_default?: boolean | null
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       note_replies: {
         Row: {
           content: string
