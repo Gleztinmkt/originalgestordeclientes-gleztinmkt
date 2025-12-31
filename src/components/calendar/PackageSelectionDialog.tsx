@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -13,6 +13,8 @@ import { PackageCounter } from "@/components/client/PackageCounter";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { supabase } from "@/integrations/supabase/client";
+import { Calendar } from "lucide-react";
 
 interface PackageSelectionDialogProps {
   open: boolean;
@@ -30,6 +32,37 @@ export const PackageSelectionDialog = ({
   const [selectedPackageId, setSelectedPackageId] = useState<string | null>(null);
   const [updatedCounts, setUpdatedCounts] = useState<Record<string, number>>({});
   const [lastUpdateDates, setLastUpdateDates] = useState<Record<string, string>>({});
+  const [clientLastPost, setClientLastPost] = useState<string | null>(null);
+
+  // Fetch the client's last_post when dialog opens
+  useEffect(() => {
+    if (open && client) {
+      const fetchLastPost = async () => {
+        try {
+          const { data, error } = await supabase
+            .from('clients')
+            .select('last_post')
+            .eq('id', client.id)
+            .single();
+          
+          if (error) throw error;
+          setClientLastPost(data?.last_post || null);
+        } catch (error) {
+          console.error('Error fetching last post:', error);
+        }
+      };
+      fetchLastPost();
+    }
+  }, [open, client]);
+
+  // Reset state when dialog closes
+  useEffect(() => {
+    if (!open) {
+      setSelectedPackageId(null);
+      setUpdatedCounts({});
+      setLastUpdateDates({});
+    }
+  }, [open]);
 
   const handleConfirm = () => {
     // Siempre usar la fecha actual cuando se confirma
@@ -58,6 +91,12 @@ export const PackageSelectionDialog = ({
       ...prev,
       [packageId]: newCount
     }));
+    // Update local preview of the date
+    const newDate = format(new Date(), "d 'de' MMMM, yyyy", { locale: es });
+    setLastUpdateDates(prev => ({
+      ...prev,
+      [packageId]: newDate
+    }));
   };
 
   const handleUpdateLastUsed = (packageId: string, date: string) => {
@@ -80,11 +119,22 @@ export const PackageSelectionDialog = ({
           </DialogDescription>
         </DialogHeader>
 
+        {/* Mostrar última actualización del cliente */}
+        {clientLastPost && (
+          <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">
+              Última actualización del contador: <span className="font-medium text-foreground">{clientLastPost}</span>
+            </span>
+          </div>
+        )}
+
         <div className="space-y-4 py-4">
           {client.packages && client.packages.length > 0 ? (
             client.packages.map((pkg) => {
               const currentUsed = updatedCounts[pkg.id] ?? pkg.usedPublications;
               const isSelected = selectedPackageId === pkg.id;
+              const previewDate = lastUpdateDates[pkg.id];
               
               return (
                 <div
@@ -113,6 +163,14 @@ export const PackageSelectionDialog = ({
                     onUpdateUsed={(newCount) => handleUpdateUsed(pkg.id, newCount)}
                     onUpdateLastUsed={(date) => handleUpdateLastUsed(pkg.id, date)}
                   />
+
+                  {/* Mostrar preview de la nueva fecha si se modificó */}
+                  {isSelected && previewDate && (
+                    <div className="mt-2 text-sm text-primary flex items-center gap-1">
+                      <Calendar className="h-3 w-3" />
+                      Se actualizará a: {previewDate}
+                    </div>
+                  )}
                 </div>
               );
             })
