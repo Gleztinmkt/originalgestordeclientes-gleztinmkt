@@ -307,42 +307,40 @@ export const PublicationForm = ({
         </Select>
       </div>
 
-      {/* Estado y Diseñador - solo mostrar cuando se está editando */}
-      {editingPublication && (
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label>Estado</Label>
-            <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger className="dark:bg-gray-800 dark:text-white">
-                <SelectValue placeholder="Seleccionar estado" />
-              </SelectTrigger>
-              <SelectContent className="dark:bg-gray-800">
-                <SelectItem value="needs_recording">Falta grabar</SelectItem>
-                <SelectItem value="needs_editing">Falta editar</SelectItem>
-                <SelectItem value="in_editing">En edición</SelectItem>
-                <SelectItem value="in_review">En revisión</SelectItem>
-                <SelectItem value="approved">Aprobado</SelectItem>
-                <SelectItem value="published">Publicado</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Diseñador</Label>
-            <Select value={designer} onValueChange={setDesigner}>
-              <SelectTrigger className="dark:bg-gray-800 dark:text-white">
-                <SelectValue placeholder="Seleccionar diseñador" />
-              </SelectTrigger>
-              <SelectContent className="dark:bg-gray-800">
-                <SelectItem value="no_designer">Sin diseñador</SelectItem>
-                {designers.map(d => (
-                  <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+      {/* Estado y Diseñador - siempre visibles */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label>Estado</Label>
+          <Select value={status} onValueChange={setStatus}>
+            <SelectTrigger className="dark:bg-gray-800 dark:text-white">
+              <SelectValue placeholder="Seleccionar estado" />
+            </SelectTrigger>
+            <SelectContent className="dark:bg-gray-800">
+              <SelectItem value="needs_recording">Falta grabar</SelectItem>
+              <SelectItem value="needs_editing">Falta editar</SelectItem>
+              <SelectItem value="in_editing">En edición</SelectItem>
+              <SelectItem value="in_review">En revisión</SelectItem>
+              <SelectItem value="approved">Aprobado</SelectItem>
+              <SelectItem value="published">Publicado</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
-      )}
+
+        <div className="space-y-2">
+          <Label>Diseñador</Label>
+          <Select value={designer} onValueChange={setDesigner}>
+            <SelectTrigger className="dark:bg-gray-800 dark:text-white">
+              <SelectValue placeholder="Seleccionar diseñador" />
+            </SelectTrigger>
+            <SelectContent className="dark:bg-gray-800">
+              <SelectItem value="no_designer">Sin diseñador</SelectItem>
+              {designers.map(d => (
+                <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
 
       <div className="space-y-2">
         <Label>Fecha de publicación</Label>
@@ -367,69 +365,67 @@ export const PublicationForm = ({
         </div>
       </div>
 
-      {/* Links - solo mostrar cuando se está editando */}
-      {editingPublication && (
-        <div className="space-y-2">
-          <Label>Enlaces</Label>
-          <Card>
-            <CardContent className="p-3 space-y-4">
-              <div className="flex flex-col sm:flex-row gap-2">
-                <div className="flex-1">
-                  <Input
-                    placeholder="Etiqueta"
-                    value={newLinkLabel}
-                    onChange={e => setNewLinkLabel(e.target.value)}
-                    className="text-sm"
-                  />
-                </div>
-                <div className="flex-1">
-                  <Input
-                    placeholder="URL"
-                    value={newLinkUrl}
-                    onChange={e => setNewLinkUrl(e.target.value)}
-                    className="text-sm"
-                  />
-                </div>
-                <Button type="button" variant="outline" onClick={handleAddLink} className="w-full sm:w-auto">
-                  <Plus className="h-4 w-4" />
-                </Button>
+      {/* Links - siempre visibles */}
+      <div className="space-y-2">
+        <Label>Enlaces</Label>
+        <Card>
+          <CardContent className="p-3 space-y-4">
+            <div className="flex flex-col sm:flex-row gap-2">
+              <div className="flex-1">
+                <Input
+                  placeholder="Etiqueta"
+                  value={newLinkLabel}
+                  onChange={e => setNewLinkLabel(e.target.value)}
+                  className="text-sm"
+                />
               </div>
-              {links.length > 0 && (
-                <ScrollArea className="h-[100px]">
-                  <div className="space-y-2">
-                    {links.map((link, index) => (
-                      <div key={index} className="flex items-center gap-2 bg-secondary p-2 rounded text-sm">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            const newLinks = [...links];
-                            newLinks.splice(index, 1);
-                            setLinks(newLinks);
-                          }}
-                          className="text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                        <span className="flex-1 truncate">{link.label}</span>
-                        <a
-                          href={link.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-500 hover:text-blue-700"
-                        >
-                          <ExternalLink className="h-4 w-4" />
-                        </a>
-                      </div>
-                    ))}
-                  </div>
-                </ScrollArea>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      )}
+              <div className="flex-1">
+                <Input
+                  placeholder="URL"
+                  value={newLinkUrl}
+                  onChange={e => setNewLinkUrl(e.target.value)}
+                  className="text-sm"
+                />
+              </div>
+              <Button type="button" variant="outline" onClick={handleAddLink} className="w-full sm:w-auto">
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+            {links.length > 0 && (
+              <ScrollArea className="h-[100px]">
+                <div className="space-y-2">
+                  {links.map((link, index) => (
+                    <div key={index} className="flex items-center gap-2 bg-secondary p-2 rounded text-sm">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          const newLinks = [...links];
+                          newLinks.splice(index, 1);
+                          setLinks(newLinks);
+                        }}
+                        className="text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                      <span className="flex-1 truncate">{link.label}</span>
+                      <a
+                        href={link.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-500 hover:text-blue-700"
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                      </a>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
       <div className="space-y-2">
         <Label htmlFor="copywriting">Copywriting</Label>
