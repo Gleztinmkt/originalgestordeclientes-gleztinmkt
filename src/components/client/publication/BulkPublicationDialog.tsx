@@ -102,7 +102,13 @@ export function BulkPublicationDialog({ clientId, packageId, existingPublication
         date: pub.date!.toISOString(),
         description: pub.description || null,
         copywriting: pub.copywriting || null,
-        is_published: false
+        is_published: false,
+        needs_recording: true, // Default state
+        needs_editing: false,
+        in_editing: false,
+        in_review: false,
+        approved: false,
+        designer: null // No designer by default
       }));
 
       const { error } = await supabase

@@ -39,6 +39,9 @@ export interface PublicationFormValues {
   date: Date;
   description?: string;
   copywriting?: string;
+  status?: string;
+  designer?: string | null;
+  links?: string;
 }
 
 export interface PublicationCalendarDialogProps {

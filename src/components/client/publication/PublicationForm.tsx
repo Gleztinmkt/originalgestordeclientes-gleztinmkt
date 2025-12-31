@@ -14,10 +14,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Sparkles, ChevronDown, Loader2 } from "lucide-react";
+import { Sparkles, ChevronDown, Loader2, Plus, Trash2, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useQuery } from "@tanstack/react-query";
 import { BulkPublicationDialog } from "./BulkPublicationDialog";
+import { Card, CardContent } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface PublicationFormProps {
   onSubmit: (values: {
@@ -26,6 +29,9 @@ interface PublicationFormProps {
     date: Date;
     description: string;
     copywriting: string;
+    status?: string;
+    designer?: string | null;
+    links?: string;
   }) => void;
   isSubmitting?: boolean;
   packageId?: string;
@@ -57,6 +63,24 @@ export const PublicationForm = ({
   const [aiContent, setAiContent] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isAiOpen, setIsAiOpen] = useState(false);
+  const [status, setStatus] = useState("needs_recording");
+  const [designer, setDesigner] = useState<string>("no_designer");
+  const [links, setLinks] = useState<Array<{ label: string; url: string }>>([]);
+  const [newLinkLabel, setNewLinkLabel] = useState("");
+  const [newLinkUrl, setNewLinkUrl] = useState("");
+
+  // Fetch designers
+  const { data: designers = [] } = useQuery({
+    queryKey: ['designers'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('designers')
+        .select('*')
+        .order('name');
+      if (error) throw error;
+      return data;
+    }
+  });
 
   // Load publication data when editing
   useEffect(() => {
@@ -66,13 +90,57 @@ export const PublicationForm = ({
       setDate(new Date(editingPublication.date));
       setDescription(editingPublication.description || "");
       setCopywriting(editingPublication.copywriting || "");
+      
+      // Set status based on publication flags
+      const pubStatus = editingPublication.is_published ? 'published' :
+        editingPublication.approved ? 'approved' :
+        editingPublication.in_review ? 'in_review' :
+        editingPublication.in_editing ? 'in_editing' :
+        editingPublication.needs_editing ? 'needs_editing' : 'needs_recording';
+      setStatus(pubStatus);
+      
+      setDesigner(editingPublication.designer || "no_designer");
+      
+      // Parse links
+      if (editingPublication.links) {
+        try {
+          setLinks(JSON.parse(editingPublication.links));
+        } catch (e) {
+          console.error('Error parsing links:', e);
+          setLinks([]);
+        }
+      } else {
+        setLinks([]);
+      }
+    } else {
+      // Reset to defaults for new publication
+      setStatus("needs_recording");
+      setDesigner("no_designer");
+      setLinks([]);
     }
   }, [editingPublication]);
+
+  const handleAddLink = () => {
+    if (newLinkLabel && newLinkUrl) {
+      setLinks([...links, { label: newLinkLabel, url: newLinkUrl }]);
+      setNewLinkLabel("");
+      setNewLinkUrl("");
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!date || !name) return;
-    onSubmit({ name, type, date, description, copywriting });
+    onSubmit({ 
+      name, 
+      type, 
+      date, 
+      description, 
+      copywriting,
+      status,
+      designer: designer === "no_designer" ? null : designer,
+      links: JSON.stringify(links)
+    });
     
     // Reset form only if not editing
     if (!editingPublication) {
@@ -81,6 +149,9 @@ export const PublicationForm = ({
       setDate(undefined);
       setDescription("");
       setCopywriting("");
+      setStatus("needs_recording");
+      setDesigner("no_designer");
+      setLinks([]);
     }
   };
 
@@ -91,6 +162,9 @@ export const PublicationForm = ({
     setDescription("");
     setCopywriting("");
     setAiContent("");
+    setStatus("needs_recording");
+    setDesigner("no_designer");
+    setLinks([]);
     onCancelEdit?.();
   };
 
@@ -233,6 +307,43 @@ export const PublicationForm = ({
         </Select>
       </div>
 
+      {/* Estado y Diseñador - solo mostrar cuando se está editando */}
+      {editingPublication && (
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label>Estado</Label>
+            <Select value={status} onValueChange={setStatus}>
+              <SelectTrigger className="dark:bg-gray-800 dark:text-white">
+                <SelectValue placeholder="Seleccionar estado" />
+              </SelectTrigger>
+              <SelectContent className="dark:bg-gray-800">
+                <SelectItem value="needs_recording">Falta grabar</SelectItem>
+                <SelectItem value="needs_editing">Falta editar</SelectItem>
+                <SelectItem value="in_editing">En edición</SelectItem>
+                <SelectItem value="in_review">En revisión</SelectItem>
+                <SelectItem value="approved">Aprobado</SelectItem>
+                <SelectItem value="published">Publicado</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Diseñador</Label>
+            <Select value={designer} onValueChange={setDesigner}>
+              <SelectTrigger className="dark:bg-gray-800 dark:text-white">
+                <SelectValue placeholder="Seleccionar diseñador" />
+              </SelectTrigger>
+              <SelectContent className="dark:bg-gray-800">
+                <SelectItem value="no_designer">Sin diseñador</SelectItem>
+                {designers.map(d => (
+                  <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      )}
+
       <div className="space-y-2">
         <Label>Fecha de publicación</Label>
         <div className="border rounded-lg p-2 max-h-[300px] overflow-y-auto">
@@ -255,6 +366,70 @@ export const PublicationForm = ({
           />
         </div>
       </div>
+
+      {/* Links - solo mostrar cuando se está editando */}
+      {editingPublication && (
+        <div className="space-y-2">
+          <Label>Enlaces</Label>
+          <Card>
+            <CardContent className="p-3 space-y-4">
+              <div className="flex flex-col sm:flex-row gap-2">
+                <div className="flex-1">
+                  <Input
+                    placeholder="Etiqueta"
+                    value={newLinkLabel}
+                    onChange={e => setNewLinkLabel(e.target.value)}
+                    className="text-sm"
+                  />
+                </div>
+                <div className="flex-1">
+                  <Input
+                    placeholder="URL"
+                    value={newLinkUrl}
+                    onChange={e => setNewLinkUrl(e.target.value)}
+                    className="text-sm"
+                  />
+                </div>
+                <Button type="button" variant="outline" onClick={handleAddLink} className="w-full sm:w-auto">
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+              {links.length > 0 && (
+                <ScrollArea className="h-[100px]">
+                  <div className="space-y-2">
+                    {links.map((link, index) => (
+                      <div key={index} className="flex items-center gap-2 bg-secondary p-2 rounded text-sm">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            const newLinks = [...links];
+                            newLinks.splice(index, 1);
+                            setLinks(newLinks);
+                          }}
+                          className="text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                        <span className="flex-1 truncate">{link.label}</span>
+                        <a
+                          href={link.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-500 hover:text-blue-700"
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       <div className="space-y-2">
         <Label htmlFor="copywriting">Copywriting</Label>

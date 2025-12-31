@@ -77,25 +77,34 @@ export const PublicationCalendarDialog = ({
       return;
     }
     
-    const publicationData = {
-      client_id: clientId,
-      name: values.name,
-      type: values.type,
-      date: values.date.toISOString(),
-      description: values.description || null,
-      copywriting: values.copywriting || null,
-      package_id: packageId || null,
-      is_published: editingPublication?.is_published || false
-    };
-    
     try {
       setIsSubmitting(true);
       
       if (editingPublication) {
-        // Update existing publication
+        // Update existing publication - include status, designer, links
+        const updates: any = {
+          name: values.name,
+          type: values.type,
+          date: values.date.toISOString(),
+          description: values.description || null,
+          copywriting: values.copywriting || null,
+          links: values.links || null,
+          designer: values.designer || null
+        };
+
+        // Set status flags
+        if (values.status) {
+          updates.needs_recording = values.status === 'needs_recording';
+          updates.needs_editing = values.status === 'needs_editing';
+          updates.in_editing = values.status === 'in_editing';
+          updates.in_review = values.status === 'in_review';
+          updates.approved = values.status === 'approved';
+          updates.is_published = values.status === 'published';
+        }
+
         const { error } = await supabase
           .from('publications')
-          .update(publicationData)
+          .update(updates)
           .eq('id', editingPublication.id);
         
         if (error) throw error;
@@ -106,7 +115,24 @@ export const PublicationCalendarDialog = ({
         });
         setEditingPublication(null);
       } else {
-        // Insert new publication
+        // Insert new publication with default status "needs_recording" and no designer
+        const publicationData = {
+          client_id: clientId,
+          name: values.name,
+          type: values.type,
+          date: values.date.toISOString(),
+          description: values.description || null,
+          copywriting: values.copywriting || null,
+          package_id: packageId || null,
+          is_published: false,
+          needs_recording: true, // Default state
+          needs_editing: false,
+          in_editing: false,
+          in_review: false,
+          approved: false,
+          designer: null // No designer by default
+        };
+
         const { error } = await supabase.from('publications').insert(publicationData);
         if (error) throw error;
         
