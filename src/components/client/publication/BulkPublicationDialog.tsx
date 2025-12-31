@@ -8,9 +8,12 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Sparkles, Calendar as CalendarIcon, Check, X } from "lucide-react";
+import { Loader2, Sparkles, Calendar as CalendarIcon, Check, X, Plus, Trash2, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { useQuery } from "@tanstack/react-query";
+import { Card, CardContent } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface DetectedPublication {
   title: string;
@@ -19,6 +22,9 @@ interface DetectedPublication {
   copywriting?: string;
   date?: Date;
   validated?: boolean;
+  status: string;
+  designer: string;
+  links: Array<{ label: string; url: string }>;
 }
 
 interface BulkPublicationDialogProps {
@@ -35,6 +41,21 @@ export function BulkPublicationDialog({ clientId, packageId, existingPublication
   const [publications, setPublications] = useState<DetectedPublication[]>([]);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [newLinkLabels, setNewLinkLabels] = useState<{ [key: number]: string }>({});
+  const [newLinkUrls, setNewLinkUrls] = useState<{ [key: number]: string }>({});
+
+  // Fetch designers
+  const { data: designers = [] } = useQuery({
+    queryKey: ['designers'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('designers')
+        .select('*')
+        .order('name');
+      if (error) throw error;
+      return data;
+    }
+  });
 
   const handleAnalyze = async () => {
     if (!content.trim()) {
@@ -54,7 +75,10 @@ export function BulkPublicationDialog({ clientId, packageId, existingPublication
         setPublications(data.publications.map((pub: any) => ({
           ...pub,
           date: undefined,
-          validated: false
+          validated: false,
+          status: 'needs_recording',
+          designer: 'no_designer',
+          links: []
         })));
         toast.success(`Se detectaron ${data.publications.length} publicaciones`);
       } else {
@@ -72,6 +96,23 @@ export function BulkPublicationDialog({ clientId, packageId, existingPublication
     setPublications(prev => prev.map((pub, i) => 
       i === index ? { ...pub, [field]: value } : pub
     ));
+  };
+
+  const addLinkToPublication = (index: number) => {
+    const label = newLinkLabels[index] || '';
+    const url = newLinkUrls[index] || '';
+    if (label && url) {
+      const currentLinks = publications[index].links || [];
+      updatePublication(index, 'links', [...currentLinks, { label, url }]);
+      setNewLinkLabels(prev => ({ ...prev, [index]: '' }));
+      setNewLinkUrls(prev => ({ ...prev, [index]: '' }));
+    }
+  };
+
+  const removeLinkFromPublication = (pubIndex: number, linkIndex: number) => {
+    const currentLinks = [...publications[pubIndex].links];
+    currentLinks.splice(linkIndex, 1);
+    updatePublication(pubIndex, 'links', currentLinks);
   };
 
   const validatePublication = (index: number) => {
@@ -94,22 +135,30 @@ export function BulkPublicationDialog({ clientId, packageId, existingPublication
 
     setIsSaving(true);
     try {
-      const insertData = publications.map(pub => ({
-        client_id: clientId,
-        package_id: packageId || null,
-        name: pub.title,
-        type: pub.type,
-        date: pub.date!.toISOString(),
-        description: pub.description || null,
-        copywriting: pub.copywriting || null,
-        is_published: false,
-        needs_recording: true, // Default state
-        needs_editing: false,
-        in_editing: false,
-        in_review: false,
-        approved: false,
-        designer: null // No designer by default
-      }));
+      const insertData = publications.map(pub => {
+        // Convert status to boolean flags
+        const statusFlags = {
+          needs_recording: pub.status === 'needs_recording',
+          needs_editing: pub.status === 'needs_editing',
+          in_editing: pub.status === 'in_editing',
+          in_review: pub.status === 'in_review',
+          approved: pub.status === 'approved',
+          is_published: pub.status === 'published'
+        };
+
+        return {
+          client_id: clientId,
+          package_id: packageId || null,
+          name: pub.title,
+          type: pub.type,
+          date: pub.date!.toISOString(),
+          description: pub.description || null,
+          copywriting: pub.copywriting || null,
+          links: pub.links.length > 0 ? JSON.stringify(pub.links) : null,
+          designer: pub.designer === 'no_designer' ? null : pub.designer,
+          ...statusFlags
+        };
+      });
 
       const { error } = await supabase
         .from('publications')
@@ -275,6 +324,47 @@ export function BulkPublicationDialog({ clientId, packageId, existingPublication
                           </Select>
                         </div>
 
+                        {/* Estado y Diseñador */}
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label>Estado</Label>
+                            <Select
+                              value={pub.status}
+                              onValueChange={(value) => updatePublication(index, 'status', value)}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Seleccionar estado" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="needs_recording">Falta grabar</SelectItem>
+                                <SelectItem value="needs_editing">Falta editar</SelectItem>
+                                <SelectItem value="in_editing">En edición</SelectItem>
+                                <SelectItem value="in_review">En revisión</SelectItem>
+                                <SelectItem value="approved">Aprobado</SelectItem>
+                                <SelectItem value="published">Publicado</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div>
+                            <Label>Diseñador</Label>
+                            <Select
+                              value={pub.designer}
+                              onValueChange={(value) => updatePublication(index, 'designer', value)}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Seleccionar diseñador" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="no_designer">Sin diseñador</SelectItem>
+                                {designers.map(d => (
+                                  <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+
                         <div>
                           <Label>Fecha de publicación</Label>
                           <Calendar
@@ -298,6 +388,55 @@ export function BulkPublicationDialog({ clientId, packageId, existingPublication
                               Fecha seleccionada: {format(pub.date, "d 'de' MMMM, yyyy", { locale: es })}
                             </p>
                           )}
+                        </div>
+
+                        {/* Enlaces */}
+                        <div>
+                          <Label>Enlaces</Label>
+                          <Card className="mt-2">
+                            <CardContent className="p-3 space-y-3">
+                              <div className="flex flex-col sm:flex-row gap-2">
+                                <Input
+                                  placeholder="Etiqueta"
+                                  value={newLinkLabels[index] || ''}
+                                  onChange={e => setNewLinkLabels(prev => ({ ...prev, [index]: e.target.value }))}
+                                  className="text-sm flex-1"
+                                />
+                                <Input
+                                  placeholder="URL"
+                                  value={newLinkUrls[index] || ''}
+                                  onChange={e => setNewLinkUrls(prev => ({ ...prev, [index]: e.target.value }))}
+                                  className="text-sm flex-1"
+                                />
+                                <Button type="button" variant="outline" size="sm" onClick={() => addLinkToPublication(index)}>
+                                  <Plus className="h-4 w-4" />
+                                </Button>
+                              </div>
+                              {pub.links.length > 0 && (
+                                <ScrollArea className="h-[80px]">
+                                  <div className="space-y-2">
+                                    {pub.links.map((link, linkIdx) => (
+                                      <div key={linkIdx} className="flex items-center gap-2 bg-secondary p-2 rounded text-sm">
+                                        <Button
+                                          type="button"
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => removeLinkFromPublication(index, linkIdx)}
+                                          className="text-destructive h-6 w-6 p-0"
+                                        >
+                                          <Trash2 className="h-3 w-3" />
+                                        </Button>
+                                        <span className="flex-1 truncate">{link.label}</span>
+                                        <a href={link.url} target="_blank" rel="noopener noreferrer" className="text-blue-500">
+                                          <ExternalLink className="h-3 w-3" />
+                                        </a>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </ScrollArea>
+                              )}
+                            </CardContent>
+                          </Card>
                         </div>
 
                         <div>
@@ -332,7 +471,10 @@ export function BulkPublicationDialog({ clientId, packageId, existingPublication
                     {pub.validated && (
                       <div className="space-y-2 text-sm">
                         <p><span className="font-medium">Tipo:</span> {pub.type}</p>
+                        <p><span className="font-medium">Estado:</span> {pub.status === 'needs_recording' ? 'Falta grabar' : pub.status === 'needs_editing' ? 'Falta editar' : pub.status === 'in_editing' ? 'En edición' : pub.status === 'in_review' ? 'En revisión' : pub.status === 'approved' ? 'Aprobado' : 'Publicado'}</p>
+                        <p><span className="font-medium">Diseñador:</span> {pub.designer === 'no_designer' ? 'Sin diseñador' : pub.designer}</p>
                         <p><span className="font-medium">Fecha:</span> {pub.date ? format(pub.date, "d 'de' MMMM, yyyy", { locale: es }) : 'No definida'}</p>
+                        {pub.links.length > 0 && <p><span className="font-medium">Enlaces:</span> {pub.links.length}</p>}
                         {pub.description && <p><span className="font-medium">Descripción:</span> {pub.description}</p>}
                         {pub.copywriting && <p><span className="font-medium">Copy:</span> {pub.copywriting.substring(0, 100)}...</p>}
                       </div>
