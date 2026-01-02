@@ -115,7 +115,8 @@ export const PublicationCalendarDialog = ({
         });
         setEditingPublication(null);
       } else {
-        // Insert new publication with default status "needs_recording" and no designer
+        // Insert new publication with status, designer and links from form
+        const status = values.status || 'needs_recording';
         const publicationData = {
           client_id: clientId,
           name: values.name,
@@ -124,13 +125,14 @@ export const PublicationCalendarDialog = ({
           description: values.description || null,
           copywriting: values.copywriting || null,
           package_id: packageId || null,
-          is_published: false,
-          needs_recording: true, // Default state
-          needs_editing: false,
-          in_editing: false,
-          in_review: false,
-          approved: false,
-          designer: null // No designer by default
+          is_published: status === 'published',
+          needs_recording: status === 'needs_recording',
+          needs_editing: status === 'needs_editing',
+          in_editing: status === 'in_editing',
+          in_review: status === 'in_review',
+          approved: status === 'approved',
+          designer: values.designer || null,
+          links: values.links || null
         };
 
         const { error } = await supabase.from('publications').insert(publicationData);
