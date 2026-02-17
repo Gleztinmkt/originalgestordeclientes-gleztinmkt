@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { Package, Edit, MoreVertical, Trash, Send, Download } from "lucide-react";
+import { Package, Edit, MoreVertical, Trash, Send, Download, FileText } from "lucide-react";
+import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } from "docx";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PackageCounter } from "./PackageCounter";
 import { Badge } from "@/components/ui/badge";
@@ -12,7 +13,7 @@ import html2canvas from "html2canvas";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent } from "@/components/ui/dropdown-menu";
 import { AddPackageForm } from "./AddPackageForm";
 import { PublicationCalendarDialog } from "./PublicationCalendarDialog";
 interface ClientPackageProps {
@@ -265,6 +266,162 @@ export const ClientPackage = ({
       setIsSubmitting(false);
     }
   }, [clientName, packageName, isProcessing]);
+
+  const generateCalendarWord = useCallback(async () => {
+    if (isProcessing || isSubmitting) return;
+    try {
+      setIsSubmitting(true);
+
+      const { data: publications = [] } = await supabase
+        .from('publications')
+        .select('*')
+        .eq('client_id', clientId)
+        .eq('package_id', packageId)
+        .is('deleted_at', null)
+        .order('date', { ascending: true });
+
+      const statusLabels: Record<string, string> = {
+        needs_recording: 'Falta grabar',
+        needs_editing: 'Falta editar',
+        in_editing: 'En edición',
+        in_review: 'En revisión',
+        approved: 'Aprobado',
+        published: 'Publicado',
+      };
+
+      const getStatus = (pub: any) => {
+        if (pub.is_published) return 'published';
+        if (pub.approved) return 'approved';
+        if (pub.in_review) return 'in_review';
+        if (pub.in_editing) return 'in_editing';
+        if (pub.needs_editing) return 'needs_editing';
+        return 'needs_recording';
+      };
+
+      const typeLabels: Record<string, string> = {
+        reel: 'Reel',
+        carousel: 'Carrusel',
+        image: 'Imagen',
+      };
+
+      const doc = new Document({
+        styles: {
+          default: {
+            document: {
+              run: { font: "Poppins", size: 24 },
+            },
+          },
+        },
+        sections: [{
+          children: [
+            new Paragraph({
+              children: [
+                new TextRun({ text: "Gleztin Marketing Digital", bold: true, size: 36, font: "Poppins" }),
+              ],
+              alignment: AlignmentType.CENTER,
+              spacing: { after: 200 },
+            }),
+            new Paragraph({
+              children: [
+                new TextRun({ text: "Depto. Marketing", size: 28, font: "Poppins", color: "666666" }),
+              ],
+              alignment: AlignmentType.CENTER,
+              spacing: { after: 400 },
+            }),
+            new Paragraph({
+              children: [
+                new TextRun({ text: `${clientName} - ${packageName}`, bold: true, size: 32, font: "Poppins" }),
+              ],
+              alignment: AlignmentType.CENTER,
+              spacing: { after: 100 },
+            }),
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: `Generado el ${new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })}`,
+                  size: 20, font: "Poppins", color: "888888",
+                }),
+              ],
+              alignment: AlignmentType.CENTER,
+              spacing: { after: 400 },
+            }),
+            ...publications.flatMap((pub, i) => {
+              const pubDate = new Date(pub.date).toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+              const status = statusLabels[getStatus(pub)] || 'Sin estado';
+              const type = typeLabels[pub.type as string] || pub.type;
+              const rows: Paragraph[] = [
+                new Paragraph({
+                  children: [
+                    new TextRun({ text: `${i + 1}. ${pub.name}`, bold: true, size: 26, font: "Poppins" }),
+                  ],
+                  spacing: { before: 300 },
+                }),
+                new Paragraph({
+                  children: [
+                    new TextRun({ text: `Fecha: `, bold: true, size: 22, font: "Poppins" }),
+                    new TextRun({ text: pubDate, size: 22, font: "Poppins" }),
+                  ],
+                }),
+                new Paragraph({
+                  children: [
+                    new TextRun({ text: `Tipo: `, bold: true, size: 22, font: "Poppins" }),
+                    new TextRun({ text: type, size: 22, font: "Poppins" }),
+                  ],
+                }),
+                new Paragraph({
+                  children: [
+                    new TextRun({ text: `Estado: `, bold: true, size: 22, font: "Poppins" }),
+                    new TextRun({ text: status, size: 22, font: "Poppins" }),
+                  ],
+                }),
+              ];
+              if (pub.designer) {
+                rows.push(new Paragraph({
+                  children: [
+                    new TextRun({ text: `Diseñador: `, bold: true, size: 22, font: "Poppins" }),
+                    new TextRun({ text: pub.designer, size: 22, font: "Poppins" }),
+                  ],
+                }));
+              }
+              if (pub.description) {
+                rows.push(new Paragraph({
+                  children: [
+                    new TextRun({ text: `Descripción: `, bold: true, size: 22, font: "Poppins" }),
+                    new TextRun({ text: pub.description, size: 22, font: "Poppins" }),
+                  ],
+                }));
+              }
+              if (pub.links) {
+                rows.push(new Paragraph({
+                  children: [
+                    new TextRun({ text: `Enlaces: `, bold: true, size: 22, font: "Poppins" }),
+                    new TextRun({ text: pub.links, size: 22, font: "Poppins" }),
+                  ],
+                }));
+              }
+              return rows;
+            }),
+          ],
+        }],
+      });
+
+      const blob = await Packer.toBlob(doc);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.download = `calendario-${clientName.toLowerCase().replace(/\s+/g, '-')}-${packageName.toLowerCase().replace(/\s+/g, '-')}.docx`;
+      link.href = url;
+      link.click();
+      URL.revokeObjectURL(url);
+
+      toast({ title: "Word generado", description: "El documento se ha descargado correctamente." });
+    } catch (error) {
+      console.error('Error generating Word:', error);
+      toast({ title: "Error", description: "No se pudo generar el documento Word.", variant: "destructive" });
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [clientName, packageName, clientId, packageId, isProcessing, isSubmitting]);
+
   const disabled = isProcessing || isSubmitting;
   return <Card className="bg-white dark:bg-gray-800 border dark:border-gray-700">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -291,10 +448,20 @@ export const ClientPackage = ({
                 <Edit className="mr-2 h-4 w-4" />
                 Editar paquete
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={generateCalendarImage} disabled={disabled}>
-                <Download className="mr-2 h-4 w-4" />
-                Descargar calendario
-              </DropdownMenuItem>
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger disabled={disabled}>
+                  <Download className="mr-2 h-4 w-4" />
+                  Descargar calendario
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent>
+                  <DropdownMenuItem onClick={generateCalendarImage} disabled={disabled}>
+                    Generar imagen
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={generateCalendarWord} disabled={disabled}>
+                    Generar Word
+                  </DropdownMenuItem>
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
               {onDeletePackage && <DropdownMenuItem className="text-red-600 dark:text-red-400" onClick={() => setIsDeleteDialogOpen(true)} disabled={disabled}>
                   <Trash className="mr-2 h-4 w-4" />
                   Eliminar paquete
