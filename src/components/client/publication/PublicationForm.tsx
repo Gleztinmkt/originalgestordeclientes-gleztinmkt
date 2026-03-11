@@ -41,6 +41,7 @@ interface PublicationFormProps {
   clientId: string;
   existingPublications: Array<{ date: string }>;
   onPublicationsChange: () => void;
+  onFormChange?: (hasChanges: boolean) => void;
 }
 
 export const PublicationForm = ({ 
