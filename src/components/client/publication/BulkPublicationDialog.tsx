@@ -78,7 +78,9 @@ export function BulkPublicationDialog({ clientId, packageId, existingPublication
           validated: false,
           status: 'needs_recording',
           designer: 'no_designer',
-          links: []
+          links: (pub.links && Array.isArray(pub.links)) 
+            ? pub.links.filter((l: any) => l.label && l.url) 
+            : []
         })));
         toast.success(`Se detectaron ${data.publications.length} publicaciones`);
       } else {

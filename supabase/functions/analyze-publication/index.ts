@@ -32,36 +32,28 @@ serve(async (req) => {
 
     const systemPrompt = `Eres un asistente experto en análisis de contenido para redes sociales. Tu tarea es analizar el texto pegado por el usuario y extraer información estructurada para crear una publicación.
 
-IMPORTANTE - DETECCIÓN DE COPYWRITING:
-Busca estas palabras clave (case-insensitive) para identificar el copywriting:
-- "texto publicación"
-- "texto para la publicación"
-- "texto de publicación"
-- "copywriting"
-- "copy"
-- "texto para publicar"
-- "caption"
-
-El copywriting es TODO el contenido que viene DESPUÉS de estas palabras clave, incluyendo emojis, hashtags, y el texto completo.
+ESTRUCTURA DEL CONTENIDO:
+El contenido generalmente tiene esta estructura (puede variar):
+1. TÍTULO: La primera línea. Puede incluir un número, tipo (REEL, POST, IMAGEN, CARRUSEL) y el nombre. Ejemplo: "REEL 3 - ¿CUÁNDO CAMBIAR TU IPHONE?"
+2. DESCRIPCIÓN: Todo el contenido que viene DESPUÉS del título y ANTES de la sección de copywriting. Esto incluye guiones, escenas, instrucciones de grabación, duración, tono, narración, textos en pantalla, etc. IMPORTANTE: Aunque haya muchos "dos puntos" (:) en el texto, TODO ese contenido es parte de la descripción si está antes del COPY. Los dos puntos NO significan que sea copywriting.
+3. COPYWRITING: El texto para publicar en redes sociales. Se identifica porque viene después de palabras clave como: "COPY:", "COPY", "Copywriting:", "Texto publicación:", "Caption:", "Texto para publicar:", "texto para la publicación:". El copy incluye emojis, hashtags y todo el texto destinado a la red social.
+4. ENLACES: URLs que aparecen en el texto, generalmente como referencias, canciones, inspiraciones, o material de referencia. Pueden aparecer con etiquetas como "Referencia:", "Canción:", "Link:", "Inspiración:", "Ejemplo:", o simplemente como URLs sueltas (https://...).
 
 IMPORTANTE - DETECCIÓN DE TIPO:
 Analiza el TÍTULO para detectar el tipo de publicación:
-- Si contiene "post", "imagen", "foto", "picture" → tipo: "image"
 - Si contiene "reel", "video", "clip" → tipo: "reel"
 - Si contiene "carrusel", "carousel", "slides" → tipo: "carousel"
+- Si contiene "post", "imagen", "foto", "picture", "gráfica" → tipo: "image"
+- Si la descripción menciona grabación de video, escenas, filmación → tipo: "reel"
 - Por defecto: "image"
 
 IMPORTANTE - EXTRACCIÓN DE TÍTULO:
-El título es la primera línea o encabezado principal del texto. Puede tener números o viñetas al inicio (ej: "1. ", "2. ", "• ").
+Limpia el título removiendo prefijos como números ("1.", "2."), guiones y el tipo de publicación. Por ejemplo:
+- "REEL 3 - ¿CUÁNDO CAMBIAR TU IPHONE?" → "¿CUÁNDO CAMBIAR TU IPHONE?"
+- "1. IMAGEN – Promoción Mensual" → "Promoción Mensual"
 
-IMPORTANTE - EXTRACCIÓN DE DESCRIPCIÓN:
-La descripción es todo el contenido técnico/creativo entre el título y el copywriting. Incluye:
-- Duración
-- Tono
-- Escenas
-- Narración
-- Guiones
-- Cualquier detalle técnico o creativo`;
+IMPORTANTE - EXTRACCIÓN DE ENLACES:
+Busca URLs (https://, http://, www.) en todo el texto. Si tienen una etiqueta asociada (como "Referencia:", "Canción:"), usa esa etiqueta. Si no, genera una etiqueta descriptiva basada en el contexto o el dominio de la URL. Retorna un array de objetos con {label, url}.`;
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -86,23 +78,41 @@ La descripción es todo el contenido técnico/creativo entre el título y el cop
                 properties: {
                   title: {
                     type: 'string',
-                    description: 'El título o nombre de la publicación (primera línea o encabezado principal)'
+                    description: 'El título limpio de la publicación (sin números de orden ni tipo de publicación)'
                   },
                   description: {
                     type: 'string',
-                    description: 'La descripción técnica/creativa de la publicación (duración, tono, escenas, narración, etc.)'
+                    description: 'TODO el contenido entre el título y el copywriting. Incluye guiones, escenas, instrucciones, textos en pantalla, duración, etc. No confundir con el copywriting aunque tenga dos puntos (:).'
                   },
                   copywriting: {
                     type: 'string',
-                    description: 'El texto para redes sociales (después de "Texto publicación:", "Copywriting:", "Copy:", etc.)'
+                    description: 'SOLO el texto para redes sociales que aparece después de "COPY:", "Copywriting:", "Texto publicación:", etc. Incluye emojis y hashtags.'
                   },
                   type: {
                     type: 'string',
                     enum: ['image', 'reel', 'carousel'],
-                    description: 'El tipo de publicación detectado desde el título. "image" si contiene post/imagen/foto, "reel" si contiene reel/video, "carousel" si contiene carrusel'
+                    description: 'El tipo de publicación detectado'
+                  },
+                  links: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        label: {
+                          type: 'string',
+                          description: 'Etiqueta del enlace (ej: "Referencia", "Canción", "Inspiración")'
+                        },
+                        url: {
+                          type: 'string',
+                          description: 'La URL completa'
+                        }
+                      },
+                      required: ['label', 'url']
+                    },
+                    description: 'URLs encontradas en el texto con sus etiquetas'
                   }
                 },
-                required: ['title', 'description', 'copywriting', 'type'],
+                required: ['title', 'description', 'copywriting', 'type', 'links'],
                 additionalProperties: false
               }
             }
@@ -139,7 +149,6 @@ La descripción es todo el contenido técnico/creativo entre el título y el cop
     const data = await response.json();
     console.log('Respuesta de IA:', JSON.stringify(data, null, 2));
 
-    // Extraer los argumentos del tool call
     const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
     if (!toolCall || toolCall.function?.name !== 'extract_publication_data') {
       console.error('No se recibió tool call válido:', data);
@@ -157,7 +166,8 @@ La descripción es todo el contenido técnico/creativo entre el título y el cop
         title: extractedData.title || '',
         description: extractedData.description || '',
         copywriting: extractedData.copywriting || '',
-        type: extractedData.type || 'image'
+        type: extractedData.type || 'image',
+        links: extractedData.links || []
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

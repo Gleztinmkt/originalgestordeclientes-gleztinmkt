@@ -205,6 +205,9 @@ export const PublicationForm = ({
       if (data.type) setType(data.type);
       if (data.description) setDescription(data.description);
       if (data.copywriting) setCopywriting(data.copywriting);
+      if (data.links && Array.isArray(data.links) && data.links.length > 0) {
+        setLinks(prev => [...prev, ...data.links.filter((l: any) => l.label && l.url)]);
+      }
 
       toast({
         title: "✨ Análisis completado",

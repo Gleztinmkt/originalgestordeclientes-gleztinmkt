@@ -33,22 +33,35 @@ serve(async (req) => {
 
 Tu tarea es identificar TODAS las publicaciones individuales dentro del texto proporcionado y extraer la información de cada una.
 
-Para cada publicación, debes identificar:
-1. **Título/Nombre**: El nombre o título de la publicación
-2. **Tipo**: Determina si es:
-   - "reel" si menciona: video, reel, reels, audiovisual
-   - "carousel" si menciona: carrusel, carousel, múltiples imágenes
+ESTRUCTURA TÍPICA DE CADA PUBLICACIÓN:
+1. TÍTULO: La primera línea de cada publicación. Puede incluir número, tipo (REEL, POST, IMAGEN, CARRUSEL) y nombre. Limpia el título removiendo prefijos numéricos y el tipo.
+   - "REEL 3 - ¿CUÁNDO CAMBIAR TU IPHONE?" → título: "¿CUÁNDO CAMBIAR TU IPHONE?"
+   - "1. IMAGEN – Promoción Mensual" → título: "Promoción Mensual"
+
+2. DESCRIPCIÓN: TODO el contenido entre el título y la sección de copywriting. Incluye:
+   - Guiones de video, escenas, instrucciones de grabación
+   - Textos en pantalla, narración, voces
+   - Duración, tono, estilo visual
+   - IMPORTANTE: Aunque tenga muchos "dos puntos" (:) en el texto (como "Señal 1:", "Texto o voz:"), TODO eso es DESCRIPCIÓN, NO copywriting. La descripción termina donde empieza el COPY.
+
+3. COPYWRITING: SOLO el texto para publicar en redes sociales. Se identifica porque viene DESPUÉS de palabras clave como:
+   - "COPY:", "COPY", "Copywriting:", "Texto publicación:", "Caption:", "Texto para publicar:", "texto para la publicación:"
+   - Incluye emojis, hashtags y todo el texto para la red social.
+   - NO confundir textos de guión/narración con el copywriting.
+
+4. TIPO: Determina basándote en el título y contenido:
+   - "reel" si menciona: reel, video, clip, grabación, escenas de video
+   - "carousel" si menciona: carrusel, carousel, múltiples imágenes, slides
    - "image" si menciona: imagen, post, foto, gráfica, o si no especifica tipo
-3. **Descripción**: La descripción del contenido visual o escenas del video/imagen
-4. **Copywriting**: El texto que irá en la publicación (caption). Busca secciones que digan "texto publicación", "copy", "caption", "texto", etc.
+
+5. ENLACES: URLs (https://, http://, www.) encontradas en el texto de cada publicación. Si tienen etiqueta asociada ("Referencia:", "Canción:", "Link:", "Inspiración:"), usar esa etiqueta. Si no, generar una etiqueta descriptiva.
 
 IMPORTANTE:
 - Separa claramente cada publicación individual
 - Si no encuentras algún campo, déjalo vacío pero NO omitas la publicación
 - Preserva el formato y emojis del copywriting
 - Identifica TODAS las publicaciones, no solo algunas
-
-Retorna un array con todas las publicaciones encontradas.`;
+- La DESCRIPCIÓN puede ser larga y contener muchos ":" - eso es normal en guiones de video`;
 
     console.log('Enviando solicitud a la IA...');
 
@@ -80,7 +93,7 @@ Retorna un array con todas las publicaciones encontradas.`;
                       properties: {
                         title: {
                           type: 'string',
-                          description: 'Título o nombre de la publicación'
+                          description: 'Título limpio de la publicación (sin números de orden ni tipo)'
                         },
                         type: {
                           type: 'string',
@@ -89,11 +102,29 @@ Retorna un array con todas las publicaciones encontradas.`;
                         },
                         description: {
                           type: 'string',
-                          description: 'Descripción del contenido visual'
+                          description: 'Todo el contenido entre el título y el COPY (guiones, escenas, instrucciones, etc.)'
                         },
                         copywriting: {
                           type: 'string',
-                          description: 'Texto que irá en la publicación'
+                          description: 'Solo el texto para redes sociales después de COPY:/Copywriting:/etc.'
+                        },
+                        links: {
+                          type: 'array',
+                          items: {
+                            type: 'object',
+                            properties: {
+                              label: {
+                                type: 'string',
+                                description: 'Etiqueta del enlace'
+                              },
+                              url: {
+                                type: 'string',
+                                description: 'La URL completa'
+                              }
+                            },
+                            required: ['label', 'url']
+                          },
+                          description: 'URLs encontradas en esta publicación'
                         }
                       },
                       required: ['title', 'type']
