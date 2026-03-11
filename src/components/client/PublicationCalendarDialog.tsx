@@ -480,15 +480,19 @@ export const PublicationCalendarDialog = ({
             </div>
 
             <PublicationForm 
-              onSubmit={handleSubmit} 
+              onSubmit={(values) => {
+                handleSubmit(values);
+                setHasUnsavedChanges(false);
+              }} 
               isSubmitting={isSubmitting} 
               packageId={packageId}
               editingPublication={editingPublication}
-              onCancelEdit={() => setEditingPublication(null)}
+              onCancelEdit={() => { setEditingPublication(null); setHasUnsavedChanges(false); }}
               publicationDates={publications.map(p => new Date(p.date))}
               clientId={clientId}
               existingPublications={publications.map(p => ({ date: p.date }))}
               onPublicationsChange={refetch}
+              onFormChange={setHasUnsavedChanges}
             />
 
             <div className="flex justify-end pt-4">
