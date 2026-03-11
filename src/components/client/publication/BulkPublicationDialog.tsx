@@ -8,12 +8,13 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Sparkles, Calendar as CalendarIcon, Check, X, Plus, Trash2, ExternalLink } from "lucide-react";
+import { Loader2, Sparkles, Calendar as CalendarIcon, Check, X, Plus, Trash2, ExternalLink, Wand2 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { addDays, isWeekend, startOfDay } from "date-fns";
 
 interface DetectedPublication {
   title: string;
@@ -195,6 +196,38 @@ export function BulkPublicationDialog({ clientId, packageId, existingPublication
     return hasExisting || hasInBulk;
   };
 
+  const autoAssignDates = () => {
+    const total = publications.length;
+    if (total === 0) return;
+
+    const tomorrow = startOfDay(addDays(new Date(), 1));
+    const perWeek = Math.ceil(total / 4);
+    
+    // Calculate spacing between publications within a week
+    // Distribute evenly across weekdays (Mon-Fri = 5 days, or all 7 if needed)
+    const daysBetween = Math.max(1, Math.floor(7 / perWeek));
+    
+    const assignedDates: Date[] = [];
+    let currentDate = tomorrow;
+
+    for (let i = 0; i < total; i++) {
+      // Skip dates that already have existing publications
+      while (hasPublicationOnDate(currentDate) || assignedDates.some(d => d.getTime() === currentDate.getTime())) {
+        currentDate = addDays(currentDate, 1);
+      }
+      
+      assignedDates.push(currentDate);
+      currentDate = addDays(currentDate, daysBetween);
+    }
+
+    setPublications(prev => prev.map((pub, i) => ({
+      ...pub,
+      date: assignedDates[i],
+    })));
+
+    toast.success(`Fechas asignadas automáticamente (${perWeek} por semana)`);
+  };
+
   return (
     <>
       <Button
@@ -248,20 +281,31 @@ export function BulkPublicationDialog({ clientId, packageId, existingPublication
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between flex-wrap gap-2">
                 <p className="text-sm text-muted-foreground">
                   {publications.filter(p => p.validated).length} de {publications.length} validadas
                 </p>
-                <Button
-                  onClick={() => {
-                    setPublications([]);
-                    setContent("");
-                  }}
-                  variant="outline"
-                  size="sm"
-                >
-                  Volver a analizar
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={autoAssignDates}
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                  >
+                    <Wand2 className="h-4 w-4" />
+                    Asignar fechas automáticamente
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setPublications([]);
+                      setContent("");
+                    }}
+                    variant="outline"
+                    size="sm"
+                  >
+                    Volver a analizar
+                  </Button>
+                </div>
               </div>
 
               <div className="space-y-3">
