@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Calendar as CalendarIcon, Download, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
@@ -25,6 +26,23 @@ export const PublicationCalendarDialog = ({
   const [selectedPublication, setSelectedPublication] = useState<Publication | null>(null);
   const [editingPublication, setEditingPublication] = useState<Publication | null>(null);
   const [copywriting, setCopywriting] = useState("");
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [showCloseConfirmation, setShowCloseConfirmation] = useState(false);
+
+  const handleCloseAttempt = useCallback((open: boolean) => {
+    if (!open && (hasUnsavedChanges || isSubmitting || editingPublication)) {
+      setShowCloseConfirmation(true);
+      return;
+    }
+    setIsOpen(open);
+  }, [hasUnsavedChanges, isSubmitting, editingPublication]);
+
+  const handleForceClose = useCallback(() => {
+    setShowCloseConfirmation(false);
+    setHasUnsavedChanges(false);
+    setEditingPublication(null);
+    setIsOpen(false);
+  }, []);
   const {
     data: publications = [],
     refetch
@@ -411,7 +429,7 @@ export const PublicationCalendarDialog = ({
       }, 1000);
     }
   };
-  return <Dialog open={isOpen} onOpenChange={setIsOpen}>
+  return <><Dialog open={isOpen} onOpenChange={handleCloseAttempt}>
       <DialogTrigger asChild>
         <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-colors duration-200" onClick={() => setIsOpen(true)}>
           <CalendarIcon className="h-4 w-4" />
@@ -462,24 +480,47 @@ export const PublicationCalendarDialog = ({
             </div>
 
             <PublicationForm 
-              onSubmit={handleSubmit} 
+              onSubmit={(values) => {
+                handleSubmit(values);
+                setHasUnsavedChanges(false);
+              }} 
               isSubmitting={isSubmitting} 
               packageId={packageId}
               editingPublication={editingPublication}
-              onCancelEdit={() => setEditingPublication(null)}
+              onCancelEdit={() => { setEditingPublication(null); setHasUnsavedChanges(false); }}
               publicationDates={publications.map(p => new Date(p.date))}
               clientId={clientId}
               existingPublications={publications.map(p => ({ date: p.date }))}
               onPublicationsChange={refetch}
+              onFormChange={setHasUnsavedChanges}
             />
 
             <div className="flex justify-end pt-4">
-              <Button variant="outline" onClick={() => setIsOpen(false)} className="w-full sm:w-auto">
+              <Button variant="outline" onClick={() => handleCloseAttempt(false)} className="w-full sm:w-auto">
                 Cerrar
               </Button>
             </div>
           </div>
         </div>
       </DialogContent>
-    </Dialog>;
+    </Dialog>
+    <AlertDialog open={showCloseConfirmation} onOpenChange={setShowCloseConfirmation}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>¿Cerrar sin guardar?</AlertDialogTitle>
+          <AlertDialogDescription>
+            {isSubmitting 
+              ? "Se está guardando una publicación. Si cierras ahora podrías perder los cambios."
+              : "Hay cambios sin guardar. Si cierras ahora se perderán."}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          <AlertDialogAction onClick={handleForceClose} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            Cerrar sin guardar
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  </>;
 };

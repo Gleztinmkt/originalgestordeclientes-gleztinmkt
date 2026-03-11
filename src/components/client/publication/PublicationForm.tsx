@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -41,6 +41,7 @@ interface PublicationFormProps {
   clientId: string;
   existingPublications: Array<{ date: string }>;
   onPublicationsChange: () => void;
+  onFormChange?: (hasChanges: boolean) => void;
 }
 
 export const PublicationForm = ({ 
@@ -52,7 +53,8 @@ export const PublicationForm = ({
   publicationDates = [],
   clientId,
   existingPublications,
-  onPublicationsChange
+  onPublicationsChange,
+  onFormChange
 }: PublicationFormProps) => {
   const { toast } = useToast();
   const [name, setName] = useState("");
@@ -120,6 +122,11 @@ export const PublicationForm = ({
     }
   }, [editingPublication]);
 
+  // Track form changes
+  useEffect(() => {
+    const hasChanges = !!(name || description || copywriting || date || links.length > 0);
+    onFormChange?.(hasChanges);
+  }, [name, description, copywriting, date, links, onFormChange]);
   const handleAddLink = () => {
     if (newLinkLabel && newLinkUrl) {
       setLinks([...links, { label: newLinkLabel, url: newLinkUrl }]);
