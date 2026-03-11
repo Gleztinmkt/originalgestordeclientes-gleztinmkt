@@ -122,6 +122,11 @@ export const PublicationForm = ({
     }
   }, [editingPublication]);
 
+  // Track form changes
+  useEffect(() => {
+    const hasChanges = !!(name || description || copywriting || date || links.length > 0);
+    onFormChange?.(hasChanges);
+  }, [name, description, copywriting, date, links, onFormChange]);
   const handleAddLink = () => {
     if (newLinkLabel && newLinkUrl) {
       setLinks([...links, { label: newLinkLabel, url: newLinkUrl }]);
