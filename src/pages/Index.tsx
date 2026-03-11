@@ -47,7 +47,8 @@ const Index = () => {
 
   // Fetch user role
   const {
-    data: userRole
+    data: userRole,
+    isLoading: isRoleLoading
   } = useQuery({
     queryKey: ['userRole'],
     queryFn: async () => {
@@ -56,7 +57,6 @@ const Index = () => {
       } = await supabase.auth.getUser();
       if (!user) return null;
 
-      // Verificar rol admin de forma confiable vía RPC (evita problemas de RLS y resultados múltiples)
       const { data: isAdmin, error } = await supabase.rpc('check_admin_role', { user_id: user.id });
       if (error) {
         console.error('Error checking admin role:', error);
