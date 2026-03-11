@@ -26,6 +26,23 @@ export const PublicationCalendarDialog = ({
   const [selectedPublication, setSelectedPublication] = useState<Publication | null>(null);
   const [editingPublication, setEditingPublication] = useState<Publication | null>(null);
   const [copywriting, setCopywriting] = useState("");
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [showCloseConfirmation, setShowCloseConfirmation] = useState(false);
+
+  const handleCloseAttempt = useCallback((open: boolean) => {
+    if (!open && (hasUnsavedChanges || isSubmitting || editingPublication)) {
+      setShowCloseConfirmation(true);
+      return;
+    }
+    setIsOpen(open);
+  }, [hasUnsavedChanges, isSubmitting, editingPublication]);
+
+  const handleForceClose = useCallback(() => {
+    setShowCloseConfirmation(false);
+    setHasUnsavedChanges(false);
+    setEditingPublication(null);
+    setIsOpen(false);
+  }, []);
   const {
     data: publications = [],
     refetch
