@@ -281,20 +281,31 @@ export function BulkPublicationDialog({ clientId, packageId, existingPublication
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between flex-wrap gap-2">
                 <p className="text-sm text-muted-foreground">
                   {publications.filter(p => p.validated).length} de {publications.length} validadas
                 </p>
-                <Button
-                  onClick={() => {
-                    setPublications([]);
-                    setContent("");
-                  }}
-                  variant="outline"
-                  size="sm"
-                >
-                  Volver a analizar
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={autoAssignDates}
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                  >
+                    <Wand2 className="h-4 w-4" />
+                    Asignar fechas automáticamente
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setPublications([]);
+                      setContent("");
+                    }}
+                    variant="outline"
+                    size="sm"
+                  >
+                    Volver a analizar
+                  </Button>
+                </div>
               </div>
 
               <div className="space-y-3">
