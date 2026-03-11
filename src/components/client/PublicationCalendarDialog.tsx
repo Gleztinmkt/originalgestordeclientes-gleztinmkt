@@ -429,7 +429,7 @@ export const PublicationCalendarDialog = ({
       }, 1000);
     }
   };
-  return <Dialog open={isOpen} onOpenChange={setIsOpen}>
+  return <><Dialog open={isOpen} onOpenChange={handleCloseAttempt}>
       <DialogTrigger asChild>
         <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-colors duration-200" onClick={() => setIsOpen(true)}>
           <CalendarIcon className="h-4 w-4" />
