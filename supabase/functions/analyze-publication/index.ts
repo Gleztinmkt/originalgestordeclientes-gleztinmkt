@@ -62,8 +62,7 @@ Busca URLs (https://, http://, www.) en todo el texto. Si tienen una etiqueta as
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-3-flash-preview',
-        temperature: 0,
+        model: 'google/gemini-2.5-flash',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: `Analiza este texto y extrae la información:\n\n${content}` }
