@@ -113,7 +113,7 @@ const Index = () => {
     if (selectedClientId && task.clientId !== selectedClientId) return false;
     return true;
   });
-  if (isLoading) {
+  if (isLoading || isRoleLoading) {
     return <div className="loading-screen fixed inset-0 flex items-center justify-center w-full h-full" style={{
       backgroundImage: 'url(https://i.imgur.com/w73iJfK.png)',
       backgroundSize: 'cover',
