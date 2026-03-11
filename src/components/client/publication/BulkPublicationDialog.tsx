@@ -196,6 +196,38 @@ export function BulkPublicationDialog({ clientId, packageId, existingPublication
     return hasExisting || hasInBulk;
   };
 
+  const autoAssignDates = () => {
+    const total = publications.length;
+    if (total === 0) return;
+
+    const tomorrow = startOfDay(addDays(new Date(), 1));
+    const perWeek = Math.ceil(total / 4);
+    
+    // Calculate spacing between publications within a week
+    // Distribute evenly across weekdays (Mon-Fri = 5 days, or all 7 if needed)
+    const daysBetween = Math.max(1, Math.floor(7 / perWeek));
+    
+    const assignedDates: Date[] = [];
+    let currentDate = tomorrow;
+
+    for (let i = 0; i < total; i++) {
+      // Skip dates that already have existing publications
+      while (hasPublicationOnDate(currentDate) || assignedDates.some(d => d.getTime() === currentDate.getTime())) {
+        currentDate = addDays(currentDate, 1);
+      }
+      
+      assignedDates.push(currentDate);
+      currentDate = addDays(currentDate, daysBetween);
+    }
+
+    setPublications(prev => prev.map((pub, i) => ({
+      ...pub,
+      date: assignedDates[i],
+    })));
+
+    toast.success(`Fechas asignadas automáticamente (${perWeek} por semana)`);
+  };
+
   return (
     <>
       <Button
