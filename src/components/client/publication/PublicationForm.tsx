@@ -53,7 +53,8 @@ export const PublicationForm = ({
   publicationDates = [],
   clientId,
   existingPublications,
-  onPublicationsChange
+  onPublicationsChange,
+  onFormChange
 }: PublicationFormProps) => {
   const { toast } = useToast();
   const [name, setName] = useState("");
