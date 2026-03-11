@@ -47,7 +47,8 @@ const Index = () => {
 
   // Fetch user role
   const {
-    data: userRole
+    data: userRole,
+    isLoading: isRoleLoading
   } = useQuery({
     queryKey: ['userRole'],
     queryFn: async () => {
@@ -56,7 +57,6 @@ const Index = () => {
       } = await supabase.auth.getUser();
       if (!user) return null;
 
-      // Verificar rol admin de forma confiable vía RPC (evita problemas de RLS y resultados múltiples)
       const { data: isAdmin, error } = await supabase.rpc('check_admin_role', { user_id: user.id });
       if (error) {
         console.error('Error checking admin role:', error);
@@ -113,7 +113,7 @@ const Index = () => {
     if (selectedClientId && task.clientId !== selectedClientId) return false;
     return true;
   });
-  if (isLoading) {
+  if (isLoading || isRoleLoading) {
     return <div className="loading-screen fixed inset-0 flex items-center justify-center w-full h-full" style={{
       backgroundImage: 'url(https://i.imgur.com/w73iJfK.png)',
       backgroundSize: 'cover',
