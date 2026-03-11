@@ -14,6 +14,7 @@ import { es } from "date-fns/locale";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { addDays, isWeekend, startOfDay } from "date-fns";
 
 interface DetectedPublication {
   title: string;
