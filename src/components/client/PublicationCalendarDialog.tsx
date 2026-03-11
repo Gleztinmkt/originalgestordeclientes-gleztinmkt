@@ -496,12 +496,31 @@ export const PublicationCalendarDialog = ({
             />
 
             <div className="flex justify-end pt-4">
-              <Button variant="outline" onClick={() => setIsOpen(false)} className="w-full sm:w-auto">
+              <Button variant="outline" onClick={() => handleCloseAttempt(false)} className="w-full sm:w-auto">
                 Cerrar
               </Button>
             </div>
           </div>
         </div>
       </DialogContent>
-    </Dialog>;
+    </Dialog>
+    <AlertDialog open={showCloseConfirmation} onOpenChange={setShowCloseConfirmation}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>¿Cerrar sin guardar?</AlertDialogTitle>
+          <AlertDialogDescription>
+            {isSubmitting 
+              ? "Se está guardando una publicación. Si cierras ahora podrías perder los cambios."
+              : "Hay cambios sin guardar. Si cierras ahora se perderán."}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          <AlertDialogAction onClick={handleForceClose} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            Cerrar sin guardar
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  </>;
 };
