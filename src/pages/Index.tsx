@@ -63,7 +63,12 @@ const Index = () => {
       }
       return isAdmin ? 'admin' : null;
     },
-    retry: 1,
+    retry: 2,
+    staleTime: 1000 * 60 * 30,
+    gcTime: 1000 * 60 * 60,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    placeholderData: (previousData: string | null | undefined) => previousData,
   });
   const handleLogout = async () => {
     try {
