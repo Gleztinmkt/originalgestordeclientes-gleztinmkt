@@ -31,6 +31,8 @@ interface ClientPackageProps {
   clientName: string;
   packageId: string;
   isProcessing: boolean;
+  initialLastPost?: string;
+  initialPhone?: string;
 }
 export const ClientPackage = ({
   packageName,
@@ -45,31 +47,15 @@ export const ClientPackage = ({
   clientId,
   clientName,
   packageId,
-  isProcessing
+  isProcessing,
+  initialLastPost = "",
+  initialPhone = ""
 }: ClientPackageProps) => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [lastPost, setLastPost] = useState<string>("");
-  const [clientPhone, setClientPhone] = useState<string>("");
-  useEffect(() => {
-    const fetchClientData = async () => {
-      try {
-        const {
-          data: clientData,
-          error
-        } = await supabase.from('clients').select('last_post, phone').eq('id', clientId).single();
-        if (error) throw error;
-        if (clientData) {
-          setLastPost(clientData.last_post || "");
-          setClientPhone(clientData.phone || "");
-        }
-      } catch (error) {
-        console.error('Error fetching client data:', error);
-      }
-    };
-    fetchClientData();
-  }, [clientId]);
+  const [lastPost, setLastPost] = useState<string>(initialLastPost);
+  const [clientPhone, setClientPhone] = useState<string>(initialPhone);
   const handleLastPostChange = useCallback(async (value: string) => {
     if (isProcessing || isSubmitting) return;
     try {
