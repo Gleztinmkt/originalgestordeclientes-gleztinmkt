@@ -99,11 +99,17 @@ export async function invokeEdgeFunction<TResponse, TBody = unknown>(
     headers.Authorization = `Bearer ${session.access_token}`;
   }
 
-  const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${functionName}`, {
-    method: "POST",
-    headers,
-    body: JSON.stringify(body),
-  });
+  let response: Response;
+
+  try {
+    response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${functionName}`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(body),
+    });
+  } catch {
+    throw new Error("No se pudo conectar con la función. Recargá la app e intentá nuevamente.");
+  }
 
   const raw = await response.text();
   let parsed: unknown = null;
