@@ -16,6 +16,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent } from "@/components/ui/dropdown-menu";
 import { AddPackageForm } from "./AddPackageForm";
 import { PublicationCalendarDialog } from "./PublicationCalendarDialog";
+import { PublicationPickerDialog } from "./PublicationPickerDialog";
 interface ClientPackageProps {
   packageName: string;
   totalPublications: number;
@@ -471,7 +472,15 @@ export const ClientPackage = ({
         </div>
       </CardHeader>
       <CardContent>
-        <PackageCounter total={totalPublications} used={usedPublications} onUpdateUsed={onUpdateUsed} onUpdateLastUsed={handleLastPostChange} disabled={disabled} />
+        <div className="flex items-center gap-2">
+          <PackageCounter total={totalPublications} used={usedPublications} onUpdateUsed={onUpdateUsed} onUpdateLastUsed={handleLastPostChange} disabled={disabled} />
+          <PublicationPickerDialog
+            clientId={clientId}
+            packageId={packageId}
+            onPublicationsUpdated={(newCount) => onUpdateUsed(newCount)}
+            disabled={disabled}
+          />
+        </div>
         
         <div className="mt-4 space-y-4">
           <div className="space-y-2">
