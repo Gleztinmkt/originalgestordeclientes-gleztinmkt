@@ -69,23 +69,33 @@ export function BulkPublicationDialog({ clientId, packageId, existingPublication
 
     setIsAnalyzing(true);
     try {
-      const { data, error } = await supabase.functions.invoke('analyze-multiple-publications', {
-        body: { content }
+      const data = await invokeEdgeFunction<{ publications?: any[]; error?: string }>('analyze-multiple-publications', {
+        content,
       });
 
-      if (error) throw error;
+      if (data?.error) {
+        throw new Error(data.error);
+      }
 
       if (data?.publications && Array.isArray(data.publications)) {
-        setPublications(data.publications.map((pub: any) => ({
-          ...pub,
-          date: undefined,
-          validated: false,
-          status: 'needs_recording',
-          designer: 'no_designer',
-          links: (pub.links && Array.isArray(pub.links)) 
-            ? pub.links.filter((l: any) => l.label && l.url) 
-            : []
-        })));
+        setPublications(data.publications.map((pub: any) => {
+          const normalizedTitle = cleanAiTitle(pub.title) || 'Sin título';
+          const normalizedDescription = cleanAiText(pub.description);
+          const normalizedCopywriting = cleanAiText(pub.copywriting);
+
+          return {
+            ...pub,
+            title: normalizedTitle,
+            type: normalizePublicationType(pub.type, normalizedTitle, normalizedDescription),
+            description: normalizedDescription,
+            copywriting: normalizedCopywriting,
+            date: undefined,
+            validated: false,
+            status: 'needs_recording',
+            designer: 'no_designer',
+            links: normalizeAiLinks(pub.links)
+          };
+        }));
         toast.success(`Se detectaron ${data.publications.length} publicaciones`);
       } else {
         toast.error("No se detectaron publicaciones");
