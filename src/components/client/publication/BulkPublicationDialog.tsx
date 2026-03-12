@@ -215,10 +215,6 @@ export function BulkPublicationDialog({ clientId, packageId, existingPublication
 
     const tomorrow = startOfDay(addDays(new Date(), 1));
     
-    const isWeekendDay = (date: Date) => {
-      const day = date.getDay();
-      return day === 0 || day === 6;
-    };
 
     // Collect available weekdays
     const availableDays: Date[] = [];
