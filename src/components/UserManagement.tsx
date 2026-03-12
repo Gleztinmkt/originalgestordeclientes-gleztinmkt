@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
+import { invokeEdgeFunction } from "@/lib/edge-functions";
 import { Users } from "lucide-react";
 export const UserManagement = () => {
   const [isOpen, setIsOpen] = useState(false);
