@@ -29,6 +29,7 @@ export interface Client {
   marketingInfo: string;
   instagram?: string;
   facebook?: string;
+  lastPost?: string;
   packages: Array<{
     id: string;
     name: string;
