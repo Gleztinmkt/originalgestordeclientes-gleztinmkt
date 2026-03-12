@@ -198,33 +198,43 @@ export function BulkPublicationDialog({ clientId, packageId, existingPublication
     return hasExisting || hasInBulk;
   };
 
-  const autoAssignDates = () => {
+  const autoAssignDates = (untilDate?: Date) => {
     const total = publications.length;
     if (total === 0) return;
 
     const tomorrow = startOfDay(addDays(new Date(), 1));
-    const perWeek = Math.ceil(total / 4);
     
-    // Calculate spacing between publications within a week
-    // Distribute evenly across weekdays (Mon-Fri = 5 days, or all 7 if needed)
-    const daysBetween = Math.max(1, Math.floor(7 / perWeek));
-    
-    const assignedDates: Date[] = [];
-    let currentDate = tomorrow;
-
-    const isWeekend = (date: Date) => {
+    const isWeekendDay = (date: Date) => {
       const day = date.getDay();
-      return day === 0 || day === 6; // domingo o sábado
+      return day === 0 || day === 6;
     };
 
-    for (let i = 0; i < total; i++) {
-      // Skip weekends and dates that already have existing publications
-      while (isWeekend(currentDate) || hasPublicationOnDate(currentDate) || assignedDates.some(d => d.getTime() === currentDate.getTime())) {
-        currentDate = addDays(currentDate, 1);
+    // Collect available weekdays
+    const availableDays: Date[] = [];
+    const limit = untilDate ? startOfDay(untilDate) : startOfDay(addDays(new Date(), 120));
+    let cursor = tomorrow;
+
+    while (cursor <= limit) {
+      if (!isWeekendDay(cursor) && !hasPublicationOnDate(cursor) && !availableDays.some(d => d.getTime() === cursor.getTime())) {
+        availableDays.push(cursor);
       }
-      
-      assignedDates.push(currentDate);
-      currentDate = addDays(currentDate, daysBetween);
+      cursor = addDays(cursor, 1);
+    }
+
+    if (availableDays.length < total) {
+      toast.error(`No hay suficientes días hábiles disponibles. Hay ${availableDays.length} días pero necesitas ${total}.`);
+      return;
+    }
+
+    // Distribute evenly across available days
+    const assignedDates: Date[] = [];
+    if (total === 1) {
+      assignedDates.push(availableDays[0]);
+    } else {
+      const step = (availableDays.length - 1) / (total - 1);
+      for (let i = 0; i < total; i++) {
+        assignedDates.push(availableDays[Math.round(i * step)]);
+      }
     }
 
     setPublications(prev => prev.map((pub, i) => ({
@@ -232,7 +242,8 @@ export function BulkPublicationDialog({ clientId, packageId, existingPublication
       date: assignedDates[i],
     })));
 
-    toast.success(`Fechas asignadas automáticamente (${perWeek} por semana)`);
+    const rangeEnd = untilDate ? format(untilDate, "d 'de' MMMM", { locale: es }) : 'automáticamente';
+    toast.success(`Fechas asignadas ${untilDate ? `hasta el ${rangeEnd}` : rangeEnd}`);
   };
 
   return (
