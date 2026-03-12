@@ -71,14 +71,14 @@ export const UserManagement = () => {
         .single();
 
       // Crear usuario mediante Edge Function (no afecta la sesión actual y asigna rol y perfil)
-      const { data: result, error: fnError } = await supabase.functions.invoke('admin-create-user', {
-        body: { email, password, role }
+      const result = await invokeEdgeFunction<{ ok?: boolean; error?: string }>('admin-create-user', {
+        email,
+        password,
+        role,
       });
 
-      if (fnError) throw fnError;
-
       if (!result?.ok) {
-        throw new Error('No se pudo crear el usuario');
+        throw new Error(result?.error || 'No se pudo crear el usuario');
       }
       toast({
         title: "Usuario creado",
