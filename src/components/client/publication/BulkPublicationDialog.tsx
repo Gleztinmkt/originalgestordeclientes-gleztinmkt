@@ -222,7 +222,7 @@ export function BulkPublicationDialog({ clientId, packageId, existingPublication
     let cursor = tomorrow;
 
     while (cursor <= limit) {
-      if (!isWeekendDay(cursor) && !hasPublicationOnDate(cursor) && !availableDays.some(d => d.getTime() === cursor.getTime())) {
+      if (!isWeekend(cursor) && !hasPublicationOnDate(cursor) && !availableDays.some(d => d.getTime() === cursor.getTime())) {
         availableDays.push(cursor);
       }
       cursor = addDays(cursor, 1);
