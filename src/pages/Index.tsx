@@ -45,9 +45,9 @@ const Index = () => {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
 
-  // Fetch user role
+  // Fetch user role - cached aggressively to prevent tab flickering
+  const [confirmedRole, setConfirmedRole] = useState<string | null>(null);
   const {
-    data: userRole,
     isLoading: isRoleLoading
   } = useQuery({
     queryKey: ['userRole'],
@@ -60,16 +60,22 @@ const Index = () => {
       const { data: isAdmin, error } = await supabase.rpc('check_admin_role', { user_id: user.id });
       if (error) {
         console.error('Error checking admin role:', error);
+        // On error, don't change the role - keep whatever was confirmed before
+        throw error;
       }
-      return isAdmin ? 'admin' : null;
+      const role = isAdmin ? 'admin' : null;
+      setConfirmedRole(role);
+      return role;
     },
-    retry: 2,
-    staleTime: 1000 * 60 * 30,
-    gcTime: 1000 * 60 * 60,
+    retry: 3,
+    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 10000),
+    staleTime: Infinity,
+    gcTime: Infinity,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
-    placeholderData: (previousData: string | null | undefined) => previousData,
+    refetchOnMount: false,
   });
+  const userRole = confirmedRole;
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut();
