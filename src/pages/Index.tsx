@@ -150,7 +150,6 @@ const Index = () => {
             <div className="flex items-center gap-2">
               {userRole === 'admin' && <>
                   <TrashDialog />
-                  <NotificationCenter onSendPaymentReminders={() => {}} onCompleteTask={() => {}} />
                 </>}
               
             </div>
