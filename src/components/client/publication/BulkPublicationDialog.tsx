@@ -370,7 +370,7 @@ export function BulkPublicationDialog({ clientId, packageId, existingPublication
                     </Button>
                   </CardContent>
                 </Card>
-              )
+              )}
 
               <div className="space-y-3">
                 {publications.map((pub, index) => (
