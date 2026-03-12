@@ -305,13 +305,22 @@ export function BulkPublicationDialog({ clientId, packageId, existingPublication
                 </p>
                 <div className="flex gap-2">
                   <Button
-                    onClick={autoAssignDates}
+                    onClick={() => autoAssignDates()}
                     variant="outline"
                     size="sm"
                     className="gap-2"
                   >
                     <Wand2 className="h-4 w-4" />
-                    Asignar fechas automáticamente
+                    Asignar fechas
+                  </Button>
+                  <Button
+                    onClick={() => setShowEndDatePicker(!showEndDatePicker)}
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                  >
+                    <CalendarIcon className="h-4 w-4" />
+                    Acomodar hasta fecha
                   </Button>
                   <Button
                     onClick={() => {
@@ -325,6 +334,43 @@ export function BulkPublicationDialog({ clientId, packageId, existingPublication
                   </Button>
                 </div>
               </div>
+
+              {showEndDatePicker && (
+                <Card>
+                  <CardContent className="p-4 space-y-3">
+                    <Label>Selecciona la fecha límite</Label>
+                    <Calendar
+                      mode="single"
+                      selected={endDate}
+                      onSelect={setEndDate}
+                      locale={es}
+                      disabled={(date) => date < addDays(new Date(), 1)}
+                      className="rounded-md border"
+                    />
+                    {endDate && (
+                      <p className="text-sm text-muted-foreground">
+                        Hasta: {format(endDate, "d 'de' MMMM, yyyy", { locale: es })}
+                      </p>
+                    )}
+                    <Button
+                      onClick={() => {
+                        if (!endDate) {
+                          toast.error("Selecciona una fecha límite");
+                          return;
+                        }
+                        autoAssignDates(endDate);
+                        setShowEndDatePicker(false);
+                      }}
+                      disabled={!endDate}
+                      className="w-full"
+                      size="sm"
+                    >
+                      <Wand2 className="mr-2 h-4 w-4" />
+                      Acomodar hasta {endDate ? format(endDate, "d/MM", { locale: es }) : '...'}
+                    </Button>
+                  </CardContent>
+                </Card>
+              )
 
               <div className="space-y-3">
                 {publications.map((pub, index) => (
