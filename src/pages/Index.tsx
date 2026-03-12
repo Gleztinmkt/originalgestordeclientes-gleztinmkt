@@ -7,7 +7,7 @@ import { TaskFilter } from "@/components/TaskFilter";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { TrashDialog } from "@/components/trash/TrashDialog";
-import { NotificationCenter } from "@/components/NotificationCenter";
+
 import { UserManagement } from "@/components/UserManagement";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTaskManager } from "@/features/tasks/useTaskManager";
@@ -150,7 +150,6 @@ const Index = () => {
             <div className="flex items-center gap-2">
               {userRole === 'admin' && <>
                   <TrashDialog />
-                  <NotificationCenter onSendPaymentReminders={() => {}} onCompleteTask={() => {}} />
                 </>}
               
             </div>
