@@ -210,9 +210,14 @@ export function BulkPublicationDialog({ clientId, packageId, existingPublication
     const assignedDates: Date[] = [];
     let currentDate = tomorrow;
 
+    const isWeekend = (date: Date) => {
+      const day = date.getDay();
+      return day === 0 || day === 6; // domingo o sábado
+    };
+
     for (let i = 0; i < total; i++) {
-      // Skip dates that already have existing publications
-      while (hasPublicationOnDate(currentDate) || assignedDates.some(d => d.getTime() === currentDate.getTime())) {
+      // Skip weekends and dates that already have existing publications
+      while (isWeekend(currentDate) || hasPublicationOnDate(currentDate) || assignedDates.some(d => d.getTime() === currentDate.getTime())) {
         currentDate = addDays(currentDate, 1);
       }
       
