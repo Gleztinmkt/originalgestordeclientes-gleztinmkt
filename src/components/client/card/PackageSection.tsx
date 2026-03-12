@@ -113,6 +113,8 @@ export const PackageSection = ({
             clientName={client.name}
             packageId={pkg.id}
             isProcessing={processingPackageId === pkg.id}
+            initialLastPost={client.lastPost || ""}
+            initialPhone={client.phone || ""}
           />
         ))}
       </div>

@@ -73,6 +73,7 @@ export const formatDatabaseClient = (dbClient: any): Client => {
     marketingInfo: dbClient.marketing_info || "",
     instagram: dbClient.instagram || "",
     facebook: dbClient.facebook || "",
+    lastPost: dbClient.last_post || "",
     packages: parsePackages(dbClient.packages),
     clientInfo: clientInfo
   };
