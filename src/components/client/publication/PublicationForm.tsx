@@ -21,6 +21,7 @@ import { useQuery } from "@tanstack/react-query";
 import { BulkPublicationDialog } from "./BulkPublicationDialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { cleanAiText, cleanAiTitle, invokeEdgeFunction, normalizeAiLinks, normalizePublicationType } from "@/lib/edge-functions";
 
 interface PublicationFormProps {
   onSubmit: (values: {
