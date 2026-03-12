@@ -188,26 +188,39 @@ export const PublicationForm = ({
 
     setIsAnalyzing(true);
     try {
-      const { data, error } = await supabase.functions.invoke('analyze-publication', {
-        body: { content: aiContent }
-      });
-
-      if (error) {
-        console.error('Error al analizar:', error);
-        throw error;
-      }
+      const data = await invokeEdgeFunction<{
+        title?: string;
+        type?: string;
+        description?: string;
+        copywriting?: string;
+        links?: unknown;
+        error?: string;
+      }>('analyze-publication', { content: aiContent });
 
       if (data?.error) {
         throw new Error(data.error);
       }
 
-      // Auto-rellenar los campos
-      if (data.title) setName(data.title);
-      if (data.type) setType(data.type);
-      if (data.description) setDescription(data.description);
-      if (data.copywriting) setCopywriting(data.copywriting);
-      if (data.links && Array.isArray(data.links) && data.links.length > 0) {
-        setLinks(prev => [...prev, ...data.links.filter((l: any) => l.label && l.url)]);
+      const normalizedTitle = cleanAiTitle(data?.title);
+      const normalizedDescription = cleanAiText(data?.description);
+      const normalizedCopywriting = cleanAiText(data?.copywriting);
+      const normalizedType = normalizePublicationType(data?.type, normalizedTitle, normalizedDescription);
+      const normalizedLinks = normalizeAiLinks(data?.links);
+
+      if (normalizedTitle) setName(normalizedTitle);
+      setType(normalizedType);
+      if (normalizedDescription) setDescription(normalizedDescription);
+      if (normalizedCopywriting) setCopywriting(normalizedCopywriting);
+      if (normalizedLinks.length > 0) {
+        setLinks(prev => {
+          const merged = [...prev, ...normalizedLinks];
+          const seen = new Set<string>();
+          return merged.filter(link => {
+            if (seen.has(link.url)) return false;
+            seen.add(link.url);
+            return true;
+          });
+        });
       }
 
       toast({
