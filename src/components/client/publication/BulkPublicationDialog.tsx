@@ -44,6 +44,8 @@ export function BulkPublicationDialog({ clientId, packageId, existingPublication
   const [isSaving, setIsSaving] = useState(false);
   const [newLinkLabels, setNewLinkLabels] = useState<{ [key: number]: string }>({});
   const [newLinkUrls, setNewLinkUrls] = useState<{ [key: number]: string }>({});
+  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
+  const [showEndDatePicker, setShowEndDatePicker] = useState(false);
 
   // Fetch designers
   const { data: designers = [] } = useQuery({
