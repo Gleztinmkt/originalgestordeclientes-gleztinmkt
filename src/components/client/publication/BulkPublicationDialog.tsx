@@ -15,6 +15,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { addDays, isWeekend, startOfDay } from "date-fns";
+import { cleanAiText, cleanAiTitle, invokeEdgeFunction, normalizeAiLinks, normalizePublicationType } from "@/lib/edge-functions";
 
 interface DetectedPublication {
   title: string;
@@ -68,23 +69,33 @@ export function BulkPublicationDialog({ clientId, packageId, existingPublication
 
     setIsAnalyzing(true);
     try {
-      const { data, error } = await supabase.functions.invoke('analyze-multiple-publications', {
-        body: { content }
+      const data = await invokeEdgeFunction<{ publications?: any[]; error?: string }>('analyze-multiple-publications', {
+        content,
       });
 
-      if (error) throw error;
+      if (data?.error) {
+        throw new Error(data.error);
+      }
 
       if (data?.publications && Array.isArray(data.publications)) {
-        setPublications(data.publications.map((pub: any) => ({
-          ...pub,
-          date: undefined,
-          validated: false,
-          status: 'needs_recording',
-          designer: 'no_designer',
-          links: (pub.links && Array.isArray(pub.links)) 
-            ? pub.links.filter((l: any) => l.label && l.url) 
-            : []
-        })));
+        setPublications(data.publications.map((pub: any) => {
+          const normalizedTitle = cleanAiTitle(pub.title) || 'Sin título';
+          const normalizedDescription = cleanAiText(pub.description);
+          const normalizedCopywriting = cleanAiText(pub.copywriting);
+
+          return {
+            ...pub,
+            title: normalizedTitle,
+            type: normalizePublicationType(pub.type, normalizedTitle, normalizedDescription),
+            description: normalizedDescription,
+            copywriting: normalizedCopywriting,
+            date: undefined,
+            validated: false,
+            status: 'needs_recording',
+            designer: 'no_designer',
+            links: normalizeAiLinks(pub.links)
+          };
+        }));
         toast.success(`Se detectaron ${data.publications.length} publicaciones`);
       } else {
         toast.error("No se detectaron publicaciones");
@@ -204,10 +215,6 @@ export function BulkPublicationDialog({ clientId, packageId, existingPublication
 
     const tomorrow = startOfDay(addDays(new Date(), 1));
     
-    const isWeekendDay = (date: Date) => {
-      const day = date.getDay();
-      return day === 0 || day === 6;
-    };
 
     // Collect available weekdays
     const availableDays: Date[] = [];
@@ -215,7 +222,7 @@ export function BulkPublicationDialog({ clientId, packageId, existingPublication
     let cursor = tomorrow;
 
     while (cursor <= limit) {
-      if (!isWeekendDay(cursor) && !hasPublicationOnDate(cursor) && !availableDays.some(d => d.getTime() === cursor.getTime())) {
+      if (!isWeekend(cursor) && !hasPublicationOnDate(cursor) && !availableDays.some(d => d.getTime() === cursor.getTime())) {
         availableDays.push(cursor);
       }
       cursor = addDays(cursor, 1);
