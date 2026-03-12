@@ -60,7 +60,6 @@ const Index = () => {
       const { data: isAdmin, error } = await supabase.rpc('check_admin_role', { user_id: user.id });
       if (error) {
         console.error('Error checking admin role:', error);
-        // On error, don't change the role - keep whatever was confirmed before
         throw error;
       }
       const role = isAdmin ? 'admin' : null;
@@ -73,7 +72,6 @@ const Index = () => {
     gcTime: Infinity,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
-    refetchOnMount: false,
   });
   const userRole = confirmedRole;
   const handleLogout = async () => {
