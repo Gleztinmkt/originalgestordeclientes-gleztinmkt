@@ -33,8 +33,8 @@ function sumPackages(packages: any[]) {
   return { disponibles, usadas };
 }
 
-// GET ?action=clientes
-async function handleClientes() {
+// Fetch all clients sorted alphabetically and add index number
+async function fetchAllClients() {
   const sb = getAdminClient();
   const { data, error } = await sb
     .from("clients")
@@ -42,11 +42,12 @@ async function handleClientes() {
     .is("deleted_at", null)
     .order("name");
 
-  if (error) return json({ error: error.message }, 500);
+  if (error) throw error;
 
-  const result = (data ?? []).map((c) => {
+  return (data ?? []).map((c, i) => {
     const { disponibles, usadas } = sumPackages(c.packages as unknown[]);
     return {
+      numero: i + 1,
       id: c.id,
       nombre: c.name,
       telefono: c.phone,
@@ -54,8 +55,16 @@ async function handleClientes() {
       publicaciones_usadas: usadas,
     };
   });
+}
 
-  return json(result);
+// GET ?action=clientes
+async function handleClientes() {
+  try {
+    const result = await fetchAllClients();
+    return json(result);
+  } catch (e) {
+    return json({ error: e.message }, 500);
+  }
 }
 
 // GET ?action=buscar&q=...
