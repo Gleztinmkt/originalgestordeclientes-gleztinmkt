@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.analyze-multiple-publications]
 verify_jwt = false
+
+[functions.telegram-api]
+verify_jwt = false
