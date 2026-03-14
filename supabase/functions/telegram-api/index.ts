@@ -68,32 +68,29 @@ async function handleClientes() {
 }
 
 // GET ?action=buscar&q=...
+// q can be a number (index in alphabetical list) or a name search
 async function handleBuscar(q: string) {
   if (!q) return json({ error: "Parámetro q es requerido" }, 400);
 
-  const sb = getAdminClient();
-  const pattern = `%${q}%`;
-  const { data, error } = await sb
-    .from("clients")
-    .select("id, name, packages, phone")
-    .is("deleted_at", null)
-    .or(`name.ilike.${pattern},phone.ilike.${pattern}`)
-    .order("name");
+  try {
+    const allClients = await fetchAllClients();
 
-  if (error) return json({ error: error.message }, 500);
+    // If q is a number, return that client by position
+    const num = parseInt(q, 10);
+    if (!isNaN(num) && num > 0 && num <= allClients.length) {
+      return json([allClients[num - 1]]);
+    }
 
-  const result = (data ?? []).map((c) => {
-    const { disponibles, usadas } = sumPackages(c.packages as unknown[]);
-    return {
-      id: c.id,
-      nombre: c.name,
-      telefono: c.phone,
-      publicaciones_disponibles: disponibles,
-      publicaciones_usadas: usadas,
-    };
-  });
+    // Otherwise filter by name
+    const lower = q.toLowerCase();
+    const filtered = allClients.filter((c) =>
+      c.nombre.toLowerCase().includes(lower)
+    );
 
-  return json(result);
+    return json(filtered);
+  } catch (e) {
+    return json({ error: e.message }, 500);
+  }
 }
 
 // POST ?action=crear_publicacion
