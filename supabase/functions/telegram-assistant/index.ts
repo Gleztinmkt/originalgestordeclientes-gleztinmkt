@@ -144,8 +144,7 @@ async function markPublished(pubIds: string[], discountCount?: number) {
 
       // Continuous discount: find first incomplete package and discount from it
       let remaining = toDiscount;
-      // Sort packages by month ascending
-      sortPackagesByMonth(packages);
+      // Descuento continuo en el orden actual del arreglo de paquetes (arriba → abajo)
 
       for (const pkg of packages) {
         if (remaining <= 0) break;
