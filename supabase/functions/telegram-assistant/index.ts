@@ -498,28 +498,25 @@ Si pide agregar descripción, incluí el texto completo en el campo description.
     return await handleListadoAprobados();
   }
 
-  // ── update_planning ──
+  // ── update_planning → return proposals, don't apply ──
   if (fnName === "update_planning") {
     const updates = args.updates ?? [];
     if (!updates.length) {
       return { accion: "no_encontrado", mensaje_ia: "No pude identificar qué planificación actualizar." };
     }
 
-    const results = [];
-    for (const u of updates) {
-      await handleUpdatePlanning(u.client_id, u.month, u.status, u.description);
-      results.push({
-        cliente: u.client_name,
-        mes: u.month,
-        status: u.status,
-        descripcion: u.description,
-      });
-    }
+    const results = updates.map((u: { client_name: string; client_id: string; month: number; status?: string; description?: string }) => ({
+      cliente: u.client_name,
+      client_id: u.client_id,
+      mes: u.month,
+      status: u.status,
+      descripcion: u.description,
+    }));
 
     const months = ["", "enero", "febrero", "marzo", "abril", "mayo", "junio",
       "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 
-    const summary = results.map((r) => {
+    const summary = results.map((r: { cliente: string; mes: number; status?: string; descripcion?: string }) => {
       const parts = [`${r.cliente} → ${months[r.mes]}`];
       if (r.status) parts.push(`estado: ${r.status}`);
       if (r.descripcion) parts.push(`con descripción`);
@@ -527,8 +524,8 @@ Si pide agregar descripción, incluí el texto completo en el campo description.
     }).join("; ");
 
     return {
-      accion: "planificacion_actualizada",
-      mensaje_ia: `Planificación actualizada: ${summary}`,
+      accion: "planificacion_propuesta",
+      mensaje_ia: `Propuesta de planificación: ${summary}`,
       actualizaciones: results,
     };
   }
