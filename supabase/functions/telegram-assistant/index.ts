@@ -98,13 +98,12 @@ async function fetchPublicationsByStatus(filters: {
   in_editing?: boolean;
   in_review?: boolean;
   approved?: boolean;
-  in_cloud?: boolean;
   type?: string;
 }) {
   const sb = getAdminClient();
   let query = sb
     .from("publications")
-    .select("id, name, type, date, description, copywriting, client_id, needs_recording, needs_editing, in_editing, in_review, approved, in_cloud, designer, filming_time, links, status")
+    .select("id, name, type, date, description, copywriting, client_id, needs_recording, needs_editing, in_editing, in_review, approved, designer, filming_time, links, status")
     .eq("is_published", false)
     .is("deleted_at", null);
 
