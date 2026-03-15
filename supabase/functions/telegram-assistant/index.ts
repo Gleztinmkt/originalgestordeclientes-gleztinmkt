@@ -409,7 +409,7 @@ Si pide agregar descripción, incluí el texto completo en el campo description.
             client_id: { type: "string", description: "ID UUID del cliente" },
             status_filter: {
               type: "string",
-              enum: ["needs_recording", "needs_editing", "in_editing", "in_review", "approved", "in_cloud", "all"],
+              enum: ["needs_recording", "needs_editing", "in_editing", "in_review", "approved", "all"],
               description: "Filtro de estado. 'all' muestra todo agrupado por estado.",
             },
             type_filter: {
