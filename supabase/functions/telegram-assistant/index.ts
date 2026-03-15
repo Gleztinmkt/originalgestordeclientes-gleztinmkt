@@ -544,10 +544,13 @@ async function handleListadoAprobados() {
 
   for (const pub of pubs) {
     const cid = pub.client_id ?? "unknown";
+    // Skip publications from deleted/unknown clients
+    if (!clientMap.has(cid)) continue;
+
     if (!byClient[cid]) {
       byClient[cid] = {
         id: cid,
-        nombre: clientMap.get(cid) ?? "Desconocido",
+        nombre: clientMap.get(cid)!,
         publicaciones: [],
       };
     }
