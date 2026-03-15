@@ -1039,7 +1039,7 @@ async function handleConfirmarPublicaciones(ids: string[]) {
 
 /* ── Telegram Formatter ── */
 // deno-lint-ignore no-explicit-any
-function formatForTelegram(result: any): { text: string; reply_markup?: any } {
+async function formatForTelegram(result: any): Promise<{ text: string; reply_markup?: any }> {
   const accion = result.accion;
   const statusEmoji: Record<string, string> = {
     needs_recording: "🔴",
@@ -1109,8 +1109,14 @@ function formatForTelegram(result: any): { text: string; reply_markup?: any } {
           }
         }
       }
-      // Always show "mark all" button
-      buttons.push([{ text: `✅ Marcar todas (${allPubIds.length})`, callback_data: `pub_mark_all:${allPubIds.join(",")}` }]);
+      // "Mark all" button — use session if callback_data would exceed 64 bytes
+      const rawData = `pub_mark_all:${allPubIds.join(",")}`;
+      if (rawData.length <= 64) {
+        buttons.push([{ text: `✅ Marcar todas (${allPubIds.length})`, callback_data: rawData }]);
+      } else {
+        const sessId = await createSession({ ids: allPubIds, action: "pub_mark_all" });
+        buttons.push([{ text: `✅ Marcar todas (${allPubIds.length})`, callback_data: `pub_sess:${sessId}` }]);
+      }
     }
 
     return { text, reply_markup: buttons.length ? { inline_keyboard: buttons } : undefined };
@@ -1158,8 +1164,16 @@ function formatForTelegram(result: any): { text: string; reply_markup?: any } {
 
     if ((result.actualizaciones || []).length > 1) {
       // deno-lint-ignore no-explicit-any
-      const allData = (result.actualizaciones || []).map((u: any) => `${u.client_id}:${u.mes}:${u.status || ""}`).join("|");
-      buttons.push([{ text: "✅ Confirmar todas", callback_data: `plan_confirm_all:${allData}` }]);
+      const allUpdates = (result.actualizaciones || []).map((u: any) => ({
+        client_id: u.client_id, mes: u.mes, status: u.status || ""
+      }));
+      const rawData = `plan_confirm_all:${allUpdates.map((u: any) => `${u.client_id}:${u.mes}:${u.status}`).join("|")}`;
+      if (rawData.length <= 64) {
+        buttons.push([{ text: "✅ Confirmar todas", callback_data: rawData }]);
+      } else {
+        const sessId = await createSession({ updates: allUpdates, action: "plan_confirm_all" });
+        buttons.push([{ text: "✅ Confirmar todas", callback_data: `plan_sess:${sessId}` }]);
+      }
     }
 
     return { text, reply_markup: buttons.length ? { inline_keyboard: buttons } : undefined };
@@ -1190,8 +1204,14 @@ function formatForTelegram(result: any): { text: string; reply_markup?: any } {
     const buttons = [];
     if (approvedGroup?.publicaciones?.length) {
       // deno-lint-ignore no-explicit-any
-      const ids = approvedGroup.publicaciones.map((p: any) => p.id).join(",");
-      buttons.push([{ text: `✅ Marcar aprobadas como publicadas (${approvedGroup.cantidad})`, callback_data: `pub_mark_all:${ids}` }]);
+      const ids = approvedGroup.publicaciones.map((p: any) => p.id);
+      const rawData = `pub_mark_all:${ids.join(",")}`;
+      if (rawData.length <= 64) {
+        buttons.push([{ text: `✅ Marcar aprobadas como publicadas (${approvedGroup.cantidad})`, callback_data: rawData }]);
+      } else {
+        const sessId = await createSession({ ids, action: "pub_mark_all" });
+        buttons.push([{ text: `✅ Marcar aprobadas como publicadas (${approvedGroup.cantidad})`, callback_data: `pub_sess:${sessId}` }]);
+      }
     }
 
     return { text, reply_markup: buttons.length ? { inline_keyboard: buttons } : undefined };
@@ -1328,9 +1348,15 @@ function formatForTelegram(result: any): { text: string; reply_markup?: any } {
 
     const buttons = [];
     // deno-lint-ignore no-explicit-any
-    const ids = (result.publicaciones || []).map((p: any) => p.id).join(",");
-    if (ids) {
-      buttons.push([{ text: `✅ Confirmar y publicar (${result.publicaciones?.length || 0})`, callback_data: `pub_mark_all:${ids}` }]);
+    const ids = (result.publicaciones || []).map((p: any) => p.id);
+    if (ids.length) {
+      const rawData = `pub_mark_all:${ids.join(",")}`;
+      if (rawData.length <= 64) {
+        buttons.push([{ text: `✅ Confirmar y publicar (${ids.length})`, callback_data: rawData }]);
+      } else {
+        const sessId = await createSession({ ids, action: "pub_mark_all" });
+        buttons.push([{ text: `✅ Confirmar y publicar (${ids.length})`, callback_data: `pub_sess:${sessId}` }]);
+      }
     }
 
     return { text, reply_markup: buttons.length ? { inline_keyboard: buttons } : undefined };
@@ -1344,6 +1370,36 @@ function formatForTelegram(result: any): { text: string; reply_markup?: any } {
 
 function escHtml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+/* ── Session helpers for Telegram callback_data (64 byte limit) ── */
+function generateSessionId(): string {
+  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+  let id = "s_";
+  for (let i = 0; i < 8; i++) id += chars[Math.floor(Math.random() * chars.length)];
+  return id;
+}
+
+async function createSession(data: unknown): Promise<string> {
+  const sb = getAdminClient();
+  const id = generateSessionId();
+  const { error } = await sb.from("telegram_sessions").insert({ id, data });
+  if (error) {
+    console.error("Failed to create telegram session:", error);
+    throw error;
+  }
+  return id;
+}
+
+async function resolveSession(sessionId: string): Promise<unknown | null> {
+  const sb = getAdminClient();
+  const { data, error } = await sb
+    .from("telegram_sessions")
+    .select("data")
+    .eq("id", sessionId)
+    .maybeSingle();
+  if (error) { console.error("Failed to resolve session:", error); return null; }
+  return data?.data ?? null;
 }
 
 /* ── Main handler ── */
@@ -1364,9 +1420,9 @@ serve(async (req) => {
 
     // Helper: optionally format for Telegram
     // deno-lint-ignore no-explicit-any
-    const respond = (result: any) => {
+    const respond = async (result: any) => {
       if (format === "telegram") {
-        const tg = formatForTelegram(result);
+        const tg = await formatForTelegram(result);
         return json({ ...result, telegram: tg });
       }
       return json(result);
@@ -1423,23 +1479,49 @@ serve(async (req) => {
           ok: true,
         };
       }
+      // pub_sess:{session_id} — resolve session for bulk pub mark
+      else if (callbackData.startsWith("pub_sess:")) {
+        const sessId = callbackData.replace("pub_sess:", "");
+        const sessData = await resolveSession(sessId) as { ids?: string[] } | null;
+        if (!sessData?.ids?.length) return json({ error: "Sesión expirada o inválida. Volvé a consultar." }, 400);
+        result = await markPublished(sessData.ids);
+        result = { accion: "marcar_publicadas", ...result };
+      }
+      // plan_sess:{session_id} — resolve session for bulk plan confirm
+      else if (callbackData.startsWith("plan_sess:")) {
+        const sessId = callbackData.replace("plan_sess:", "");
+        const sessData = await resolveSession(sessId) as { updates?: { client_id: string; mes: number; status: string }[] } | null;
+        if (!sessData?.updates?.length) return json({ error: "Sesión expirada o inválida. Volvé a consultar." }, 400);
+        let count = 0;
+        for (const u of sessData.updates) {
+          if (u.client_id && u.mes) {
+            await handleUpdatePlanning(u.client_id, u.mes, u.status || "hacer");
+            count++;
+          }
+        }
+        result = {
+          accion: "planificacion_confirmada",
+          mensaje_ia: `${count} planificación(es) confirmada(s) exitosamente`,
+          ok: true,
+        };
+      }
       else {
         return json({ error: `callback_data no reconocido: ${callbackData}` }, 400);
       }
 
-      const tg = formatForTelegram(result);
+      const tg = await formatForTelegram(result);
       return json({ ...result, telegram: tg });
     }
 
     // Explicit actions
     if (accion === "listado_aprobados") {
-      return respond(await handleListadoAprobados());
+      return await respond(await handleListadoAprobados());
     }
 
     if (accion === "confirmar_publicaciones") {
       const ids = body.publicaciones_ids ?? [];
       if (!ids.length) return json({ error: "publicaciones_ids es requerido" }, 400);
-      return respond(await handleConfirmarPublicaciones(ids));
+      return await respond(await handleConfirmarPublicaciones(ids));
     }
 
     if (accion === "marcar_publicadas" || accion === "confirmar") {
@@ -1447,14 +1529,14 @@ serve(async (req) => {
       if (!ids.length) return json({ error: "publicaciones_ids es requerido" }, 400);
       const discountCount = body.cantidad_descontar ?? undefined;
       const result = await markPublished(ids, discountCount);
-      return respond({ accion: "marcar_publicadas", ...result });
+      return await respond({ accion: "marcar_publicadas", ...result });
     }
 
     if (accion === "actualizar_planificacion") {
       const { client_id, month, status, description } = body;
       if (!client_id || !month) return json({ error: "client_id y month son requeridos" }, 400);
       const result = await handleUpdatePlanning(client_id, month, status, description);
-      return respond({ accion: "planificacion_actualizada", ...result });
+      return await respond({ accion: "planificacion_actualizada", ...result });
     }
 
     if (accion === "confirmar_planificacion") {
@@ -1463,7 +1545,7 @@ serve(async (req) => {
       for (const u of updates) {
         await handleUpdatePlanning(u.client_id, u.month, u.status, u.description);
       }
-      return respond({
+      return await respond({
         accion: "planificacion_confirmada",
         mensaje_ia: `${updates.length} planificación(es) confirmada(s) exitosamente`,
         ok: true,
@@ -1474,7 +1556,7 @@ serve(async (req) => {
     const mensaje = body.mensaje;
     if (mensaje && typeof mensaje === "string") {
       const result = await interpretMessage(mensaje);
-      return respond(result);
+      return await respond(result);
     }
 
     return json({
