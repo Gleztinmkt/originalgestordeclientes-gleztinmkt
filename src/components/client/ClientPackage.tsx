@@ -56,6 +56,15 @@ export const ClientPackage = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [lastPost, setLastPost] = useState<string>(initialLastPost);
   const [clientPhone, setClientPhone] = useState<string>(initialPhone);
+
+  // Sync when prop changes (e.g., after IA discount + refresh)
+  useEffect(() => {
+    setLastPost(initialLastPost);
+  }, [initialLastPost]);
+
+  useEffect(() => {
+    setClientPhone(initialPhone);
+  }, [initialPhone]);
   const handleLastPostChange = useCallback(async (value: string) => {
     if (isProcessing || isSubmitting) return;
     try {
