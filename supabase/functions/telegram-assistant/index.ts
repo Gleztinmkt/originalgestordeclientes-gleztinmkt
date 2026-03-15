@@ -1066,7 +1066,6 @@ async function formatForTelegram(result: any): Promise<{ text: string; reply_mar
     let s = pubLine(p);
     if (p.designer) s += `\n    🎨 ${escHtml(p.designer)}`;
     if (p.filming_time) s += `\n    ⏰ ${escHtml(p.filming_time)}`;
-    if (p.links) s += `\n    🔗 ${escHtml(p.links)}`;
     return s;
   };
 
