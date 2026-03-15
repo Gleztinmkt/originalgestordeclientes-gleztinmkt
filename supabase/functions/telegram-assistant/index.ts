@@ -1109,8 +1109,14 @@ async function formatForTelegram(result: any): Promise<{ text: string; reply_mar
           }
         }
       }
-      // Always show "mark all" button
-      buttons.push([{ text: `✅ Marcar todas (${allPubIds.length})`, callback_data: `pub_mark_all:${allPubIds.join(",")}` }]);
+      // "Mark all" button — use session if callback_data would exceed 64 bytes
+      const rawData = `pub_mark_all:${allPubIds.join(",")}`;
+      if (rawData.length <= 64) {
+        buttons.push([{ text: `✅ Marcar todas (${allPubIds.length})`, callback_data: rawData }]);
+      } else {
+        const sessId = await createSession({ ids: allPubIds, action: "pub_mark_all" });
+        buttons.push([{ text: `✅ Marcar todas (${allPubIds.length})`, callback_data: `pub_sess:${sessId}` }]);
+      }
     }
 
     return { text, reply_markup: buttons.length ? { inline_keyboard: buttons } : undefined };
