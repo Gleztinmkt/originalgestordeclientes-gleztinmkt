@@ -34,6 +34,7 @@ interface ClienteIdentificado {
 
 interface PlanUpdate {
   cliente: string;
+  client_id?: string;
   mes: number;
   status?: string;
   descripcion?: string;
