@@ -21,6 +21,7 @@ interface PublicacionPendiente {
   descripcion?: string;
   tiene_copy?: boolean;
   copywriting?: string;
+  copy_text?: string;
 }
 
 interface ClienteIdentificado {
