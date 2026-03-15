@@ -87,6 +87,9 @@ export const AssistantDialog = ({ onClientsUpdate }: AssistantDialogProps) => {
     setSelectedPubs(new Set());
     setExpandedClients(new Set());
     setDiscountCount("");
+    setConfirmedPlans(new Set());
+    setCorrectionIndex(null);
+    setCorrectionText("");
   };
 
   const handleSend = async () => {
