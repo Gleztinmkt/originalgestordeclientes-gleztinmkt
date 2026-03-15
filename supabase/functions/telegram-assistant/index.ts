@@ -1372,6 +1372,65 @@ serve(async (req) => {
       return json(result);
     };
 
+    // ── Telegram callback handler ──
+    if (accion === "telegram_callback") {
+      const callbackData = body.callback_data ?? "";
+      if (!callbackData) return json({ error: "callback_data es requerido" }, 400);
+
+      let result;
+
+      // pub_mark:{id} — mark single publication
+      if (callbackData.startsWith("pub_mark:")) {
+        const pubId = callbackData.replace("pub_mark:", "");
+        result = await markPublished([pubId]);
+        result = { accion: "marcar_publicadas", ...result };
+      }
+      // pub_mark_all:{id1},{id2},... — mark multiple publications
+      else if (callbackData.startsWith("pub_mark_all:")) {
+        const ids = callbackData.replace("pub_mark_all:", "").split(",").filter(Boolean);
+        if (!ids.length) return json({ error: "No hay IDs de publicaciones" }, 400);
+        result = await markPublished(ids);
+        result = { accion: "marcar_publicadas", ...result };
+      }
+      // plan_confirm:{client_id}:{month}:{status} — confirm single planning
+      else if (callbackData.startsWith("plan_confirm:")) {
+        const parts = callbackData.replace("plan_confirm:", "").split(":");
+        const [clientId, monthStr, status] = parts;
+        const month = parseInt(monthStr);
+        if (!clientId || !month) return json({ error: "Datos de planificación inválidos" }, 400);
+        await handleUpdatePlanning(clientId, month, status || "hacer");
+        result = {
+          accion: "planificacion_confirmada",
+          mensaje_ia: `Planificación confirmada exitosamente`,
+          ok: true,
+        };
+      }
+      // plan_confirm_all:{client_id}:{month}:{status}|{client_id}:{month}:{status}|...
+      else if (callbackData.startsWith("plan_confirm_all:")) {
+        const entries = callbackData.replace("plan_confirm_all:", "").split("|");
+        let count = 0;
+        for (const entry of entries) {
+          const [clientId, monthStr, status] = entry.split(":");
+          const month = parseInt(monthStr);
+          if (clientId && month) {
+            await handleUpdatePlanning(clientId, month, status || "hacer");
+            count++;
+          }
+        }
+        result = {
+          accion: "planificacion_confirmada",
+          mensaje_ia: `${count} planificación(es) confirmada(s) exitosamente`,
+          ok: true,
+        };
+      }
+      else {
+        return json({ error: `callback_data no reconocido: ${callbackData}` }, 400);
+      }
+
+      const tg = formatForTelegram(result);
+      return json({ ...result, telegram: tg });
+    }
+
     // Explicit actions
     if (accion === "listado_aprobados") {
       return respond(await handleListadoAprobados());
