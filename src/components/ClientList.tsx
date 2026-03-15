@@ -3,6 +3,7 @@ import { useState } from "react";
 import { BulkMessageButton } from "./client/BulkMessageButton";
 import { ClientFilter } from "./client/ClientFilter";
 import { ClientCard } from "./client/ClientCard";
+import { AssistantDialog } from "./client/AssistantDialog";
 import { Task } from "./TaskList";
 import { Client } from "./types/client";
 import { Input } from "./ui/input";
@@ -21,6 +22,7 @@ interface ClientListProps {
   onDeleteTask: (id: string) => void;
   onCompleteTask: (id: string) => void;
   onUpdateTask: (id: string, task: Partial<Task>) => void;
+  onClientsUpdate?: () => void;
 }
 
 export const ClientList = ({ 
@@ -33,7 +35,8 @@ export const ClientList = ({
   onAddTask,
   onDeleteTask,
   onCompleteTask,
-  onUpdateTask
+  onUpdateTask,
+  onClientsUpdate
 }: ClientListProps) => {
   const [selectedPaymentDay, setSelectedPaymentDay] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -129,6 +132,7 @@ export const ClientList = ({
                 <Grid3x3 className="h-4 w-4" />
               </Button>
             </div>
+            {onClientsUpdate && <AssistantDialog onClientsUpdate={onClientsUpdate} />}
             <BulkMessageButton 
               clients={clients}
               selectedPaymentDay={selectedPaymentDay !== "all" ? parseInt(selectedPaymentDay) : undefined}
