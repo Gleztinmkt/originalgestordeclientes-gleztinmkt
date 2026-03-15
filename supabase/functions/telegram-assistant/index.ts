@@ -1494,6 +1494,36 @@ async function formatForTelegram(result: any): Promise<{ text: string; reply_mar
     return { text, reply_markup: buttons.length ? { inline_keyboard: buttons } : undefined };
   }
 
+  // ── publicacion_propuesta ──
+  if (accion === "publicacion_propuesta") {
+    const pub = result.publicacion_propuesta || {};
+    const typeEmojis: Record<string, string> = { reel: "🎬", carousel: "📸", image: "🖼" };
+    let text = `📝 <b>${escHtml(result.mensaje_ia)}</b>\n\n`;
+    text += `${typeEmojis[pub.type] || "🖼"} <b>Título:</b> ${escHtml(pub.name || "")}\n`;
+    text += `📅 <b>Fecha:</b> ${pub.date || ""}\n`;
+    text += `📂 <b>Tipo:</b> ${pub.type || "image"}\n`;
+    text += `📊 <b>Estado:</b> ${escHtml(pub.status_label || "Falta grabar")}\n`;
+    if (pub.designer) text += `🎨 <b>Diseñador:</b> ${escHtml(pub.designer)}\n`;
+    if (pub.description) text += `\n📝 <b>Descripción:</b>\n${escHtml(pub.description)}\n`;
+    if (pub.copywriting) text += `\n✍️ <b>Copywriting:</b>\n<pre>${escHtml(pub.copywriting)}</pre>\n`;
+
+    text += `\n¿Confirmar creación?`;
+
+    // Store in session since data is large
+    const sessId = await createSession({ publication: pub, action: "create_publication" });
+    const buttons = [
+      [{ text: "✅ Confirmar", callback_data: `create_pub_confirm:${sessId}` }],
+      [{ text: "❌ Cancelar", callback_data: "cancel" }],
+    ];
+
+    return { text, reply_markup: { inline_keyboard: buttons } };
+  }
+
+  // ── publicacion_creada ──
+  if (accion === "publicacion_creada") {
+    return { text: `✅ ${escHtml(result.mensaje_ia || "Publicación creada exitosamente")}` };
+  }
+
   // ── error / no_encontrado / fallback ──
   const msg = result.mensaje_ia || result.error || result.mensaje || "Sin respuesta";
   const icon = accion === "error" ? "❌" : "ℹ️";
