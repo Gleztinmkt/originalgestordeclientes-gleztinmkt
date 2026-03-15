@@ -329,8 +329,7 @@ export const AssistantDialog = ({ onClientsUpdate }: AssistantDialogProps) => {
       const prompt = `Corregí la planificación de ${u.cliente} para ${months[u.mes]}: ${correctionText.trim()}`;
       const result = await invokeEdgeFunction<AssistantResponse>("telegram-assistant", { mensaje: prompt });
       
-      if (result.accion === "planificacion_actualizada" && result.actualizaciones?.length) {
-        // Replace the corrected item in current response
+      if ((result.accion === "planificacion_propuesta" || result.accion === "planificacion_actualizada") && result.actualizaciones?.length) {
         const updated = [...(response.actualizaciones ?? [])];
         updated[index] = result.actualizaciones[0];
         setResponse({ ...response, actualizaciones: updated, mensaje_ia: response.mensaje_ia });
@@ -345,6 +344,34 @@ export const AssistantDialog = ({ onClientsUpdate }: AssistantDialogProps) => {
       setCorrecting(false);
       setCorrectionIndex(null);
       setCorrectionText("");
+    }
+  };
+
+  const handleConfirmPlanning = async () => {
+    if (!response?.actualizaciones || confirmedPlans.size === 0) return;
+    setConfirming(true);
+    try {
+      const selectedUpdates = response.actualizaciones
+        .filter((_, i) => confirmedPlans.has(i))
+        .map((u) => ({
+          client_id: u.client_id,
+          month: u.mes,
+          status: u.status,
+          description: u.descripcion,
+        }));
+
+      await invokeEdgeFunction("telegram-assistant", {
+        accion: "confirmar_planificacion",
+        updates: selectedUpdates,
+      });
+
+      toast({ title: "Planificación confirmada", description: `${selectedUpdates.length} planificación(es) aplicada(s) exitosamente` });
+      onClientsUpdate();
+      reset();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setConfirming(false);
     }
   };
 
