@@ -18,7 +18,7 @@ import { CalendarView } from "@/components/calendar/CalendarView";
 import { PlanningCalendar } from "@/components/planning/PlanningCalendar";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { LogOut } from "lucide-react";
+import { LogOut, RefreshCw } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 const Index = () => {
