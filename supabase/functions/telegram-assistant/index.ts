@@ -566,6 +566,7 @@ Si pide agregar descripción, incluí el texto completo en el campo description.
           fecha: p.date,
           descripcion: p.description,
           tiene_copy: !!p.copywriting,
+          copywriting: p.copywriting || p.description || null,
         })),
     }));
 
