@@ -312,6 +312,13 @@ INTERPRETACIÓN SEMÁNTICA CLAVE:
 - "pendientes", "todas las pendientes", "lo que falta" = TODAS las que NO están subidas (is_published=false), sin importar en qué estado estén. Usá "identify_clients" o "query_production" con status_filter="all".
 - "qué falta grabar" = needs_recording. "qué falta editar" = needs_editing. "en edición" = in_editing. "en revisión/corrección" = in_review.
 
+CREAR PUBLICACIONES:
+- Cuando el usuario pide crear/hacer/agregar una publicación para un cliente, usá la tool "create_publication".
+- Si NO se menciona estado, el default es "needs_recording" (Falta grabar).
+- Si NO se menciona tipo, intentá inferirlo: si dice "video" o "reel" → reel, si dice "carrusel" → carousel, si no → image.
+- Si el usuario pide "sugerí un copy" o "generá un copy", activá suggest_copy: true.
+- El campo "name" es el título de la publicación, intentá extraerlo del mensaje.
+
 Según el mensaje del usuario, elegí UNA de estas herramientas:
 
 1. "identify_clients" — cuando el usuario dice que publicó algo, quiere ver TODAS las publicaciones pendientes de un cliente, o menciona clientes para gestionar publicaciones.
@@ -323,6 +330,7 @@ Según el mensaje del usuario, elegí UNA de estas herramientas:
 7. "query_packages" — cuando el usuario pregunta por el estado de paquetes.
 8. "query_client_info" — cuando el usuario pregunta por la información de un cliente.
 9. "filter_by_status" — cuando el usuario quiere filtrar publicaciones por un estado específico sin mencionar un cliente particular. Ej: "publicaciones en revisión", "lo que falta editar de todos".
+10. "create_publication" — cuando el usuario quiere crear/agregar/hacer una nueva publicación para un cliente. Ej: "hacé una publicación para 4S Motors para el 17 de marzo".
 
 IMPORTANTE: Los nombres pueden estar abreviados, mal escritos o ser apodos. Hacé tu mejor esfuerzo para encontrar coincidencias.
 Cuando el usuario pida cambiar planificación, detectá el mes mencionado (enero=1, febrero=2, etc.) y el estado deseado.
