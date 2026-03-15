@@ -560,6 +560,7 @@ async function handleListadoAprobados() {
       tipo: pub.type,
       fecha: pub.date,
       tiene_copy: !!pub.copywriting,
+      copy_text: pub.copywriting || pub.description || null,
       descripcion: pub.description,
     });
   }

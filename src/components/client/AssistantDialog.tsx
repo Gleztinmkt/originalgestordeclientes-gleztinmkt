@@ -205,28 +205,55 @@ export const AssistantDialog = ({ onClientsUpdate }: AssistantDialogProps) => {
 
             {isExpanded && (
               <div className="border-t border-border p-2 space-y-1">
-                {pubs.map((pub) => (
-                  <label
-                    key={pub.id}
-                    className="flex items-start gap-2 p-2 rounded hover:bg-muted/50 cursor-pointer"
-                  >
-                    <Checkbox
-                      checked={selectedPubs.has(pub.id)}
-                      onCheckedChange={() => togglePub(pub.id)}
-                      className="mt-0.5"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium truncate">{pub.titulo}</span>
-                        <Badge variant="outline" className="text-xs shrink-0">{pub.tipo}</Badge>
-                      </div>
-                      <span className="text-xs text-muted-foreground">
-                        {new Date(pub.fecha).toLocaleDateString("es-AR")}
-                        {pub.tiene_copy !== undefined && (pub.tiene_copy ? " · Con copy" : " · Sin copy")}
-                      </span>
+                {pubs.map((pub) => {
+                  const isSelected = selectedPubs.has(pub.id);
+                  const copyText = pub.copy_text || pub.copywriting || pub.descripcion;
+
+                  return (
+                    <div key={pub.id} className="rounded hover:bg-muted/50">
+                      <label className="flex items-start gap-2 p-2 cursor-pointer">
+                        <Checkbox
+                          checked={isSelected}
+                          onCheckedChange={() => togglePub(pub.id)}
+                          className="mt-0.5"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium truncate">{pub.titulo}</span>
+                            <Badge variant="outline" className="text-xs shrink-0">{pub.tipo}</Badge>
+                          </div>
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(pub.fecha).toLocaleDateString("es-AR")}
+                            {pub.tiene_copy !== undefined && (pub.tiene_copy ? " · Con copy" : " · Sin copy")}
+                          </span>
+                        </div>
+                      </label>
+
+                      {isSelected && copyText && (
+                        <div className="ml-8 mr-2 mb-2 bg-muted/50 rounded-lg p-3 relative">
+                          <p className="text-xs text-muted-foreground mb-1 font-medium">Copy:</p>
+                          <pre className="text-sm whitespace-pre-wrap font-sans pr-8">{copyText}</pre>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="absolute top-2 right-2 h-7 w-7 p-0"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              navigator.clipboard.writeText(copyText);
+                              toast({ title: "Copiado al portapapeles" });
+                            }}
+                          >
+                            <Copy className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      )}
+
+                      {isSelected && !copyText && (
+                        <p className="ml-8 mr-2 mb-2 text-xs text-muted-foreground italic">Sin copy cargado</p>
+                      )}
                     </div>
-                  </label>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
