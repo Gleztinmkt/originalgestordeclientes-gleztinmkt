@@ -3,6 +3,7 @@ import { useState } from "react";
 import { BulkMessageButton } from "./client/BulkMessageButton";
 import { ClientFilter } from "./client/ClientFilter";
 import { ClientCard } from "./client/ClientCard";
+import { AssistantDialog } from "./client/AssistantDialog";
 import { Task } from "./TaskList";
 import { Client } from "./types/client";
 import { Input } from "./ui/input";
