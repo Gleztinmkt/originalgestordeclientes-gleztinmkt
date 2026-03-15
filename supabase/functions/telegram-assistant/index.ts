@@ -1416,9 +1416,29 @@ serve(async (req) => {
 
       let result;
 
-      // pub_mark:{id} — mark single publication
-      if (callbackData.startsWith("pub_mark:")) {
+      // pub_mark:{id} — show copy + confirmation buttons
+      if (callbackData.startsWith("pub_mark:") && !callbackData.startsWith("pub_mark_confirm:")) {
         const pubId = callbackData.replace("pub_mark:", "");
+        const pubs = await fetchPublicationsByIds([pubId]);
+        const pub = pubs?.[0];
+        if (!pub) return json({ error: "Publicación no encontrada" }, 400);
+        const copyText = pub.copywriting || "(Sin copywriting)";
+        const tg = {
+          text: `📋 *Copy de: ${pub.name}*\n\n\`\`\`\n${copyText}\n\`\`\`\n\n¿Marcar como publicada?`,
+          parse_mode: "Markdown",
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: "✅ Marcar como publicada", callback_data: `pub_mark_confirm:${pubId}` }],
+              [{ text: "❌ Cancelar", callback_data: "cancel" }],
+            ],
+          },
+        };
+        result = { accion: "mostrar_copy_confirmacion", publicacion: pub.name, telegram: tg };
+        return json(result);
+      }
+      // pub_mark_confirm:{id} — actually mark as published
+      if (callbackData.startsWith("pub_mark_confirm:")) {
+        const pubId = callbackData.replace("pub_mark_confirm:", "");
         result = await markPublished([pubId]);
         result = { accion: "marcar_publicadas", ...result };
       }
