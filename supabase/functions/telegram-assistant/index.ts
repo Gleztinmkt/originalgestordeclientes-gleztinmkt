@@ -1420,9 +1420,9 @@ serve(async (req) => {
 
     // Helper: optionally format for Telegram
     // deno-lint-ignore no-explicit-any
-    const respond = (result: any) => {
+    const respond = async (result: any) => {
       if (format === "telegram") {
-        const tg = formatForTelegram(result);
+        const tg = await formatForTelegram(result);
         return json({ ...result, telegram: tg });
       }
       return json(result);
