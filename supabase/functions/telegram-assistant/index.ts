@@ -668,7 +668,6 @@ Si pide agregar descripción, incluí el texto completo en el campo description.
       in_editing: "En edición",
       in_review: "En revisión",
       approved: "Aprobada",
-      in_cloud: "En la nube",
     };
 
     if (statusFilter === "all") {
