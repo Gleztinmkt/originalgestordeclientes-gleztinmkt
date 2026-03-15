@@ -190,7 +190,7 @@ const Index = () => {
               {userRole === 'admin' && <>
                   <TabsContent value="clients" className="space-y-4">
                     <ClientForm onAddClient={addClient} />
-                    <ClientList clients={clients} onDeleteClient={deleteClient} onUpdateClient={updateClient} onUpdatePackage={updatePackage} onAddPackage={addPackage} tasks={tasks} onAddTask={addTask} onDeleteTask={deleteTask} onCompleteTask={handleCompleteTask} onUpdateTask={updateTask} />
+                    <ClientList clients={clients} onDeleteClient={deleteClient} onUpdateClient={updateClient} onUpdatePackage={updatePackage} onAddPackage={addPackage} tasks={tasks} onAddTask={addTask} onDeleteTask={deleteTask} onCompleteTask={handleCompleteTask} onUpdateTask={updateTask} onClientsUpdate={loadClients} />
                   </TabsContent>
                   <TabsContent value="tasks" className="space-y-4">
                     <TaskFilter clients={clients} onFilterChange={handleFilterChange} />

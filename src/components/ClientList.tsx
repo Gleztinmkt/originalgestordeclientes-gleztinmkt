@@ -132,6 +132,7 @@ export const ClientList = ({
                 <Grid3x3 className="h-4 w-4" />
               </Button>
             </div>
+            {onClientsUpdate && <AssistantDialog onClientsUpdate={onClientsUpdate} />}
             <BulkMessageButton 
               clients={clients}
               selectedPaymentDay={selectedPaymentDay !== "all" ? parseInt(selectedPaymentDay) : undefined}
