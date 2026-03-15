@@ -1746,6 +1746,13 @@ serve(async (req) => {
       });
     }
 
+    if (accion === "confirmar_crear_publicacion") {
+      const pub = body.publicacion_propuesta;
+      if (!pub) return json({ error: "publicacion_propuesta es requerido" }, 400);
+      const result = await insertPublication(pub);
+      return await respond(result);
+    }
+
     // Natural language message → AI interpretation
     const mensaje = body.mensaje;
     if (mensaje && typeof mensaje === "string") {
