@@ -465,10 +465,15 @@ export const AssistantDialog = ({ onClientsUpdate }: AssistantDialogProps) => {
           );
         })}
 
-        {allConfirmed && (
-          <p className="text-sm text-green-600 font-medium text-center py-1">
-            ✓ Todas las planificaciones confirmadas
-          </p>
+        {confirmedPlans.size > 0 && (
+          <Button
+            className="w-full gap-2"
+            onClick={handleConfirmPlanning}
+            disabled={confirming}
+          >
+            {confirming ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+            Confirmar {confirmedPlans.size} seleccionada(s)
+          </Button>
         )}
       </div>
     );
