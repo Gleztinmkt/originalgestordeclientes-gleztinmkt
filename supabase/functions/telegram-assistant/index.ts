@@ -1506,6 +1506,11 @@ serve(async (req) => {
           ok: true,
         };
       }
+      // cancel — user cancelled action
+      else if (callbackData === "cancel") {
+        const tg = { text: "❌ Acción cancelada.", reply_markup: undefined };
+        return json({ accion: "cancelado", telegram: tg });
+      }
       else {
         return json({ error: `callback_data no reconocido: ${callbackData}` }, 400);
       }
