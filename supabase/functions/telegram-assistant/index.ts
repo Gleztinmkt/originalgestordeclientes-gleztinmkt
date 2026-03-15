@@ -174,7 +174,7 @@ async function markPublished(pubIds: string[], discountCount?: number) {
       // Continuous discount: find first incomplete package and discount from it
       let remaining = toDiscount;
       // Sort packages by month ascending
-      packages.sort((a, b) => String(a.month ?? "").localeCompare(String(b.month ?? "")));
+      sortPackagesByMonth(packages);
 
       for (const pkg of packages) {
         if (remaining <= 0) break;
