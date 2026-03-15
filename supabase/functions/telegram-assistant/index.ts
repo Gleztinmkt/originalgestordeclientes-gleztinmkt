@@ -113,7 +113,7 @@ async function fetchPublicationsByStatus(filters: {
   if (filters.in_editing !== undefined) query = query.eq("in_editing", filters.in_editing);
   if (filters.in_review !== undefined) query = query.eq("in_review", filters.in_review);
   if (filters.approved !== undefined) query = query.eq("approved", filters.approved);
-  if (filters.in_cloud !== undefined) query = query.eq("in_cloud", filters.in_cloud);
+  
   if (filters.type) query = query.eq("type", filters.type);
 
   const { data, error } = await query.order("date");
