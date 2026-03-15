@@ -1348,9 +1348,15 @@ async function formatForTelegram(result: any): Promise<{ text: string; reply_mar
 
     const buttons = [];
     // deno-lint-ignore no-explicit-any
-    const ids = (result.publicaciones || []).map((p: any) => p.id).join(",");
-    if (ids) {
-      buttons.push([{ text: `✅ Confirmar y publicar (${result.publicaciones?.length || 0})`, callback_data: `pub_mark_all:${ids}` }]);
+    const ids = (result.publicaciones || []).map((p: any) => p.id);
+    if (ids.length) {
+      const rawData = `pub_mark_all:${ids.join(",")}`;
+      if (rawData.length <= 64) {
+        buttons.push([{ text: `✅ Confirmar y publicar (${ids.length})`, callback_data: rawData }]);
+      } else {
+        const sessId = await createSession({ ids, action: "pub_mark_all" });
+        buttons.push([{ text: `✅ Confirmar y publicar (${ids.length})`, callback_data: `pub_sess:${sessId}` }]);
+      }
     }
 
     return { text, reply_markup: buttons.length ? { inline_keyboard: buttons } : undefined };
