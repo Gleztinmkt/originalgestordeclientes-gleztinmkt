@@ -318,21 +318,130 @@ export const AssistantDialog = ({ onClientsUpdate }: AssistantDialogProps) => {
     );
   };
 
+  const handleCorrection = async (index: number) => {
+    if (!correctionText.trim() || !response?.actualizaciones?.[index]) return;
+    setCorrecting(true);
+    try {
+      const u = response.actualizaciones[index];
+      const months = ["", "enero", "febrero", "marzo", "abril", "mayo", "junio",
+        "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+      const prompt = `Corregí la planificación de ${u.cliente} para ${months[u.mes]}: ${correctionText.trim()}`;
+      const result = await invokeEdgeFunction<AssistantResponse>("telegram-assistant", { mensaje: prompt });
+      
+      if (result.accion === "planificacion_actualizada" && result.actualizaciones?.length) {
+        // Replace the corrected item in current response
+        const updated = [...(response.actualizaciones ?? [])];
+        updated[index] = result.actualizaciones[0];
+        setResponse({ ...response, actualizaciones: updated, mensaje_ia: response.mensaje_ia });
+        setConfirmedPlans((prev) => { const n = new Set(prev); n.delete(index); return n; });
+        toast({ title: "Corregido", description: `Planificación de ${u.cliente} actualizada` });
+      } else {
+        toast({ title: "No se pudo corregir", description: result.mensaje_ia, variant: "destructive" });
+      }
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setCorrecting(false);
+      setCorrectionIndex(null);
+      setCorrectionText("");
+    }
+  };
+
+  const togglePlanConfirm = (index: number) => {
+    setConfirmedPlans((prev) => {
+      const next = new Set(prev);
+      if (next.has(index)) next.delete(index);
+      else next.add(index);
+      return next;
+    });
+  };
+
+  const confirmAllPlans = () => {
+    if (!response?.actualizaciones) return;
+    setConfirmedPlans(new Set(response.actualizaciones.map((_, i) => i)));
+  };
+
   const renderPlanningUpdate = () => {
     if (!response?.actualizaciones?.length) return null;
     const months = ["", "enero", "febrero", "marzo", "abril", "mayo", "junio",
       "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 
+    const allConfirmed = response.actualizaciones.length === confirmedPlans.size;
+
     return (
-      <div className="space-y-2">
-        {response.actualizaciones.map((u, i) => (
-          <div key={i} className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg">
-            <div className={`w-3 h-3 rounded-full ${u.status === "hacer" ? "bg-green-500" : u.status === "no_hacer" ? "bg-red-500" : "bg-yellow-500"}`} />
-            <span className="text-sm font-medium">{u.cliente}</span>
-            <Badge variant="outline" className="text-xs">{months[u.mes]}</Badge>
-            {u.descripcion && <span className="text-xs text-muted-foreground truncate">· con descripción</span>}
-          </div>
-        ))}
+      <div className="space-y-3">
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={confirmAllPlans} disabled={allConfirmed}>
+            <Check className="h-3.5 w-3.5 mr-1" />
+            Confirmar todas
+          </Button>
+          {confirmedPlans.size > 0 && (
+            <Button size="sm" variant="outline" onClick={() => setConfirmedPlans(new Set())}>
+              Deseleccionar
+            </Button>
+          )}
+        </div>
+
+        {response.actualizaciones.map((u, i) => {
+          const isConfirmed = confirmedPlans.has(i);
+          const isEditing = correctionIndex === i;
+
+          return (
+            <div key={i} className={`border rounded-lg p-3 space-y-2 transition-colors ${isConfirmed ? "border-green-500/50 bg-green-500/5" : "border-border"}`}>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  checked={isConfirmed}
+                  onCheckedChange={() => togglePlanConfirm(i)}
+                />
+                <div className={`w-3 h-3 rounded-full shrink-0 ${u.status === "hacer" ? "bg-green-500" : u.status === "no_hacer" ? "bg-red-500" : "bg-yellow-500"}`} />
+                <span className="text-sm font-medium">{u.cliente}</span>
+                <Badge variant="outline" className="text-xs">{months[u.mes]}</Badge>
+                {u.status && <Badge variant="secondary" className="text-xs">{u.status}</Badge>}
+              </div>
+
+              {u.descripcion && (
+                <div className="bg-muted/50 rounded p-2 ml-7">
+                  <p className="text-xs text-muted-foreground mb-0.5">Descripción:</p>
+                  <p className="text-sm whitespace-pre-wrap">{u.descripcion}</p>
+                </div>
+              )}
+
+              {!isConfirmed && (
+                <div className="ml-7">
+                  {isEditing ? (
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Ej: cambiá el estado a no_hacer..."
+                        value={correctionText}
+                        onChange={(e) => setCorrectionText(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && !correcting && handleCorrection(i)}
+                        className="h-8 text-sm"
+                        disabled={correcting}
+                        autoFocus
+                      />
+                      <Button size="sm" onClick={() => handleCorrection(i)} disabled={correcting || !correctionText.trim()} className="h-8 shrink-0">
+                        {correcting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => { setCorrectionIndex(null); setCorrectionText(""); }} className="h-8 shrink-0">
+                        ✕
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button size="sm" variant="ghost" className="text-xs h-7" onClick={() => { setCorrectionIndex(i); setCorrectionText(""); }}>
+                      Corregir
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+
+        {allConfirmed && (
+          <p className="text-sm text-green-600 font-medium text-center py-1">
+            ✓ Todas las planificaciones confirmadas
+          </p>
+        )}
       </div>
     );
   };
