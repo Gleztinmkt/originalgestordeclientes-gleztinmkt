@@ -1687,6 +1687,13 @@ serve(async (req) => {
           ok: true,
         };
       }
+      // create_pub_confirm:{session_id} — confirm and insert publication
+      else if (callbackData.startsWith("create_pub_confirm:")) {
+        const sessId = callbackData.replace("create_pub_confirm:", "");
+        const sessData = await resolveSession(sessId) as { publication?: Record<string, unknown> } | null;
+        if (!sessData?.publication) return json({ error: "Sesión expirada o inválida. Volvé a consultar." }, 400);
+        result = await insertPublication(sessData.publication);
+      }
       // cancel — user cancelled action
       else if (callbackData === "cancel") {
         const tg = { text: "❌ Acción cancelada.", reply_markup: undefined };
