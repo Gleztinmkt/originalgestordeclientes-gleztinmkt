@@ -482,7 +482,7 @@ Si pide agregar descripción, incluí el texto completo en el campo description.
                 in_editing: { type: "boolean" },
                 in_review: { type: "boolean" },
                 approved: { type: "boolean" },
-                in_cloud: { type: "boolean" },
+                
                 type: { type: "string", enum: ["reel", "carousel", "image"] },
               },
             },
