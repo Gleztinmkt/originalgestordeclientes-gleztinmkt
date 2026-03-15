@@ -748,14 +748,13 @@ Si pide agregar descripción, incluí el texto completo en el campo description.
     const clients = await fetchAllClients();
     const clientMap = new Map(clients.map((c) => [c.id, c.name]));
 
-    const statusKeys = ["needs_recording", "needs_editing", "in_editing", "in_review", "approved", "in_cloud"];
+    const statusKeys = ["needs_recording", "needs_editing", "in_editing", "in_review", "approved"];
     const statusLabels: Record<string, string> = {
       needs_recording: "Falta grabar",
       needs_editing: "Necesita edición",
       in_editing: "En edición",
       in_review: "En revisión",
       approved: "Aprobada",
-      in_cloud: "En la nube",
     };
 
     // Global counts
