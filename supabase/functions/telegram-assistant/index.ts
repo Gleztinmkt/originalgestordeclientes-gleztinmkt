@@ -292,17 +292,30 @@ async function interpretMessage(mensaje: string) {
 Lista de clientes activos:
 ${clientList}
 
+FLUJO DE ESTADOS DE PRODUCCIÓN (en orden):
+1. "Falta grabar" (needs_recording) — todavía no se grabó
+2. "Falta editar" (needs_editing) — se grabó pero no se editó
+3. "En edición" (in_editing) — el editor está trabajando
+4. "En revisión/corrección" (in_review) — se mandó a revisar
+5. "Aprobado" (approved) — listo, aprobado, pendiente de subir a redes
+6. "Subido/Publicado" (is_published) — ya se subió a redes sociales
+
+INTERPRETACIÓN SEMÁNTICA CLAVE:
+- "pendientes de subir", "listas para subir", "para subir" = SOLO las APROBADAS (approved=true, is_published=false). Usá "list_approved" o "query_production" con status_filter="approved".
+- "pendientes", "todas las pendientes", "lo que falta" = TODAS las que NO están subidas (is_published=false), sin importar en qué estado estén. Usá "identify_clients" o "query_production" con status_filter="all".
+- "qué falta grabar" = needs_recording. "qué falta editar" = needs_editing. "en edición" = in_editing. "en revisión/corrección" = in_review.
+
 Según el mensaje del usuario, elegí UNA de estas herramientas:
 
-1. "identify_clients" — cuando el usuario dice que publicó algo, quiere ver publicaciones pendientes de un cliente, o menciona clientes para gestionar publicaciones.
+1. "identify_clients" — cuando el usuario dice que publicó algo, quiere ver TODAS las publicaciones pendientes de un cliente, o menciona clientes para gestionar publicaciones.
 2. "find_copy" — cuando el usuario pide el copy, copywriting, o texto de una publicación específica de un cliente.
-3. "list_approved" — cuando el usuario pide un listado de publicaciones aprobadas, listas para subir, o pregunta "qué tengo para subir".
-4. "update_planning" — cuando el usuario quiere cambiar el estado de planificación de un cliente para un mes (marcar como "hacer", "no_hacer", "consultar") o agregar/cambiar la descripción de planificación. Los meses son del año actual 2026.
-5. "query_production" — cuando el usuario pregunta por el estado de producción de un cliente: qué falta grabar, qué está en edición, qué está en revisión, qué está aprobado, qué está en la nube. Ej: "¿qué falta grabar de Soledad?", "¿cuántos reels tiene Jacinto en edición?"
-6. "production_summary" — cuando el usuario pide un resumen general de producción de todos los clientes o pregunta "¿cómo estoy de producción?", "¿qué tengo pendiente?", "resumen de estado".
-7. "query_packages" — cuando el usuario pregunta por el estado de paquetes: cuántas publicaciones quedan, cuántas usó, qué paquetes tiene. Ej: "¿cuántas le quedan a Soledad?", "estado de paquetes de Jacinto".
-8. "query_client_info" — cuando el usuario pregunta por la información de un cliente: info general, reuniones, branding, horarios de publicación, redes sociales. Ej: "¿qué info tengo de 4S Motors?", "datos de Soledad".
-9. "filter_by_status" — cuando el usuario quiere filtrar publicaciones por un estado específico combinado. Ej: "¿qué tengo en la nube listo para subir?", "publicaciones en revisión", "lo que falta editar".
+3. "list_approved" — cuando el usuario pide publicaciones aprobadas/listas para subir de un cliente o en general. Ej: "¿qué tengo para subir de 4S?", "pendientes de subir".
+4. "update_planning" — cuando el usuario quiere cambiar el estado de planificación de un cliente para un mes.
+5. "query_production" — cuando el usuario pregunta por el estado de producción de un cliente filtrando por un estado específico. Ej: "¿qué falta grabar de Soledad?", "¿qué tiene aprobado Jacinto?", "pendientes de subir de 4S Motors".
+6. "production_summary" — cuando el usuario pide un resumen general de producción de todos los clientes.
+7. "query_packages" — cuando el usuario pregunta por el estado de paquetes.
+8. "query_client_info" — cuando el usuario pregunta por la información de un cliente.
+9. "filter_by_status" — cuando el usuario quiere filtrar publicaciones por un estado específico sin mencionar un cliente particular. Ej: "publicaciones en revisión", "lo que falta editar de todos".
 
 IMPORTANTE: Los nombres pueden estar abreviados, mal escritos o ser apodos. Hacé tu mejor esfuerzo para encontrar coincidencias.
 Cuando el usuario pida cambiar planificación, detectá el mes mencionado (enero=1, febrero=2, etc.) y el estado deseado.
