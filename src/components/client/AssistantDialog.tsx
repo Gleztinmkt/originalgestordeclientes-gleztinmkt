@@ -520,7 +520,7 @@ export const AssistantDialog = ({ onClientsUpdate }: AssistantDialogProps) => {
               {response.accion === "identificar_clientes" && response.clientes && renderClients(response.clientes)}
               {response.accion === "listado_aprobados" && response.clientes_con_aprobados && renderClients(response.clientes_con_aprobados)}
               {response.accion === "mostrar_copy" && renderCopy()}
-              {response.accion === "planificacion_actualizada" && renderPlanningUpdate()}
+              {(response.accion === "planificacion_propuesta" || response.accion === "planificacion_actualizada") && renderPlanningUpdate()}
               {response.accion === "no_encontrado" && !response.mensaje_ia && (
                 <p className="text-sm text-muted-foreground italic">No se encontraron resultados</p>
               )}
