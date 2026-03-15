@@ -90,40 +90,11 @@ async function fetchPublicationsByIds(ids: string[]) {
   return data ?? [];
 }
 
-/* ── Month ordering helper ── */
-function monthOrder(month: string): number {
-  const m = String(month ?? "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-  const map: Record<string, number> = {
-    enero: 1, ene: 1,
-    febrero: 2, feb: 2,
-    marzo: 3, mar: 3,
-    abril: 4, abr: 4,
-    mayo: 5, may: 5,
-    junio: 6, jun: 6,
-    julio: 7, jul: 7,
-    agosto: 8, ago: 8,
-    septiembre: 9, sep: 9, sept: 9, septimebre: 9,
-    octubre: 10, oct: 10,
-    noviembre: 11, nov: 11,
-    diciembre: 12, dic: 12,
-  };
-  // Try each key as prefix match for compound months like "febrero marzo"
-  for (const [key, val] of Object.entries(map)) {
-    if (m.startsWith(key)) return val;
-  }
-  return 99; // unknown months go last
-}
-
-function sortPackagesByMonth(packages: any[]) {
-  packages.sort((a, b) => monthOrder(a.month) - monthOrder(b.month));
-}
-
 /* ── Find first incomplete package (continuous logic) ── */
+// Usa el orden actual del arreglo (de arriba hacia abajo) sin reordenar por mes.
 // deno-lint-ignore no-explicit-any
 function findActivePackage(packages: any[]): any | null {
-  const sorted = [...packages];
-  sortPackagesByMonth(sorted);
-  for (const pkg of sorted) {
+  for (const pkg of packages) {
     const total = Number(pkg.totalPublications) || 0;
     const used = Number(pkg.usedPublications) || 0;
     if (used < total) return pkg;
