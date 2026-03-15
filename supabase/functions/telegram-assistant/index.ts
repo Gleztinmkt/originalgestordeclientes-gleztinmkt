@@ -681,7 +681,6 @@ Si pide agregar descripción, incluí el texto completo en el campo description.
         if (pub.in_editing) (grouped["in_editing"] ??= []).push(pub);
         if (pub.in_review) (grouped["in_review"] ??= []).push(pub);
         if (pub.approved) (grouped["approved"] ??= []).push(pub);
-        if (pub.in_cloud) (grouped["in_cloud"] ??= []).push(pub);
       }
 
       const resumen = Object.entries(grouped).map(([key, pubs]) => ({
