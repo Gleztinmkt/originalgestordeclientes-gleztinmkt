@@ -1564,6 +1564,52 @@ async function resolveSession(sessionId: string): Promise<unknown | null> {
   return data?.data ?? null;
 }
 
+/* ── Insert publication helper ── */
+// deno-lint-ignore no-explicit-any
+async function insertPublication(pub: any) {
+  const sb = getAdminClient();
+
+  const statusFlags: Record<string, boolean> = {
+    needs_recording: false,
+    needs_editing: false,
+    in_editing: false,
+    in_review: false,
+    approved: false,
+  };
+  const status = pub.status || "needs_recording";
+  if (statusFlags.hasOwnProperty(status)) {
+    statusFlags[status] = true;
+  } else {
+    statusFlags.needs_recording = true;
+  }
+
+  const insertData = {
+    client_id: pub.client_id,
+    name: pub.name || "Sin título",
+    type: pub.type || "image",
+    date: new Date(pub.date).toISOString(),
+    description: pub.description || null,
+    copywriting: pub.copywriting || null,
+    designer: pub.designer || null,
+    needs_recording: statusFlags.needs_recording,
+    needs_editing: statusFlags.needs_editing,
+    in_editing: statusFlags.in_editing,
+    in_review: statusFlags.in_review,
+    approved: statusFlags.approved,
+    is_published: false,
+  };
+
+  const { data, error } = await sb.from("publications").insert(insertData).select("id, name").single();
+  if (error) throw error;
+
+  return {
+    accion: "publicacion_creada",
+    mensaje_ia: `✅ Publicación "${data.name}" creada para ${pub.client_name || "el cliente"}`,
+    publicacion_id: data.id,
+    ok: true,
+  };
+}
+
 /* ── Main handler ── */
 serve(async (req) => {
   if (req.method === "OPTIONS") {
