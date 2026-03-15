@@ -1204,8 +1204,14 @@ async function formatForTelegram(result: any): Promise<{ text: string; reply_mar
     const buttons = [];
     if (approvedGroup?.publicaciones?.length) {
       // deno-lint-ignore no-explicit-any
-      const ids = approvedGroup.publicaciones.map((p: any) => p.id).join(",");
-      buttons.push([{ text: `✅ Marcar aprobadas como publicadas (${approvedGroup.cantidad})`, callback_data: `pub_mark_all:${ids}` }]);
+      const ids = approvedGroup.publicaciones.map((p: any) => p.id);
+      const rawData = `pub_mark_all:${ids.join(",")}`;
+      if (rawData.length <= 64) {
+        buttons.push([{ text: `✅ Marcar aprobadas como publicadas (${approvedGroup.cantidad})`, callback_data: rawData }]);
+      } else {
+        const sessId = await createSession({ ids, action: "pub_mark_all" });
+        buttons.push([{ text: `✅ Marcar aprobadas como publicadas (${approvedGroup.cantidad})`, callback_data: `pub_sess:${sessId}` }]);
+      }
     }
 
     return { text, reply_markup: buttons.length ? { inline_keyboard: buttons } : undefined };
