@@ -520,6 +520,29 @@ Si pide agregar descripción, incluí el texto completo en el campo description.
         },
       },
     },
+    {
+      type: "function",
+      function: {
+        name: "create_publication",
+        description: "Crea una nueva publicación para un cliente. Ej: 'hacé una publicación para 4S Motors para el 17 de marzo con descripción video institucional'",
+        parameters: {
+          type: "object",
+          properties: {
+            client_name: { type: "string", description: "Nombre del cliente" },
+            client_id: { type: "string", description: "ID UUID del cliente" },
+            name: { type: "string", description: "Título/nombre de la publicación" },
+            type: { type: "string", enum: ["reel", "carousel", "image"], description: "Tipo de publicación. Default: image" },
+            date: { type: "string", description: "Fecha en formato YYYY-MM-DD" },
+            description: { type: "string", description: "Descripción de la publicación" },
+            copywriting: { type: "string", description: "Copywriting/texto para redes" },
+            designer: { type: "string", description: "Nombre del diseñador asignado" },
+            status: { type: "string", enum: ["needs_recording", "needs_editing", "in_editing", "in_review", "approved"], description: "Estado inicial. Default: needs_recording" },
+            suggest_copy: { type: "boolean", description: "Si el usuario pide que se sugiera/genere un copy basado en publicaciones anteriores" },
+          },
+          required: ["client_name", "client_id", "name", "date"],
+        },
+      },
+    },
   ];
 
   const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
