@@ -57,7 +57,7 @@ async function fetchPendingPublications(clientIds: string[]) {
   const sb = getAdminClient();
   const { data, error } = await sb
     .from("publications")
-    .select("id, name, type, date, description, copywriting, client_id, approved, status, package_id, needs_recording, needs_editing, in_editing, in_review, in_cloud, designer, filming_time, links")
+    .select("id, name, type, date, description, copywriting, client_id, approved, status, package_id, needs_recording, needs_editing, in_editing, in_review, designer, filming_time, links")
     .in("client_id", clientIds)
     .eq("is_published", false)
     .is("deleted_at", null)
@@ -98,13 +98,12 @@ async function fetchPublicationsByStatus(filters: {
   in_editing?: boolean;
   in_review?: boolean;
   approved?: boolean;
-  in_cloud?: boolean;
   type?: string;
 }) {
   const sb = getAdminClient();
   let query = sb
     .from("publications")
-    .select("id, name, type, date, description, copywriting, client_id, needs_recording, needs_editing, in_editing, in_review, approved, in_cloud, designer, filming_time, links, status")
+    .select("id, name, type, date, description, copywriting, client_id, needs_recording, needs_editing, in_editing, in_review, approved, designer, filming_time, links, status")
     .eq("is_published", false)
     .is("deleted_at", null);
 
@@ -114,7 +113,7 @@ async function fetchPublicationsByStatus(filters: {
   if (filters.in_editing !== undefined) query = query.eq("in_editing", filters.in_editing);
   if (filters.in_review !== undefined) query = query.eq("in_review", filters.in_review);
   if (filters.approved !== undefined) query = query.eq("approved", filters.approved);
-  if (filters.in_cloud !== undefined) query = query.eq("in_cloud", filters.in_cloud);
+  
   if (filters.type) query = query.eq("type", filters.type);
 
   const { data, error } = await query.order("date");
@@ -410,7 +409,7 @@ Si pide agregar descripción, incluí el texto completo en el campo description.
             client_id: { type: "string", description: "ID UUID del cliente" },
             status_filter: {
               type: "string",
-              enum: ["needs_recording", "needs_editing", "in_editing", "in_review", "approved", "in_cloud", "all"],
+              enum: ["needs_recording", "needs_editing", "in_editing", "in_review", "approved", "all"],
               description: "Filtro de estado. 'all' muestra todo agrupado por estado.",
             },
             type_filter: {
@@ -483,7 +482,7 @@ Si pide agregar descripción, incluí el texto completo en el campo description.
                 in_editing: { type: "boolean" },
                 in_review: { type: "boolean" },
                 approved: { type: "boolean" },
-                in_cloud: { type: "boolean" },
+                
                 type: { type: "string", enum: ["reel", "carousel", "image"] },
               },
             },
@@ -669,7 +668,6 @@ Si pide agregar descripción, incluí el texto completo en el campo description.
       in_editing: "En edición",
       in_review: "En revisión",
       approved: "Aprobada",
-      in_cloud: "En la nube",
     };
 
     if (statusFilter === "all") {
@@ -683,7 +681,6 @@ Si pide agregar descripción, incluí el texto completo en el campo description.
         if (pub.in_editing) (grouped["in_editing"] ??= []).push(pub);
         if (pub.in_review) (grouped["in_review"] ??= []).push(pub);
         if (pub.approved) (grouped["approved"] ??= []).push(pub);
-        if (pub.in_cloud) (grouped["in_cloud"] ??= []).push(pub);
       }
 
       const resumen = Object.entries(grouped).map(([key, pubs]) => ({
@@ -751,14 +748,13 @@ Si pide agregar descripción, incluí el texto completo en el campo description.
     const clients = await fetchAllClients();
     const clientMap = new Map(clients.map((c) => [c.id, c.name]));
 
-    const statusKeys = ["needs_recording", "needs_editing", "in_editing", "in_review", "approved", "in_cloud"];
+    const statusKeys = ["needs_recording", "needs_editing", "in_editing", "in_review", "approved"];
     const statusLabels: Record<string, string> = {
       needs_recording: "Falta grabar",
       needs_editing: "Necesita edición",
       in_editing: "En edición",
       in_review: "En revisión",
       approved: "Aprobada",
-      in_cloud: "En la nube",
     };
 
     // Global counts
