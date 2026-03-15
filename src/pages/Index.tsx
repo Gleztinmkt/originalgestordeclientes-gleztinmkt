@@ -18,7 +18,7 @@ import { CalendarView } from "@/components/calendar/CalendarView";
 import { PlanningCalendar } from "@/components/planning/PlanningCalendar";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { LogOut } from "lucide-react";
+import { LogOut, RefreshCw } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 const Index = () => {
@@ -42,6 +42,7 @@ const Index = () => {
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const isMobile = useIsMobile();
   const navigate = useNavigate();
 
@@ -146,10 +147,26 @@ const Index = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-8">
           <div className="flex justify-between items-center mb-6">
             <div className="flex items-center gap-2">
-              {userRole === 'admin' && <>
-                  <TrashDialog />
-                </>}
-              
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={async () => {
+                  setIsRefreshing(true);
+                  try {
+                    await Promise.all([loadClients(), loadTasks()]);
+                    toast({ title: "Datos actualizados", description: "Toda la información se ha refrescado correctamente." });
+                  } catch {
+                    toast({ title: "Error", description: "No se pudieron actualizar los datos.", variant: "destructive" });
+                  } finally {
+                    setIsRefreshing(false);
+                  }
+                }}
+                disabled={isRefreshing}
+                className="hover:bg-muted"
+              >
+                <RefreshCw className={`h-5 w-5 ${isRefreshing ? 'animate-spin' : ''}`} />
+              </Button>
+              {userRole === 'admin' && <TrashDialog />}
             </div>
             <div className="flex items-center gap-2">
               {userRole === 'admin' && <UserManagement />}

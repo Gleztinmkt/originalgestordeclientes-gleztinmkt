@@ -34,6 +34,7 @@ interface ClienteIdentificado {
 
 interface PlanUpdate {
   cliente: string;
+  client_id?: string;
   mes: number;
   status?: string;
   descripcion?: string;
@@ -328,8 +329,7 @@ export const AssistantDialog = ({ onClientsUpdate }: AssistantDialogProps) => {
       const prompt = `Corregí la planificación de ${u.cliente} para ${months[u.mes]}: ${correctionText.trim()}`;
       const result = await invokeEdgeFunction<AssistantResponse>("telegram-assistant", { mensaje: prompt });
       
-      if (result.accion === "planificacion_actualizada" && result.actualizaciones?.length) {
-        // Replace the corrected item in current response
+      if ((result.accion === "planificacion_propuesta" || result.accion === "planificacion_actualizada") && result.actualizaciones?.length) {
         const updated = [...(response.actualizaciones ?? [])];
         updated[index] = result.actualizaciones[0];
         setResponse({ ...response, actualizaciones: updated, mensaje_ia: response.mensaje_ia });
@@ -344,6 +344,34 @@ export const AssistantDialog = ({ onClientsUpdate }: AssistantDialogProps) => {
       setCorrecting(false);
       setCorrectionIndex(null);
       setCorrectionText("");
+    }
+  };
+
+  const handleConfirmPlanning = async () => {
+    if (!response?.actualizaciones || confirmedPlans.size === 0) return;
+    setConfirming(true);
+    try {
+      const selectedUpdates = response.actualizaciones
+        .filter((_, i) => confirmedPlans.has(i))
+        .map((u) => ({
+          client_id: u.client_id,
+          month: u.mes,
+          status: u.status,
+          description: u.descripcion,
+        }));
+
+      await invokeEdgeFunction("telegram-assistant", {
+        accion: "confirmar_planificacion",
+        updates: selectedUpdates,
+      });
+
+      toast({ title: "Planificación confirmada", description: `${selectedUpdates.length} planificación(es) aplicada(s) exitosamente` });
+      onClientsUpdate();
+      reset();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setConfirming(false);
     }
   };
 
@@ -437,10 +465,15 @@ export const AssistantDialog = ({ onClientsUpdate }: AssistantDialogProps) => {
           );
         })}
 
-        {allConfirmed && (
-          <p className="text-sm text-green-600 font-medium text-center py-1">
-            ✓ Todas las planificaciones confirmadas
-          </p>
+        {confirmedPlans.size > 0 && (
+          <Button
+            className="w-full gap-2"
+            onClick={handleConfirmPlanning}
+            disabled={confirming}
+          >
+            {confirming ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+            Confirmar {confirmedPlans.size} seleccionada(s)
+          </Button>
         )}
       </div>
     );
@@ -487,7 +520,7 @@ export const AssistantDialog = ({ onClientsUpdate }: AssistantDialogProps) => {
               {response.accion === "identificar_clientes" && response.clientes && renderClients(response.clientes)}
               {response.accion === "listado_aprobados" && response.clientes_con_aprobados && renderClients(response.clientes_con_aprobados)}
               {response.accion === "mostrar_copy" && renderCopy()}
-              {response.accion === "planificacion_actualizada" && renderPlanningUpdate()}
+              {(response.accion === "planificacion_propuesta" || response.accion === "planificacion_actualizada") && renderPlanningUpdate()}
               {response.accion === "no_encontrado" && !response.mensaje_ia && (
                 <p className="text-sm text-muted-foreground italic">No se encontraron resultados</p>
               )}
