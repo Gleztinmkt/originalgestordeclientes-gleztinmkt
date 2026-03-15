@@ -57,7 +57,7 @@ async function fetchPendingPublications(clientIds: string[]) {
   const sb = getAdminClient();
   const { data, error } = await sb
     .from("publications")
-    .select("id, name, type, date, description, copywriting, client_id, approved, status, package_id, needs_recording, needs_editing, in_editing, in_review, in_cloud, designer, filming_time, links")
+    .select("id, name, type, date, description, copywriting, client_id, approved, status, package_id, needs_recording, needs_editing, in_editing, in_review, designer, filming_time, links")
     .in("client_id", clientIds)
     .eq("is_published", false)
     .is("deleted_at", null)
