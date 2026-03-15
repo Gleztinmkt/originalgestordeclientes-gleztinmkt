@@ -1515,13 +1515,13 @@ serve(async (req) => {
 
     // Explicit actions
     if (accion === "listado_aprobados") {
-      return respond(await handleListadoAprobados());
+      return await respond(await handleListadoAprobados());
     }
 
     if (accion === "confirmar_publicaciones") {
       const ids = body.publicaciones_ids ?? [];
       if (!ids.length) return json({ error: "publicaciones_ids es requerido" }, 400);
-      return respond(await handleConfirmarPublicaciones(ids));
+      return await respond(await handleConfirmarPublicaciones(ids));
     }
 
     if (accion === "marcar_publicadas" || accion === "confirmar") {
@@ -1529,14 +1529,14 @@ serve(async (req) => {
       if (!ids.length) return json({ error: "publicaciones_ids es requerido" }, 400);
       const discountCount = body.cantidad_descontar ?? undefined;
       const result = await markPublished(ids, discountCount);
-      return respond({ accion: "marcar_publicadas", ...result });
+      return await respond({ accion: "marcar_publicadas", ...result });
     }
 
     if (accion === "actualizar_planificacion") {
       const { client_id, month, status, description } = body;
       if (!client_id || !month) return json({ error: "client_id y month son requeridos" }, 400);
       const result = await handleUpdatePlanning(client_id, month, status, description);
-      return respond({ accion: "planificacion_actualizada", ...result });
+      return await respond({ accion: "planificacion_actualizada", ...result });
     }
 
     if (accion === "confirmar_planificacion") {
@@ -1545,7 +1545,7 @@ serve(async (req) => {
       for (const u of updates) {
         await handleUpdatePlanning(u.client_id, u.month, u.status, u.description);
       }
-      return respond({
+      return await respond({
         accion: "planificacion_confirmada",
         mensaje_ia: `${updates.length} planificación(es) confirmada(s) exitosamente`,
         ok: true,
@@ -1556,7 +1556,7 @@ serve(async (req) => {
     const mensaje = body.mensaje;
     if (mensaje && typeof mensaje === "string") {
       const result = await interpretMessage(mensaje);
-      return respond(result);
+      return await respond(result);
     }
 
     return json({
