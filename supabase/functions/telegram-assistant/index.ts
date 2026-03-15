@@ -90,8 +90,25 @@ async function fetchPublicationsByIds(ids: string[]) {
   return data ?? [];
 }
 
+/* ── Find first incomplete package (continuous logic) ── */
+// deno-lint-ignore no-explicit-any
+function findActivePackage(packages: any[]): any | null {
+  // Sort by month ascending, find first package that has remaining publications
+  const sorted = [...packages].sort((a, b) => {
+    const ma = String(a.month ?? "");
+    const mb = String(b.month ?? "");
+    return ma.localeCompare(mb);
+  });
+  for (const pkg of sorted) {
+    const total = Number(pkg.totalPublications) || 0;
+    const used = Number(pkg.usedPublications) || 0;
+    if (used < total) return pkg;
+  }
+  return null;
+}
+
 /* ── Mark publications as published + discount package ── */
-async function markPublished(pubIds: string[]) {
+async function markPublished(pubIds: string[], discountCount?: number) {
   const sb = getAdminClient();
   const pubs = await fetchPublicationsByIds(pubIds);
   if (!pubs.length) return { ok: false, mensaje: "No se encontraron publicaciones" };
@@ -127,16 +144,23 @@ async function markPublished(pubIds: string[]) {
       // deno-lint-ignore no-explicit-any
       const packages = client.packages as any[];
 
-      for (const pub of clientPubs) {
-        const pubDate = new Date(pub.date);
-        const pubMonth = `${pubDate.getFullYear()}-${String(pubDate.getMonth() + 1).padStart(2, "0")}`;
+      // How many to discount for this client
+      const toDiscount = discountCount ?? clientPubs.length;
 
-        for (const pkg of packages) {
-          const pkgMonth = String(pkg.month ?? "");
-          if (pkgMonth.startsWith(pubMonth) || pkgMonth.includes(pubMonth)) {
-            pkg.usedPublications = (Number(pkg.usedPublications) || 0) + 1;
-            break;
-          }
+      // Continuous discount: find first incomplete package and discount from it
+      let remaining = toDiscount;
+      // Sort packages by month ascending
+      packages.sort((a, b) => String(a.month ?? "").localeCompare(String(b.month ?? "")));
+
+      for (const pkg of packages) {
+        if (remaining <= 0) break;
+        const total = Number(pkg.totalPublications) || 0;
+        const used = Number(pkg.usedPublications) || 0;
+        const available = total - used;
+        if (available > 0) {
+          const take = Math.min(remaining, available);
+          pkg.usedPublications = used + take;
+          remaining -= take;
         }
       }
 
@@ -152,6 +176,46 @@ async function markPublished(pubIds: string[]) {
     mensaje: `${pubs.length} publicación(es) marcada(s) como publicada(s)`,
     publicaciones: pubs.map((p) => p.id),
   };
+}
+
+/* ── Planning management ── */
+async function handleUpdatePlanning(clientId: string, month: number, status?: string, description?: string) {
+  const sb = getAdminClient();
+  const year = new Date().getFullYear();
+  const startOfMonth = new Date(year, month - 1, 1).toISOString();
+
+  // Check existing
+  const { data: existing } = await sb
+    .from("publication_planning")
+    .select("id, status, description")
+    .eq("client_id", clientId)
+    .eq("month", startOfMonth)
+    .is("deleted_at", null)
+    .maybeSingle();
+
+  const updateData: Record<string, unknown> = {};
+  if (status) updateData.status = status;
+  if (description !== undefined) updateData.description = description;
+
+  if (existing) {
+    const { error } = await sb
+      .from("publication_planning")
+      .update(updateData)
+      .eq("id", existing.id);
+    if (error) throw error;
+  } else {
+    const { error } = await sb
+      .from("publication_planning")
+      .insert({
+        client_id: clientId,
+        month: startOfMonth,
+        status: status || "consultar",
+        description: description || "",
+      });
+    if (error) throw error;
+  }
+
+  return { ok: true };
 }
 
 /* ── AI: interpret natural language message ── */
@@ -172,8 +236,12 @@ Según el mensaje del usuario, elegí UNA de estas herramientas:
 1. "identify_clients" — cuando el usuario dice que publicó algo, quiere ver publicaciones pendientes de un cliente, o menciona clientes para gestionar publicaciones.
 2. "find_copy" — cuando el usuario pide el copy, copywriting, o texto de una publicación específica de un cliente.
 3. "list_approved" — cuando el usuario pide un listado de publicaciones aprobadas, listas para subir, o pregunta "qué tengo para subir".
+4. "update_planning" — cuando el usuario quiere cambiar el estado de planificación de un cliente para un mes (marcar como "hacer", "no_hacer", "consultar") o agregar/cambiar la descripción de planificación. Los meses son del año actual 2026.
 
-IMPORTANTE: Los nombres pueden estar abreviados, mal escritos o ser apodos. Hacé tu mejor esfuerzo para encontrar coincidencias.`;
+IMPORTANTE: Los nombres pueden estar abreviados, mal escritos o ser apodos. Hacé tu mejor esfuerzo para encontrar coincidencias.
+Cuando el usuario pida cambiar planificación, detectá el mes mencionado (enero=1, febrero=2, etc.) y el estado deseado.
+Si pide "marcar como hacer" o "botón verde", el status es "hacer".
+Si pide agregar descripción, incluí el texto completo en el campo description.`;
 
   const tools = [
     {
@@ -232,6 +300,33 @@ IMPORTANTE: Los nombres pueden estar abreviados, mal escritos o ser apodos. Hac�
             reason: { type: "string", description: "Breve descripción de por qué el usuario quiere el listado" },
           },
           required: ["reason"],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "update_planning",
+        description: "Actualiza el estado de planificación o descripción de uno o varios clientes para un mes específico del año 2026",
+        parameters: {
+          type: "object",
+          properties: {
+            updates: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  client_name: { type: "string", description: "Nombre del cliente" },
+                  client_id: { type: "string", description: "ID UUID del cliente" },
+                  month: { type: "number", description: "Número del mes (1=enero, 12=diciembre)" },
+                  status: { type: "string", enum: ["hacer", "no_hacer", "consultar"], description: "Nuevo estado de planificación" },
+                  description: { type: "string", description: "Descripción de planificación (solo si el usuario la especifica)" },
+                },
+                required: ["client_name", "client_id", "month"],
+              },
+            },
+          },
+          required: ["updates"],
         },
       },
     },
@@ -315,7 +410,6 @@ IMPORTANTE: Los nombres pueden estar abreviados, mal escritos o ser apodos. Hac�
 
     const pubs = await fetchPendingPublications([clientId]);
 
-    // Score publications by matching search terms
     let bestMatch = null;
     let bestScore = 0;
 
@@ -332,7 +426,6 @@ IMPORTANTE: Los nombres pueden estar abreviados, mal escritos o ser apodos. Hac�
     }
 
     if (!bestMatch || bestScore === 0) {
-      // Fallback: return first pending pub if any
       if (pubs.length === 1) {
         bestMatch = pubs[0];
       } else {
@@ -366,6 +459,41 @@ IMPORTANTE: Los nombres pueden estar abreviados, mal escritos o ser apodos. Hac�
   // ── list_approved ──
   if (fnName === "list_approved") {
     return await handleListadoAprobados();
+  }
+
+  // ── update_planning ──
+  if (fnName === "update_planning") {
+    const updates = args.updates ?? [];
+    if (!updates.length) {
+      return { accion: "no_encontrado", mensaje_ia: "No pude identificar qué planificación actualizar." };
+    }
+
+    const results = [];
+    for (const u of updates) {
+      await handleUpdatePlanning(u.client_id, u.month, u.status, u.description);
+      results.push({
+        cliente: u.client_name,
+        mes: u.month,
+        status: u.status,
+        descripcion: u.description,
+      });
+    }
+
+    const months = ["", "enero", "febrero", "marzo", "abril", "mayo", "junio",
+      "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+
+    const summary = results.map((r) => {
+      const parts = [`${r.cliente} → ${months[r.mes]}`];
+      if (r.status) parts.push(`estado: ${r.status}`);
+      if (r.descripcion) parts.push(`con descripción`);
+      return parts.join(" ");
+    }).join("; ");
+
+    return {
+      accion: "planificacion_actualizada",
+      mensaje_ia: `Planificación actualizada: ${summary}`,
+      actualizaciones: results,
+    };
   }
 
   return { accion: "no_encontrado", mensaje_ia: "No pude interpretar tu mensaje." };
@@ -418,6 +546,15 @@ async function handleConfirmarPublicaciones(ids: string[]) {
   const clients = await fetchAllClients();
   const clientMap = new Map(clients.map((c) => [c.id, c.name]));
 
+  // Get package info per client
+  const clientPackages: Record<string, unknown[]> = {};
+  for (const p of pubs) {
+    if (p.client_id && !clientPackages[p.client_id]) {
+      const client = clients.find((c) => c.id === p.client_id);
+      clientPackages[p.client_id] = (client?.packages as unknown[] ?? []);
+    }
+  }
+
   return {
     accion: "confirmar_publicaciones",
     mensaje_ia: `${pubs.length} publicación(es) seleccionada(s)`,
@@ -429,7 +566,22 @@ async function handleConfirmarPublicaciones(ids: string[]) {
       copywriting: p.copywriting ?? null,
       descripcion: p.description ?? null,
       cliente: clientMap.get(p.client_id ?? "") ?? "Desconocido",
+      cliente_id: p.client_id,
     })),
+    paquetes_por_cliente: Object.fromEntries(
+      Object.entries(clientPackages).map(([cid, pkgs]) => [
+        cid,
+        // deno-lint-ignore no-explicit-any
+        (pkgs as any[]).map((pkg) => ({
+          id: pkg.id,
+          name: pkg.name,
+          month: pkg.month,
+          total: Number(pkg.totalPublications) || 0,
+          used: Number(pkg.usedPublications) || 0,
+          remaining: (Number(pkg.totalPublications) || 0) - (Number(pkg.usedPublications) || 0),
+        })),
+      ])
+    ),
     puede_descontar: true,
   };
 }
@@ -463,8 +615,16 @@ serve(async (req) => {
     if (accion === "marcar_publicadas" || accion === "confirmar") {
       const ids = body.publicaciones_ids ?? body.publicacion_ids ?? [];
       if (!ids.length) return json({ error: "publicaciones_ids es requerido" }, 400);
-      const result = await markPublished(ids);
+      const discountCount = body.cantidad_descontar ?? undefined;
+      const result = await markPublished(ids, discountCount);
       return json({ accion: "marcar_publicadas", ...result });
+    }
+
+    if (accion === "actualizar_planificacion") {
+      const { client_id, month, status, description } = body;
+      if (!client_id || !month) return json({ error: "client_id y month son requeridos" }, 400);
+      const result = await handleUpdatePlanning(client_id, month, status, description);
+      return json({ accion: "planificacion_actualizada", ...result });
     }
 
     // Natural language message → AI interpretation
@@ -480,7 +640,8 @@ serve(async (req) => {
         "mensaje (texto natural → IA interpreta)",
         "listado_aprobados",
         "confirmar_publicaciones { publicaciones_ids: [...] }",
-        "marcar_publicadas { publicaciones_ids: [...] }",
+        "marcar_publicadas { publicaciones_ids: [...], cantidad_descontar: N }",
+        "actualizar_planificacion { client_id, month, status, description }",
       ],
     }, 400);
   } catch (e) {

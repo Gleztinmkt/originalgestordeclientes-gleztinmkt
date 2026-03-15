@@ -32,6 +32,13 @@ interface ClienteIdentificado {
   publicaciones?: PublicacionPendiente[];
 }
 
+interface PlanUpdate {
+  cliente: string;
+  mes: number;
+  status?: string;
+  descripcion?: string;
+}
+
 interface AssistantResponse {
   accion: string;
   mensaje_ia: string;
@@ -56,6 +63,7 @@ interface AssistantResponse {
     descripcion?: string | null;
     cliente?: string;
   }>;
+  actualizaciones?: PlanUpdate[];
   error?: string;
 }
 
@@ -67,12 +75,14 @@ export const AssistantDialog = ({ onClientsUpdate }: AssistantDialogProps) => {
   const [response, setResponse] = useState<AssistantResponse | null>(null);
   const [selectedPubs, setSelectedPubs] = useState<Set<string>>(new Set());
   const [expandedClients, setExpandedClients] = useState<Set<string>>(new Set());
+  const [discountCount, setDiscountCount] = useState<string>("");
 
   const reset = () => {
     setMensaje("");
     setResponse(null);
     setSelectedPubs(new Set());
     setExpandedClients(new Set());
+    setDiscountCount("");
   };
 
   const handleSend = async () => {
@@ -80,12 +90,12 @@ export const AssistantDialog = ({ onClientsUpdate }: AssistantDialogProps) => {
     setLoading(true);
     setResponse(null);
     setSelectedPubs(new Set());
+    setDiscountCount("");
 
     try {
       const result = await invokeEdgeFunction<AssistantResponse>("telegram-assistant", { mensaje });
       setResponse(result);
 
-      // Auto-expand all clients
       const clientIds = [
         ...(result.clientes ?? []).map((c) => c.id),
         ...(result.clientes_con_aprobados ?? []).map((c) => c.id),
@@ -103,10 +113,16 @@ export const AssistantDialog = ({ onClientsUpdate }: AssistantDialogProps) => {
     setConfirming(true);
 
     try {
-      await invokeEdgeFunction("telegram-assistant", {
+      const payload: Record<string, unknown> = {
         accion: "marcar_publicadas",
         publicaciones_ids: pubIds,
-      });
+      };
+      const count = parseInt(discountCount);
+      if (count > 0) {
+        payload.cantidad_descontar = count;
+      }
+
+      await invokeEdgeFunction("telegram-assistant", payload);
       toast({ title: "Publicaciones actualizadas", description: `${pubIds.length} publicación(es) marcada(s) como publicada(s)` });
       onClientsUpdate();
       reset();
@@ -209,14 +225,30 @@ export const AssistantDialog = ({ onClientsUpdate }: AssistantDialogProps) => {
       })}
 
       {selectedPubs.size > 0 && (
-        <Button
-          className="w-full gap-2"
-          onClick={() => handleConfirm(Array.from(selectedPubs))}
-          disabled={confirming}
-        >
-          {confirming ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-          Marcar {selectedPubs.size} como publicada(s)
-        </Button>
+        <div className="space-y-2 border-t border-border pt-3">
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-muted-foreground whitespace-nowrap">Descontar del paquete:</label>
+            <Input
+              type="number"
+              min="0"
+              placeholder={String(selectedPubs.size)}
+              value={discountCount}
+              onChange={(e) => setDiscountCount(e.target.value)}
+              className="w-24 h-8 text-sm"
+            />
+            <span className="text-xs text-muted-foreground">
+              (vacío = {selectedPubs.size})
+            </span>
+          </div>
+          <Button
+            className="w-full gap-2"
+            onClick={() => handleConfirm(Array.from(selectedPubs))}
+            disabled={confirming}
+          >
+            {confirming ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+            Marcar {selectedPubs.size} como publicada(s)
+          </Button>
+        </div>
       )}
     </div>
   );
@@ -253,15 +285,47 @@ export const AssistantDialog = ({ onClientsUpdate }: AssistantDialogProps) => {
         )}
 
         {response.puede_descontar && (
-          <Button
-            className="w-full gap-2"
-            onClick={() => handleConfirm([pub.id])}
-            disabled={confirming}
-          >
-            {confirming ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-            Marcar como publicada y descontar
-          </Button>
+          <div className="space-y-2 border-t border-border pt-3">
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-muted-foreground whitespace-nowrap">Descontar del paquete:</label>
+              <Input
+                type="number"
+                min="0"
+                placeholder="1"
+                value={discountCount}
+                onChange={(e) => setDiscountCount(e.target.value)}
+                className="w-24 h-8 text-sm"
+              />
+            </div>
+            <Button
+              className="w-full gap-2"
+              onClick={() => handleConfirm([pub.id])}
+              disabled={confirming}
+            >
+              {confirming ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+              Marcar como publicada y descontar
+            </Button>
+          </div>
         )}
+      </div>
+    );
+  };
+
+  const renderPlanningUpdate = () => {
+    if (!response?.actualizaciones?.length) return null;
+    const months = ["", "enero", "febrero", "marzo", "abril", "mayo", "junio",
+      "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+
+    return (
+      <div className="space-y-2">
+        {response.actualizaciones.map((u, i) => (
+          <div key={i} className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg">
+            <div className={`w-3 h-3 rounded-full ${u.status === "hacer" ? "bg-green-500" : u.status === "no_hacer" ? "bg-red-500" : "bg-yellow-500"}`} />
+            <span className="text-sm font-medium">{u.cliente}</span>
+            <Badge variant="outline" className="text-xs">{months[u.mes]}</Badge>
+            {u.descripcion && <span className="text-xs text-muted-foreground truncate">· con descripción</span>}
+          </div>
+        ))}
       </div>
     );
   };
@@ -307,6 +371,7 @@ export const AssistantDialog = ({ onClientsUpdate }: AssistantDialogProps) => {
               {response.accion === "identificar_clientes" && response.clientes && renderClients(response.clientes)}
               {response.accion === "listado_aprobados" && response.clientes_con_aprobados && renderClients(response.clientes_con_aprobados)}
               {response.accion === "mostrar_copy" && renderCopy()}
+              {response.accion === "planificacion_actualizada" && renderPlanningUpdate()}
               {response.accion === "no_encontrado" && !response.mensaje_ia && (
                 <p className="text-sm text-muted-foreground italic">No se encontraron resultados</p>
               )}
