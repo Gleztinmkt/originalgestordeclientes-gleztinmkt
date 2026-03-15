@@ -35,7 +35,8 @@ export const ClientList = ({
   onAddTask,
   onDeleteTask,
   onCompleteTask,
-  onUpdateTask
+  onUpdateTask,
+  onClientsUpdate
 }: ClientListProps) => {
   const [selectedPaymentDay, setSelectedPaymentDay] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
