@@ -661,6 +661,19 @@ serve(async (req) => {
       return json({ accion: "planificacion_actualizada", ...result });
     }
 
+    if (accion === "confirmar_planificacion") {
+      const updates = body.updates ?? [];
+      if (!updates.length) return json({ error: "updates es requerido" }, 400);
+      for (const u of updates) {
+        await handleUpdatePlanning(u.client_id, u.month, u.status, u.description);
+      }
+      return json({
+        accion: "planificacion_confirmada",
+        mensaje_ia: `${updates.length} planificación(es) confirmada(s) exitosamente`,
+        ok: true,
+      });
+    }
+
     // Natural language message → AI interpretation
     const mensaje = body.mensaje;
     if (mensaje && typeof mensaje === "string") {
