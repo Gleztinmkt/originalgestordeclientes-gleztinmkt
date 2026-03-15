@@ -53,6 +53,13 @@ async function fetchAllClients() {
   return data ?? [];
 }
 
+async function fetchDesigners() {
+  const sb = getAdminClient();
+  const { data, error } = await sb.from("designers").select("id, name").order("name");
+  if (error) throw error;
+  return data ?? [];
+}
+
 async function fetchPendingPublications(clientIds: string[]) {
   const sb = getAdminClient();
   const { data, error } = await sb
