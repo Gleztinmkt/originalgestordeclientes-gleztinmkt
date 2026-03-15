@@ -1177,19 +1177,21 @@ async function formatForTelegram(result: any): Promise<{ text: string; reply_mar
       }
     }
 
-    // If there are approved pubs, offer to mark them
+    // Individual buttons for approved publications
+    const buttons: { text: string; callback_data: string }[][] = [];
     // deno-lint-ignore no-explicit-any
     const approvedGroup = (result.resumen_estados || []).find((g: any) => g.estado_key === "approved");
-    const buttons = [];
     if (approvedGroup?.publicaciones?.length) {
+      const maxButtons = 8;
       // deno-lint-ignore no-explicit-any
-      const ids = approvedGroup.publicaciones.map((p: any) => p.id);
-      const rawData = `pub_mark_all:${ids.join(",")}`;
-      if (rawData.length <= 64) {
-        buttons.push([{ text: `✅ Marcar aprobadas como publicadas (${approvedGroup.cantidad})`, callback_data: rawData }]);
-      } else {
-        const sessId = await createSession({ ids, action: "pub_mark_all" });
-        buttons.push([{ text: `✅ Marcar aprobadas como publicadas (${approvedGroup.cantidad})`, callback_data: `pub_sess:${sessId}` }]);
+      const showPubs = approvedGroup.publicaciones.slice(0, maxButtons);
+      // deno-lint-ignore no-explicit-any
+      for (const p of showPubs) {
+        const name = (p.nombre || p.name || "").substring(0, 20);
+        buttons.push([{ text: `✅ ${name}`, callback_data: `pub_mark:${p.id}` }]);
+      }
+      if (approvedGroup.publicaciones.length > maxButtons) {
+        text += `\n<i>+ ${approvedGroup.publicaciones.length - maxButtons} aprobadas más</i>\n`;
       }
     }
 
