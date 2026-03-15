@@ -90,8 +90,7 @@ async function fetchPublicationsByIds(ids: string[]) {
   return data ?? [];
 }
 
-/* ── Find first incomplete package (continuous logic) ── */
-// Usa el orden actual del arreglo (de arriba hacia abajo) sin reordenar por mes.
+/* ── Package helpers (descuento continuo) ── */
 // deno-lint-ignore no-explicit-any
 function findActivePackage(packages: any[]): any | null {
   for (const pkg of packages) {
@@ -102,8 +101,33 @@ function findActivePackage(packages: any[]): any | null {
   return null;
 }
 
+// deno-lint-ignore no-explicit-any
+function parseClientPackages(rawPackages: unknown): { packages: any[]; isValid: boolean } {
+  if (Array.isArray(rawPackages)) {
+    return { packages: rawPackages, isValid: true };
+  }
+
+  if (typeof rawPackages === "string") {
+    try {
+      const parsed = JSON.parse(rawPackages);
+      if (Array.isArray(parsed)) {
+        return { packages: parsed, isValid: true };
+      }
+      return { packages: [], isValid: false };
+    } catch {
+      return { packages: [], isValid: false };
+    }
+  }
+
+  if (rawPackages == null) {
+    return { packages: [], isValid: true };
+  }
+
+  return { packages: [], isValid: false };
+}
+
 /* ── Mark publications as published + discount package ── */
-async function markPublished(pubIds: string[], discountCount?: number) {
+async function markPublished(pubIds: string[], discountCount?: number | string) {
   const sb = getAdminClient();
   const pubs = await fetchPublicationsByIds(pubIds);
   if (!pubs.length) return { ok: false, mensaje: "No se encontraron publicaciones" };
@@ -128,41 +152,60 @@ async function markPublished(pubIds: string[], discountCount?: number) {
     "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
   const lastPostStr = `${now.getDate()} de ${months[now.getMonth()]}, ${now.getFullYear()}`;
 
+  const parsedDiscount = Number(discountCount);
+  const hasCustomDiscount = Number.isFinite(parsedDiscount) && parsedDiscount > 0;
+  const singleClientSelection = Object.keys(byClient).length === 1;
+
   for (const [clientId, clientPubs] of Object.entries(byClient)) {
-    const { data: client } = await sb
+    const { data: client, error: clientError } = await sb
       .from("clients")
       .select("packages")
       .eq("id", clientId)
       .single();
 
-    if (client?.packages && Array.isArray(client.packages)) {
-      // deno-lint-ignore no-explicit-any
-      const packages = client.packages as any[];
+    if (clientError) throw clientError;
 
-      // How many to discount for this client
-      const toDiscount = discountCount ?? clientPubs.length;
+    const { packages, isValid } = parseClientPackages(client?.packages);
 
-      // Continuous discount: find first incomplete package and discount from it
-      let remaining = toDiscount;
-      // Descuento continuo en el orden actual del arreglo de paquetes (arriba → abajo)
+    // Si el usuario indicó cantidad manual, solo aplicar cuando hay 1 cliente seleccionado.
+    // En selección multi-cliente, se usa 1 por publicación de cada cliente para evitar sobre-descuento.
+    let remaining = singleClientSelection && hasCustomDiscount
+      ? parsedDiscount
+      : clientPubs.length;
 
-      for (const pkg of packages) {
-        if (remaining <= 0) break;
-        const total = Number(pkg.totalPublications) || 0;
-        const used = Number(pkg.usedPublications) || 0;
+    if (isValid && packages.length > 0) {
+      // Descuento continuo en el orden actual del arreglo (arriba → abajo)
+      while (remaining > 0) {
+        const activePkg = findActivePackage(packages);
+        if (!activePkg) break;
+
+        const total = Number(activePkg.totalPublications) || 0;
+        const used = Number(activePkg.usedPublications) || 0;
         const available = total - used;
-        if (available > 0) {
-          const take = Math.min(remaining, available);
-          pkg.usedPublications = used + take;
-          remaining -= take;
-        }
-      }
 
-      await sb
-        .from("clients")
-        .update({ packages, last_post: lastPostStr })
-        .eq("id", clientId);
+        if (available <= 0) break;
+
+        const take = Math.min(remaining, available);
+        activePkg.usedPublications = used + take;
+        remaining -= take;
+      }
     }
+
+    const clientUpdate: Record<string, unknown> = { last_post: lastPostStr };
+
+    // Solo sobrescribir packages cuando tiene formato válido (array o string JSON de array)
+    if (isValid) {
+      clientUpdate.packages = packages;
+    } else {
+      console.warn(`client ${clientId}: packages inválido, se actualiza solo last_post`);
+    }
+
+    const { error: updateClientError } = await sb
+      .from("clients")
+      .update(clientUpdate)
+      .eq("id", clientId);
+
+    if (updateClientError) throw updateClientError;
   }
 
   return {
