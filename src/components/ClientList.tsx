@@ -22,6 +22,7 @@ interface ClientListProps {
   onDeleteTask: (id: string) => void;
   onCompleteTask: (id: string) => void;
   onUpdateTask: (id: string, task: Partial<Task>) => void;
+  onClientsUpdate?: () => void;
 }
 
 export const ClientList = ({ 
