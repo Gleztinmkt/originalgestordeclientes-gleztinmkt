@@ -76,6 +76,10 @@ export const AssistantDialog = ({ onClientsUpdate }: AssistantDialogProps) => {
   const [selectedPubs, setSelectedPubs] = useState<Set<string>>(new Set());
   const [expandedClients, setExpandedClients] = useState<Set<string>>(new Set());
   const [discountCount, setDiscountCount] = useState<string>("");
+  const [confirmedPlans, setConfirmedPlans] = useState<Set<number>>(new Set());
+  const [correctionIndex, setCorrectionIndex] = useState<number | null>(null);
+  const [correctionText, setCorrectionText] = useState("");
+  const [correcting, setCorrecting] = useState(false);
 
   const reset = () => {
     setMensaje("");
