@@ -1346,6 +1346,36 @@ function escHtml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
+/* ── Session helpers for Telegram callback_data (64 byte limit) ── */
+function generateSessionId(): string {
+  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+  let id = "s_";
+  for (let i = 0; i < 8; i++) id += chars[Math.floor(Math.random() * chars.length)];
+  return id;
+}
+
+async function createSession(data: unknown): Promise<string> {
+  const sb = getAdminClient();
+  const id = generateSessionId();
+  const { error } = await sb.from("telegram_sessions").insert({ id, data });
+  if (error) {
+    console.error("Failed to create telegram session:", error);
+    throw error;
+  }
+  return id;
+}
+
+async function resolveSession(sessionId: string): Promise<unknown | null> {
+  const sb = getAdminClient();
+  const { data, error } = await sb
+    .from("telegram_sessions")
+    .select("data")
+    .eq("id", sessionId)
+    .maybeSingle();
+  if (error) { console.error("Failed to resolve session:", error); return null; }
+  return data?.data ?? null;
+}
+
 /* ── Main handler ── */
 serve(async (req) => {
   if (req.method === "OPTIONS") {
