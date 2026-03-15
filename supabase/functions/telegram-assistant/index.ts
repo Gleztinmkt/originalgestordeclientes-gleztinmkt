@@ -1037,6 +1037,315 @@ async function handleConfirmarPublicaciones(ids: string[]) {
   };
 }
 
+/* ── Telegram Formatter ── */
+// deno-lint-ignore no-explicit-any
+function formatForTelegram(result: any): { text: string; reply_markup?: any } {
+  const accion = result.accion;
+  const statusEmoji: Record<string, string> = {
+    needs_recording: "🔴",
+    needs_editing: "🟠",
+    in_editing: "🟡",
+    in_review: "🔵",
+    approved: "🟢",
+  };
+  const typeEmoji: Record<string, string> = { reel: "🎬", carousel: "📸", image: "🖼" };
+
+  // Helper: format a publication line
+  // deno-lint-ignore no-explicit-any
+  const pubLine = (p: any) => {
+    const t = typeEmoji[p.tipo] || typeEmoji[p.type] || "";
+    const name = p.titulo || p.nombre || p.name || "";
+    const dateStr = p.fecha || p.date || "";
+    let d = "";
+    try { d = new Date(dateStr).toLocaleDateString("es-AR"); } catch { d = dateStr; }
+    return `  ${t} <b>${escHtml(name)}</b> — ${d}`;
+  };
+
+  // deno-lint-ignore no-explicit-any
+  const pubDetail = (p: any) => {
+    let s = pubLine(p);
+    if (p.designer) s += `\n    🎨 ${escHtml(p.designer)}`;
+    if (p.filming_time) s += `\n    ⏰ ${escHtml(p.filming_time)}`;
+    if (p.links) s += `\n    🔗 ${escHtml(p.links)}`;
+    return s;
+  };
+
+  const progressBar = (used: number, total: number) => {
+    const pct = total > 0 ? Math.round((used / total) * 10) : 0;
+    return "█".repeat(pct) + "░".repeat(10 - pct);
+  };
+
+  // ── identificar_clientes / listado_aprobados ──
+  if (accion === "identificar_clientes" || accion === "listado_aprobados") {
+    const clients = result.clientes || result.clientes_con_aprobados || [];
+    let text = `📋 <b>${escHtml(result.mensaje_ia)}</b>\n`;
+    // deno-lint-ignore no-explicit-any
+    const allPubIds: string[] = [];
+
+    // deno-lint-ignore no-explicit-any
+    for (const c of clients) {
+      const pubs = c.publicaciones_pendientes || c.publicaciones || [];
+      text += `\n👤 <b>${escHtml(c.nombre)}</b> (${pubs.length})\n`;
+      // deno-lint-ignore no-explicit-any
+      for (const p of pubs) {
+        const hasCopy = p.tiene_copy || p.copy_text || p.copywriting;
+        text += pubLine(p) + (hasCopy ? " ✍️" : "") + "\n";
+        allPubIds.push(p.id);
+      }
+    }
+
+    // Inline keyboard: buttons to mark as published
+    const buttons = [];
+    if (allPubIds.length > 0) {
+      // Show individual pub buttons (max 8 to avoid Telegram limits)
+      if (allPubIds.length <= 8) {
+        // deno-lint-ignore no-explicit-any
+        for (const c of clients) {
+          const pubs = c.publicaciones_pendientes || c.publicaciones || [];
+          // deno-lint-ignore no-explicit-any
+          for (const p of pubs) {
+            const name = (p.titulo || p.nombre || "").substring(0, 20);
+            buttons.push([{ text: `✅ ${name}`, callback_data: `pub_mark:${p.id}` }]);
+          }
+        }
+      }
+      // Always show "mark all" button
+      buttons.push([{ text: `✅ Marcar todas (${allPubIds.length})`, callback_data: `pub_mark_all:${allPubIds.join(",")}` }]);
+    }
+
+    return { text, reply_markup: buttons.length ? { inline_keyboard: buttons } : undefined };
+  }
+
+  // ── mostrar_copy ──
+  if (accion === "mostrar_copy") {
+    const pub = result.publicacion;
+    const copyText = pub?.copywriting || pub?.descripcion || "";
+    let text = `✍️ <b>${escHtml(result.mensaje_ia)}</b>\n\n`;
+    if (copyText) {
+      text += `<pre>${escHtml(copyText)}</pre>\n`;
+    } else {
+      text += "<i>No hay copy cargado</i>\n";
+    }
+
+    const buttons = [];
+    if (pub?.id && result.puede_descontar) {
+      buttons.push([{ text: "✅ Marcar como publicada", callback_data: `pub_mark:${pub.id}` }]);
+    }
+    return { text, reply_markup: buttons.length ? { inline_keyboard: buttons } : undefined };
+  }
+
+  // ── planificacion_propuesta ──
+  if (accion === "planificacion_propuesta" || accion === "planificacion_actualizada") {
+    const months = ["", "enero", "febrero", "marzo", "abril", "mayo", "junio",
+      "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+    let text = `📅 <b>${escHtml(result.mensaje_ia)}</b>\n\n`;
+    const buttons = [];
+
+    // deno-lint-ignore no-explicit-any
+    for (const u of (result.actualizaciones || [])) {
+      const statusDot = u.status === "hacer" ? "🟢" : u.status === "no_hacer" ? "🔴" : "🟡";
+      text += `${statusDot} <b>${escHtml(u.cliente)}</b> → ${months[u.mes] || u.mes}`;
+      if (u.status) text += ` (${u.status})`;
+      text += "\n";
+      if (u.descripcion) text += `   📝 ${escHtml(u.descripcion)}\n`;
+
+      if (u.client_id) {
+        buttons.push([
+          { text: `✅ Confirmar ${u.cliente}`, callback_data: `plan_confirm:${u.client_id}:${u.mes}:${u.status || ""}` },
+        ]);
+      }
+    }
+
+    if ((result.actualizaciones || []).length > 1) {
+      // deno-lint-ignore no-explicit-any
+      const allData = (result.actualizaciones || []).map((u: any) => `${u.client_id}:${u.mes}:${u.status || ""}`).join("|");
+      buttons.push([{ text: "✅ Confirmar todas", callback_data: `plan_confirm_all:${allData}` }]);
+    }
+
+    return { text, reply_markup: buttons.length ? { inline_keyboard: buttons } : undefined };
+  }
+
+  // ── planificacion_confirmada ──
+  if (accion === "planificacion_confirmada") {
+    return { text: `✅ ${escHtml(result.mensaje_ia)}` };
+  }
+
+  // ── estado_produccion ──
+  if (accion === "estado_produccion") {
+    let text = `📊 <b>${escHtml(result.mensaje_ia)}</b>\n`;
+
+    // deno-lint-ignore no-explicit-any
+    for (const group of (result.resumen_estados || [])) {
+      const emoji = statusEmoji[group.estado_key] || "⚪";
+      text += `\n${emoji} <b>${escHtml(group.estado)}</b> (${group.cantidad})\n`;
+      // deno-lint-ignore no-explicit-any
+      for (const p of (group.publicaciones || [])) {
+        text += pubDetail(p) + "\n";
+      }
+    }
+
+    // If there are approved pubs, offer to mark them
+    // deno-lint-ignore no-explicit-any
+    const approvedGroup = (result.resumen_estados || []).find((g: any) => g.estado_key === "approved");
+    const buttons = [];
+    if (approvedGroup?.publicaciones?.length) {
+      // deno-lint-ignore no-explicit-any
+      const ids = approvedGroup.publicaciones.map((p: any) => p.id).join(",");
+      buttons.push([{ text: `✅ Marcar aprobadas como publicadas (${approvedGroup.cantidad})`, callback_data: `pub_mark_all:${ids}` }]);
+    }
+
+    return { text, reply_markup: buttons.length ? { inline_keyboard: buttons } : undefined };
+  }
+
+  // ── resumen_produccion ──
+  if (accion === "resumen_produccion") {
+    let text = `📊 <b>${escHtml(result.mensaje_ia)}</b>\n\n`;
+
+    // Global
+    text += "<b>Resumen global:</b>\n";
+    // deno-lint-ignore no-explicit-any
+    for (const g of (result.resumen_global || [])) {
+      const emoji = statusEmoji[g.estado_key] || "⚪";
+      text += `${emoji} ${escHtml(g.estado)}: <b>${g.cantidad}</b>\n`;
+    }
+
+    // Per client
+    if (result.resumen_clientes?.length) {
+      text += "\n<b>Por cliente:</b>\n";
+      // deno-lint-ignore no-explicit-any
+      for (const c of result.resumen_clientes) {
+        // deno-lint-ignore no-explicit-any
+        const statuses = c.estados.map((e: any) => `${statusEmoji[e.estado_key] || "⚪"}${e.cantidad}`).join(" ");
+        text += `👤 <b>${escHtml(c.nombre)}</b>  ${statuses}\n`;
+      }
+    }
+
+    return { text };
+  }
+
+  // ── estado_paquetes ──
+  if (accion === "estado_paquetes") {
+    let text = `📦 <b>${escHtml(result.mensaje_ia)}</b>\n`;
+
+    if (result.resumen) {
+      text += `\n<b>Total:</b> ${progressBar(result.resumen.usadas, result.resumen.total)} ${result.resumen.usadas}/${result.resumen.total}\n`;
+      text += `Restantes: <b>${result.resumen.restantes}</b>\n`;
+    }
+
+    // deno-lint-ignore no-explicit-any
+    for (const pkg of (result.paquetes || [])) {
+      text += `\n📦 <b>${escHtml(pkg.nombre)}</b>`;
+      if (pkg.mes) text += ` (${escHtml(pkg.mes)})`;
+      text += "\n";
+      text += `${progressBar(pkg.usadas, pkg.total)} ${pkg.usadas}/${pkg.total}\n`;
+      text += `Restantes: <b>${pkg.restantes}</b>`;
+      if (pkg.pagado !== undefined) text += ` · ${pkg.pagado ? "✅ Pagado" : "❌ Sin pagar"}`;
+      text += "\n";
+    }
+
+    if (result.paquetes?.[0]?.ultimo_post) {
+      text += `\n📅 Último post: ${escHtml(result.paquetes[0].ultimo_post)}`;
+    }
+
+    return { text };
+  }
+
+  // ── info_cliente ──
+  if (accion === "info_cliente") {
+    const c = result.cliente || {};
+    let text = `👤 <b>Información de ${escHtml(c.nombre || "")}</b>\n\n`;
+
+    if (c.telefono) text += `📱 <b>Teléfono:</b> ${escHtml(c.telefono)}\n`;
+    if (c.instagram) text += `📸 <b>Instagram:</b> ${escHtml(c.instagram)}\n`;
+    if (c.facebook) text += `📘 <b>Facebook:</b> ${escHtml(c.facebook)}\n`;
+    if (c.ultimo_post) text += `📅 <b>Último post:</b> ${escHtml(c.ultimo_post)}\n`;
+
+    if (c.info_general) {
+      text += `\n📝 <b>Info general:</b>\n${escHtml(c.info_general)}\n`;
+    }
+    if (c.branding) {
+      text += `\n🎨 <b>Branding:</b>\n${escHtml(c.branding)}\n`;
+    }
+    if (c.marketing_info) {
+      text += `\n📈 <b>Marketing:</b>\n${escHtml(c.marketing_info)}\n`;
+    }
+
+    if (Array.isArray(c.reuniones) && c.reuniones.length > 0) {
+      text += `\n📋 <b>Reuniones:</b>\n`;
+      // deno-lint-ignore no-explicit-any
+      for (const r of c.reuniones) {
+        if (typeof r === "object" && r.date) {
+          text += `  • ${escHtml(r.date)}${r.notes ? ": " + escHtml(r.notes) : ""}\n`;
+        } else {
+          text += `  • ${escHtml(typeof r === "string" ? r : JSON.stringify(r))}\n`;
+        }
+      }
+    }
+
+    if (Array.isArray(c.horarios_publicacion) && c.horarios_publicacion.length > 0) {
+      text += `\n⏰ <b>Horarios:</b>\n`;
+      // deno-lint-ignore no-explicit-any
+      for (const h of c.horarios_publicacion) {
+        if (typeof h === "object" && h.day) {
+          text += `  • ${escHtml(h.day)}${h.time ? " " + escHtml(h.time) : ""}\n`;
+        } else {
+          text += `  • ${escHtml(typeof h === "string" ? h : JSON.stringify(h))}\n`;
+        }
+      }
+    }
+
+    return { text };
+  }
+
+  // ── filtro_estado ──
+  if (accion === "filtro_estado") {
+    let text = `🔍 <b>${escHtml(result.mensaje_ia)}</b>\n`;
+
+    // deno-lint-ignore no-explicit-any
+    for (const c of (result.clientes || [])) {
+      text += `\n👤 <b>${escHtml(c.nombre)}</b> (${c.publicaciones?.length || 0})\n`;
+      // deno-lint-ignore no-explicit-any
+      for (const p of (c.publicaciones || [])) {
+        text += pubDetail(p) + "\n";
+      }
+    }
+
+    return { text };
+  }
+
+  // ── marcar_publicadas ──
+  if (accion === "marcar_publicadas") {
+    return { text: `✅ ${escHtml(result.mensaje || result.mensaje_ia || "Publicaciones actualizadas")}` };
+  }
+
+  // ── confirmar_publicaciones ──
+  if (accion === "confirmar_publicaciones") {
+    let text = `📋 <b>${escHtml(result.mensaje_ia)}</b>\n\n`;
+    // deno-lint-ignore no-explicit-any
+    for (const p of (result.publicaciones || [])) {
+      text += pubLine(p) + `\n    👤 ${escHtml(p.cliente || "")}\n`;
+    }
+
+    const buttons = [];
+    // deno-lint-ignore no-explicit-any
+    const ids = (result.publicaciones || []).map((p: any) => p.id).join(",");
+    if (ids) {
+      buttons.push([{ text: `✅ Confirmar y publicar (${result.publicaciones?.length || 0})`, callback_data: `pub_mark_all:${ids}` }]);
+    }
+
+    return { text, reply_markup: buttons.length ? { inline_keyboard: buttons } : undefined };
+  }
+
+  // ── error / no_encontrado / fallback ──
+  const msg = result.mensaje_ia || result.error || result.mensaje || "Sin respuesta";
+  const icon = accion === "error" ? "❌" : "ℹ️";
+  return { text: `${icon} ${escHtml(msg)}` };
+}
+
+function escHtml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
 /* ── Main handler ── */
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -1051,16 +1360,27 @@ serve(async (req) => {
 
     const body = await req.json();
     const accion = body.accion ?? null;
+    const format = body.format ?? null; // "telegram" for formatted output
+
+    // Helper: optionally format for Telegram
+    // deno-lint-ignore no-explicit-any
+    const respond = (result: any) => {
+      if (format === "telegram") {
+        const tg = formatForTelegram(result);
+        return json({ ...result, telegram: tg });
+      }
+      return json(result);
+    };
 
     // Explicit actions
     if (accion === "listado_aprobados") {
-      return json(await handleListadoAprobados());
+      return respond(await handleListadoAprobados());
     }
 
     if (accion === "confirmar_publicaciones") {
       const ids = body.publicaciones_ids ?? [];
       if (!ids.length) return json({ error: "publicaciones_ids es requerido" }, 400);
-      return json(await handleConfirmarPublicaciones(ids));
+      return respond(await handleConfirmarPublicaciones(ids));
     }
 
     if (accion === "marcar_publicadas" || accion === "confirmar") {
@@ -1068,14 +1388,14 @@ serve(async (req) => {
       if (!ids.length) return json({ error: "publicaciones_ids es requerido" }, 400);
       const discountCount = body.cantidad_descontar ?? undefined;
       const result = await markPublished(ids, discountCount);
-      return json({ accion: "marcar_publicadas", ...result });
+      return respond({ accion: "marcar_publicadas", ...result });
     }
 
     if (accion === "actualizar_planificacion") {
       const { client_id, month, status, description } = body;
       if (!client_id || !month) return json({ error: "client_id y month son requeridos" }, 400);
       const result = await handleUpdatePlanning(client_id, month, status, description);
-      return json({ accion: "planificacion_actualizada", ...result });
+      return respond({ accion: "planificacion_actualizada", ...result });
     }
 
     if (accion === "confirmar_planificacion") {
@@ -1084,7 +1404,7 @@ serve(async (req) => {
       for (const u of updates) {
         await handleUpdatePlanning(u.client_id, u.month, u.status, u.description);
       }
-      return json({
+      return respond({
         accion: "planificacion_confirmada",
         mensaje_ia: `${updates.length} planificación(es) confirmada(s) exitosamente`,
         ok: true,
@@ -1095,7 +1415,7 @@ serve(async (req) => {
     const mensaje = body.mensaje;
     if (mensaje && typeof mensaje === "string") {
       const result = await interpretMessage(mensaje);
-      return json(result);
+      return respond(result);
     }
 
     return json({
@@ -1106,6 +1426,7 @@ serve(async (req) => {
         "confirmar_publicaciones { publicaciones_ids: [...] }",
         "marcar_publicadas { publicaciones_ids: [...], cantidad_descontar: N }",
         "actualizar_planificacion { client_id, month, status, description }",
+        "confirmar_planificacion { updates: [...] }",
       ],
     }, 400);
   } catch (e) {
