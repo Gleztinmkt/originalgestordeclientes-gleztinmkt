@@ -715,6 +715,24 @@ export type Database = {
           },
         ]
       }
+      telegram_sessions: {
+        Row: {
+          created_at: string
+          data: Json
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          data: Json
+          id: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json
+          id?: string
+        }
+        Relationships: []
+      }
       user_calendar_preferences: {
         Row: {
           created_at: string
