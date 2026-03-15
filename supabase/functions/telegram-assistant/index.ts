@@ -1039,7 +1039,7 @@ async function handleConfirmarPublicaciones(ids: string[]) {
 
 /* ── Telegram Formatter ── */
 // deno-lint-ignore no-explicit-any
-function formatForTelegram(result: any): { text: string; reply_markup?: any } {
+async function formatForTelegram(result: any): Promise<{ text: string; reply_markup?: any }> {
   const accion = result.accion;
   const statusEmoji: Record<string, string> = {
     needs_recording: "🔴",
