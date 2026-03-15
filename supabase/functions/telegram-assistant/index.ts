@@ -46,7 +46,7 @@ async function fetchAllClients() {
   const sb = getAdminClient();
   const { data, error } = await sb
     .from("clients")
-    .select("id, name, packages, last_post")
+    .select("id, name, packages, last_post, client_info, marketing_info, instagram, facebook, phone")
     .is("deleted_at", null)
     .order("name");
   if (error) throw error;
@@ -57,7 +57,7 @@ async function fetchPendingPublications(clientIds: string[]) {
   const sb = getAdminClient();
   const { data, error } = await sb
     .from("publications")
-    .select("id, name, type, date, description, copywriting, client_id, approved, status, package_id")
+    .select("id, name, type, date, description, copywriting, client_id, approved, status, package_id, needs_recording, needs_editing, in_editing, in_review, in_cloud, designer, filming_time, links")
     .in("client_id", clientIds)
     .eq("is_published", false)
     .is("deleted_at", null)
@@ -86,6 +86,38 @@ async function fetchPublicationsByIds(ids: string[]) {
     .select("id, name, type, date, description, copywriting, client_id, approved, status, package_id")
     .in("id", ids)
     .is("deleted_at", null);
+  if (error) throw error;
+  return data ?? [];
+}
+
+/* ── Production query helper ── */
+async function fetchPublicationsByStatus(filters: {
+  clientIds?: string[];
+  needs_recording?: boolean;
+  needs_editing?: boolean;
+  in_editing?: boolean;
+  in_review?: boolean;
+  approved?: boolean;
+  in_cloud?: boolean;
+  type?: string;
+}) {
+  const sb = getAdminClient();
+  let query = sb
+    .from("publications")
+    .select("id, name, type, date, description, copywriting, client_id, needs_recording, needs_editing, in_editing, in_review, approved, in_cloud, designer, filming_time, links, status")
+    .eq("is_published", false)
+    .is("deleted_at", null);
+
+  if (filters.clientIds?.length) query = query.in("client_id", filters.clientIds);
+  if (filters.needs_recording !== undefined) query = query.eq("needs_recording", filters.needs_recording);
+  if (filters.needs_editing !== undefined) query = query.eq("needs_editing", filters.needs_editing);
+  if (filters.in_editing !== undefined) query = query.eq("in_editing", filters.in_editing);
+  if (filters.in_review !== undefined) query = query.eq("in_review", filters.in_review);
+  if (filters.approved !== undefined) query = query.eq("approved", filters.approved);
+  if (filters.in_cloud !== undefined) query = query.eq("in_cloud", filters.in_cloud);
+  if (filters.type) query = query.eq("type", filters.type);
+
+  const { data, error } = await query.order("date");
   if (error) throw error;
   return data ?? [];
 }
@@ -132,14 +164,12 @@ async function markPublished(pubIds: string[], discountCount?: number | string) 
   const pubs = await fetchPublicationsByIds(pubIds);
   if (!pubs.length) return { ok: false, mensaje: "No se encontraron publicaciones" };
 
-  // Update publications
   const { error: updateErr } = await sb
     .from("publications")
     .update({ is_published: true, status: "published" })
     .in("id", pubIds);
   if (updateErr) throw updateErr;
 
-  // Group by client to discount packages
   const byClient: Record<string, typeof pubs> = {};
   for (const p of pubs) {
     if (p.client_id) {
@@ -167,14 +197,11 @@ async function markPublished(pubIds: string[], discountCount?: number | string) 
 
     const { packages, isValid } = parseClientPackages(client?.packages);
 
-    // Si el usuario indicó cantidad manual, solo aplicar cuando hay 1 cliente seleccionado.
-    // En selección multi-cliente, se usa 1 por publicación de cada cliente para evitar sobre-descuento.
     let remaining = singleClientSelection && hasCustomDiscount
       ? parsedDiscount
       : clientPubs.length;
 
     if (isValid && packages.length > 0) {
-      // Descuento continuo en el orden actual del arreglo (arriba → abajo)
       while (remaining > 0) {
         const activePkg = findActivePackage(packages);
         if (!activePkg) break;
@@ -193,7 +220,6 @@ async function markPublished(pubIds: string[], discountCount?: number | string) 
 
     const clientUpdate: Record<string, unknown> = { last_post: lastPostStr };
 
-    // Solo sobrescribir packages cuando tiene formato válido (array o string JSON de array)
     if (isValid) {
       clientUpdate.packages = packages;
     } else {
@@ -221,7 +247,6 @@ async function handleUpdatePlanning(clientId: string, month: number, status?: st
   const year = new Date().getFullYear();
   const startOfMonth = new Date(year, month - 1, 1).toISOString();
 
-  // Check existing
   const { data: existing } = await sb
     .from("publication_planning")
     .select("id, status, description")
@@ -274,6 +299,11 @@ Según el mensaje del usuario, elegí UNA de estas herramientas:
 2. "find_copy" — cuando el usuario pide el copy, copywriting, o texto de una publicación específica de un cliente.
 3. "list_approved" — cuando el usuario pide un listado de publicaciones aprobadas, listas para subir, o pregunta "qué tengo para subir".
 4. "update_planning" — cuando el usuario quiere cambiar el estado de planificación de un cliente para un mes (marcar como "hacer", "no_hacer", "consultar") o agregar/cambiar la descripción de planificación. Los meses son del año actual 2026.
+5. "query_production" — cuando el usuario pregunta por el estado de producción de un cliente: qué falta grabar, qué está en edición, qué está en revisión, qué está aprobado, qué está en la nube. Ej: "¿qué falta grabar de Soledad?", "¿cuántos reels tiene Jacinto en edición?"
+6. "production_summary" — cuando el usuario pide un resumen general de producción de todos los clientes o pregunta "¿cómo estoy de producción?", "¿qué tengo pendiente?", "resumen de estado".
+7. "query_packages" — cuando el usuario pregunta por el estado de paquetes: cuántas publicaciones quedan, cuántas usó, qué paquetes tiene. Ej: "¿cuántas le quedan a Soledad?", "estado de paquetes de Jacinto".
+8. "query_client_info" — cuando el usuario pregunta por la información de un cliente: info general, reuniones, branding, horarios de publicación, redes sociales. Ej: "¿qué info tengo de 4S Motors?", "datos de Soledad".
+9. "filter_by_status" — cuando el usuario quiere filtrar publicaciones por un estado específico combinado. Ej: "¿qué tengo en la nube listo para subir?", "publicaciones en revisión", "lo que falta editar".
 
 IMPORTANTE: Los nombres pueden estar abreviados, mal escritos o ser apodos. Hacé tu mejor esfuerzo para encontrar coincidencias.
 Cuando el usuario pida cambiar planificación, detectá el mes mencionado (enero=1, febrero=2, etc.) y el estado deseado.
@@ -365,6 +395,101 @@ Si pide agregar descripción, incluí el texto completo en el campo description.
             },
           },
           required: ["updates"],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "query_production",
+        description: "Consulta el estado de producción de un cliente específico: qué publicaciones faltan grabar, están en edición, revisión, aprobadas o en la nube",
+        parameters: {
+          type: "object",
+          properties: {
+            client_name: { type: "string", description: "Nombre del cliente" },
+            client_id: { type: "string", description: "ID UUID del cliente" },
+            status_filter: {
+              type: "string",
+              enum: ["needs_recording", "needs_editing", "in_editing", "in_review", "approved", "in_cloud", "all"],
+              description: "Filtro de estado. 'all' muestra todo agrupado por estado.",
+            },
+            type_filter: {
+              type: "string",
+              enum: ["reel", "carousel", "image"],
+              description: "Filtro opcional por tipo de publicación",
+            },
+          },
+          required: ["client_name", "client_id", "status_filter"],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "production_summary",
+        description: "Genera un resumen global de producción de todos los clientes: cuántas publicaciones faltan grabar, están en edición, revisión, etc.",
+        parameters: {
+          type: "object",
+          properties: {
+            reason: { type: "string", description: "Motivo del resumen" },
+          },
+          required: ["reason"],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "query_packages",
+        description: "Consulta el estado de paquetes de un cliente: cuántas publicaciones tiene, cuántas usó, cuántas le quedan",
+        parameters: {
+          type: "object",
+          properties: {
+            client_name: { type: "string", description: "Nombre del cliente" },
+            client_id: { type: "string", description: "ID UUID del cliente" },
+          },
+          required: ["client_name", "client_id"],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "query_client_info",
+        description: "Consulta la información completa de un cliente: info general, reuniones, branding, redes sociales, horarios de publicación",
+        parameters: {
+          type: "object",
+          properties: {
+            client_name: { type: "string", description: "Nombre del cliente" },
+            client_id: { type: "string", description: "ID UUID del cliente" },
+          },
+          required: ["client_name", "client_id"],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "filter_by_status",
+        description: "Filtra publicaciones de todos los clientes por combinación de estados específicos. Ej: en la nube pero no publicadas, en revisión, etc.",
+        parameters: {
+          type: "object",
+          properties: {
+            filters: {
+              type: "object",
+              properties: {
+                needs_recording: { type: "boolean" },
+                needs_editing: { type: "boolean" },
+                in_editing: { type: "boolean" },
+                in_review: { type: "boolean" },
+                approved: { type: "boolean" },
+                in_cloud: { type: "boolean" },
+                type: { type: "string", enum: ["reel", "carousel", "image"] },
+              },
+            },
+            description: { type: "string", description: "Descripción de lo que se busca" },
+          },
+          required: ["filters", "description"],
         },
       },
     },
@@ -514,11 +639,11 @@ Si pide agregar descripción, incluí el texto completo en el campo description.
       descripcion: u.description,
     }));
 
-    const months = ["", "enero", "febrero", "marzo", "abril", "mayo", "junio",
+    const monthNames = ["", "enero", "febrero", "marzo", "abril", "mayo", "junio",
       "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 
     const summary = results.map((r: { cliente: string; mes: number; status?: string; descripcion?: string }) => {
-      const parts = [`${r.cliente} → ${months[r.mes]}`];
+      const parts = [`${r.cliente} → ${monthNames[r.mes]}`];
       if (r.status) parts.push(`estado: ${r.status}`);
       if (r.descripcion) parts.push(`con descripción`);
       return parts.join(" ");
@@ -528,6 +653,286 @@ Si pide agregar descripción, incluí el texto completo en el campo description.
       accion: "planificacion_propuesta",
       mensaje_ia: `Propuesta de planificación: ${summary}`,
       actualizaciones: results,
+    };
+  }
+
+  // ── query_production ──
+  if (fnName === "query_production") {
+    const clientId = args.client_id;
+    const clientName = args.client_name;
+    const statusFilter = args.status_filter;
+    const typeFilter = args.type_filter;
+
+    const statusLabels: Record<string, string> = {
+      needs_recording: "Falta grabar",
+      needs_editing: "Necesita edición",
+      in_editing: "En edición",
+      in_review: "En revisión",
+      approved: "Aprobada",
+      in_cloud: "En la nube",
+    };
+
+    if (statusFilter === "all") {
+      // Fetch all unpublished for this client
+      const allPubs = await fetchPublicationsByStatus({ clientIds: [clientId], ...(typeFilter ? { type: typeFilter } : {}) });
+
+      const grouped: Record<string, typeof allPubs> = {};
+      for (const pub of allPubs) {
+        if (pub.needs_recording) (grouped["needs_recording"] ??= []).push(pub);
+        if (pub.needs_editing) (grouped["needs_editing"] ??= []).push(pub);
+        if (pub.in_editing) (grouped["in_editing"] ??= []).push(pub);
+        if (pub.in_review) (grouped["in_review"] ??= []).push(pub);
+        if (pub.approved) (grouped["approved"] ??= []).push(pub);
+        if (pub.in_cloud) (grouped["in_cloud"] ??= []).push(pub);
+      }
+
+      const resumen = Object.entries(grouped).map(([key, pubs]) => ({
+        estado: statusLabels[key] || key,
+        estado_key: key,
+        cantidad: pubs.length,
+        publicaciones: pubs.map((p) => ({
+          id: p.id,
+          nombre: p.name,
+          tipo: p.type,
+          fecha: p.date,
+          descripcion: p.description,
+          copywriting: p.copywriting,
+          designer: p.designer,
+          filming_time: p.filming_time,
+          links: p.links,
+        })),
+      }));
+
+      return {
+        accion: "estado_produccion",
+        mensaje_ia: `Estado de producción de ${clientName}: ${allPubs.length} publicación(es) pendiente(s)${typeFilter ? ` (tipo: ${typeFilter})` : ""}`,
+        cliente: { id: clientId, nombre: clientName },
+        resumen_estados: resumen,
+        total: allPubs.length,
+      };
+    }
+
+    // Specific status filter
+    const filters: Record<string, unknown> = { clientIds: [clientId] };
+    if (statusFilter) filters[statusFilter] = true;
+    if (typeFilter) filters.type = typeFilter;
+
+    const pubs = await fetchPublicationsByStatus(filters as Parameters<typeof fetchPublicationsByStatus>[0]);
+
+    return {
+      accion: "estado_produccion",
+      mensaje_ia: pubs.length
+        ? `${clientName}: ${pubs.length} publicación(es) en estado "${statusLabels[statusFilter] || statusFilter}"${typeFilter ? ` (tipo: ${typeFilter})` : ""}`
+        : `${clientName} no tiene publicaciones en estado "${statusLabels[statusFilter] || statusFilter}"${typeFilter ? ` de tipo ${typeFilter}` : ""}`,
+      cliente: { id: clientId, nombre: clientName },
+      resumen_estados: [{
+        estado: statusLabels[statusFilter] || statusFilter,
+        estado_key: statusFilter,
+        cantidad: pubs.length,
+        publicaciones: pubs.map((p) => ({
+          id: p.id,
+          nombre: p.name,
+          tipo: p.type,
+          fecha: p.date,
+          descripcion: p.description,
+          copywriting: p.copywriting,
+          designer: p.designer,
+          filming_time: p.filming_time,
+          links: p.links,
+        })),
+      }],
+      total: pubs.length,
+    };
+  }
+
+  // ── production_summary ──
+  if (fnName === "production_summary") {
+    const allPubs = await fetchPublicationsByStatus({});
+    const clients = await fetchAllClients();
+    const clientMap = new Map(clients.map((c) => [c.id, c.name]));
+
+    const statusKeys = ["needs_recording", "needs_editing", "in_editing", "in_review", "approved", "in_cloud"];
+    const statusLabels: Record<string, string> = {
+      needs_recording: "Falta grabar",
+      needs_editing: "Necesita edición",
+      in_editing: "En edición",
+      in_review: "En revisión",
+      approved: "Aprobada",
+      in_cloud: "En la nube",
+    };
+
+    // Global counts
+    const globalCounts: Record<string, number> = {};
+    for (const key of statusKeys) globalCounts[key] = 0;
+
+    // Per-client counts
+    const perClient: Record<string, Record<string, number>> = {};
+
+    for (const pub of allPubs) {
+      const cid = pub.client_id ?? "unknown";
+      if (!perClient[cid]) {
+        perClient[cid] = {};
+        for (const key of statusKeys) perClient[cid][key] = 0;
+      }
+
+      for (const key of statusKeys) {
+        // deno-lint-ignore no-explicit-any
+        if ((pub as any)[key]) {
+          globalCounts[key]++;
+          perClient[cid][key]++;
+        }
+      }
+    }
+
+    const resumenGlobal = statusKeys.map((key) => ({
+      estado: statusLabels[key],
+      estado_key: key,
+      cantidad: globalCounts[key],
+    }));
+
+    const resumenClientes = Object.entries(perClient)
+      .filter(([cid]) => clientMap.has(cid))
+      .map(([cid, counts]) => ({
+        id: cid,
+        nombre: clientMap.get(cid)!,
+        estados: statusKeys
+          .filter((key) => counts[key] > 0)
+          .map((key) => ({
+            estado: statusLabels[key],
+            estado_key: key,
+            cantidad: counts[key],
+          })),
+      }))
+      .filter((c) => c.estados.length > 0)
+      .sort((a, b) => a.nombre.localeCompare(b.nombre));
+
+    return {
+      accion: "resumen_produccion",
+      mensaje_ia: `Resumen de producción: ${allPubs.length} publicación(es) pendiente(s) de ${resumenClientes.length} cliente(s)`,
+      resumen_global: resumenGlobal,
+      resumen_clientes: resumenClientes,
+      total: allPubs.length,
+    };
+  }
+
+  // ── query_packages ──
+  if (fnName === "query_packages") {
+    const clientId = args.client_id;
+    const clientName = args.client_name;
+
+    const client = clients.find((c) => c.id === clientId);
+    if (!client) {
+      return { accion: "no_encontrado", mensaje_ia: `No encontré el cliente ${clientName}` };
+    }
+
+    const { packages, isValid } = parseClientPackages(client.packages);
+    if (!isValid || !packages.length) {
+      return {
+        accion: "estado_paquetes",
+        mensaje_ia: `${clientName} no tiene paquetes cargados`,
+        cliente: { id: clientId, nombre: clientName },
+        paquetes: [],
+      };
+    }
+
+    // deno-lint-ignore no-explicit-any
+    const paquetesInfo = packages.map((pkg: any) => ({
+      id: pkg.id,
+      nombre: pkg.name || "Sin nombre",
+      mes: pkg.month || null,
+      total: Number(pkg.totalPublications) || 0,
+      usadas: Number(pkg.usedPublications) || 0,
+      restantes: Math.max(0, (Number(pkg.totalPublications) || 0) - (Number(pkg.usedPublications) || 0)),
+      pagado: pkg.paid ?? false,
+      ultimo_post: client.last_post || null,
+    }));
+
+    const totalRestantes = paquetesInfo.reduce((sum: number, p: { restantes: number }) => sum + p.restantes, 0);
+    const totalUsadas = paquetesInfo.reduce((sum: number, p: { usadas: number }) => sum + p.usadas, 0);
+    const totalTotal = paquetesInfo.reduce((sum: number, p: { total: number }) => sum + p.total, 0);
+
+    return {
+      accion: "estado_paquetes",
+      mensaje_ia: `${clientName}: ${totalUsadas}/${totalTotal} publicaciones usadas, quedan ${totalRestantes}`,
+      cliente: { id: clientId, nombre: clientName },
+      paquetes: paquetesInfo,
+      resumen: { total: totalTotal, usadas: totalUsadas, restantes: totalRestantes },
+    };
+  }
+
+  // ── query_client_info ──
+  if (fnName === "query_client_info") {
+    const clientId = args.client_id;
+    const clientName = args.client_name;
+
+    const client = clients.find((c) => c.id === clientId);
+    if (!client) {
+      return { accion: "no_encontrado", mensaje_ia: `No encontré el cliente ${clientName}` };
+    }
+
+    // deno-lint-ignore no-explicit-any
+    const clientInfo = (client.client_info as any) || {};
+
+    return {
+      accion: "info_cliente",
+      mensaje_ia: `Información de ${clientName}`,
+      cliente: {
+        id: clientId,
+        nombre: clientName,
+        telefono: client.phone || null,
+        instagram: client.instagram || null,
+        facebook: client.facebook || null,
+        ultimo_post: client.last_post || null,
+        marketing_info: client.marketing_info || null,
+        info_general: clientInfo.generalInfo || null,
+        reuniones: clientInfo.meetings || [],
+        redes_sociales: clientInfo.socialNetworks || [],
+        branding: clientInfo.branding || null,
+        horarios_publicacion: clientInfo.publicationSchedule || [],
+      },
+    };
+  }
+
+  // ── filter_by_status ──
+  if (fnName === "filter_by_status") {
+    const filters = args.filters ?? {};
+    const description = args.description ?? "";
+
+    const pubs = await fetchPublicationsByStatus(filters);
+    const clientMap = new Map(clients.map((c) => [c.id, c.name]));
+
+    // Group by client
+    const byClient: Record<string, { id: string; nombre: string; publicaciones: unknown[] }> = {};
+
+    for (const pub of pubs) {
+      const cid = pub.client_id ?? "unknown";
+      if (!clientMap.has(cid)) continue;
+      if (!byClient[cid]) {
+        byClient[cid] = { id: cid, nombre: clientMap.get(cid)!, publicaciones: [] };
+      }
+      byClient[cid].publicaciones.push({
+        id: pub.id,
+        nombre: pub.name,
+        tipo: pub.type,
+        fecha: pub.date,
+        descripcion: pub.description,
+        copywriting: pub.copywriting,
+        designer: pub.designer,
+        filming_time: pub.filming_time,
+        links: pub.links,
+        cliente: clientMap.get(cid),
+      });
+    }
+
+    const result = Object.values(byClient).sort((a, b) => a.nombre.localeCompare(b.nombre));
+
+    return {
+      accion: "filtro_estado",
+      mensaje_ia: pubs.length
+        ? `${pubs.length} publicación(es) encontrada(s): ${description}`
+        : `No se encontraron publicaciones con ese filtro: ${description}`,
+      clientes: result,
+      total: pubs.length,
     };
   }
 
@@ -544,7 +949,6 @@ async function handleListadoAprobados() {
 
   for (const pub of pubs) {
     const cid = pub.client_id ?? "unknown";
-    // Skip publications from deleted/unknown clients
     if (!clientMap.has(cid)) continue;
 
     if (!byClient[cid]) {
@@ -585,7 +989,6 @@ async function handleConfirmarPublicaciones(ids: string[]) {
   const clients = await fetchAllClients();
   const clientMap = new Map(clients.map((c) => [c.id, c.name]));
 
-  // Get package info per client
   const clientPackages: Record<string, unknown[]> = {};
   for (const p of pubs) {
     if (p.client_id && !clientPackages[p.client_id]) {
