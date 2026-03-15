@@ -984,6 +984,119 @@ Si pide agregar descripción, incluí el texto completo en el campo description.
     };
   }
 
+  // ── create_publication ──
+  if (fnName === "create_publication") {
+    const clientId = args.client_id;
+    const clientName = args.client_name;
+    const pubName = args.name || "Sin título";
+    const pubType = args.type || "image";
+    const pubDate = args.date;
+    const pubDescription = args.description || "";
+    let pubCopywriting = args.copywriting || "";
+    const pubDesigner = args.designer || null;
+    const pubStatus = args.status || "needs_recording";
+    const suggestCopy = args.suggest_copy || false;
+
+    // Validate designer name (fuzzy match)
+    let matchedDesigner: string | null = null;
+    if (pubDesigner) {
+      const designers = await fetchDesigners();
+      const lowerDesigner = pubDesigner.toLowerCase();
+      const match = designers.find((d) =>
+        d.name.toLowerCase().includes(lowerDesigner) || lowerDesigner.includes(d.name.toLowerCase())
+      );
+      matchedDesigner = match ? match.name : pubDesigner;
+    }
+
+    // Suggest copy if requested
+    if (suggestCopy && !pubCopywriting) {
+      const sb = getAdminClient();
+      const { data: recentPubs } = await sb
+        .from("publications")
+        .select("copywriting, name, description")
+        .eq("client_id", clientId)
+        .not("copywriting", "is", null)
+        .is("deleted_at", null)
+        .order("date", { ascending: false })
+        .limit(5);
+
+      if (recentPubs?.length) {
+        const examples = recentPubs
+          .map((p) => `Título: ${p.name}\nCopy: ${p.copywriting}`)
+          .join("\n---\n");
+
+        const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
+        const copyResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "google/gemini-3-flash-preview",
+            messages: [
+              {
+                role: "system",
+                content: `Sos un copywriter de redes sociales. Generá un copy para una publicación basándote en el estilo de los ejemplos anteriores del mismo cliente. Respondé SOLO con el copy, sin explicaciones ni formato extra.`,
+              },
+              {
+                role: "user",
+                content: `Ejemplos de copy anteriores de ${clientName}:\n${examples}\n\nNueva publicación:\nTítulo: ${pubName}\nDescripción: ${pubDescription}\n\nGenerá un copy en el mismo estilo:`,
+              },
+            ],
+          }),
+        });
+
+        if (copyResponse.ok) {
+          const copyResult = await copyResponse.json();
+          pubCopywriting = copyResult.choices?.[0]?.message?.content?.trim() || "";
+        }
+      }
+    }
+
+    // Build status flags
+    const statusFlags: Record<string, boolean> = {
+      needs_recording: false,
+      needs_editing: false,
+      in_editing: false,
+      in_review: false,
+      approved: false,
+    };
+    if (statusFlags.hasOwnProperty(pubStatus)) {
+      statusFlags[pubStatus] = true;
+    } else {
+      statusFlags.needs_recording = true;
+    }
+
+    const statusLabels: Record<string, string> = {
+      needs_recording: "Falta grabar",
+      needs_editing: "Falta editar",
+      in_editing: "En edición",
+      in_review: "En revisión",
+      approved: "Aprobado",
+    };
+
+    const proposedPub = {
+      client_id: clientId,
+      client_name: clientName,
+      name: pubName,
+      type: pubType,
+      date: pubDate,
+      description: pubDescription,
+      copywriting: pubCopywriting,
+      designer: matchedDesigner,
+      status: pubStatus,
+      status_label: statusLabels[pubStatus] || "Falta grabar",
+      ...statusFlags,
+    };
+
+    return {
+      accion: "publicacion_propuesta",
+      mensaje_ia: `Propuesta de publicación para ${clientName}`,
+      publicacion_propuesta: proposedPub,
+    };
+  }
+
   return { accion: "no_encontrado", mensaje_ia: "No pude interpretar tu mensaje." };
 }
 
