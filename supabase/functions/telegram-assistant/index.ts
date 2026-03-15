@@ -1078,8 +1078,7 @@ async function formatForTelegram(result: any): Promise<{ text: string; reply_mar
   if (accion === "identificar_clientes" || accion === "listado_aprobados") {
     const clients = result.clientes || result.clientes_con_aprobados || [];
     let text = `📋 <b>${escHtml(result.mensaje_ia)}</b>\n`;
-    // deno-lint-ignore no-explicit-any
-    const allPubIds: string[] = [];
+    const buttons: { text: string; callback_data: string }[][] = [];
 
     // deno-lint-ignore no-explicit-any
     for (const c of clients) {
@@ -1087,34 +1086,14 @@ async function formatForTelegram(result: any): Promise<{ text: string; reply_mar
       text += `\n👤 <b>${escHtml(c.nombre)}</b> (${pubs.length})\n`;
       // deno-lint-ignore no-explicit-any
       for (const p of pubs) {
-        const hasCopy = p.tiene_copy || p.copy_text || p.copywriting;
-        text += pubLine(p) + (hasCopy ? " ✍️" : "") + "\n";
-        allPubIds.push(p.id);
-      }
-    }
-
-    // Inline keyboard: buttons to mark as published
-    const buttons = [];
-    if (allPubIds.length > 0) {
-      // Show individual pub buttons (max 8 to avoid Telegram limits)
-      if (allPubIds.length <= 8) {
-        // deno-lint-ignore no-explicit-any
-        for (const c of clients) {
-          const pubs = c.publicaciones_pendientes || c.publicaciones || [];
-          // deno-lint-ignore no-explicit-any
-          for (const p of pubs) {
-            const name = (p.titulo || p.nombre || "").substring(0, 20);
-            buttons.push([{ text: `✅ ${name}`, callback_data: `pub_mark:${p.id}` }]);
-          }
+        const copyText = p.copy_text || p.copywriting || "";
+        text += pubLine(p) + "\n";
+        if (copyText) {
+          text += `<pre>${escHtml(copyText)}</pre>\n`;
         }
-      }
-      // "Mark all" button — use session if callback_data would exceed 64 bytes
-      const rawData = `pub_mark_all:${allPubIds.join(",")}`;
-      if (rawData.length <= 64) {
-        buttons.push([{ text: `✅ Marcar todas (${allPubIds.length})`, callback_data: rawData }]);
-      } else {
-        const sessId = await createSession({ ids: allPubIds, action: "pub_mark_all" });
-        buttons.push([{ text: `✅ Marcar todas (${allPubIds.length})`, callback_data: `pub_sess:${sessId}` }]);
+        // Individual button per publication
+        const name = (p.titulo || p.nombre || "").substring(0, 20);
+        buttons.push([{ text: `✅ ${name}`, callback_data: `pub_mark:${p.id}` }]);
       }
     }
 
