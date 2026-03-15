@@ -1479,11 +1479,37 @@ serve(async (req) => {
           ok: true,
         };
       }
+      // pub_sess:{session_id} — resolve session for bulk pub mark
+      else if (callbackData.startsWith("pub_sess:")) {
+        const sessId = callbackData.replace("pub_sess:", "");
+        const sessData = await resolveSession(sessId) as { ids?: string[] } | null;
+        if (!sessData?.ids?.length) return json({ error: "Sesión expirada o inválida. Volvé a consultar." }, 400);
+        result = await markPublished(sessData.ids);
+        result = { accion: "marcar_publicadas", ...result };
+      }
+      // plan_sess:{session_id} — resolve session for bulk plan confirm
+      else if (callbackData.startsWith("plan_sess:")) {
+        const sessId = callbackData.replace("plan_sess:", "");
+        const sessData = await resolveSession(sessId) as { updates?: { client_id: string; mes: number; status: string }[] } | null;
+        if (!sessData?.updates?.length) return json({ error: "Sesión expirada o inválida. Volvé a consultar." }, 400);
+        let count = 0;
+        for (const u of sessData.updates) {
+          if (u.client_id && u.mes) {
+            await handleUpdatePlanning(u.client_id, u.mes, u.status || "hacer");
+            count++;
+          }
+        }
+        result = {
+          accion: "planificacion_confirmada",
+          mensaje_ia: `${count} planificación(es) confirmada(s) exitosamente`,
+          ok: true,
+        };
+      }
       else {
         return json({ error: `callback_data no reconocido: ${callbackData}` }, 400);
       }
 
-      const tg = formatForTelegram(result);
+      const tg = await formatForTelegram(result);
       return json({ ...result, telegram: tg });
     }
 
