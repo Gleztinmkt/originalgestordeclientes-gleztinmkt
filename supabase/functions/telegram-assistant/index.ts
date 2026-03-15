@@ -1164,8 +1164,16 @@ async function formatForTelegram(result: any): Promise<{ text: string; reply_mar
 
     if ((result.actualizaciones || []).length > 1) {
       // deno-lint-ignore no-explicit-any
-      const allData = (result.actualizaciones || []).map((u: any) => `${u.client_id}:${u.mes}:${u.status || ""}`).join("|");
-      buttons.push([{ text: "✅ Confirmar todas", callback_data: `plan_confirm_all:${allData}` }]);
+      const allUpdates = (result.actualizaciones || []).map((u: any) => ({
+        client_id: u.client_id, mes: u.mes, status: u.status || ""
+      }));
+      const rawData = `plan_confirm_all:${allUpdates.map((u: any) => `${u.client_id}:${u.mes}:${u.status}`).join("|")}`;
+      if (rawData.length <= 64) {
+        buttons.push([{ text: "✅ Confirmar todas", callback_data: rawData }]);
+      } else {
+        const sessId = await createSession({ updates: allUpdates, action: "plan_confirm_all" });
+        buttons.push([{ text: "✅ Confirmar todas", callback_data: `plan_sess:${sessId}` }]);
+      }
     }
 
     return { text, reply_markup: buttons.length ? { inline_keyboard: buttons } : undefined };
