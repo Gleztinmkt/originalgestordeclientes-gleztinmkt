@@ -42,6 +42,7 @@ const Index = () => {
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const isMobile = useIsMobile();
   const navigate = useNavigate();
 
