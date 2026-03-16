@@ -1050,6 +1050,7 @@ export const AssistantDialog = ({ onClientsUpdate }: AssistantDialogProps) => {
               {response.accion === "estado_paquetes" && renderEstadoPaquetes()}
               {response.accion === "info_cliente" && renderInfoCliente()}
               {response.accion === "filtro_estado" && renderFiltroEstado()}
+              {response.accion === "publicacion_propuesta" && renderPublicacionPropuesta()}
               {response.accion === "no_encontrado" && !response.mensaje_ia && (
                 <p className="text-sm text-muted-foreground italic">No se encontraron resultados</p>
               )}
