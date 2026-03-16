@@ -1186,6 +1186,67 @@ Si pide agregar descripción, incluí el texto completo en el campo description.
     };
   }
 
+  // ── create_client ──
+  if (fnName === "create_client") {
+    const clientName = args.name;
+    const clientPhone = args.phone || null;
+    const clientPaymentDay = args.payment_day || null;
+
+    if (!clientName) {
+      return { accion: "error", mensaje_ia: "El nombre del cliente es obligatorio." };
+    }
+
+    const proposal = {
+      name: clientName,
+      phone: clientPhone,
+      payment_day: clientPaymentDay,
+    };
+
+    return {
+      accion: "cliente_propuesto",
+      mensaje_ia: `Propuesta de nuevo cliente`,
+      cliente_propuesto: proposal,
+    };
+  }
+
+  // ── add_package ──
+  if (fnName === "add_package") {
+    const clientId = args.client_id;
+    const clientName = args.client_name;
+    const packageType = args.package_type;
+    const month = args.month;
+    const paid = args.paid || false;
+
+    const PACKAGE_TYPES: Record<string, { name: string; total: number }> = {
+      basico: { name: "Paquete Básico", total: 8 },
+      avanzado: { name: "Paquete Avanzado", total: 12 },
+      premium: { name: "Paquete Premium", total: 16 },
+      personalizado: { name: "Paquete Personalizado", total: args.custom_publications || 0 },
+    };
+
+    const pkgInfo = PACKAGE_TYPES[packageType] || PACKAGE_TYPES.basico;
+
+    if (packageType === "personalizado" && !args.custom_publications) {
+      return { accion: "error", mensaje_ia: "Para un paquete personalizado, necesito saber cuántas publicaciones incluye. Ej: 'paquete personalizado de 20 publicaciones'" };
+    }
+
+    const proposal = {
+      client_id: clientId,
+      client_name: clientName,
+      package_name: pkgInfo.name,
+      package_type: packageType,
+      total_publications: pkgInfo.total,
+      month,
+      paid,
+    };
+
+    return {
+      accion: "paquete_propuesto",
+      mensaje_ia: `Propuesta de paquete para ${clientName}`,
+      paquete_propuesto: proposal,
+    };
+  }
+
   return { accion: "no_encontrado", mensaje_ia: "No pude interpretar tu mensaje." };
 }
 
