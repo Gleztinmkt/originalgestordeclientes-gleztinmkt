@@ -41,6 +41,31 @@ async function authenticate(req: Request): Promise<boolean> {
   return false;
 }
 
+/* ── Timezone helper: always use Argentina (UTC-3) ── */
+function nowArgentina(): Date {
+  const utc = new Date();
+  // Build a date object whose UTC methods return Argentina local values
+  const offset = -3 * 60; // Argentina is UTC-3
+  return new Date(utc.getTime() + offset * 60_000);
+}
+
+/** Returns YYYY-MM-DD in Argentina time */
+function todayArgentinaStr(): string {
+  const d = nowArgentina();
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
+}
+
+/** Returns components for Argentina "now" using UTC getters (since we shifted) */
+function argentinaDateParts() {
+  const d = nowArgentina();
+  return {
+    year: d.getUTCFullYear(),
+    month: d.getUTCMonth(),     // 0-indexed
+    date: d.getUTCDate(),
+    day: d.getUTCDay(),          // 0=Sunday
+  };
+}
+
 /* ── Helpers ── */
 async function fetchAllClients() {
   const sb = getAdminClient();
