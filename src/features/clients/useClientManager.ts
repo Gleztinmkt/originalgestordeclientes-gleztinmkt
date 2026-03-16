@@ -25,7 +25,7 @@ export const useClientManager = () => {
     }
   };
 
-  const addClient = async (clientData: any) => {
+  const addClient = async (clientData: any): Promise<Client | null> => {
     try {
       console.log('Agregando cliente:', clientData);
       const newClient = await createClient({
@@ -44,6 +44,7 @@ export const useClientManager = () => {
         title: "Cliente agregado",
         description: "El cliente se ha guardado correctamente.",
       });
+      return newClient;
     } catch (error) {
       console.error('Error adding client:', error);
       toast({
@@ -51,6 +52,7 @@ export const useClientManager = () => {
         description: "No se pudo guardar el cliente. Por favor, intenta de nuevo.",
         variant: "destructive",
       });
+      return null;
     }
   };
 
