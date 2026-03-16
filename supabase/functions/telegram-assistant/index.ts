@@ -53,6 +53,13 @@ async function fetchAllClients() {
   return data ?? [];
 }
 
+async function fetchDesigners() {
+  const sb = getAdminClient();
+  const { data, error } = await sb.from("designers").select("id, name").order("name");
+  if (error) throw error;
+  return data ?? [];
+}
+
 async function fetchPendingPublications(clientIds: string[]) {
   const sb = getAdminClient();
   const { data, error } = await sb
@@ -305,6 +312,13 @@ INTERPRETACIÓN SEMÁNTICA CLAVE:
 - "pendientes", "todas las pendientes", "lo que falta" = TODAS las que NO están subidas (is_published=false), sin importar en qué estado estén. Usá "identify_clients" o "query_production" con status_filter="all".
 - "qué falta grabar" = needs_recording. "qué falta editar" = needs_editing. "en edición" = in_editing. "en revisión/corrección" = in_review.
 
+CREAR PUBLICACIONES:
+- Cuando el usuario pide crear/hacer/agregar una publicación para un cliente, usá la tool "create_publication".
+- Si NO se menciona estado, el default es "needs_recording" (Falta grabar).
+- Si NO se menciona tipo, intentá inferirlo: si dice "video" o "reel" → reel, si dice "carrusel" → carousel, si no → image.
+- Si el usuario pide "sugerí un copy" o "generá un copy", activá suggest_copy: true.
+- El campo "name" es el título de la publicación, intentá extraerlo del mensaje.
+
 Según el mensaje del usuario, elegí UNA de estas herramientas:
 
 1. "identify_clients" — cuando el usuario dice que publicó algo, quiere ver TODAS las publicaciones pendientes de un cliente, o menciona clientes para gestionar publicaciones.
@@ -316,6 +330,7 @@ Según el mensaje del usuario, elegí UNA de estas herramientas:
 7. "query_packages" — cuando el usuario pregunta por el estado de paquetes.
 8. "query_client_info" — cuando el usuario pregunta por la información de un cliente.
 9. "filter_by_status" — cuando el usuario quiere filtrar publicaciones por un estado específico sin mencionar un cliente particular. Ej: "publicaciones en revisión", "lo que falta editar de todos".
+10. "create_publication" — cuando el usuario quiere crear/agregar/hacer una nueva publicación para un cliente. Ej: "hacé una publicación para 4S Motors para el 17 de marzo".
 
 IMPORTANTE: Los nombres pueden estar abreviados, mal escritos o ser apodos. Hacé tu mejor esfuerzo para encontrar coincidencias.
 Cuando el usuario pida cambiar planificación, detectá el mes mencionado (enero=1, febrero=2, etc.) y el estado deseado.
@@ -502,6 +517,29 @@ Si pide agregar descripción, incluí el texto completo en el campo description.
             description: { type: "string", description: "Descripción de lo que se busca" },
           },
           required: ["filters", "description"],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "create_publication",
+        description: "Crea una nueva publicación para un cliente. Ej: 'hacé una publicación para 4S Motors para el 17 de marzo con descripción video institucional'",
+        parameters: {
+          type: "object",
+          properties: {
+            client_name: { type: "string", description: "Nombre del cliente" },
+            client_id: { type: "string", description: "ID UUID del cliente" },
+            name: { type: "string", description: "Título/nombre de la publicación" },
+            type: { type: "string", enum: ["reel", "carousel", "image"], description: "Tipo de publicación. Default: image" },
+            date: { type: "string", description: "Fecha en formato YYYY-MM-DD" },
+            description: { type: "string", description: "Descripción de la publicación" },
+            copywriting: { type: "string", description: "Copywriting/texto para redes" },
+            designer: { type: "string", description: "Nombre del diseñador asignado" },
+            status: { type: "string", enum: ["needs_recording", "needs_editing", "in_editing", "in_review", "approved"], description: "Estado inicial. Default: needs_recording" },
+            suggest_copy: { type: "boolean", description: "Si el usuario pide que se sugiera/genere un copy basado en publicaciones anteriores" },
+          },
+          required: ["client_name", "client_id", "name", "date"],
         },
       },
     },
@@ -946,6 +984,119 @@ Si pide agregar descripción, incluí el texto completo en el campo description.
     };
   }
 
+  // ── create_publication ──
+  if (fnName === "create_publication") {
+    const clientId = args.client_id;
+    const clientName = args.client_name;
+    const pubName = args.name || "Sin título";
+    const pubType = args.type || "image";
+    const pubDate = args.date;
+    const pubDescription = args.description || "";
+    let pubCopywriting = args.copywriting || "";
+    const pubDesigner = args.designer || null;
+    const pubStatus = args.status || "needs_recording";
+    const suggestCopy = args.suggest_copy || false;
+
+    // Validate designer name (fuzzy match)
+    let matchedDesigner: string | null = null;
+    if (pubDesigner) {
+      const designers = await fetchDesigners();
+      const lowerDesigner = pubDesigner.toLowerCase();
+      const match = designers.find((d) =>
+        d.name.toLowerCase().includes(lowerDesigner) || lowerDesigner.includes(d.name.toLowerCase())
+      );
+      matchedDesigner = match ? match.name : pubDesigner;
+    }
+
+    // Suggest copy if requested
+    if (suggestCopy && !pubCopywriting) {
+      const sb = getAdminClient();
+      const { data: recentPubs } = await sb
+        .from("publications")
+        .select("copywriting, name, description")
+        .eq("client_id", clientId)
+        .not("copywriting", "is", null)
+        .is("deleted_at", null)
+        .order("date", { ascending: false })
+        .limit(5);
+
+      if (recentPubs?.length) {
+        const examples = recentPubs
+          .map((p) => `Título: ${p.name}\nCopy: ${p.copywriting}`)
+          .join("\n---\n");
+
+        const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
+        const copyResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "google/gemini-3-flash-preview",
+            messages: [
+              {
+                role: "system",
+                content: `Sos un copywriter de redes sociales. Generá un copy para una publicación basándote en el estilo de los ejemplos anteriores del mismo cliente. Respondé SOLO con el copy, sin explicaciones ni formato extra.`,
+              },
+              {
+                role: "user",
+                content: `Ejemplos de copy anteriores de ${clientName}:\n${examples}\n\nNueva publicación:\nTítulo: ${pubName}\nDescripción: ${pubDescription}\n\nGenerá un copy en el mismo estilo:`,
+              },
+            ],
+          }),
+        });
+
+        if (copyResponse.ok) {
+          const copyResult = await copyResponse.json();
+          pubCopywriting = copyResult.choices?.[0]?.message?.content?.trim() || "";
+        }
+      }
+    }
+
+    // Build status flags
+    const statusFlags: Record<string, boolean> = {
+      needs_recording: false,
+      needs_editing: false,
+      in_editing: false,
+      in_review: false,
+      approved: false,
+    };
+    if (statusFlags.hasOwnProperty(pubStatus)) {
+      statusFlags[pubStatus] = true;
+    } else {
+      statusFlags.needs_recording = true;
+    }
+
+    const statusLabels: Record<string, string> = {
+      needs_recording: "Falta grabar",
+      needs_editing: "Falta editar",
+      in_editing: "En edición",
+      in_review: "En revisión",
+      approved: "Aprobado",
+    };
+
+    const proposedPub = {
+      client_id: clientId,
+      client_name: clientName,
+      name: pubName,
+      type: pubType,
+      date: pubDate,
+      description: pubDescription,
+      copywriting: pubCopywriting,
+      designer: matchedDesigner,
+      status: pubStatus,
+      status_label: statusLabels[pubStatus] || "Falta grabar",
+      ...statusFlags,
+    };
+
+    return {
+      accion: "publicacion_propuesta",
+      mensaje_ia: `Propuesta de publicación para ${clientName}`,
+      publicacion_propuesta: proposedPub,
+    };
+  }
+
   return { accion: "no_encontrado", mensaje_ia: "No pude interpretar tu mensaje." };
 }
 
@@ -1343,6 +1494,36 @@ async function formatForTelegram(result: any): Promise<{ text: string; reply_mar
     return { text, reply_markup: buttons.length ? { inline_keyboard: buttons } : undefined };
   }
 
+  // ── publicacion_propuesta ──
+  if (accion === "publicacion_propuesta") {
+    const pub = result.publicacion_propuesta || {};
+    const typeEmojis: Record<string, string> = { reel: "🎬", carousel: "📸", image: "🖼" };
+    let text = `📝 <b>${escHtml(result.mensaje_ia)}</b>\n\n`;
+    text += `${typeEmojis[pub.type] || "🖼"} <b>Título:</b> ${escHtml(pub.name || "")}\n`;
+    text += `📅 <b>Fecha:</b> ${pub.date || ""}\n`;
+    text += `📂 <b>Tipo:</b> ${pub.type || "image"}\n`;
+    text += `📊 <b>Estado:</b> ${escHtml(pub.status_label || "Falta grabar")}\n`;
+    if (pub.designer) text += `🎨 <b>Diseñador:</b> ${escHtml(pub.designer)}\n`;
+    if (pub.description) text += `\n📝 <b>Descripción:</b>\n${escHtml(pub.description)}\n`;
+    if (pub.copywriting) text += `\n✍️ <b>Copywriting:</b>\n<pre>${escHtml(pub.copywriting)}</pre>\n`;
+
+    text += `\n¿Confirmar creación?`;
+
+    // Store in session since data is large
+    const sessId = await createSession({ publication: pub, action: "create_publication" });
+    const buttons = [
+      [{ text: "✅ Confirmar", callback_data: `create_pub_confirm:${sessId}` }],
+      [{ text: "❌ Cancelar", callback_data: "cancel" }],
+    ];
+
+    return { text, reply_markup: { inline_keyboard: buttons } };
+  }
+
+  // ── publicacion_creada ──
+  if (accion === "publicacion_creada") {
+    return { text: `✅ ${escHtml(result.mensaje_ia || "Publicación creada exitosamente")}` };
+  }
+
   // ── error / no_encontrado / fallback ──
   const msg = result.mensaje_ia || result.error || result.mensaje || "Sin respuesta";
   const icon = accion === "error" ? "❌" : "ℹ️";
@@ -1381,6 +1562,52 @@ async function resolveSession(sessionId: string): Promise<unknown | null> {
     .maybeSingle();
   if (error) { console.error("Failed to resolve session:", error); return null; }
   return data?.data ?? null;
+}
+
+/* ── Insert publication helper ── */
+// deno-lint-ignore no-explicit-any
+async function insertPublication(pub: any) {
+  const sb = getAdminClient();
+
+  const statusFlags: Record<string, boolean> = {
+    needs_recording: false,
+    needs_editing: false,
+    in_editing: false,
+    in_review: false,
+    approved: false,
+  };
+  const status = pub.status || "needs_recording";
+  if (statusFlags.hasOwnProperty(status)) {
+    statusFlags[status] = true;
+  } else {
+    statusFlags.needs_recording = true;
+  }
+
+  const insertData = {
+    client_id: pub.client_id,
+    name: pub.name || "Sin título",
+    type: pub.type || "image",
+    date: new Date(pub.date).toISOString(),
+    description: pub.description || null,
+    copywriting: pub.copywriting || null,
+    designer: pub.designer || null,
+    needs_recording: statusFlags.needs_recording,
+    needs_editing: statusFlags.needs_editing,
+    in_editing: statusFlags.in_editing,
+    in_review: statusFlags.in_review,
+    approved: statusFlags.approved,
+    is_published: false,
+  };
+
+  const { data, error } = await sb.from("publications").insert(insertData).select("id, name").single();
+  if (error) throw error;
+
+  return {
+    accion: "publicacion_creada",
+    mensaje_ia: `✅ Publicación "${data.name}" creada para ${pub.client_name || "el cliente"}`,
+    publicacion_id: data.id,
+    ok: true,
+  };
 }
 
 /* ── Main handler ── */
@@ -1506,6 +1733,13 @@ serve(async (req) => {
           ok: true,
         };
       }
+      // create_pub_confirm:{session_id} — confirm and insert publication
+      else if (callbackData.startsWith("create_pub_confirm:")) {
+        const sessId = callbackData.replace("create_pub_confirm:", "");
+        const sessData = await resolveSession(sessId) as { publication?: Record<string, unknown> } | null;
+        if (!sessData?.publication) return json({ error: "Sesión expirada o inválida. Volvé a consultar." }, 400);
+        result = await insertPublication(sessData.publication);
+      }
       // cancel — user cancelled action
       else if (callbackData === "cancel") {
         const tg = { text: "❌ Acción cancelada.", reply_markup: undefined };
@@ -1558,6 +1792,13 @@ serve(async (req) => {
       });
     }
 
+    if (accion === "confirmar_crear_publicacion") {
+      const pub = body.publicacion_propuesta;
+      if (!pub) return json({ error: "publicacion_propuesta es requerido" }, 400);
+      const result = await insertPublication(pub);
+      return await respond(result);
+    }
+
     // Natural language message → AI interpretation
     const mensaje = body.mensaje;
     if (mensaje && typeof mensaje === "string") {
@@ -1574,6 +1815,7 @@ serve(async (req) => {
         "marcar_publicadas { publicaciones_ids: [...], cantidad_descontar: N }",
         "actualizar_planificacion { client_id, month, status, description }",
         "confirmar_planificacion { updates: [...] }",
+        "confirmar_crear_publicacion { publicacion_propuesta: {...} }",
       ],
     }, 400);
   } catch (e) {

@@ -100,6 +100,19 @@ interface FilterClient {
   publicaciones: ProductionPub[];
 }
 
+interface ProposedPublication {
+  client_id: string;
+  client_name: string;
+  name: string;
+  type: string;
+  date: string;
+  description?: string;
+  copywriting?: string;
+  designer?: string | null;
+  status: string;
+  status_label: string;
+}
+
 interface AssistantResponse {
   accion: string;
   mensaje_ia: string;
@@ -125,6 +138,7 @@ interface AssistantResponse {
     cliente?: string;
   }>;
   actualizaciones?: PlanUpdate[];
+  publicacion_propuesta?: ProposedPublication;
   // New response types
   resumen_estados?: StatusGroup[];
   total?: number;
@@ -891,6 +905,98 @@ export const AssistantDialog = ({ onClientsUpdate }: AssistantDialogProps) => {
       </div>
     );
   };
+  const handleConfirmCreatePublication = async () => {
+    if (!response?.publicacion_propuesta) return;
+    setConfirming(true);
+    try {
+      await invokeEdgeFunction("telegram-assistant", {
+        accion: "confirmar_crear_publicacion",
+        publicacion_propuesta: response.publicacion_propuesta,
+      });
+      toast({ title: "Publicación creada", description: `"${response.publicacion_propuesta.name}" creada exitosamente` });
+      onClientsUpdate();
+      reset();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setConfirming(false);
+    }
+  };
+
+  const renderPublicacionPropuesta = () => {
+    if (!response?.publicacion_propuesta) return null;
+    const pub = response.publicacion_propuesta;
+    const typeLabels: Record<string, string> = { reel: "Reel", carousel: "Carrusel", image: "Imagen" };
+
+    return (
+      <div className="space-y-3">
+        <div className="border border-border rounded-lg p-3 space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium">{pub.name}</span>
+            <Badge variant="outline" className="text-xs">{typeLabels[pub.type] || pub.type}</Badge>
+          </div>
+          <div className="grid grid-cols-2 gap-2 text-sm">
+            <div>
+              <p className="text-xs text-muted-foreground">Fecha</p>
+              <p>{new Date(pub.date).toLocaleDateString("es-AR")}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Estado</p>
+              <p>{pub.status_label}</p>
+            </div>
+            {pub.designer && (
+              <div>
+                <p className="text-xs text-muted-foreground">Diseñador</p>
+                <p>{pub.designer}</p>
+              </div>
+            )}
+            <div>
+              <p className="text-xs text-muted-foreground">Cliente</p>
+              <p>{pub.client_name}</p>
+            </div>
+          </div>
+          {pub.description && (
+            <div className="bg-muted/50 rounded p-2">
+              <p className="text-xs text-muted-foreground mb-0.5 font-medium">Descripción</p>
+              <p className="text-sm whitespace-pre-wrap">{pub.description}</p>
+            </div>
+          )}
+          {pub.copywriting && (
+            <div className="bg-muted/50 rounded p-2 relative">
+              <p className="text-xs text-muted-foreground mb-0.5 font-medium">Copywriting</p>
+              <pre className="text-sm whitespace-pre-wrap font-sans pr-8">{pub.copywriting}</pre>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="absolute top-1 right-1 h-6 w-6 p-0"
+                onClick={() => {
+                  navigator.clipboard.writeText(pub.copywriting!);
+                  toast({ title: "Copiado al portapapeles" });
+                }}
+              >
+                <Copy className="h-3 w-3" />
+              </Button>
+            </div>
+          )}
+        </div>
+
+        <div className="flex gap-2">
+          <Button
+            className="flex-1 gap-2"
+            onClick={handleConfirmCreatePublication}
+            disabled={confirming}
+          >
+            {confirming ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+            Confirmar y crear
+          </Button>
+          <Button variant="outline" onClick={reset}>
+            Cancelar
+          </Button>
+        </div>
+      </div>
+    );
+  };
+
 
   return (
     <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) reset(); }}>
@@ -944,6 +1050,7 @@ export const AssistantDialog = ({ onClientsUpdate }: AssistantDialogProps) => {
               {response.accion === "estado_paquetes" && renderEstadoPaquetes()}
               {response.accion === "info_cliente" && renderInfoCliente()}
               {response.accion === "filtro_estado" && renderFiltroEstado()}
+              {response.accion === "publicacion_propuesta" && renderPublicacionPropuesta()}
               {response.accion === "no_encontrado" && !response.mensaje_ia && (
                 <p className="text-sm text-muted-foreground italic">No se encontraron resultados</p>
               )}
