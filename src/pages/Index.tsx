@@ -155,6 +155,7 @@ const Index = () => {
                   setIsRefreshing(true);
                   try {
                     await Promise.all([loadClients(), loadTasks()]);
+                    setRefreshKey(k => k + 1);
                     toast({ title: "Datos actualizados", description: "Toda la información se ha refrescado correctamente." });
                   } catch {
                     toast({ title: "Error", description: "No se pudieron actualizar los datos.", variant: "destructive" });
