@@ -1210,9 +1210,45 @@ async function handleConfirmarPublicaciones(ids: string[]) {
   };
 }
 
+/* ── Telegram message splitting ── */
+const BLOCK_SEP = "\n\u200B\n";
+
+// deno-lint-ignore no-explicit-any
+function splitTelegramMessages(text: string, reply_markup?: any): { mensajes: Array<{ text: string; reply_markup: any | null }> } {
+  const MAX_LEN = 4000;
+  if (text.length <= MAX_LEN) {
+    return { mensajes: [{ text, reply_markup: reply_markup || null }] };
+  }
+
+  const blocks = text.split(BLOCK_SEP);
+  // deno-lint-ignore no-explicit-any
+  const mensajes: Array<{ text: string; reply_markup: any | null }> = [];
+  let current = "";
+
+  for (const block of blocks) {
+    const joined = current ? current + "\n\n" + block : block;
+    if (joined.length > MAX_LEN && current) {
+      mensajes.push({ text: current.trim(), reply_markup: null });
+      current = block;
+    } else {
+      current = joined;
+    }
+  }
+
+  if (current.trim()) {
+    mensajes.push({ text: current.trim(), reply_markup: reply_markup || null });
+  }
+
+  return { mensajes };
+}
+
+function escHtml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
 /* ── Telegram Formatter ── */
 // deno-lint-ignore no-explicit-any
-async function formatForTelegram(result: any): Promise<{ text: string; reply_markup?: any }> {
+async function formatForTelegram(result: any): Promise<{ mensajes: Array<{ text: string; reply_markup: any | null }> }> {
   const accion = result.accion;
   const statusEmoji: Record<string, string> = {
     needs_recording: "🔴",
@@ -1254,7 +1290,9 @@ async function formatForTelegram(result: any): Promise<{ text: string; reply_mar
     const buttons: { text: string; callback_data: string }[][] = [];
 
     // deno-lint-ignore no-explicit-any
-    for (const c of clients) {
+    for (let ci = 0; ci < clients.length; ci++) {
+      const c = clients[ci];
+      if (ci > 0) text += BLOCK_SEP;
       const pubs = c.publicaciones_pendientes || c.publicaciones || [];
       text += `\n👤 <b>${escHtml(c.nombre)}</b> (${pubs.length})\n`;
       // deno-lint-ignore no-explicit-any
@@ -1270,7 +1308,7 @@ async function formatForTelegram(result: any): Promise<{ text: string; reply_mar
       }
     }
 
-    return { text, reply_markup: buttons.length ? { inline_keyboard: buttons } : undefined };
+    return splitTelegramMessages(text, buttons.length ? { inline_keyboard: buttons } : undefined);
   }
 
   // ── mostrar_copy ──
@@ -1288,7 +1326,7 @@ async function formatForTelegram(result: any): Promise<{ text: string; reply_mar
     if (pub?.id && result.puede_descontar) {
       buttons.push([{ text: "✅ Marcar como publicada", callback_data: `pub_mark:${pub.id}` }]);
     }
-    return { text, reply_markup: buttons.length ? { inline_keyboard: buttons } : undefined };
+    return splitTelegramMessages(text, buttons.length ? { inline_keyboard: buttons } : undefined);
   }
 
   // ── planificacion_propuesta ──
@@ -1298,10 +1336,11 @@ async function formatForTelegram(result: any): Promise<{ text: string; reply_mar
     let text = `📅 <b>${escHtml(result.mensaje_ia)}</b>\n\n`;
     const buttons = [];
 
-    const hasAnyDescription = (result.actualizaciones || []).some((u: any) => !!u.descripcion);
-
     // deno-lint-ignore no-explicit-any
-    for (const u of (result.actualizaciones || [])) {
+    for (let ui = 0; ui < (result.actualizaciones || []).length; ui++) {
+      // deno-lint-ignore no-explicit-any
+      const u = (result.actualizaciones || [])[ui] as any;
+      if (ui > 0) text += BLOCK_SEP;
       const statusDot = u.status === "hacer" ? "🟢" : u.status === "no_hacer" ? "🔴" : "🟡";
       text += `${statusDot} <b>${escHtml(u.cliente)}</b> → ${months[u.mes] || u.mes}`;
       if (u.status) text += ` (${u.status})`;
@@ -1309,7 +1348,6 @@ async function formatForTelegram(result: any): Promise<{ text: string; reply_mar
       if (u.descripcion) text += `   📝 ${escHtml(u.descripcion)}\n`;
 
       if (u.client_id) {
-        // If this update has a description, use session to preserve it
         if (u.descripcion) {
           const sessId = await createSession({
             client_id: u.client_id, mes: u.mes, status: u.status || "hacer",
@@ -1331,17 +1369,16 @@ async function formatForTelegram(result: any): Promise<{ text: string; reply_mar
       const allUpdates = (result.actualizaciones || []).map((u: any) => ({
         client_id: u.client_id, mes: u.mes, status: u.status || "", descripcion: u.descripcion || ""
       }));
-      // Always use session for bulk since descriptions can be large
       const sessId = await createSession({ updates: allUpdates, action: "plan_confirm_all" });
       buttons.push([{ text: "✅ Confirmar todas", callback_data: `plan_sess:${sessId}` }]);
     }
 
-    return { text, reply_markup: buttons.length ? { inline_keyboard: buttons } : undefined };
+    return splitTelegramMessages(text, buttons.length ? { inline_keyboard: buttons } : undefined);
   }
 
   // ── planificacion_confirmada ──
   if (accion === "planificacion_confirmada") {
-    return { text: `✅ ${escHtml(result.mensaje_ia)}` };
+    return splitTelegramMessages(`✅ ${escHtml(result.mensaje_ia)}`);
   }
 
   // ── estado_produccion ──
@@ -1349,7 +1386,10 @@ async function formatForTelegram(result: any): Promise<{ text: string; reply_mar
     let text = `📊 <b>${escHtml(result.mensaje_ia)}</b>\n`;
 
     // deno-lint-ignore no-explicit-any
-    for (const group of (result.resumen_estados || [])) {
+    for (let gi = 0; gi < (result.resumen_estados || []).length; gi++) {
+      // deno-lint-ignore no-explicit-any
+      const group = (result.resumen_estados || [])[gi] as any;
+      if (gi > 0) text += BLOCK_SEP;
       const emoji = statusEmoji[group.estado_key] || "⚪";
       text += `\n${emoji} <b>${escHtml(group.estado)}</b> (${group.cantidad})\n`;
       // deno-lint-ignore no-explicit-any
@@ -1367,36 +1407,30 @@ async function formatForTelegram(result: any): Promise<{ text: string; reply_mar
       // deno-lint-ignore no-explicit-any
       for (const p of (group.publicaciones || [])) {
         if (buttons.length >= maxButtons) break;
-        const name = (p.nombre || p.name || "").substring(0, 20);
         const emoji = statusEmoji[group.estado_key] || "⚪";
+        const name = (p.nombre || p.name || "").substring(0, 20);
         buttons.push([{ text: `${emoji} ${name}`, callback_data: `pub_mark:${p.id}` }]);
       }
     }
-    // deno-lint-ignore no-explicit-any
-    const totalPubs = (result.resumen_estados || []).reduce((sum: number, g: any) => sum + (g.publicaciones?.length || 0), 0);
-    if (totalPubs > maxButtons) {
-      text += `\n<i>Mostrando ${maxButtons} de ${totalPubs} publicaciones</i>\n`;
-    }
 
-    return { text, reply_markup: buttons.length ? { inline_keyboard: buttons } : undefined };
+    return splitTelegramMessages(text, buttons.length ? { inline_keyboard: buttons } : undefined);
   }
 
   // ── resumen_produccion ──
   if (accion === "resumen_produccion") {
     let text = `📊 <b>${escHtml(result.mensaje_ia)}</b>\n\n`;
 
-    // Global
-    text += "<b>Resumen global:</b>\n";
-    // deno-lint-ignore no-explicit-any
-    for (const g of (result.resumen_global || [])) {
-      const emoji = statusEmoji[g.estado_key] || "⚪";
-      text += `${emoji} ${escHtml(g.estado)}: <b>${g.cantidad}</b>\n`;
+    if (result.resumen_global?.length) {
+      // deno-lint-ignore no-explicit-any
+      for (const s of result.resumen_global) {
+        const emoji = statusEmoji[s.estado_key] || "⚪";
+        text += `${emoji} ${escHtml(s.estado)}: <b>${s.cantidad}</b>\n`;
+      }
     }
 
-    // Per client
     if (result.resumen_clientes?.length) {
-      text += "\n<b>Por cliente:</b>\n";
-      // deno-lint-ignore no-explicit-any
+      text += BLOCK_SEP;
+      text += `\n👥 <b>Por cliente:</b>\n`;
       for (const c of result.resumen_clientes) {
         // deno-lint-ignore no-explicit-any
         const statuses = c.estados.map((e: any) => `${statusEmoji[e.estado_key] || "⚪"}${e.cantidad}`).join(" ");
@@ -1404,7 +1438,7 @@ async function formatForTelegram(result: any): Promise<{ text: string; reply_mar
       }
     }
 
-    return { text };
+    return splitTelegramMessages(text);
   }
 
   // ── estado_paquetes ──
@@ -1417,7 +1451,10 @@ async function formatForTelegram(result: any): Promise<{ text: string; reply_mar
     }
 
     // deno-lint-ignore no-explicit-any
-    for (const pkg of (result.paquetes || [])) {
+    for (let pi = 0; pi < (result.paquetes || []).length; pi++) {
+      // deno-lint-ignore no-explicit-any
+      const pkg = (result.paquetes || [])[pi] as any;
+      if (pi > 0) text += BLOCK_SEP;
       text += `\n📦 <b>${escHtml(pkg.nombre)}</b>`;
       if (pkg.mes) text += ` (${escHtml(pkg.mes)})`;
       text += "\n";
@@ -1431,7 +1468,7 @@ async function formatForTelegram(result: any): Promise<{ text: string; reply_mar
       text += `\n📅 Último post: ${escHtml(result.paquetes[0].ultimo_post)}`;
     }
 
-    return { text };
+    return splitTelegramMessages(text);
   }
 
   // ── info_cliente ──
@@ -1445,17 +1482,21 @@ async function formatForTelegram(result: any): Promise<{ text: string; reply_mar
     if (c.ultimo_post) text += `📅 <b>Último post:</b> ${escHtml(c.ultimo_post)}\n`;
 
     if (c.info_general) {
-      text += `\n📝 <b>Info general:</b>\n${escHtml(c.info_general)}\n`;
+      text += BLOCK_SEP;
+      text += `📝 <b>Info general:</b>\n${escHtml(c.info_general)}\n`;
     }
     if (c.branding) {
-      text += `\n🎨 <b>Branding:</b>\n${escHtml(c.branding)}\n`;
+      text += BLOCK_SEP;
+      text += `🎨 <b>Branding:</b>\n${escHtml(c.branding)}\n`;
     }
     if (c.marketing_info) {
-      text += `\n📈 <b>Marketing:</b>\n${escHtml(c.marketing_info)}\n`;
+      text += BLOCK_SEP;
+      text += `📈 <b>Marketing:</b>\n${escHtml(c.marketing_info)}\n`;
     }
 
     if (Array.isArray(c.reuniones) && c.reuniones.length > 0) {
-      text += `\n📋 <b>Reuniones:</b>\n`;
+      text += BLOCK_SEP;
+      text += `📋 <b>Reuniones:</b>\n`;
       // deno-lint-ignore no-explicit-any
       for (const r of c.reuniones) {
         if (typeof r === "object" && r.date) {
@@ -1467,7 +1508,8 @@ async function formatForTelegram(result: any): Promise<{ text: string; reply_mar
     }
 
     if (Array.isArray(c.horarios_publicacion) && c.horarios_publicacion.length > 0) {
-      text += `\n⏰ <b>Horarios:</b>\n`;
+      text += BLOCK_SEP;
+      text += `⏰ <b>Horarios:</b>\n`;
       // deno-lint-ignore no-explicit-any
       for (const h of c.horarios_publicacion) {
         if (typeof h === "object" && h.day) {
@@ -1478,7 +1520,7 @@ async function formatForTelegram(result: any): Promise<{ text: string; reply_mar
       }
     }
 
-    return { text };
+    return splitTelegramMessages(text);
   }
 
   // ── filtro_estado ──
@@ -1486,7 +1528,10 @@ async function formatForTelegram(result: any): Promise<{ text: string; reply_mar
     let text = `🔍 <b>${escHtml(result.mensaje_ia)}</b>\n`;
 
     // deno-lint-ignore no-explicit-any
-    for (const c of (result.clientes || [])) {
+    for (let ci = 0; ci < (result.clientes || []).length; ci++) {
+      // deno-lint-ignore no-explicit-any
+      const c = (result.clientes || [])[ci] as any;
+      if (ci > 0) text += BLOCK_SEP;
       text += `\n👤 <b>${escHtml(c.nombre)}</b> (${c.publicaciones?.length || 0})\n`;
       // deno-lint-ignore no-explicit-any
       for (const p of (c.publicaciones || [])) {
@@ -1494,19 +1539,22 @@ async function formatForTelegram(result: any): Promise<{ text: string; reply_mar
       }
     }
 
-    return { text };
+    return splitTelegramMessages(text);
   }
 
   // ── marcar_publicadas ──
   if (accion === "marcar_publicadas") {
-    return { text: `✅ ${escHtml(result.mensaje || result.mensaje_ia || "Publicaciones actualizadas")}` };
+    return splitTelegramMessages(`✅ ${escHtml(result.mensaje || result.mensaje_ia || "Publicaciones actualizadas")}`);
   }
 
   // ── confirmar_publicaciones ──
   if (accion === "confirmar_publicaciones") {
     let text = `📋 <b>${escHtml(result.mensaje_ia)}</b>\n\n`;
     // deno-lint-ignore no-explicit-any
-    for (const p of (result.publicaciones || [])) {
+    for (let pi = 0; pi < (result.publicaciones || []).length; pi++) {
+      // deno-lint-ignore no-explicit-any
+      const p = (result.publicaciones || [])[pi] as any;
+      if (pi > 0) text += BLOCK_SEP;
       text += pubLine(p) + `\n    👤 ${escHtml(p.cliente || "")}\n`;
     }
 
@@ -1523,7 +1571,7 @@ async function formatForTelegram(result: any): Promise<{ text: string; reply_mar
       }
     }
 
-    return { text, reply_markup: buttons.length ? { inline_keyboard: buttons } : undefined };
+    return splitTelegramMessages(text, buttons.length ? { inline_keyboard: buttons } : undefined);
   }
 
   // ── publicacion_propuesta ──
@@ -1541,29 +1589,24 @@ async function formatForTelegram(result: any): Promise<{ text: string; reply_mar
 
     text += `\n¿Confirmar creación?`;
 
-    // Store in session since data is large
     const sessId = await createSession({ publication: pub, action: "create_publication" });
     const buttons = [
       [{ text: "✅ Confirmar", callback_data: `create_pub_confirm:${sessId}` }],
       [{ text: "❌ Cancelar", callback_data: "cancel" }],
     ];
 
-    return { text, reply_markup: { inline_keyboard: buttons } };
+    return splitTelegramMessages(text, { inline_keyboard: buttons });
   }
 
   // ── publicacion_creada ──
   if (accion === "publicacion_creada") {
-    return { text: `✅ ${escHtml(result.mensaje_ia || "Publicación creada exitosamente")}` };
+    return splitTelegramMessages(`✅ ${escHtml(result.mensaje_ia || "Publicación creada exitosamente")}`);
   }
 
   // ── error / no_encontrado / fallback ──
   const msg = result.mensaje_ia || result.error || result.mensaje || "Sin respuesta";
   const icon = accion === "error" ? "❌" : "ℹ️";
-  return { text: `${icon} ${escHtml(msg)}` };
-}
-
-function escHtml(s: string): string {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return splitTelegramMessages(`${icon} ${escHtml(msg)}`);
 }
 
 /* ── Session helpers for Telegram callback_data (64 byte limit) ── */
@@ -1709,16 +1752,12 @@ serve(async (req) => {
 
         text += `\n¿Marcar como publicada?`;
 
-        const tg = {
-          text,
-          parse_mode: "HTML",
-          reply_markup: {
-            inline_keyboard: [
-              [{ text: "✅ Marcar como publicada", callback_data: `pub_mark_confirm:${pubId}` }],
-              [{ text: "❌ Cancelar", callback_data: "cancel" }],
-            ],
-          },
-        };
+        const tg = splitTelegramMessages(text, {
+          inline_keyboard: [
+            [{ text: "✅ Marcar como publicada", callback_data: `pub_mark_confirm:${pubId}` }],
+            [{ text: "❌ Cancelar", callback_data: "cancel" }],
+          ],
+        });
         result = { accion: "mostrar_detalle_pub", publicacion: pubData.name, telegram: tg };
         return json(result);
       }
@@ -1820,7 +1859,7 @@ serve(async (req) => {
       }
       // cancel — user cancelled action
       else if (callbackData === "cancel") {
-        const tg = { text: "❌ Acción cancelada.", reply_markup: undefined };
+        const tg = splitTelegramMessages("❌ Acción cancelada.");
         return json({ accion: "cancelado", telegram: tg });
       }
       else {
