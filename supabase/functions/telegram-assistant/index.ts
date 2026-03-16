@@ -208,10 +208,10 @@ async function markPublished(pubIds: string[], discountCount?: number | string) 
     }
   }
 
-  const now = new Date();
+  const { year, month, date } = argentinaDateParts();
   const months = ["enero", "febrero", "marzo", "abril", "mayo", "junio",
     "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
-  const lastPostStr = `${now.getDate()} de ${months[now.getMonth()]}, ${now.getFullYear()}`;
+  const lastPostStr = `${date} de ${months[month]}, ${year}`;
 
   const parsedDiscount = Number(discountCount);
   const hasCustomDiscount = Number.isFinite(parsedDiscount) && parsedDiscount > 0;
