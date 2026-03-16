@@ -998,7 +998,8 @@ export const AssistantDialog = ({ onClientsUpdate }: AssistantDialogProps) => {
   };
 
 
-    return (
+  return (
+    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) reset(); }}>
       <DialogTrigger asChild>
         <Button variant="outline" className="gap-2 text-sm">
           <Bot className="h-4 w-4" />
