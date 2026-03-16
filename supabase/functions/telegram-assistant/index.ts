@@ -320,10 +320,10 @@ async function interpretMessage(mensaje: string) {
   const clients = await fetchAllClients();
   const clientList = clients.map((c) => `- "${c.name}" (id: ${c.id})`).join("\n");
 
-  const today = new Date();
-  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  const todayParts = argentinaDateParts();
+  const todayStr = todayArgentinaStr();
   const dayNames = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
-  const todayDayName = dayNames[today.getDay()];
+  const todayDayName = dayNames[todayParts.day];
 
   const systemPrompt = `Sos un asistente para una agencia de marketing digital. Tu trabajo es interpretar mensajes del equipo y decidir qué acción tomar.
 
