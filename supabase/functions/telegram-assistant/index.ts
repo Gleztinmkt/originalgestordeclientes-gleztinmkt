@@ -1751,7 +1751,36 @@ async function formatForTelegram(result: any): Promise<{ mensajes: Array<{ text:
 
   // ── cliente_creado ──
   if (accion === "cliente_creado") {
-    return splitTelegramMessages(`✅ ${escHtml(result.mensaje_ia || "Cliente creado exitosamente")}`);
+    let text = `✅ ${escHtml(result.mensaje_ia || "Cliente creado exitosamente")}`;
+    const buttons: { text: string; callback_data: string }[][] = [];
+
+    if (result.cliente_id) {
+      const sessId = await createSession({
+        action: "create_drive_folders",
+        client_id: result.cliente_id,
+        client_name: result.cliente_nombre || "",
+      });
+      buttons.push([{ text: "📁 Crear carpetas en Drive", callback_data: `drive_folders:${sessId}` }]);
+    }
+
+    return splitTelegramMessages(text, buttons.length ? { inline_keyboard: buttons } : undefined);
+  }
+
+  // ── carpetas_drive_creadas ──
+  if (accion === "carpetas_drive_creadas") {
+    let text = `✅ ${escHtml(result.mensaje_ia || "Carpetas creadas")}`;
+    if (result.url) {
+      text += `\n\n📂 <a href="${escHtml(result.url)}">Abrir en Drive →</a>`;
+    }
+    if (result.urlBranding) {
+      text += `\n🎨 Link de branding guardado automáticamente`;
+    }
+    return splitTelegramMessages(text);
+  }
+
+  // ── carpetas_drive_error ──
+  if (accion === "carpetas_drive_error") {
+    return splitTelegramMessages(`❌ ${escHtml(result.mensaje_ia || "Error al crear carpetas")}`);
   }
 
   // ── paquete_propuesto ──
@@ -1814,6 +1843,56 @@ async function resolveSession(sessionId: string): Promise<unknown | null> {
   return data?.data ?? null;
 }
 
+/* ── Create Drive folders helper ── */
+async function createDriveFolders(clientId: string, clientName: string) {
+  const scriptUrl = "https://script.google.com/macros/s/AKfycbwl4AxjUPRrgtpwXE78mXsNqD7Igdk-ghnRVdsbjBXB4YNUPGB-x3_dY2SKAETwVdhOOA/exec";
+
+  const response = await fetch(scriptUrl, {
+    method: "POST",
+    body: JSON.stringify({ nombreCliente: clientName }),
+  });
+
+  const data = await response.json();
+
+  if (!data.success) {
+    throw new Error(data.error || data.message || "Error al crear carpetas en Drive");
+  }
+
+  // Save branding URL to client
+  if (data.urlBranding) {
+    const sb = getAdminClient();
+    const { data: client } = await sb
+      .from("clients")
+      .select("client_info")
+      .eq("id", clientId)
+      .single();
+
+    // deno-lint-ignore no-explicit-any
+    const clientInfo = (client?.client_info as any) || {};
+    const updatedInfo = {
+      ...clientInfo,
+      generalInfo: clientInfo.generalInfo || "",
+      meetings: clientInfo.meetings || [],
+      socialNetworks: clientInfo.socialNetworks || [],
+      publicationSchedule: clientInfo.publicationSchedule || [],
+      branding: data.urlBranding,
+    };
+
+    await sb
+      .from("clients")
+      .update({ client_info: updatedInfo })
+      .eq("id", clientId);
+  }
+
+  return {
+    accion: "carpetas_drive_creadas",
+    mensaje_ia: `✅ Carpetas de Drive creadas para "${clientName}"`,
+    url: data.url || null,
+    urlBranding: data.urlBranding || null,
+    ok: true,
+  };
+}
+
 /* ── Insert client helper ── */
 async function insertClient(proposal: { name: string; phone?: string | null; payment_day?: number | null }) {
   const sb = getAdminClient();
@@ -1832,6 +1911,7 @@ async function insertClient(proposal: { name: string; phone?: string | null; pay
     accion: "cliente_creado",
     mensaje_ia: `✅ Cliente "${data.name}" creado exitosamente`,
     cliente_id: data.id,
+    cliente_nombre: data.name,
     ok: true,
   };
 }
@@ -2106,6 +2186,20 @@ serve(async (req) => {
         const sessData = await resolveSession(sessId) as { package?: Record<string, unknown> } | null;
         if (!sessData?.package) return json({ error: "Sesión expirada o inválida. Volvé a consultar." }, 400);
         result = await addPackageToClient(sessData.package);
+      }
+      // drive_folders:{session_id} — create Drive folders for a client
+      else if (callbackData.startsWith("drive_folders:")) {
+        const sessId = callbackData.replace("drive_folders:", "");
+        const sessData = await resolveSession(sessId) as { client_id?: string; client_name?: string } | null;
+        if (!sessData?.client_id || !sessData?.client_name) return json({ error: "Sesión expirada o inválida." }, 400);
+        try {
+          result = await createDriveFolders(sessData.client_id, sessData.client_name);
+        } catch (e) {
+          result = {
+            accion: "carpetas_drive_error",
+            mensaje_ia: e?.message || "Error al crear carpetas en Drive",
+          };
+        }
       }
       // cancel — user cancelled action
       else if (callbackData === "cancel") {
