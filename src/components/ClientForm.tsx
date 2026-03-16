@@ -60,14 +60,10 @@ export const ClientForm = ({ onAddClient, onUpdateClient }: ClientFormProps) => 
     setDriveError(null);
 
     try {
-      const scriptUrl = import.meta.env.VITE_GOOGLE_DRIVE_SCRIPT_URL;
-      if (!scriptUrl) {
-        throw new Error("URL del script de Drive no configurada");
-      }
+      const scriptUrl = "https://script.google.com/macros/s/AKfycbwl4AxjUPRrgtpwXE78mXsNqD7Igdk-ghnRVdsbjBXB4YNUPGB-x3_dY2SKAETwVdhOOA/exec";
 
       const response = await fetch(scriptUrl, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ nombreCliente: createdClient.name }),
       });
 
