@@ -275,8 +275,9 @@ async function markPublished(pubIds: string[], discountCount?: number | string) 
 /* ── Planning management ── */
 async function handleUpdatePlanning(clientId: string, month: number, status?: string, description?: string) {
   const sb = getAdminClient();
-  const year = new Date().getFullYear();
-  const startOfMonth = new Date(year, month - 1, 1).toISOString();
+  const year = argentinaDateParts().year;
+  // Build ISO string for the 1st of the month at midnight Argentina time (UTC-3 → 03:00 UTC)
+  const startOfMonth = `${year}-${String(month).padStart(2, '0')}-01T03:00:00.000Z`;
 
   const { data: existing } = await sb
     .from("publication_planning")
