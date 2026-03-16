@@ -1735,7 +1735,7 @@ serve(async (req) => {
         result = await markPublished(ids);
         result = { accion: "marcar_publicadas", ...result };
       }
-      // plan_confirm:{client_id}:{month}:{status} — confirm single planning
+      // plan_confirm:{client_id}:{month}:{status} — confirm single planning (no description)
       else if (callbackData.startsWith("plan_confirm:")) {
         const parts = callbackData.replace("plan_confirm:", "").split(":");
         const [clientId, monthStr, status] = parts;
