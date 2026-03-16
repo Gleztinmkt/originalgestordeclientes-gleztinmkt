@@ -100,6 +100,19 @@ interface FilterClient {
   publicaciones: ProductionPub[];
 }
 
+interface ProposedPublication {
+  client_id: string;
+  client_name: string;
+  name: string;
+  type: string;
+  date: string;
+  description?: string;
+  copywriting?: string;
+  designer?: string | null;
+  status: string;
+  status_label: string;
+}
+
 interface AssistantResponse {
   accion: string;
   mensaje_ia: string;
@@ -125,6 +138,7 @@ interface AssistantResponse {
     cliente?: string;
   }>;
   actualizaciones?: PlanUpdate[];
+  publicacion_propuesta?: ProposedPublication;
   // New response types
   resumen_estados?: StatusGroup[];
   total?: number;
