@@ -1058,7 +1058,7 @@ Si pide agregar descripción, incluí el texto completo en el campo description.
             messages: [
               {
                 role: "system",
-                content: `Sos un copywriter de redes sociales. Generá un copy para una publicación basándote en el estilo de los ejemplos anteriores del mismo cliente. Respondé SOLO con el copy, sin explicaciones ni formato extra.`,
+                content: `Sos un copywriter de redes sociales. Generá un copy para una publicación basándote en el estilo de los ejemplos anteriores del mismo cliente. Incluí hashtags relevantes, datos de contacto y llamados a la acción si aparecen en los ejemplos. Respondé SOLO con el copy, sin explicaciones ni formato extra.`,
               },
               {
                 role: "user",
