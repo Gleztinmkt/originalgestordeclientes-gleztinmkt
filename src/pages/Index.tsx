@@ -217,11 +217,11 @@ const Index = () => {
                     <TaskList tasks={filteredTasks} onDeleteTask={deleteTask} onCompleteTask={handleCompleteTask} onUpdateTask={updateTask} clients={clients} />
                   </TabsContent>
                   <TabsContent value="planning">
-                    <PlanningCalendar clients={clients} />
+                    <PlanningCalendar key={`planning-${refreshKey}`} clients={clients} />
                   </TabsContent>
                 </>}
               <TabsContent value="calendar">
-                <CalendarView clients={clients} onClientsUpdate={loadClients} />
+                <CalendarView key={`calendar-${refreshKey}`} clients={clients} onClientsUpdate={loadClients} />
               </TabsContent>
             </div>
           </Tabs>
