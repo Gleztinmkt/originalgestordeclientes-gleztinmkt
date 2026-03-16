@@ -2187,6 +2187,20 @@ serve(async (req) => {
         if (!sessData?.package) return json({ error: "Sesión expirada o inválida. Volvé a consultar." }, 400);
         result = await addPackageToClient(sessData.package);
       }
+      // drive_folders:{session_id} — create Drive folders for a client
+      else if (callbackData.startsWith("drive_folders:")) {
+        const sessId = callbackData.replace("drive_folders:", "");
+        const sessData = await resolveSession(sessId) as { client_id?: string; client_name?: string } | null;
+        if (!sessData?.client_id || !sessData?.client_name) return json({ error: "Sesión expirada o inválida." }, 400);
+        try {
+          result = await createDriveFolders(sessData.client_id, sessData.client_name);
+        } catch (e) {
+          result = {
+            accion: "carpetas_drive_error",
+            mensaje_ia: e?.message || "Error al crear carpetas en Drive",
+          };
+        }
+      }
       // cancel — user cancelled action
       else if (callbackData === "cancel") {
         const tg = splitTelegramMessages("❌ Acción cancelada.");
