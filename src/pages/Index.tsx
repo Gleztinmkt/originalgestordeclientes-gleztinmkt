@@ -208,7 +208,7 @@ const Index = () => {
             <div className="mt-6 w-full">
               {userRole === 'admin' && <>
                   <TabsContent value="clients" className="space-y-4">
-                    <ClientForm onAddClient={addClient} />
+                    <ClientForm onAddClient={addClient} onUpdateClient={updateClient} />
                     <ClientList clients={clients} onDeleteClient={deleteClient} onUpdateClient={updateClient} onUpdatePackage={updatePackage} onAddPackage={addPackage} tasks={tasks} onAddTask={addTask} onDeleteTask={deleteTask} onCompleteTask={handleCompleteTask} onUpdateTask={updateTask} onClientsUpdate={loadClients} />
                   </TabsContent>
                   <TabsContent value="tasks" className="space-y-4">
