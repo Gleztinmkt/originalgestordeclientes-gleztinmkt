@@ -1349,22 +1349,24 @@ async function formatForTelegram(result: any): Promise<{ text: string; reply_mar
       }
     }
 
-    // Individual buttons for approved publications
+    // Individual buttons for ALL publications across all states (max 8 total)
     const buttons: { text: string; callback_data: string }[][] = [];
+    const maxButtons = 8;
     // deno-lint-ignore no-explicit-any
-    const approvedGroup = (result.resumen_estados || []).find((g: any) => g.estado_key === "approved");
-    if (approvedGroup?.publicaciones?.length) {
-      const maxButtons = 8;
+    for (const group of (result.resumen_estados || [])) {
+      if (buttons.length >= maxButtons) break;
       // deno-lint-ignore no-explicit-any
-      const showPubs = approvedGroup.publicaciones.slice(0, maxButtons);
-      // deno-lint-ignore no-explicit-any
-      for (const p of showPubs) {
+      for (const p of (group.publicaciones || [])) {
+        if (buttons.length >= maxButtons) break;
         const name = (p.nombre || p.name || "").substring(0, 20);
-        buttons.push([{ text: `✅ ${name}`, callback_data: `pub_mark:${p.id}` }]);
+        const emoji = statusEmoji[group.estado_key] || "⚪";
+        buttons.push([{ text: `${emoji} ${name}`, callback_data: `pub_mark:${p.id}` }]);
       }
-      if (approvedGroup.publicaciones.length > maxButtons) {
-        text += `\n<i>+ ${approvedGroup.publicaciones.length - maxButtons} aprobadas más</i>\n`;
-      }
+    }
+    // deno-lint-ignore no-explicit-any
+    const totalPubs = (result.resumen_estados || []).reduce((sum: number, g: any) => sum + (g.publicaciones?.length || 0), 0);
+    if (totalPubs > maxButtons) {
+      text += `\n<i>Mostrando ${maxButtons} de ${totalPubs} publicaciones</i>\n`;
     }
 
     return { text, reply_markup: buttons.length ? { inline_keyboard: buttons } : undefined };
