@@ -43,6 +43,7 @@ const Index = () => {
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
   const isMobile = useIsMobile();
   const navigate = useNavigate();
 
@@ -154,6 +155,7 @@ const Index = () => {
                   setIsRefreshing(true);
                   try {
                     await Promise.all([loadClients(), loadTasks()]);
+                    setRefreshKey(k => k + 1);
                     toast({ title: "Datos actualizados", description: "Toda la información se ha refrescado correctamente." });
                   } catch {
                     toast({ title: "Error", description: "No se pudieron actualizar los datos.", variant: "destructive" });
@@ -215,11 +217,11 @@ const Index = () => {
                     <TaskList tasks={filteredTasks} onDeleteTask={deleteTask} onCompleteTask={handleCompleteTask} onUpdateTask={updateTask} clients={clients} />
                   </TabsContent>
                   <TabsContent value="planning">
-                    <PlanningCalendar clients={clients} />
+                    <PlanningCalendar key={`planning-${refreshKey}`} clients={clients} />
                   </TabsContent>
                 </>}
               <TabsContent value="calendar">
-                <CalendarView clients={clients} onClientsUpdate={loadClients} />
+                <CalendarView key={`calendar-${refreshKey}`} clients={clients} onClientsUpdate={loadClients} />
               </TabsContent>
             </div>
           </Tabs>
