@@ -1732,6 +1732,52 @@ async function formatForTelegram(result: any): Promise<{ mensajes: Array<{ text:
     return splitTelegramMessages(`✅ ${escHtml(result.mensaje_ia || "Publicación creada exitosamente")}`);
   }
 
+  // ── cliente_propuesto ──
+  if (accion === "cliente_propuesto") {
+    const c = result.cliente_propuesto || {};
+    let text = `👤 <b>${escHtml(result.mensaje_ia)}</b>\n\n`;
+    text += `📛 <b>Nombre:</b> ${escHtml(c.name || "")}\n`;
+    if (c.phone) text += `📱 <b>Teléfono:</b> ${escHtml(c.phone)}\n`;
+    if (c.payment_day) text += `💰 <b>Día de pago:</b> ${c.payment_day}\n`;
+    text += `\n¿Confirmar creación del cliente?`;
+
+    const sessId = await createSession({ client: c, action: "create_client" });
+    const buttons = [
+      [{ text: "✅ Confirmar", callback_data: `create_client_confirm:${sessId}` }],
+      [{ text: "❌ Cancelar", callback_data: "cancel" }],
+    ];
+    return splitTelegramMessages(text, { inline_keyboard: buttons });
+  }
+
+  // ── cliente_creado ──
+  if (accion === "cliente_creado") {
+    return splitTelegramMessages(`✅ ${escHtml(result.mensaje_ia || "Cliente creado exitosamente")}`);
+  }
+
+  // ── paquete_propuesto ──
+  if (accion === "paquete_propuesto") {
+    const p = result.paquete_propuesto || {};
+    let text = `📦 <b>${escHtml(result.mensaje_ia)}</b>\n\n`;
+    text += `👤 <b>Cliente:</b> ${escHtml(p.client_name || "")}\n`;
+    text += `📦 <b>Paquete:</b> ${escHtml(p.package_name || "")}\n`;
+    text += `📊 <b>Publicaciones:</b> ${p.total_publications}\n`;
+    text += `📅 <b>Mes:</b> ${escHtml(p.month || "")}\n`;
+    text += `💰 <b>Pagado:</b> ${p.paid ? "Sí ✅" : "No ❌"}\n`;
+    text += `\n¿Confirmar agregado del paquete?`;
+
+    const sessId = await createSession({ package: p, action: "add_package" });
+    const buttons = [
+      [{ text: "✅ Confirmar", callback_data: `add_pkg_confirm:${sessId}` }],
+      [{ text: "❌ Cancelar", callback_data: "cancel" }],
+    ];
+    return splitTelegramMessages(text, { inline_keyboard: buttons });
+  }
+
+  // ── paquete_agregado ──
+  if (accion === "paquete_agregado") {
+    return splitTelegramMessages(`✅ ${escHtml(result.mensaje_ia || "Paquete agregado exitosamente")}`);
+  }
+
   // ── error / no_encontrado / fallback ──
   const msg = result.mensaje_ia || result.error || result.mensaje || "Sin respuesta";
   const icon = accion === "error" ? "❌" : "ℹ️";
