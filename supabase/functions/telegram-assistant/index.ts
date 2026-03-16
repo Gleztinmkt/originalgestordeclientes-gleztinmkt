@@ -1751,7 +1751,36 @@ async function formatForTelegram(result: any): Promise<{ mensajes: Array<{ text:
 
   // ── cliente_creado ──
   if (accion === "cliente_creado") {
-    return splitTelegramMessages(`✅ ${escHtml(result.mensaje_ia || "Cliente creado exitosamente")}`);
+    let text = `✅ ${escHtml(result.mensaje_ia || "Cliente creado exitosamente")}`;
+    const buttons: { text: string; callback_data: string }[][] = [];
+
+    if (result.cliente_id) {
+      const sessId = await createSession({
+        action: "create_drive_folders",
+        client_id: result.cliente_id,
+        client_name: result.cliente_nombre || "",
+      });
+      buttons.push([{ text: "📁 Crear carpetas en Drive", callback_data: `drive_folders:${sessId}` }]);
+    }
+
+    return splitTelegramMessages(text, buttons.length ? { inline_keyboard: buttons } : undefined);
+  }
+
+  // ── carpetas_drive_creadas ──
+  if (accion === "carpetas_drive_creadas") {
+    let text = `✅ ${escHtml(result.mensaje_ia || "Carpetas creadas")}`;
+    if (result.url) {
+      text += `\n\n📂 <a href="${escHtml(result.url)}">Abrir en Drive →</a>`;
+    }
+    if (result.urlBranding) {
+      text += `\n🎨 Link de branding guardado automáticamente`;
+    }
+    return splitTelegramMessages(text);
+  }
+
+  // ── carpetas_drive_error ──
+  if (accion === "carpetas_drive_error") {
+    return splitTelegramMessages(`❌ ${escHtml(result.mensaje_ia || "Error al crear carpetas")}`);
   }
 
   // ── paquete_propuesto ──
