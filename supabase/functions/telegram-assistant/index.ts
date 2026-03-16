@@ -597,6 +597,41 @@ Si pide agregar descripción, incluí el texto completo en el campo description.
         },
       },
     },
+    {
+      type: "function",
+      function: {
+        name: "create_client",
+        description: "Crea un nuevo cliente con nombre, teléfono y día de pago. Ej: 'agregá un cliente nuevo: Juan Pérez, tel 1155667788, paga el 15'",
+        parameters: {
+          type: "object",
+          properties: {
+            name: { type: "string", description: "Nombre del cliente" },
+            phone: { type: "string", description: "Teléfono del cliente" },
+            payment_day: { type: "number", description: "Día de pago (1-31)" },
+          },
+          required: ["name"],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "add_package",
+        description: "Agrega un paquete/calendario a un cliente existente. Tipos: basico (8 pub), avanzado (12), premium (16), personalizado (N pub)",
+        parameters: {
+          type: "object",
+          properties: {
+            client_name: { type: "string", description: "Nombre del cliente" },
+            client_id: { type: "string", description: "ID UUID del cliente" },
+            package_type: { type: "string", enum: ["basico", "avanzado", "premium", "personalizado"], description: "Tipo de paquete" },
+            custom_publications: { type: "number", description: "Cantidad de publicaciones (solo para personalizado)" },
+            month: { type: "string", description: "Mes del paquete. Ej: 'Marzo 2026'" },
+            paid: { type: "boolean", description: "Si el paquete está pagado. Default: false" },
+          },
+          required: ["client_name", "client_id", "package_type", "month"],
+        },
+      },
+    },
   ];
 
   const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
