@@ -43,6 +43,7 @@ const Index = () => {
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
   const isMobile = useIsMobile();
   const navigate = useNavigate();
 
