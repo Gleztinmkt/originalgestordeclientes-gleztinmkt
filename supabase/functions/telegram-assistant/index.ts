@@ -41,6 +41,31 @@ async function authenticate(req: Request): Promise<boolean> {
   return false;
 }
 
+/* ── Timezone helper: always use Argentina (UTC-3) ── */
+function nowArgentina(): Date {
+  const utc = new Date();
+  // Build a date object whose UTC methods return Argentina local values
+  const offset = -3 * 60; // Argentina is UTC-3
+  return new Date(utc.getTime() + offset * 60_000);
+}
+
+/** Returns YYYY-MM-DD in Argentina time */
+function todayArgentinaStr(): string {
+  const d = nowArgentina();
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
+}
+
+/** Returns components for Argentina "now" using UTC getters (since we shifted) */
+function argentinaDateParts() {
+  const d = nowArgentina();
+  return {
+    year: d.getUTCFullYear(),
+    month: d.getUTCMonth(),     // 0-indexed
+    date: d.getUTCDate(),
+    day: d.getUTCDay(),          // 0=Sunday
+  };
+}
+
 /* ── Helpers ── */
 async function fetchAllClients() {
   const sb = getAdminClient();
@@ -183,10 +208,10 @@ async function markPublished(pubIds: string[], discountCount?: number | string) 
     }
   }
 
-  const now = new Date();
+  const { year, month, date } = argentinaDateParts();
   const months = ["enero", "febrero", "marzo", "abril", "mayo", "junio",
     "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
-  const lastPostStr = `${now.getDate()} de ${months[now.getMonth()]}, ${now.getFullYear()}`;
+  const lastPostStr = `${date} de ${months[month]}, ${year}`;
 
   const parsedDiscount = Number(discountCount);
   const hasCustomDiscount = Number.isFinite(parsedDiscount) && parsedDiscount > 0;
@@ -250,8 +275,9 @@ async function markPublished(pubIds: string[], discountCount?: number | string) 
 /* ── Planning management ── */
 async function handleUpdatePlanning(clientId: string, month: number, status?: string, description?: string) {
   const sb = getAdminClient();
-  const year = new Date().getFullYear();
-  const startOfMonth = new Date(year, month - 1, 1).toISOString();
+  const year = argentinaDateParts().year;
+  // Build ISO string for the 1st of the month at midnight Argentina time (UTC-3 → 03:00 UTC)
+  const startOfMonth = `${year}-${String(month).padStart(2, '0')}-01T03:00:00.000Z`;
 
   const { data: existing } = await sb
     .from("publication_planning")
@@ -294,14 +320,14 @@ async function interpretMessage(mensaje: string) {
   const clients = await fetchAllClients();
   const clientList = clients.map((c) => `- "${c.name}" (id: ${c.id})`).join("\n");
 
-  const today = new Date();
-  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  const todayParts = argentinaDateParts();
+  const todayStr = todayArgentinaStr();
   const dayNames = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
-  const todayDayName = dayNames[today.getDay()];
+  const todayDayName = dayNames[todayParts.day];
 
   const systemPrompt = `Sos un asistente para una agencia de marketing digital. Tu trabajo es interpretar mensajes del equipo y decidir qué acción tomar.
 
-HOY ES: ${todayDayName} ${todayStr} (${today.getDate()} de ${["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"][today.getMonth()]} de ${today.getFullYear()})
+HOY ES: ${todayDayName} ${todayStr} (${todayParts.date} de ${["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"][todayParts.month]} de ${todayParts.year})
 
 FECHAS RELATIVAS: Calculá las fechas relativas basándote en la fecha de hoy:
 - "hoy" = ${todayStr}
@@ -355,7 +381,7 @@ Según el mensaje del usuario, elegí UNA de estas herramientas:
 
 IMPORTANTE: Los nombres pueden estar abreviados, mal escritos o ser apodos. Hacé tu mejor esfuerzo para encontrar coincidencias.
 Cuando el usuario pida cambiar planificación, detectá el mes mencionado (enero=1, febrero=2, etc.) y el estado deseado.
-Si NO se menciona un mes específico, usá el mes actual: ${new Date().getMonth() + 1} (${["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"][new Date().getMonth()]}).
+Si NO se menciona un mes específico, usá el mes actual: ${todayParts.month + 1} (${["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"][todayParts.month]}).
 Si pide "marcar como hacer" o "botón verde", el status es "hacer".
 Si pide agregar descripción, incluí el texto completo en el campo description.`;
 
