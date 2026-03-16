@@ -1815,6 +1815,7 @@ serve(async (req) => {
         "marcar_publicadas { publicaciones_ids: [...], cantidad_descontar: N }",
         "actualizar_planificacion { client_id, month, status, description }",
         "confirmar_planificacion { updates: [...] }",
+        "confirmar_crear_publicacion { publicacion_propuesta: {...} }",
       ],
     }, 400);
   } catch (e) {
