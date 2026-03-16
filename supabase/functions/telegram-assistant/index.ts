@@ -381,7 +381,7 @@ Según el mensaje del usuario, elegí UNA de estas herramientas:
 
 IMPORTANTE: Los nombres pueden estar abreviados, mal escritos o ser apodos. Hacé tu mejor esfuerzo para encontrar coincidencias.
 Cuando el usuario pida cambiar planificación, detectá el mes mencionado (enero=1, febrero=2, etc.) y el estado deseado.
-Si NO se menciona un mes específico, usá el mes actual: ${new Date().getMonth() + 1} (${["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"][new Date().getMonth()]}).
+Si NO se menciona un mes específico, usá el mes actual: ${todayParts.month + 1} (${["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"][todayParts.month]}).
 Si pide "marcar como hacer" o "botón verde", el status es "hacer".
 Si pide agregar descripción, incluí el texto completo en el campo description.`;
 
