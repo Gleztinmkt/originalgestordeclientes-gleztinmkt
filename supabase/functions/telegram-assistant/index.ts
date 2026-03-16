@@ -359,12 +359,17 @@ CREAR PUBLICACIONES:
 - Si el usuario pide "sugerí un copy" o "generá un copy" o "recomienda un copy", activá suggest_copy: true.
 - El campo "name" es el título de la publicación, intentá extraerlo del mensaje.
 
-REGLA CRÍTICA PARA TEXTOS:
-- NUNCA resumas, acortes ni parafrasees el texto que el usuario proporciona para description o copywriting.
-- Copiá TEXTUALMENTE todo el contenido que el usuario da, incluyendo emojis, hashtags, datos de contacto, precios, fechas, saltos de línea, etc.
-- Si el usuario pone el copy directamente en el mensaje, usá ESE TEXTO COMPLETO como copywriting.
-- Si el usuario separa "descripción" y "copy", respetá esa separación: la descripción va en description, el copy va en copywriting.
-- Si el usuario no separa explícitamente, intentá distinguir: la parte que describe el contenido del video/imagen va en description, y el texto para redes sociales va en copywriting.
+CREAR CLIENTES:
+- Cuando el usuario pide crear/agregar un cliente nuevo, usá la tool "create_client".
+- Los campos obligatorios son: nombre. Teléfono y día de pago son opcionales.
+- Si el usuario no da algún dato, dejalo vacío/null.
+
+AGREGAR PAQUETES:
+- Cuando el usuario pide agregar un paquete/calendario a un cliente, usá la tool "add_package".
+- Hay 4 tipos de paquetes: basico (8 publicaciones), avanzado (12), premium (16), personalizado (el usuario dice cuántas).
+- Si el usuario dice "personalizado", preguntale cuántas publicaciones.
+- El mes del paquete es obligatorio (ej: "marzo 2026").
+- "pagado"/"pago" → paid=true. Default: false.
 
 Según el mensaje del usuario, elegí UNA de estas herramientas:
 
@@ -378,6 +383,8 @@ Según el mensaje del usuario, elegí UNA de estas herramientas:
 8. "query_client_info" — cuando el usuario pregunta por la información de un cliente.
 9. "filter_by_status" — cuando el usuario quiere filtrar publicaciones por un estado específico sin mencionar un cliente particular. Ej: "publicaciones en revisión", "lo que falta editar de todos".
 10. "create_publication" — cuando el usuario quiere crear/agregar/hacer una nueva publicación para un cliente. Ej: "hacé una publicación para 4S Motors para el 17 de marzo".
+11. "create_client" — cuando el usuario quiere crear/agregar un nuevo cliente. Ej: "agregá un cliente nuevo: Juan Pérez, tel 1155667788, paga el 15".
+12. "add_package" — cuando el usuario quiere agregar un paquete/calendario a un cliente existente. Ej: "agregale un paquete básico a Juan para marzo".
 
 IMPORTANTE: Los nombres pueden estar abreviados, mal escritos o ser apodos. Hacé tu mejor esfuerzo para encontrar coincidencias.
 Cuando el usuario pida cambiar planificación, detectá el mes mencionado (enero=1, febrero=2, etc.) y el estado deseado.
@@ -587,6 +594,41 @@ Si pide agregar descripción, incluí el texto completo en el campo description.
             suggest_copy: { type: "boolean", description: "Si el usuario pide que se sugiera/genere un copy basado en publicaciones anteriores" },
           },
           required: ["client_name", "client_id", "name", "date"],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "create_client",
+        description: "Crea un nuevo cliente con nombre, teléfono y día de pago. Ej: 'agregá un cliente nuevo: Juan Pérez, tel 1155667788, paga el 15'",
+        parameters: {
+          type: "object",
+          properties: {
+            name: { type: "string", description: "Nombre del cliente" },
+            phone: { type: "string", description: "Teléfono del cliente" },
+            payment_day: { type: "number", description: "Día de pago (1-31)" },
+          },
+          required: ["name"],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "add_package",
+        description: "Agrega un paquete/calendario a un cliente existente. Tipos: basico (8 pub), avanzado (12), premium (16), personalizado (N pub)",
+        parameters: {
+          type: "object",
+          properties: {
+            client_name: { type: "string", description: "Nombre del cliente" },
+            client_id: { type: "string", description: "ID UUID del cliente" },
+            package_type: { type: "string", enum: ["basico", "avanzado", "premium", "personalizado"], description: "Tipo de paquete" },
+            custom_publications: { type: "number", description: "Cantidad de publicaciones (solo para personalizado)" },
+            month: { type: "string", description: "Mes del paquete. Ej: 'Marzo 2026'" },
+            paid: { type: "boolean", description: "Si el paquete está pagado. Default: false" },
+          },
+          required: ["client_name", "client_id", "package_type", "month"],
         },
       },
     },
@@ -1144,6 +1186,67 @@ Si pide agregar descripción, incluí el texto completo en el campo description.
     };
   }
 
+  // ── create_client ──
+  if (fnName === "create_client") {
+    const clientName = args.name;
+    const clientPhone = args.phone || null;
+    const clientPaymentDay = args.payment_day || null;
+
+    if (!clientName) {
+      return { accion: "error", mensaje_ia: "El nombre del cliente es obligatorio." };
+    }
+
+    const proposal = {
+      name: clientName,
+      phone: clientPhone,
+      payment_day: clientPaymentDay,
+    };
+
+    return {
+      accion: "cliente_propuesto",
+      mensaje_ia: `Propuesta de nuevo cliente`,
+      cliente_propuesto: proposal,
+    };
+  }
+
+  // ── add_package ──
+  if (fnName === "add_package") {
+    const clientId = args.client_id;
+    const clientName = args.client_name;
+    const packageType = args.package_type;
+    const month = args.month;
+    const paid = args.paid || false;
+
+    const PACKAGE_TYPES: Record<string, { name: string; total: number }> = {
+      basico: { name: "Paquete Básico", total: 8 },
+      avanzado: { name: "Paquete Avanzado", total: 12 },
+      premium: { name: "Paquete Premium", total: 16 },
+      personalizado: { name: "Paquete Personalizado", total: args.custom_publications || 0 },
+    };
+
+    const pkgInfo = PACKAGE_TYPES[packageType] || PACKAGE_TYPES.basico;
+
+    if (packageType === "personalizado" && !args.custom_publications) {
+      return { accion: "error", mensaje_ia: "Para un paquete personalizado, necesito saber cuántas publicaciones incluye. Ej: 'paquete personalizado de 20 publicaciones'" };
+    }
+
+    const proposal = {
+      client_id: clientId,
+      client_name: clientName,
+      package_name: pkgInfo.name,
+      package_type: packageType,
+      total_publications: pkgInfo.total,
+      month,
+      paid,
+    };
+
+    return {
+      accion: "paquete_propuesto",
+      mensaje_ia: `Propuesta de paquete para ${clientName}`,
+      paquete_propuesto: proposal,
+    };
+  }
+
   return { accion: "no_encontrado", mensaje_ia: "No pude interpretar tu mensaje." };
 }
 
@@ -1629,6 +1732,52 @@ async function formatForTelegram(result: any): Promise<{ mensajes: Array<{ text:
     return splitTelegramMessages(`✅ ${escHtml(result.mensaje_ia || "Publicación creada exitosamente")}`);
   }
 
+  // ── cliente_propuesto ──
+  if (accion === "cliente_propuesto") {
+    const c = result.cliente_propuesto || {};
+    let text = `👤 <b>${escHtml(result.mensaje_ia)}</b>\n\n`;
+    text += `📛 <b>Nombre:</b> ${escHtml(c.name || "")}\n`;
+    if (c.phone) text += `📱 <b>Teléfono:</b> ${escHtml(c.phone)}\n`;
+    if (c.payment_day) text += `💰 <b>Día de pago:</b> ${c.payment_day}\n`;
+    text += `\n¿Confirmar creación del cliente?`;
+
+    const sessId = await createSession({ client: c, action: "create_client" });
+    const buttons = [
+      [{ text: "✅ Confirmar", callback_data: `create_client_confirm:${sessId}` }],
+      [{ text: "❌ Cancelar", callback_data: "cancel" }],
+    ];
+    return splitTelegramMessages(text, { inline_keyboard: buttons });
+  }
+
+  // ── cliente_creado ──
+  if (accion === "cliente_creado") {
+    return splitTelegramMessages(`✅ ${escHtml(result.mensaje_ia || "Cliente creado exitosamente")}`);
+  }
+
+  // ── paquete_propuesto ──
+  if (accion === "paquete_propuesto") {
+    const p = result.paquete_propuesto || {};
+    let text = `📦 <b>${escHtml(result.mensaje_ia)}</b>\n\n`;
+    text += `👤 <b>Cliente:</b> ${escHtml(p.client_name || "")}\n`;
+    text += `📦 <b>Paquete:</b> ${escHtml(p.package_name || "")}\n`;
+    text += `📊 <b>Publicaciones:</b> ${p.total_publications}\n`;
+    text += `📅 <b>Mes:</b> ${escHtml(p.month || "")}\n`;
+    text += `💰 <b>Pagado:</b> ${p.paid ? "Sí ✅" : "No ❌"}\n`;
+    text += `\n¿Confirmar agregado del paquete?`;
+
+    const sessId = await createSession({ package: p, action: "add_package" });
+    const buttons = [
+      [{ text: "✅ Confirmar", callback_data: `add_pkg_confirm:${sessId}` }],
+      [{ text: "❌ Cancelar", callback_data: "cancel" }],
+    ];
+    return splitTelegramMessages(text, { inline_keyboard: buttons });
+  }
+
+  // ── paquete_agregado ──
+  if (accion === "paquete_agregado") {
+    return splitTelegramMessages(`✅ ${escHtml(result.mensaje_ia || "Paquete agregado exitosamente")}`);
+  }
+
   // ── error / no_encontrado / fallback ──
   const msg = result.mensaje_ia || result.error || result.mensaje || "Sin respuesta";
   const icon = accion === "error" ? "❌" : "ℹ️";
@@ -1663,6 +1812,67 @@ async function resolveSession(sessionId: string): Promise<unknown | null> {
     .maybeSingle();
   if (error) { console.error("Failed to resolve session:", error); return null; }
   return data?.data ?? null;
+}
+
+/* ── Insert client helper ── */
+async function insertClient(proposal: { name: string; phone?: string | null; payment_day?: number | null }) {
+  const sb = getAdminClient();
+  const { data: existingClient } = await sb.from("clients").select("agency_id").limit(1).maybeSingle();
+  const agencyId = existingClient?.agency_id || null;
+
+  const { data, error } = await sb.from("clients").insert({
+    name: proposal.name,
+    phone: proposal.phone || null,
+    payment_day: proposal.payment_day || null,
+    agency_id: agencyId,
+  }).select("id, name").single();
+  if (error) throw error;
+
+  return {
+    accion: "cliente_creado",
+    mensaje_ia: `✅ Cliente "${data.name}" creado exitosamente`,
+    cliente_id: data.id,
+    ok: true,
+  };
+}
+
+/* ── Add package to client helper ── */
+// deno-lint-ignore no-explicit-any
+async function addPackageToClient(proposal: any) {
+  const sb = getAdminClient();
+  const { data: client, error: clientErr } = await sb
+    .from("clients")
+    .select("packages")
+    .eq("id", proposal.client_id)
+    .single();
+  if (clientErr) throw clientErr;
+
+  const { packages } = parseClientPackages(client?.packages);
+  const newPackage = {
+    id: crypto.randomUUID(),
+    name: proposal.package_name,
+    month: proposal.month,
+    totalPublications: String(proposal.total_publications),
+    usedPublications: "0",
+    paid: proposal.paid || false,
+    isSplitPayment: false,
+    firstHalfPaid: false,
+    secondHalfPaid: false,
+    last_update: null,
+  };
+  packages.push(newPackage);
+
+  const { error: updateErr } = await sb
+    .from("clients")
+    .update({ packages })
+    .eq("id", proposal.client_id);
+  if (updateErr) throw updateErr;
+
+  return {
+    accion: "paquete_agregado",
+    mensaje_ia: `✅ ${proposal.package_name} (${proposal.total_publications} publicaciones) agregado a ${proposal.client_name} para ${proposal.month}`,
+    ok: true,
+  };
 }
 
 /* ── Insert publication helper ── */
@@ -1882,6 +2092,20 @@ serve(async (req) => {
         const sessData = await resolveSession(sessId) as { publication?: Record<string, unknown> } | null;
         if (!sessData?.publication) return json({ error: "Sesión expirada o inválida. Volvé a consultar." }, 400);
         result = await insertPublication(sessData.publication);
+      }
+      // create_client_confirm:{session_id} — confirm and insert client
+      else if (callbackData.startsWith("create_client_confirm:")) {
+        const sessId = callbackData.replace("create_client_confirm:", "");
+        const sessData = await resolveSession(sessId) as { client?: Record<string, unknown> } | null;
+        if (!sessData?.client) return json({ error: "Sesión expirada o inválida. Volvé a consultar." }, 400);
+        result = await insertClient(sessData.client as { name: string; phone?: string | null; payment_day?: number | null });
+      }
+      // add_pkg_confirm:{session_id} — confirm and add package
+      else if (callbackData.startsWith("add_pkg_confirm:")) {
+        const sessId = callbackData.replace("add_pkg_confirm:", "");
+        const sessData = await resolveSession(sessId) as { package?: Record<string, unknown> } | null;
+        if (!sessData?.package) return json({ error: "Sesión expirada o inválida. Volvé a consultar." }, 400);
+        result = await addPackageToClient(sessData.package);
       }
       // cancel — user cancelled action
       else if (callbackData === "cancel") {
