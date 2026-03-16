@@ -327,7 +327,7 @@ async function interpretMessage(mensaje: string) {
 
   const systemPrompt = `Sos un asistente para una agencia de marketing digital. Tu trabajo es interpretar mensajes del equipo y decidir qué acción tomar.
 
-HOY ES: ${todayDayName} ${todayStr} (${today.getDate()} de ${["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"][today.getMonth()]} de ${today.getFullYear()})
+HOY ES: ${todayDayName} ${todayStr} (${todayParts.date} de ${["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"][todayParts.month]} de ${todayParts.year})
 
 FECHAS RELATIVAS: Calculá las fechas relativas basándote en la fecha de hoy:
 - "hoy" = ${todayStr}
