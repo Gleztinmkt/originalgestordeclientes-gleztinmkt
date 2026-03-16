@@ -1664,16 +1664,43 @@ serve(async (req) => {
 
       let result;
 
-      // pub_mark:{id} — show copy + confirmation buttons
+      // pub_mark:{id} — show full publication detail + confirmation buttons
       if (callbackData.startsWith("pub_mark:") && !callbackData.startsWith("pub_mark_confirm:")) {
         const pubId = callbackData.replace("pub_mark:", "");
-        const pubs = await fetchPublicationsByIds([pubId]);
-        const pub = pubs?.[0];
-        if (!pub) return json({ error: "Publicación no encontrada" }, 400);
-        const copyText = pub.copywriting || "(Sin copywriting)";
+        const sb = getAdminClient();
+        const { data: pubData, error: pubErr } = await sb
+          .from("publications")
+          .select("id, name, type, date, description, copywriting, client_id, designer, needs_recording, needs_editing, in_editing, in_review, approved, status")
+          .eq("id", pubId)
+          .is("deleted_at", null)
+          .maybeSingle();
+        if (pubErr || !pubData) return json({ error: "Publicación no encontrada" }, 400);
+
+        const typeEmojis: Record<string, string> = { reel: "🎬", carousel: "📸", image: "🖼" };
+        const typeLabel = typeEmojis[pubData.type] || "🖼";
+        const dateStr = pubData.date ? new Date(pubData.date).toLocaleDateString("es-AR", { day: "numeric", month: "long", year: "numeric" }) : "Sin fecha";
+
+        let statusLabel = "Pendiente";
+        if (pubData.needs_recording) statusLabel = "Falta grabar";
+        else if (pubData.needs_editing) statusLabel = "Falta editar";
+        else if (pubData.in_editing) statusLabel = "En edición";
+        else if (pubData.in_review) statusLabel = "En revisión";
+        else if (pubData.approved) statusLabel = "Aprobado";
+
+        let text = `${typeLabel} <b>${escHtml(pubData.name)}</b>\n\n`;
+        text += `📂 <b>Tipo:</b> ${pubData.type || "image"}\n`;
+        text += `📅 <b>Fecha:</b> ${dateStr}\n`;
+        text += `📊 <b>Estado:</b> ${statusLabel}\n`;
+        if (pubData.designer) text += `🎨 <b>Diseñador:</b> ${escHtml(pubData.designer)}\n`;
+        if (pubData.description) text += `\n📝 <b>Descripción:</b>\n${escHtml(pubData.description)}\n`;
+        if (pubData.copywriting) text += `\n✍️ <b>Copywriting:</b>\n<pre>${escHtml(pubData.copywriting)}</pre>\n`;
+        else text += `\n✍️ <b>Copywriting:</b> (Sin copywriting)\n`;
+
+        text += `\n¿Marcar como publicada?`;
+
         const tg = {
-          text: `📋 *Copy de: ${pub.name}*\n\n\`\`\`\n${copyText}\n\`\`\`\n\n¿Marcar como publicada?`,
-          parse_mode: "Markdown",
+          text,
+          parse_mode: "HTML",
           reply_markup: {
             inline_keyboard: [
               [{ text: "✅ Marcar como publicada", callback_data: `pub_mark_confirm:${pubId}` }],
@@ -1681,7 +1708,7 @@ serve(async (req) => {
             ],
           },
         };
-        result = { accion: "mostrar_copy_confirmacion", publicacion: pub.name, telegram: tg };
+        result = { accion: "mostrar_detalle_pub", publicacion: pubData.name, telegram: tg };
         return json(result);
       }
       // pub_mark_confirm:{id} — actually mark as published
