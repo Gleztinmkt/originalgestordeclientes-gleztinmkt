@@ -1814,6 +1814,56 @@ async function resolveSession(sessionId: string): Promise<unknown | null> {
   return data?.data ?? null;
 }
 
+/* ── Create Drive folders helper ── */
+async function createDriveFolders(clientId: string, clientName: string) {
+  const scriptUrl = "https://script.google.com/macros/s/AKfycbwl4AxjUPRrgtpwXE78mXsNqD7Igdk-ghnRVdsbjBXB4YNUPGB-x3_dY2SKAETwVdhOOA/exec";
+
+  const response = await fetch(scriptUrl, {
+    method: "POST",
+    body: JSON.stringify({ nombreCliente: clientName }),
+  });
+
+  const data = await response.json();
+
+  if (!data.success) {
+    throw new Error(data.error || data.message || "Error al crear carpetas en Drive");
+  }
+
+  // Save branding URL to client
+  if (data.urlBranding) {
+    const sb = getAdminClient();
+    const { data: client } = await sb
+      .from("clients")
+      .select("client_info")
+      .eq("id", clientId)
+      .single();
+
+    // deno-lint-ignore no-explicit-any
+    const clientInfo = (client?.client_info as any) || {};
+    const updatedInfo = {
+      ...clientInfo,
+      generalInfo: clientInfo.generalInfo || "",
+      meetings: clientInfo.meetings || [],
+      socialNetworks: clientInfo.socialNetworks || [],
+      publicationSchedule: clientInfo.publicationSchedule || [],
+      branding: data.urlBranding,
+    };
+
+    await sb
+      .from("clients")
+      .update({ client_info: updatedInfo })
+      .eq("id", clientId);
+  }
+
+  return {
+    accion: "carpetas_drive_creadas",
+    mensaje_ia: `✅ Carpetas de Drive creadas para "${clientName}"`,
+    url: data.url || null,
+    urlBranding: data.urlBranding || null,
+    ok: true,
+  };
+}
+
 /* ── Insert client helper ── */
 async function insertClient(proposal: { name: string; phone?: string | null; payment_day?: number | null }) {
   const sb = getAdminClient();
@@ -1832,6 +1882,7 @@ async function insertClient(proposal: { name: string; phone?: string | null; pay
     accion: "cliente_creado",
     mensaje_ia: `✅ Cliente "${data.name}" creado exitosamente`,
     cliente_id: data.id,
+    cliente_nombre: data.name,
     ok: true,
   };
 }
