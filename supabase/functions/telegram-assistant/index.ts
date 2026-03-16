@@ -2093,6 +2093,20 @@ serve(async (req) => {
         if (!sessData?.publication) return json({ error: "Sesión expirada o inválida. Volvé a consultar." }, 400);
         result = await insertPublication(sessData.publication);
       }
+      // create_client_confirm:{session_id} — confirm and insert client
+      else if (callbackData.startsWith("create_client_confirm:")) {
+        const sessId = callbackData.replace("create_client_confirm:", "");
+        const sessData = await resolveSession(sessId) as { client?: Record<string, unknown> } | null;
+        if (!sessData?.client) return json({ error: "Sesión expirada o inválida. Volvé a consultar." }, 400);
+        result = await insertClient(sessData.client as { name: string; phone?: string | null; payment_day?: number | null });
+      }
+      // add_pkg_confirm:{session_id} — confirm and add package
+      else if (callbackData.startsWith("add_pkg_confirm:")) {
+        const sessId = callbackData.replace("add_pkg_confirm:", "");
+        const sessData = await resolveSession(sessId) as { package?: Record<string, unknown> } | null;
+        if (!sessData?.package) return json({ error: "Sesión expirada o inválida. Volvé a consultar." }, 400);
+        result = await addPackageToClient(sessData.package);
+      }
       // cancel — user cancelled action
       else if (callbackData === "cancel") {
         const tg = splitTelegramMessages("❌ Acción cancelada.");
