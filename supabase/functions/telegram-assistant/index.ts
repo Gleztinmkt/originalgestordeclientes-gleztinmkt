@@ -1974,6 +1974,23 @@ async function insertPublication(pub: any) {
     statusFlags.needs_recording = true;
   }
 
+  // Auto-assign to the newest package of the client
+  let packageId: string | null = null;
+  if (pub.client_id) {
+    const { data: client } = await sb
+      .from("clients")
+      .select("packages")
+      .eq("id", pub.client_id)
+      .single();
+
+    const { packages } = parseClientPackages(client?.packages);
+    if (packages.length > 0) {
+      // Last package in the array = newest
+      const newestPkg = packages[packages.length - 1];
+      packageId = newestPkg.id || null;
+    }
+  }
+
   const insertData = {
     client_id: pub.client_id,
     name: pub.name || "Sin título",
@@ -1982,6 +1999,7 @@ async function insertPublication(pub: any) {
     description: pub.description || null,
     copywriting: pub.copywriting || null,
     designer: pub.designer || null,
+    package_id: packageId,
     needs_recording: statusFlags.needs_recording,
     needs_editing: statusFlags.needs_editing,
     in_editing: statusFlags.in_editing,
