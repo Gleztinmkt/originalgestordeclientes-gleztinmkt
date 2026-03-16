@@ -359,12 +359,17 @@ CREAR PUBLICACIONES:
 - Si el usuario pide "sugerí un copy" o "generá un copy" o "recomienda un copy", activá suggest_copy: true.
 - El campo "name" es el título de la publicación, intentá extraerlo del mensaje.
 
-REGLA CRÍTICA PARA TEXTOS:
-- NUNCA resumas, acortes ni parafrasees el texto que el usuario proporciona para description o copywriting.
-- Copiá TEXTUALMENTE todo el contenido que el usuario da, incluyendo emojis, hashtags, datos de contacto, precios, fechas, saltos de línea, etc.
-- Si el usuario pone el copy directamente en el mensaje, usá ESE TEXTO COMPLETO como copywriting.
-- Si el usuario separa "descripción" y "copy", respetá esa separación: la descripción va en description, el copy va en copywriting.
-- Si el usuario no separa explícitamente, intentá distinguir: la parte que describe el contenido del video/imagen va en description, y el texto para redes sociales va en copywriting.
+CREAR CLIENTES:
+- Cuando el usuario pide crear/agregar un cliente nuevo, usá la tool "create_client".
+- Los campos obligatorios son: nombre. Teléfono y día de pago son opcionales.
+- Si el usuario no da algún dato, dejalo vacío/null.
+
+AGREGAR PAQUETES:
+- Cuando el usuario pide agregar un paquete/calendario a un cliente, usá la tool "add_package".
+- Hay 4 tipos de paquetes: basico (8 publicaciones), avanzado (12), premium (16), personalizado (el usuario dice cuántas).
+- Si el usuario dice "personalizado", preguntale cuántas publicaciones.
+- El mes del paquete es obligatorio (ej: "marzo 2026").
+- "pagado"/"pago" → paid=true. Default: false.
 
 Según el mensaje del usuario, elegí UNA de estas herramientas:
 
@@ -378,6 +383,8 @@ Según el mensaje del usuario, elegí UNA de estas herramientas:
 8. "query_client_info" — cuando el usuario pregunta por la información de un cliente.
 9. "filter_by_status" — cuando el usuario quiere filtrar publicaciones por un estado específico sin mencionar un cliente particular. Ej: "publicaciones en revisión", "lo que falta editar de todos".
 10. "create_publication" — cuando el usuario quiere crear/agregar/hacer una nueva publicación para un cliente. Ej: "hacé una publicación para 4S Motors para el 17 de marzo".
+11. "create_client" — cuando el usuario quiere crear/agregar un nuevo cliente. Ej: "agregá un cliente nuevo: Juan Pérez, tel 1155667788, paga el 15".
+12. "add_package" — cuando el usuario quiere agregar un paquete/calendario a un cliente existente. Ej: "agregale un paquete básico a Juan para marzo".
 
 IMPORTANTE: Los nombres pueden estar abreviados, mal escritos o ser apodos. Hacé tu mejor esfuerzo para encontrar coincidencias.
 Cuando el usuario pida cambiar planificación, detectá el mes mencionado (enero=1, febrero=2, etc.) y el estado deseado.
