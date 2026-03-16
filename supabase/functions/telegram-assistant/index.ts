@@ -294,7 +294,21 @@ async function interpretMessage(mensaje: string) {
   const clients = await fetchAllClients();
   const clientList = clients.map((c) => `- "${c.name}" (id: ${c.id})`).join("\n");
 
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  const dayNames = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
+  const todayDayName = dayNames[today.getDay()];
+
   const systemPrompt = `Sos un asistente para una agencia de marketing digital. Tu trabajo es interpretar mensajes del equipo y decidir qué acción tomar.
+
+HOY ES: ${todayDayName} ${todayStr} (${today.getDate()} de ${["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"][today.getMonth()]} de ${today.getFullYear()})
+
+FECHAS RELATIVAS: Calculá las fechas relativas basándote en la fecha de hoy:
+- "hoy" = ${todayStr}
+- "mañana" = un día después de hoy
+- "pasado mañana" = dos días después de hoy
+- "el lunes", "el martes", etc. = el próximo día de la semana mencionado
+Siempre convertí a formato YYYY-MM-DD.
 
 Lista de clientes activos:
 ${clientList}
@@ -316,8 +330,15 @@ CREAR PUBLICACIONES:
 - Cuando el usuario pide crear/hacer/agregar una publicación para un cliente, usá la tool "create_publication".
 - Si NO se menciona estado, el default es "needs_recording" (Falta grabar).
 - Si NO se menciona tipo, intentá inferirlo: si dice "video" o "reel" → reel, si dice "carrusel" → carousel, si no → image.
-- Si el usuario pide "sugerí un copy" o "generá un copy", activá suggest_copy: true.
+- Si el usuario pide "sugerí un copy" o "generá un copy" o "recomienda un copy", activá suggest_copy: true.
 - El campo "name" es el título de la publicación, intentá extraerlo del mensaje.
+
+REGLA CRÍTICA PARA TEXTOS:
+- NUNCA resumas, acortes ni parafrasees el texto que el usuario proporciona para description o copywriting.
+- Copiá TEXTUALMENTE todo el contenido que el usuario da, incluyendo emojis, hashtags, datos de contacto, precios, fechas, saltos de línea, etc.
+- Si el usuario pone el copy directamente en el mensaje, usá ESE TEXTO COMPLETO como copywriting.
+- Si el usuario separa "descripción" y "copy", respetá esa separación: la descripción va en description, el copy va en copywriting.
+- Si el usuario no separa explícitamente, intentá distinguir: la parte que describe el contenido del video/imagen va en description, y el texto para redes sociales va en copywriting.
 
 Según el mensaje del usuario, elegí UNA de estas herramientas:
 
@@ -1037,7 +1058,7 @@ Si pide agregar descripción, incluí el texto completo en el campo description.
             messages: [
               {
                 role: "system",
-                content: `Sos un copywriter de redes sociales. Generá un copy para una publicación basándote en el estilo de los ejemplos anteriores del mismo cliente. Respondé SOLO con el copy, sin explicaciones ni formato extra.`,
+                content: `Sos un copywriter de redes sociales. Generá un copy para una publicación basándote en el estilo de los ejemplos anteriores del mismo cliente. Incluí hashtags relevantes, datos de contacto y llamados a la acción si aparecen en los ejemplos. Respondé SOLO con el copy, sin explicaciones ni formato extra.`,
               },
               {
                 role: "user",
