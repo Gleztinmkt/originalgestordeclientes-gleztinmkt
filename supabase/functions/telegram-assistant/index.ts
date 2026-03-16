@@ -1752,16 +1752,12 @@ serve(async (req) => {
 
         text += `\n¿Marcar como publicada?`;
 
-        const tg = {
-          text,
-          parse_mode: "HTML",
-          reply_markup: {
-            inline_keyboard: [
-              [{ text: "✅ Marcar como publicada", callback_data: `pub_mark_confirm:${pubId}` }],
-              [{ text: "❌ Cancelar", callback_data: "cancel" }],
-            ],
-          },
-        };
+        const tg = splitTelegramMessages(text, {
+          inline_keyboard: [
+            [{ text: "✅ Marcar como publicada", callback_data: `pub_mark_confirm:${pubId}` }],
+            [{ text: "❌ Cancelar", callback_data: "cancel" }],
+          ],
+        });
         result = { accion: "mostrar_detalle_pub", publicacion: pubData.name, telegram: tg };
         return json(result);
       }
