@@ -1298,6 +1298,8 @@ async function formatForTelegram(result: any): Promise<{ text: string; reply_mar
     let text = `📅 <b>${escHtml(result.mensaje_ia)}</b>\n\n`;
     const buttons = [];
 
+    const hasAnyDescription = (result.actualizaciones || []).some((u: any) => !!u.descripcion);
+
     // deno-lint-ignore no-explicit-any
     for (const u of (result.actualizaciones || [])) {
       const statusDot = u.status === "hacer" ? "🟢" : u.status === "no_hacer" ? "🔴" : "🟡";
@@ -1307,24 +1309,31 @@ async function formatForTelegram(result: any): Promise<{ text: string; reply_mar
       if (u.descripcion) text += `   📝 ${escHtml(u.descripcion)}\n`;
 
       if (u.client_id) {
-        buttons.push([
-          { text: `✅ Confirmar ${u.cliente}`, callback_data: `plan_confirm:${u.client_id}:${u.mes}:${u.status || ""}` },
-        ]);
+        // If this update has a description, use session to preserve it
+        if (u.descripcion) {
+          const sessId = await createSession({
+            client_id: u.client_id, mes: u.mes, status: u.status || "hacer",
+            descripcion: u.descripcion, action: "plan_confirm"
+          });
+          buttons.push([
+            { text: `✅ Confirmar ${u.cliente}`, callback_data: `plan_sess:${sessId}` },
+          ]);
+        } else {
+          buttons.push([
+            { text: `✅ Confirmar ${u.cliente}`, callback_data: `plan_confirm:${u.client_id}:${u.mes}:${u.status || ""}` },
+          ]);
+        }
       }
     }
 
     if ((result.actualizaciones || []).length > 1) {
       // deno-lint-ignore no-explicit-any
       const allUpdates = (result.actualizaciones || []).map((u: any) => ({
-        client_id: u.client_id, mes: u.mes, status: u.status || ""
+        client_id: u.client_id, mes: u.mes, status: u.status || "", descripcion: u.descripcion || ""
       }));
-      const rawData = `plan_confirm_all:${allUpdates.map((u: any) => `${u.client_id}:${u.mes}:${u.status}`).join("|")}`;
-      if (rawData.length <= 64) {
-        buttons.push([{ text: "✅ Confirmar todas", callback_data: rawData }]);
-      } else {
-        const sessId = await createSession({ updates: allUpdates, action: "plan_confirm_all" });
-        buttons.push([{ text: "✅ Confirmar todas", callback_data: `plan_sess:${sessId}` }]);
-      }
+      // Always use session for bulk since descriptions can be large
+      const sessId = await createSession({ updates: allUpdates, action: "plan_confirm_all" });
+      buttons.push([{ text: "✅ Confirmar todas", callback_data: `plan_sess:${sessId}` }]);
     }
 
     return { text, reply_markup: buttons.length ? { inline_keyboard: buttons } : undefined };
