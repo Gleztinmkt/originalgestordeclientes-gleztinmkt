@@ -1298,6 +1298,8 @@ async function formatForTelegram(result: any): Promise<{ text: string; reply_mar
     let text = `📅 <b>${escHtml(result.mensaje_ia)}</b>\n\n`;
     const buttons = [];
 
+    const hasAnyDescription = (result.actualizaciones || []).some((u: any) => !!u.descripcion);
+
     // deno-lint-ignore no-explicit-any
     for (const u of (result.actualizaciones || [])) {
       const statusDot = u.status === "hacer" ? "🟢" : u.status === "no_hacer" ? "🔴" : "🟡";
@@ -1307,24 +1309,31 @@ async function formatForTelegram(result: any): Promise<{ text: string; reply_mar
       if (u.descripcion) text += `   📝 ${escHtml(u.descripcion)}\n`;
 
       if (u.client_id) {
-        buttons.push([
-          { text: `✅ Confirmar ${u.cliente}`, callback_data: `plan_confirm:${u.client_id}:${u.mes}:${u.status || ""}` },
-        ]);
+        // If this update has a description, use session to preserve it
+        if (u.descripcion) {
+          const sessId = await createSession({
+            client_id: u.client_id, mes: u.mes, status: u.status || "hacer",
+            descripcion: u.descripcion, action: "plan_confirm"
+          });
+          buttons.push([
+            { text: `✅ Confirmar ${u.cliente}`, callback_data: `plan_sess:${sessId}` },
+          ]);
+        } else {
+          buttons.push([
+            { text: `✅ Confirmar ${u.cliente}`, callback_data: `plan_confirm:${u.client_id}:${u.mes}:${u.status || ""}` },
+          ]);
+        }
       }
     }
 
     if ((result.actualizaciones || []).length > 1) {
       // deno-lint-ignore no-explicit-any
       const allUpdates = (result.actualizaciones || []).map((u: any) => ({
-        client_id: u.client_id, mes: u.mes, status: u.status || ""
+        client_id: u.client_id, mes: u.mes, status: u.status || "", descripcion: u.descripcion || ""
       }));
-      const rawData = `plan_confirm_all:${allUpdates.map((u: any) => `${u.client_id}:${u.mes}:${u.status}`).join("|")}`;
-      if (rawData.length <= 64) {
-        buttons.push([{ text: "✅ Confirmar todas", callback_data: rawData }]);
-      } else {
-        const sessId = await createSession({ updates: allUpdates, action: "plan_confirm_all" });
-        buttons.push([{ text: "✅ Confirmar todas", callback_data: `plan_sess:${sessId}` }]);
-      }
+      // Always use session for bulk since descriptions can be large
+      const sessId = await createSession({ updates: allUpdates, action: "plan_confirm_all" });
+      buttons.push([{ text: "✅ Confirmar todas", callback_data: `plan_sess:${sessId}` }]);
     }
 
     return { text, reply_markup: buttons.length ? { inline_keyboard: buttons } : undefined };
@@ -1726,7 +1735,7 @@ serve(async (req) => {
         result = await markPublished(ids);
         result = { accion: "marcar_publicadas", ...result };
       }
-      // plan_confirm:{client_id}:{month}:{status} — confirm single planning
+      // plan_confirm:{client_id}:{month}:{status} — confirm single planning (no description)
       else if (callbackData.startsWith("plan_confirm:")) {
         const parts = callbackData.replace("plan_confirm:", "").split(":");
         const [clientId, monthStr, status] = parts;
@@ -1765,23 +1774,42 @@ serve(async (req) => {
         result = await markPublished(sessData.ids);
         result = { accion: "marcar_publicadas", ...result };
       }
-      // plan_sess:{session_id} — resolve session for bulk plan confirm
+      // plan_sess:{session_id} — resolve session for single or bulk plan confirm (supports descriptions)
       else if (callbackData.startsWith("plan_sess:")) {
         const sessId = callbackData.replace("plan_sess:", "");
-        const sessData = await resolveSession(sessId) as { updates?: { client_id: string; mes: number; status: string }[] } | null;
-        if (!sessData?.updates?.length) return json({ error: "Sesión expirada o inválida. Volvé a consultar." }, 400);
-        let count = 0;
-        for (const u of sessData.updates) {
-          if (u.client_id && u.mes) {
-            await handleUpdatePlanning(u.client_id, u.mes, u.status || "hacer");
-            count++;
-          }
+        const sessData = await resolveSession(sessId) as {
+          action?: string;
+          updates?: { client_id: string; mes: number; status: string; descripcion?: string }[];
+          client_id?: string; mes?: number; status?: string; descripcion?: string;
+        } | null;
+        if (!sessData) return json({ error: "Sesión expirada o inválida. Volvé a consultar." }, 400);
+
+        // Single planning confirm with description
+        if (sessData.action === "plan_confirm" && sessData.client_id && sessData.mes) {
+          await handleUpdatePlanning(sessData.client_id, sessData.mes, sessData.status || "hacer", sessData.descripcion);
+          result = {
+            accion: "planificacion_confirmada",
+            mensaje_ia: `Planificación confirmada exitosamente`,
+            ok: true,
+          };
         }
-        result = {
-          accion: "planificacion_confirmada",
-          mensaje_ia: `${count} planificación(es) confirmada(s) exitosamente`,
-          ok: true,
-        };
+        // Bulk planning confirm
+        else if (sessData.updates?.length) {
+          let count = 0;
+          for (const u of sessData.updates) {
+            if (u.client_id && u.mes) {
+              await handleUpdatePlanning(u.client_id, u.mes, u.status || "hacer", u.descripcion);
+              count++;
+            }
+          }
+          result = {
+            accion: "planificacion_confirmada",
+            mensaje_ia: `${count} planificación(es) confirmada(s) exitosamente`,
+            ok: true,
+          };
+        } else {
+          return json({ error: "Sesión expirada o inválida. Volvé a consultar." }, 400);
+        }
       }
       // create_pub_confirm:{session_id} — confirm and insert publication
       else if (callbackData.startsWith("create_pub_confirm:")) {
