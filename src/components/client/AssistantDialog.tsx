@@ -905,8 +905,99 @@ export const AssistantDialog = ({ onClientsUpdate }: AssistantDialogProps) => {
       </div>
     );
   };
+  const handleConfirmCreatePublication = async () => {
+    if (!response?.publicacion_propuesta) return;
+    setConfirming(true);
+    try {
+      await invokeEdgeFunction("telegram-assistant", {
+        accion: "confirmar_crear_publicacion",
+        publicacion_propuesta: response.publicacion_propuesta,
+      });
+      toast({ title: "Publicación creada", description: `"${response.publicacion_propuesta.name}" creada exitosamente` });
+      onClientsUpdate();
+      reset();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setConfirming(false);
+    }
+  };
 
-  return (
+  const renderPublicacionPropuesta = () => {
+    if (!response?.publicacion_propuesta) return null;
+    const pub = response.publicacion_propuesta;
+    const typeLabels: Record<string, string> = { reel: "Reel", carousel: "Carrusel", image: "Imagen" };
+
+    return (
+      <div className="space-y-3">
+        <div className="border border-border rounded-lg p-3 space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium">{pub.name}</span>
+            <Badge variant="outline" className="text-xs">{typeLabels[pub.type] || pub.type}</Badge>
+          </div>
+          <div className="grid grid-cols-2 gap-2 text-sm">
+            <div>
+              <p className="text-xs text-muted-foreground">Fecha</p>
+              <p>{new Date(pub.date).toLocaleDateString("es-AR")}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Estado</p>
+              <p>{pub.status_label}</p>
+            </div>
+            {pub.designer && (
+              <div>
+                <p className="text-xs text-muted-foreground">Diseñador</p>
+                <p>{pub.designer}</p>
+              </div>
+            )}
+            <div>
+              <p className="text-xs text-muted-foreground">Cliente</p>
+              <p>{pub.client_name}</p>
+            </div>
+          </div>
+          {pub.description && (
+            <div className="bg-muted/50 rounded p-2">
+              <p className="text-xs text-muted-foreground mb-0.5 font-medium">Descripción</p>
+              <p className="text-sm whitespace-pre-wrap">{pub.description}</p>
+            </div>
+          )}
+          {pub.copywriting && (
+            <div className="bg-muted/50 rounded p-2 relative">
+              <p className="text-xs text-muted-foreground mb-0.5 font-medium">Copywriting</p>
+              <pre className="text-sm whitespace-pre-wrap font-sans pr-8">{pub.copywriting}</pre>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="absolute top-1 right-1 h-6 w-6 p-0"
+                onClick={() => {
+                  navigator.clipboard.writeText(pub.copywriting!);
+                  toast({ title: "Copiado al portapapeles" });
+                }}
+              >
+                <Copy className="h-3 w-3" />
+              </Button>
+            </div>
+          )}
+        </div>
+
+        <div className="flex gap-2">
+          <Button
+            className="flex-1 gap-2"
+            onClick={handleConfirmCreatePublication}
+            disabled={confirming}
+          >
+            {confirming ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+            Confirmar y crear
+          </Button>
+          <Button variant="outline" onClick={reset}>
+            Cancelar
+          </Button>
+        </div>
+      </div>
+    );
+  };
+
+
     <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) reset(); }}>
       <DialogTrigger asChild>
         <Button variant="outline" className="gap-2 text-sm">
