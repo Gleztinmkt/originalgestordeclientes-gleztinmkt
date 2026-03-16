@@ -1859,7 +1859,7 @@ serve(async (req) => {
       }
       // cancel — user cancelled action
       else if (callbackData === "cancel") {
-        const tg = { text: "❌ Acción cancelada.", reply_markup: undefined };
+        const tg = splitTelegramMessages("❌ Acción cancelada.");
         return json({ accion: "cancelado", telegram: tg });
       }
       else {
