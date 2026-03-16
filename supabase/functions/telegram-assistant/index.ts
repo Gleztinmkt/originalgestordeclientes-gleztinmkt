@@ -1768,6 +1768,67 @@ async function resolveSession(sessionId: string): Promise<unknown | null> {
   return data?.data ?? null;
 }
 
+/* ── Insert client helper ── */
+async function insertClient(proposal: { name: string; phone?: string | null; payment_day?: number | null }) {
+  const sb = getAdminClient();
+  const { data: existingClient } = await sb.from("clients").select("agency_id").limit(1).maybeSingle();
+  const agencyId = existingClient?.agency_id || null;
+
+  const { data, error } = await sb.from("clients").insert({
+    name: proposal.name,
+    phone: proposal.phone || null,
+    payment_day: proposal.payment_day || null,
+    agency_id: agencyId,
+  }).select("id, name").single();
+  if (error) throw error;
+
+  return {
+    accion: "cliente_creado",
+    mensaje_ia: `✅ Cliente "${data.name}" creado exitosamente`,
+    cliente_id: data.id,
+    ok: true,
+  };
+}
+
+/* ── Add package to client helper ── */
+// deno-lint-ignore no-explicit-any
+async function addPackageToClient(proposal: any) {
+  const sb = getAdminClient();
+  const { data: client, error: clientErr } = await sb
+    .from("clients")
+    .select("packages")
+    .eq("id", proposal.client_id)
+    .single();
+  if (clientErr) throw clientErr;
+
+  const { packages } = parseClientPackages(client?.packages);
+  const newPackage = {
+    id: crypto.randomUUID(),
+    name: proposal.package_name,
+    month: proposal.month,
+    totalPublications: String(proposal.total_publications),
+    usedPublications: "0",
+    paid: proposal.paid || false,
+    isSplitPayment: false,
+    firstHalfPaid: false,
+    secondHalfPaid: false,
+    last_update: null,
+  };
+  packages.push(newPackage);
+
+  const { error: updateErr } = await sb
+    .from("clients")
+    .update({ packages })
+    .eq("id", proposal.client_id);
+  if (updateErr) throw updateErr;
+
+  return {
+    accion: "paquete_agregado",
+    mensaje_ia: `✅ ${proposal.package_name} (${proposal.total_publications} publicaciones) agregado a ${proposal.client_name} para ${proposal.month}`,
+    ok: true,
+  };
+}
+
 /* ── Insert publication helper ── */
 // deno-lint-ignore no-explicit-any
 async function insertPublication(pub: any) {
