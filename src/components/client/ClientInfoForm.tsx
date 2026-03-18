@@ -18,6 +18,8 @@ export const ClientInfoForm = ({ defaultValues, onSubmit, isSubmitting }: Client
     meetings: [],
     socialNetworks: [],
     branding: "",
+    material: "",
+    general: "",
     publicationSchedule: []
   });
   const isMobile = useIsMobile();
