@@ -440,7 +440,7 @@ export const PublicationCalendarDialog = ({
     setDriveStatus("loading");
     setDriveError(null);
     try {
-      const scriptUrl = "https://script.google.com/macros/s/AKfycbwl4AxjUPRrgtpwXE78mXsNqD7Igdk-ghnRVdsbjBXB4YNUPGB-x3_dY2SKAETwVdhOOA/exec";
+      const scriptUrl = "https://script.google.com/macros/s/AKfycbyahM4qzOdRWIC1Sr3Xh1IArjk0BR1BKfzzFXKVESL1ovEEwV7NA-Wp7C75RP4ygCvovw/exec";
       const response = await fetch(scriptUrl, {
         method: "POST",
         body: JSON.stringify({
