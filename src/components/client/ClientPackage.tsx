@@ -33,6 +33,7 @@ interface ClientPackageProps {
   isProcessing: boolean;
   initialLastPost?: string;
   initialPhone?: string;
+  clientMaterialUrl?: string;
 }
 export const ClientPackage = ({
   packageName,
