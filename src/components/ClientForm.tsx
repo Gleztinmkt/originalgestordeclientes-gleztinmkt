@@ -76,8 +76,8 @@ export const ClientForm = ({ onAddClient, onUpdateClient }: ClientFormProps) => 
       setDriveUrl(data.url);
       setDriveStatus("success");
 
-      // Save branding URL to client
-      if (data.urlBranding && onUpdateClient) {
+      // Save branding, material, general URLs to client
+      if (onUpdateClient && (data.urlBranding || data.urlMaterial || data.urlGeneral)) {
         await onUpdateClient(createdClient.id, {
           clientInfo: {
             ...createdClient.clientInfo,
@@ -85,7 +85,9 @@ export const ClientForm = ({ onAddClient, onUpdateClient }: ClientFormProps) => 
             meetings: createdClient.clientInfo?.meetings || [],
             socialNetworks: createdClient.clientInfo?.socialNetworks || [],
             publicationSchedule: createdClient.clientInfo?.publicationSchedule || [],
-            branding: data.urlBranding,
+            ...(data.urlBranding && { branding: data.urlBranding }),
+            ...(data.urlMaterial && { material: data.urlMaterial }),
+            ...(data.urlGeneral && { general: data.urlGeneral }),
           },
         });
       }
