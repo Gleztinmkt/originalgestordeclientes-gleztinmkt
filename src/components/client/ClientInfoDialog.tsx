@@ -55,6 +55,8 @@ export const ClientInfoDialog = ({ clientId, clientName, clientInfo, onUpdateInf
     meetings: [],
     socialNetworks: [],
     branding: "",
+    material: "",
+    general: "",
     publicationSchedule: []
   });
   const [isLoading, setIsLoading] = useState(false);
@@ -77,10 +79,14 @@ export const ClientInfoDialog = ({ clientId, clientName, clientInfo, onUpdateInf
         throw new Error(data.error || data.message || "Error al crear carpetas");
       }
       setDriveStatus("success");
-      if (data.urlBranding) {
-        const updatedInfo = { ...info, branding: data.urlBranding };
+      if (data.urlBranding || data.urlMaterial || data.urlGeneral) {
+        const updatedInfo = {
+          ...info,
+          ...(data.urlBranding && { branding: data.urlBranding }),
+          ...(data.urlMaterial && { material: data.urlMaterial }),
+          ...(data.urlGeneral && { general: data.urlGeneral }),
+        };
         setInfo(updatedInfo);
-        // Save branding URL to DB
         await supabase
           .from('clients')
           .update({ client_info: updatedInfo as unknown as Json })
@@ -120,6 +126,8 @@ export const ClientInfoDialog = ({ clientId, clientName, clientInfo, onUpdateInf
           username: network.username || ""
         })),
         branding: info.branding || "",
+        material: info.material || "",
+        general: info.general || "",
         publicationSchedule: formattedSchedule
       } as Json;
 
@@ -222,6 +230,24 @@ export const ClientInfoDialog = ({ clientId, clientName, clientInfo, onUpdateInf
                   placeholder="URL del branding..."
                   value={info.branding}
                   onChange={(e) => setInfo(prev => ({ ...prev, branding: e.target.value }))}
+                  className="dark:bg-gray-700 dark:text-white"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium dark:text-gray-200">Material</label>
+                <Input
+                  placeholder="URL de la carpeta Material..."
+                  value={info.material || ""}
+                  onChange={(e) => setInfo(prev => ({ ...prev, material: e.target.value }))}
+                  className="dark:bg-gray-700 dark:text-white"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium dark:text-gray-200">General</label>
+                <Input
+                  placeholder="URL de la carpeta General..."
+                  value={info.general || ""}
+                  onChange={(e) => setInfo(prev => ({ ...prev, general: e.target.value }))}
                   className="dark:bg-gray-700 dark:text-white"
                 />
               </div>
