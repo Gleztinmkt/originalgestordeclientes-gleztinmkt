@@ -44,6 +44,7 @@ const DAYS_OF_WEEK = [
 
 interface ClientInfoDialogProps {
   clientId: string;
+  clientName: string;
   clientInfo?: ClientInfo;
   onUpdateInfo: (clientId: string, info: ClientInfo) => void;
 }
