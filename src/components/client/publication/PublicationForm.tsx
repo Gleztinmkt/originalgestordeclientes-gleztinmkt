@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Sparkles, ChevronDown, Loader2, Plus, Trash2, ExternalLink } from "lucide-react";
+import { Sparkles, ChevronDown, Loader2, Plus, Trash2, ExternalLink, FolderOpen } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
@@ -43,6 +43,7 @@ interface PublicationFormProps {
   existingPublications: Array<{ date: string }>;
   onPublicationsChange: () => void;
   onFormChange?: (hasChanges: boolean) => void;
+  clientGeneralUrl?: string;
 }
 
 export const PublicationForm = ({ 
@@ -55,7 +56,8 @@ export const PublicationForm = ({
   clientId,
   existingPublications,
   onPublicationsChange,
-  onFormChange
+  onFormChange,
+  clientGeneralUrl
 }: PublicationFormProps) => {
   const { toast } = useToast();
   const [name, setName] = useState("");
@@ -415,6 +417,17 @@ export const PublicationForm = ({
                 <Plus className="h-4 w-4" />
               </Button>
             </div>
+            {clientGeneralUrl && !links.some(l => l.label === "material general") && (
+              <Button
+                type="button"
+                variant="secondary"
+                className="w-full gap-2"
+                onClick={() => setLinks([...links, { label: "material general", url: clientGeneralUrl }])}
+              >
+                <FolderOpen className="h-4 w-4" />
+                Añadir carpeta general
+              </Button>
+            )}
             {links.length > 0 && (
               <ScrollArea className="h-[100px]">
                 <div className="space-y-2">

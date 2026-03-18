@@ -116,6 +116,7 @@ export const PackageSection = ({
             initialLastPost={client.lastPost || ""}
             initialPhone={client.phone || ""}
             clientMaterialUrl={client.clientInfo?.material || ""}
+            clientGeneralUrl={client.clientInfo?.general || ""}
           />
         ))}
       </div>

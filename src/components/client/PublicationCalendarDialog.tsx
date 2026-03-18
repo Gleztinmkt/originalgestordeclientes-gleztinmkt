@@ -21,7 +21,8 @@ export const PublicationCalendarDialog = ({
   clientName,
   packageId,
   packageName,
-  clientMaterialUrl
+  clientMaterialUrl,
+  clientGeneralUrl
 }: PublicationCalendarDialogProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -462,9 +463,16 @@ export const PublicationCalendarDialog = ({
               .eq('id', pub.id)
               .single();
             
-            const currentLinks = currentPub?.links || "";
-            const materialEntry = `material: ${pub.urlMaterial}`;
-            const newLinks = currentLinks ? `${currentLinks}\n${materialEntry}` : materialEntry;
+            let currentLinksArray: Array<{label: string; url: string}> = [];
+            try {
+              if (currentPub?.links) {
+                currentLinksArray = JSON.parse(currentPub.links);
+              }
+            } catch {
+              currentLinksArray = [];
+            }
+            currentLinksArray.push({ label: "material", url: pub.urlMaterial });
+            const newLinks = JSON.stringify(currentLinksArray);
             
             await supabase
               .from('publications')
@@ -551,6 +559,7 @@ export const PublicationCalendarDialog = ({
               existingPublications={publications.map(p => ({ date: p.date }))}
               onPublicationsChange={refetch}
               onFormChange={setHasUnsavedChanges}
+              clientGeneralUrl={clientGeneralUrl}
             />
 
             <div className="pt-2 border-t space-y-2">

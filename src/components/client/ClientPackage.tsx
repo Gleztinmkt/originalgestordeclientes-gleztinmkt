@@ -34,6 +34,7 @@ interface ClientPackageProps {
   initialLastPost?: string;
   initialPhone?: string;
   clientMaterialUrl?: string;
+  clientGeneralUrl?: string;
 }
 export const ClientPackage = ({
   packageName,
@@ -51,7 +52,8 @@ export const ClientPackage = ({
   isProcessing,
   initialLastPost = "",
   initialPhone = "",
-  clientMaterialUrl = ""
+  clientMaterialUrl = "",
+  clientGeneralUrl = ""
 }: ClientPackageProps) => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -498,7 +500,7 @@ export const ClientPackage = ({
                 <Send className="h-4 w-4" />
                 Enviar mensaje de completado
               </Button>}
-            <PublicationCalendarDialog clientId={clientId} clientName={clientName} packageId={packageId} packageName={packageName} clientMaterialUrl={clientMaterialUrl} />
+            <PublicationCalendarDialog clientId={clientId} clientName={clientName} packageId={packageId} packageName={packageName} clientMaterialUrl={clientMaterialUrl} clientGeneralUrl={clientGeneralUrl} />
           </div>
         </div>
       </CardContent>
