@@ -19,7 +19,9 @@ import { es } from "date-fns/locale";
 export const PublicationCalendarDialog = ({
   clientId,
   clientName,
-  packageId
+  packageId,
+  packageName,
+  clientMaterialUrl
 }: PublicationCalendarDialogProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
