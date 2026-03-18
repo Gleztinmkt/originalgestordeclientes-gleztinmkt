@@ -39,7 +39,7 @@ export const formatClientForDatabase = (client: Partial<Client>) => {
       material: client.clientInfo.material || '',
       general: client.clientInfo.general || '',
       publicationSchedule: client.clientInfo.publicationSchedule || []
-    } as Json;
+    } as unknown as Json;
 
     console.log('Formatted client info:', formattedClientInfo);
   }
