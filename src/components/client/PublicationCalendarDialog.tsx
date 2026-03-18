@@ -444,8 +444,8 @@ export const PublicationCalendarDialog = ({
       const response = await fetch(scriptUrl, {
         method: "POST",
         body: JSON.stringify({
+          action: "createCalendarFolders",
           urlMaterial: clientMaterialUrl || "",
-          nombreCliente: clientName || "",
           nombrePaquete: packageName || "",
           publicaciones: publications.map(p => ({ id: p.id, nombre: p.name })),
         }),
