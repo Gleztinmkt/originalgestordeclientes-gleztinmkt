@@ -231,6 +231,24 @@ export const ClientInfoDialog = ({ clientId, clientName, clientInfo, onUpdateInf
                   className="dark:bg-gray-700 dark:text-white"
                 />
               </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium dark:text-gray-200">Material</label>
+                <Input
+                  placeholder="URL de la carpeta Material..."
+                  value={info.material || ""}
+                  onChange={(e) => setInfo(prev => ({ ...prev, material: e.target.value }))}
+                  className="dark:bg-gray-700 dark:text-white"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium dark:text-gray-200">General</label>
+                <Input
+                  placeholder="URL de la carpeta General..."
+                  value={info.general || ""}
+                  onChange={(e) => setInfo(prev => ({ ...prev, general: e.target.value }))}
+                  className="dark:bg-gray-700 dark:text-white"
+                />
+              </div>
               <div className="pt-2 border-t">
                 {driveStatus === "idle" && (
                   <Button onClick={handleCreateDriveFolders} variant="outline" className="w-full" size={isMobile ? "sm" : "default"}>
