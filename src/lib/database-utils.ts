@@ -65,7 +65,10 @@ export const formatDatabaseClient = (dbClient: any): Client => {
     generalInfo: "",
     meetings: [],
     socialNetworks: [],
-    branding: "" // Aseguramos que el branding se incluya al formatear desde la base de datos
+    branding: "",
+    material: "",
+    general: "",
+    publicationSchedule: []
   };
 
   const formatted = {
