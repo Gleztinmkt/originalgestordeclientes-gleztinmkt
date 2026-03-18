@@ -21,6 +21,7 @@ export const PublicationCalendarDialog = ({
   clientName,
   packageId,
   packageName,
+  packageMonth,
   clientMaterialUrl,
   clientGeneralUrl
 }: PublicationCalendarDialogProps) => {
