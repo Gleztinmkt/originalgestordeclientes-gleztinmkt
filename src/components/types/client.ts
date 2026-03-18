@@ -18,6 +18,8 @@ export interface ClientInfo {
   }>;
   socialNetworks: SocialNetwork[];
   branding?: string;
+  material?: string;
+  general?: string;
   publicationSchedule: PublicationSchedule[];
 }
 

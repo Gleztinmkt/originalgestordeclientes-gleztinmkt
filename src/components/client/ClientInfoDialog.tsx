@@ -126,6 +126,8 @@ export const ClientInfoDialog = ({ clientId, clientName, clientInfo, onUpdateInf
           username: network.username || ""
         })),
         branding: info.branding || "",
+        material: info.material || "",
+        general: info.general || "",
         publicationSchedule: formattedSchedule
       } as Json;
 
