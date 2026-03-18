@@ -50,7 +50,8 @@ export const ClientPackage = ({
   packageId,
   isProcessing,
   initialLastPost = "",
-  initialPhone = ""
+  initialPhone = "",
+  clientMaterialUrl = ""
 }: ClientPackageProps) => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
