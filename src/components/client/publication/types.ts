@@ -49,6 +49,7 @@ export interface PublicationCalendarDialogProps {
   clientName: string;
   packageId?: string;
   packageName?: string;
+  packageMonth?: string;
   clientMaterialUrl?: string;
   clientGeneralUrl?: string;
 }

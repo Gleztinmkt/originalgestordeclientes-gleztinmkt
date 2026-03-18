@@ -500,7 +500,7 @@ export const ClientPackage = ({
                 <Send className="h-4 w-4" />
                 Enviar mensaje de completado
               </Button>}
-            <PublicationCalendarDialog clientId={clientId} clientName={clientName} packageId={packageId} packageName={packageName} clientMaterialUrl={clientMaterialUrl} clientGeneralUrl={clientGeneralUrl} />
+            <PublicationCalendarDialog clientId={clientId} clientName={clientName} packageId={packageId} packageName={packageName} packageMonth={month} clientMaterialUrl={clientMaterialUrl} clientGeneralUrl={clientGeneralUrl} />
           </div>
         </div>
       </CardContent>
