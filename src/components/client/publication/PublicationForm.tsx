@@ -417,6 +417,17 @@ export const PublicationForm = ({
                 <Plus className="h-4 w-4" />
               </Button>
             </div>
+            {clientGeneralUrl && !links.some(l => l.label === "material general") && (
+              <Button
+                type="button"
+                variant="secondary"
+                className="w-full gap-2"
+                onClick={() => setLinks([...links, { label: "material general", url: clientGeneralUrl }])}
+              >
+                <FolderOpen className="h-4 w-4" />
+                Añadir carpeta general
+              </Button>
+            )}
             {links.length > 0 && (
               <ScrollArea className="h-[100px]">
                 <div className="space-y-2">
