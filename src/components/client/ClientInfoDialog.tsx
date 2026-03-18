@@ -55,6 +55,8 @@ export const ClientInfoDialog = ({ clientId, clientName, clientInfo, onUpdateInf
     meetings: [],
     socialNetworks: [],
     branding: "",
+    material: "",
+    general: "",
     publicationSchedule: []
   });
   const [isLoading, setIsLoading] = useState(false);
