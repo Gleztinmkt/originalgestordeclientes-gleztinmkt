@@ -21,6 +21,7 @@ export const PublicationCalendarDialog = ({
   clientName,
   packageId,
   packageName,
+  packageMonth,
   clientMaterialUrl,
   clientGeneralUrl
 }: PublicationCalendarDialogProps) => {
@@ -446,7 +447,7 @@ export const PublicationCalendarDialog = ({
         body: JSON.stringify({
           action: "createCalendarFolders",
           urlMaterial: clientMaterialUrl || "",
-          nombrePaquete: packageName || "",
+          nombrePaquete: packageMonth || packageName || "",
           publicaciones: publications.map(p => ({ id: p.id, nombre: p.name })),
         }),
       });
