@@ -30,6 +30,9 @@ export const PublicationCalendarDialog = ({
   const [copywriting, setCopywriting] = useState("");
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showCloseConfirmation, setShowCloseConfirmation] = useState(false);
+  const [driveStatus, setDriveStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [driveError, setDriveError] = useState<string | null>(null);
+  const [driveFolderUrl, setDriveFolderUrl] = useState<string | null>(null);
 
   const handleCloseAttempt = useCallback((open: boolean) => {
     if (!open && (hasUnsavedChanges || isSubmitting || editingPublication)) {
