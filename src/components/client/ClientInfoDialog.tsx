@@ -49,7 +49,7 @@ interface ClientInfoDialogProps {
   onUpdateInfo: (clientId: string, info: ClientInfo) => void;
 }
 
-export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientInfoDialogProps) => {
+export const ClientInfoDialog = ({ clientId, clientName, clientInfo, onUpdateInfo }: ClientInfoDialogProps) => {
   const [info, setInfo] = useState<ClientInfo>(clientInfo || {
     generalInfo: "",
     meetings: [],
@@ -59,7 +59,44 @@ export const ClientInfoDialog = ({ clientId, clientInfo, onUpdateInfo }: ClientI
   });
   const [isLoading, setIsLoading] = useState(false);
   const [open, setOpen] = useState(false);
+  const [driveStatus, setDriveStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [driveError, setDriveError] = useState<string | null>(null);
   const isMobile = useIsMobile();
+
+  const handleCreateDriveFolders = async () => {
+    setDriveStatus("loading");
+    setDriveError(null);
+    try {
+      const scriptUrl = "https://script.google.com/macros/s/AKfycbwl4AxjUPRrgtpwXE78mXsNqD7Igdk-ghnRVdsbjBXB4YNUPGB-x3_dY2SKAETwVdhOOA/exec";
+      const response = await fetch(scriptUrl, {
+        method: "POST",
+        body: JSON.stringify({ nombreCliente: clientName }),
+      });
+      const data = await response.json();
+      if (!data.success) {
+        throw new Error(data.error || data.message || "Error al crear carpetas");
+      }
+      setDriveStatus("success");
+      if (data.urlBranding) {
+        const updatedInfo = { ...info, branding: data.urlBranding };
+        setInfo(updatedInfo);
+        // Save branding URL to DB
+        await supabase
+          .from('clients')
+          .update({ client_info: updatedInfo as unknown as Json })
+          .eq('id', clientId);
+        onUpdateInfo(clientId, updatedInfo);
+      }
+      if (data.url) {
+        window.open(data.url, '_blank');
+      }
+      toast({ title: "Carpetas creadas", description: "Las carpetas de Drive se crearon correctamente." });
+    } catch (err: any) {
+      console.error("Error creating Drive folders:", err);
+      setDriveError(err.message || "Error desconocido");
+      setDriveStatus("error");
+    }
+  };
 
   const handleSave = async () => {
     try {
