@@ -35,7 +35,10 @@ export const formatClientForDatabase = (client: Partial<Client>) => {
       generalInfo: client.clientInfo.generalInfo || '',
       meetings: client.clientInfo.meetings || [],
       socialNetworks: formattedSocialNetworks,
-      branding: client.clientInfo.branding || '' // Aseguramos que el branding se incluya
+      branding: client.clientInfo.branding || '',
+      material: client.clientInfo.material || '',
+      general: client.clientInfo.general || '',
+      publicationSchedule: client.clientInfo.publicationSchedule || []
     } as Json;
 
     console.log('Formatted client info:', formattedClientInfo);
