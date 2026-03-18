@@ -559,6 +559,7 @@ export const PublicationCalendarDialog = ({
               existingPublications={publications.map(p => ({ date: p.date }))}
               onPublicationsChange={refetch}
               onFormChange={setHasUnsavedChanges}
+              clientGeneralUrl={clientGeneralUrl}
             />
 
             <div className="pt-2 border-t space-y-2">
