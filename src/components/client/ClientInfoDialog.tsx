@@ -79,10 +79,14 @@ export const ClientInfoDialog = ({ clientId, clientName, clientInfo, onUpdateInf
         throw new Error(data.error || data.message || "Error al crear carpetas");
       }
       setDriveStatus("success");
-      if (data.urlBranding) {
-        const updatedInfo = { ...info, branding: data.urlBranding };
+      if (data.urlBranding || data.urlMaterial || data.urlGeneral) {
+        const updatedInfo = {
+          ...info,
+          ...(data.urlBranding && { branding: data.urlBranding }),
+          ...(data.urlMaterial && { material: data.urlMaterial }),
+          ...(data.urlGeneral && { general: data.urlGeneral }),
+        };
         setInfo(updatedInfo);
-        // Save branding URL to DB
         await supabase
           .from('clients')
           .update({ client_info: updatedInfo as unknown as Json })
