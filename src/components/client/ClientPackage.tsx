@@ -58,6 +58,9 @@ export const ClientPackage = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [lastPost, setLastPost] = useState<string>(initialLastPost);
   const [clientPhone, setClientPhone] = useState<string>(initialPhone);
+  const [driveStatus, setDriveStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [driveError, setDriveError] = useState<string | null>(null);
+  const [driveFolderUrl, setDriveFolderUrl] = useState<string | null>(null);
 
   // Sync when prop changes (e.g., after IA discount + refresh)
   useEffect(() => {
