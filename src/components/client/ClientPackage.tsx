@@ -559,49 +559,7 @@ export const ClientPackage = ({
                 <Send className="h-4 w-4" />
                 Enviar mensaje de completado
               </Button>}
-            <PublicationCalendarDialog clientId={clientId} clientName={clientName} packageId={packageId} />
-          </div>
-
-          <div className="pt-2 border-t">
-            {driveStatus === "idle" && (
-              <Button onClick={handleGenerateDriveFolders} variant="outline" className="w-full" disabled={disabled}>
-                <FolderOpen className="h-4 w-4 mr-2" />
-                📁 Generar carpetas en Drive
-              </Button>
-            )}
-            {driveStatus === "loading" && (
-              <Button disabled variant="outline" className="w-full">
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Creando carpetas...
-              </Button>
-            )}
-            {driveStatus === "success" && (
-              <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 dark:bg-green-900/20 dark:text-green-400 rounded-lg p-3">
-                <CheckCircle2 className="h-4 w-4 shrink-0" />
-                <span>✅ Carpetas creadas</span>
-                {driveFolderUrl && (
-                  <a
-                    href={driveFolderUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="ml-auto font-medium underline hover:text-green-700"
-                  >
-                    Abrir paquete en Drive →
-                  </a>
-                )}
-              </div>
-            )}
-            {driveStatus === "error" && driveError && (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 dark:bg-red-900/20 dark:text-red-400 rounded-lg p-3">
-                  <AlertCircle className="h-4 w-4 shrink-0" />
-                  <span>{driveError}</span>
-                </div>
-                <Button onClick={() => { setDriveStatus("idle"); setDriveError(null); }} variant="outline" size="sm" className="w-full">
-                  Reintentar
-                </Button>
-              </div>
-            )}
+            <PublicationCalendarDialog clientId={clientId} clientName={clientName} packageId={packageId} packageName={packageName} clientMaterialUrl={clientMaterialUrl} />
           </div>
         </div>
       </CardContent>
