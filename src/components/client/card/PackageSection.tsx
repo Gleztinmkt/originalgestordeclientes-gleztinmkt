@@ -115,6 +115,7 @@ export const PackageSection = ({
             isProcessing={processingPackageId === pkg.id}
             initialLastPost={client.lastPost || ""}
             initialPhone={client.phone || ""}
+            clientMaterialUrl={client.clientInfo?.material || ""}
           />
         ))}
       </div>
