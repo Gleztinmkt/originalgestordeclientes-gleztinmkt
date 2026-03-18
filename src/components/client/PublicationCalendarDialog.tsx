@@ -445,6 +445,7 @@ export const PublicationCalendarDialog = ({
         method: "POST",
         body: JSON.stringify({
           urlMaterial: clientMaterialUrl || "",
+          nombreCliente: clientName || "",
           nombrePaquete: packageName || "",
           publicaciones: publications.map(p => ({ id: p.id, nombre: p.name })),
         }),
