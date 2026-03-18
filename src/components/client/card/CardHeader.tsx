@@ -36,6 +36,7 @@ export const ClientCardHeader = ({
       <div className="flex gap-2">
         <ClientInfoDialog
           clientId={client.id}
+          clientName={client.name}
           clientInfo={client.clientInfo}
           onUpdateInfo={onUpdateClientInfo}
         />
