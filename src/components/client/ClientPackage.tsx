@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Package, Edit, MoreVertical, Trash, Send, Download, FileText, FolderOpen, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { Package, Edit, MoreVertical, Trash, Send, Download, FileText } from "lucide-react";
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } from "docx";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PackageCounter } from "./PackageCounter";
@@ -58,9 +58,6 @@ export const ClientPackage = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [lastPost, setLastPost] = useState<string>(initialLastPost);
   const [clientPhone, setClientPhone] = useState<string>(initialPhone);
-  const [driveStatus, setDriveStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
-  const [driveError, setDriveError] = useState<string | null>(null);
-  const [driveFolderUrl, setDriveFolderUrl] = useState<string | null>(null);
 
   // Sync when prop changes (e.g., after IA discount + refresh)
   useEffect(() => {
@@ -423,64 +420,6 @@ export const ClientPackage = ({
     }
   }, [clientName, packageName, clientId, packageId, isProcessing, isSubmitting]);
 
-  const handleGenerateDriveFolders = useCallback(async () => {
-    if (isProcessing || isSubmitting) return;
-    setDriveStatus("loading");
-    setDriveError(null);
-    try {
-      const { data: publications = [] } = await supabase
-        .from('publications')
-        .select('id, name')
-        .eq('client_id', clientId)
-        .eq('package_id', packageId)
-        .is('deleted_at', null);
-
-      const scriptUrl = "https://script.google.com/macros/s/AKfycbwl4AxjUPRrgtpwXE78mXsNqD7Igdk-ghnRVdsbjBXB4YNUPGB-x3_dY2SKAETwVdhOOA/exec";
-      const response = await fetch(scriptUrl, {
-        method: "POST",
-        body: JSON.stringify({
-          urlMaterial: clientMaterialUrl,
-          nombrePaquete: packageName,
-          publicaciones: publications.map(p => ({ id: p.id, nombre: p.name })),
-        }),
-      });
-      const data = await response.json();
-      if (!data.success) {
-        throw new Error(data.error || data.message || "Error al crear carpetas");
-      }
-
-      if (data.publicaciones && Array.isArray(data.publicaciones)) {
-        for (const pub of data.publicaciones) {
-          if (pub.id && pub.urlMaterial) {
-            const { data: currentPub } = await supabase
-              .from('publications')
-              .select('links')
-              .eq('id', pub.id)
-              .single();
-            
-            const currentLinks = currentPub?.links || "";
-            const materialEntry = `material: ${pub.urlMaterial}`;
-            const newLinks = currentLinks ? `${currentLinks}\n${materialEntry}` : materialEntry;
-            
-            await supabase
-              .from('publications')
-              .update({ links: newLinks })
-              .eq('id', pub.id);
-          }
-        }
-      }
-
-      setDriveStatus("success");
-      if (data.url) {
-        setDriveFolderUrl(data.url);
-      }
-      toast({ title: "Carpetas creadas", description: "Las carpetas de publicaciones se crearon correctamente." });
-    } catch (err: any) {
-      console.error("Error creating Drive folders for package:", err);
-      setDriveError(err.message || "Error desconocido");
-      setDriveStatus("error");
-    }
-  }, [clientId, packageId, packageName, clientMaterialUrl, isProcessing, isSubmitting]);
 
   const disabled = isProcessing || isSubmitting;
   return <Card className="bg-white dark:bg-gray-800 border dark:border-gray-700">
@@ -559,49 +498,7 @@ export const ClientPackage = ({
                 <Send className="h-4 w-4" />
                 Enviar mensaje de completado
               </Button>}
-            <PublicationCalendarDialog clientId={clientId} clientName={clientName} packageId={packageId} />
-          </div>
-
-          <div className="pt-2 border-t">
-            {driveStatus === "idle" && (
-              <Button onClick={handleGenerateDriveFolders} variant="outline" className="w-full" disabled={disabled}>
-                <FolderOpen className="h-4 w-4 mr-2" />
-                📁 Generar carpetas en Drive
-              </Button>
-            )}
-            {driveStatus === "loading" && (
-              <Button disabled variant="outline" className="w-full">
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Creando carpetas...
-              </Button>
-            )}
-            {driveStatus === "success" && (
-              <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 dark:bg-green-900/20 dark:text-green-400 rounded-lg p-3">
-                <CheckCircle2 className="h-4 w-4 shrink-0" />
-                <span>✅ Carpetas creadas</span>
-                {driveFolderUrl && (
-                  <a
-                    href={driveFolderUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="ml-auto font-medium underline hover:text-green-700"
-                  >
-                    Abrir paquete en Drive →
-                  </a>
-                )}
-              </div>
-            )}
-            {driveStatus === "error" && driveError && (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 dark:bg-red-900/20 dark:text-red-400 rounded-lg p-3">
-                  <AlertCircle className="h-4 w-4 shrink-0" />
-                  <span>{driveError}</span>
-                </div>
-                <Button onClick={() => { setDriveStatus("idle"); setDriveError(null); }} variant="outline" size="sm" className="w-full">
-                  Reintentar
-                </Button>
-              </div>
-            )}
+            <PublicationCalendarDialog clientId={clientId} clientName={clientName} packageId={packageId} packageName={packageName} clientMaterialUrl={clientMaterialUrl} />
           </div>
         </div>
       </CardContent>
