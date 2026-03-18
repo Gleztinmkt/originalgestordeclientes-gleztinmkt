@@ -34,6 +34,7 @@ interface ClientPackageProps {
   initialLastPost?: string;
   initialPhone?: string;
   clientMaterialUrl?: string;
+  clientGeneralUrl?: string;
 }
 export const ClientPackage = ({
   packageName,
