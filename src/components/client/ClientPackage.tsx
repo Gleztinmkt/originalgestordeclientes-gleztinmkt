@@ -420,64 +420,6 @@ export const ClientPackage = ({
     }
   }, [clientName, packageName, clientId, packageId, isProcessing, isSubmitting]);
 
-  const handleGenerateDriveFolders = useCallback(async () => {
-    if (isProcessing || isSubmitting) return;
-    setDriveStatus("loading");
-    setDriveError(null);
-    try {
-      const { data: publications = [] } = await supabase
-        .from('publications')
-        .select('id, name')
-        .eq('client_id', clientId)
-        .eq('package_id', packageId)
-        .is('deleted_at', null);
-
-      const scriptUrl = "https://script.google.com/macros/s/AKfycbwl4AxjUPRrgtpwXE78mXsNqD7Igdk-ghnRVdsbjBXB4YNUPGB-x3_dY2SKAETwVdhOOA/exec";
-      const response = await fetch(scriptUrl, {
-        method: "POST",
-        body: JSON.stringify({
-          urlMaterial: clientMaterialUrl,
-          nombrePaquete: packageName,
-          publicaciones: publications.map(p => ({ id: p.id, nombre: p.name })),
-        }),
-      });
-      const data = await response.json();
-      if (!data.success) {
-        throw new Error(data.error || data.message || "Error al crear carpetas");
-      }
-
-      if (data.publicaciones && Array.isArray(data.publicaciones)) {
-        for (const pub of data.publicaciones) {
-          if (pub.id && pub.urlMaterial) {
-            const { data: currentPub } = await supabase
-              .from('publications')
-              .select('links')
-              .eq('id', pub.id)
-              .single();
-            
-            const currentLinks = currentPub?.links || "";
-            const materialEntry = `material: ${pub.urlMaterial}`;
-            const newLinks = currentLinks ? `${currentLinks}\n${materialEntry}` : materialEntry;
-            
-            await supabase
-              .from('publications')
-              .update({ links: newLinks })
-              .eq('id', pub.id);
-          }
-        }
-      }
-
-      setDriveStatus("success");
-      if (data.url) {
-        setDriveFolderUrl(data.url);
-      }
-      toast({ title: "Carpetas creadas", description: "Las carpetas de publicaciones se crearon correctamente." });
-    } catch (err: any) {
-      console.error("Error creating Drive folders for package:", err);
-      setDriveError(err.message || "Error desconocido");
-      setDriveStatus("error");
-    }
-  }, [clientId, packageId, packageName, clientMaterialUrl, isProcessing, isSubmitting]);
 
   const disabled = isProcessing || isSubmitting;
   return <Card className="bg-white dark:bg-gray-800 border dark:border-gray-700">
