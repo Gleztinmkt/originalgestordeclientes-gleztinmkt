@@ -35,8 +35,11 @@ export const formatClientForDatabase = (client: Partial<Client>) => {
       generalInfo: client.clientInfo.generalInfo || '',
       meetings: client.clientInfo.meetings || [],
       socialNetworks: formattedSocialNetworks,
-      branding: client.clientInfo.branding || '' // Aseguramos que el branding se incluya
-    } as Json;
+      branding: client.clientInfo.branding || '',
+      material: client.clientInfo.material || '',
+      general: client.clientInfo.general || '',
+      publicationSchedule: client.clientInfo.publicationSchedule || []
+    } as unknown as Json;
 
     console.log('Formatted client info:', formattedClientInfo);
   }
@@ -62,7 +65,10 @@ export const formatDatabaseClient = (dbClient: any): Client => {
     generalInfo: "",
     meetings: [],
     socialNetworks: [],
-    branding: "" // Aseguramos que el branding se incluya al formatear desde la base de datos
+    branding: "",
+    material: "",
+    general: "",
+    publicationSchedule: []
   };
 
   const formatted = {
