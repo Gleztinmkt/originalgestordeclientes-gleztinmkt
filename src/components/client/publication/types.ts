@@ -52,4 +52,5 @@ export interface PublicationCalendarDialogProps {
   packageMonth?: string;
   clientMaterialUrl?: string;
   clientGeneralUrl?: string;
+  totalPublications?: number;
 }

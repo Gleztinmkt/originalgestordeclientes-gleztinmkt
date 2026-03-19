@@ -23,7 +23,8 @@ export const PublicationCalendarDialog = ({
   packageName,
   packageMonth,
   clientMaterialUrl,
-  clientGeneralUrl
+  clientGeneralUrl,
+  totalPublications
 }: PublicationCalendarDialogProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -655,6 +656,7 @@ export const PublicationCalendarDialog = ({
               onPublicationsChange={refetch}
               onFormChange={setHasUnsavedChanges}
               clientGeneralUrl={clientGeneralUrl}
+              totalPublications={totalPublications}
             />
 
             <div className="pt-2 border-t space-y-2">

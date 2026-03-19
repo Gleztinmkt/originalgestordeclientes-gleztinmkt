@@ -44,6 +44,7 @@ interface PublicationFormProps {
   onPublicationsChange: () => void;
   onFormChange?: (hasChanges: boolean) => void;
   clientGeneralUrl?: string;
+  totalPublications?: number;
 }
 
 export const PublicationForm = ({ 
@@ -57,7 +58,8 @@ export const PublicationForm = ({
   existingPublications,
   onPublicationsChange,
   onFormChange,
-  clientGeneralUrl
+  clientGeneralUrl,
+  totalPublications
 }: PublicationFormProps) => {
   const { toast } = useToast();
   const [name, setName] = useState("");
@@ -262,6 +264,7 @@ export const PublicationForm = ({
           packageId={packageId}
           existingPublications={existingPublications}
           onSuccess={onPublicationsChange}
+          totalPublications={totalPublications}
         />
       </div>
 
