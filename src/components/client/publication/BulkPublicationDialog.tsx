@@ -34,9 +34,10 @@ interface BulkPublicationDialogProps {
   packageId?: string;
   existingPublications: Array<{ date: string }>;
   onSuccess: () => void;
+  totalPublications?: number;
 }
 
-export function BulkPublicationDialog({ clientId, packageId, existingPublications, onSuccess }: BulkPublicationDialogProps) {
+export function BulkPublicationDialog({ clientId, packageId, existingPublications, onSuccess, totalPublications }: BulkPublicationDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [content, setContent] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
