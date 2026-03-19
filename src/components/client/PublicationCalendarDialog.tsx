@@ -745,5 +745,11 @@ export const PublicationCalendarDialog = ({
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+    <DriveFolderSelectionDialog
+      open={showDriveFolderSelection}
+      onOpenChange={setShowDriveFolderSelection}
+      publications={publications}
+      onGenerate={handleGenerateDriveFolders}
+    />
   </>;
 };
