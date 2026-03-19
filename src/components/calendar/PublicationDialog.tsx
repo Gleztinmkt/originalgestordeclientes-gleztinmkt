@@ -151,30 +151,8 @@ export const PublicationDialog = ({
     }
     client.clientInfo.socialNetworks.forEach(network => {
       if (network.username) {
-        let url;
-        switch (network.platform) {
-          case 'instagram':
-            url = `https://instagram.com/${network.username}`;
-            break;
-          case 'facebook':
-            url = `https://facebook.com/${network.username}`;
-            break;
-          case 'tiktok':
-            url = `https://tiktok.com/@${network.username}`;
-            break;
-          case 'linkedin':
-            url = `https://linkedin.com/in/${network.username}`;
-            break;
-          case 'twitter':
-            url = `https://twitter.com/${network.username}`;
-            break;
-          case 'youtube':
-            url = `https://youtube.com/@${network.username}`;
-            break;
-          default:
-            return;
-        }
-        window.open(url, '_blank');
+        const url = getSocialProfileUrl(network.platform, network.username);
+        if (url) window.open(url, '_blank');
       }
     });
   };

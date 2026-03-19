@@ -366,14 +366,14 @@ export const PublicationCard = ({
                   )}
                   {client?.instagram && (
                     <a 
-                      href={`https://instagram.com/${client.instagram}`}
+                      href={getSocialProfileUrl('instagram', client.instagram)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-1 text-pink-600 hover:text-pink-700 dark:text-pink-400 dark:hover:text-pink-300"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <Instagram className="h-3 w-3" />
-                      <span className="text-xs truncate">@{client.instagram}</span>
+                      <span className="text-xs truncate">@{getDisplayUsername('instagram', client.instagram)}</span>
                     </a>
                   )}
                 </div>
