@@ -38,6 +38,7 @@ export const PublicationCalendarDialog = ({
   const [driveStatus, setDriveStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [driveError, setDriveError] = useState<string | null>(null);
   const [driveFolderUrl, setDriveFolderUrl] = useState<string | null>(null);
+  const [showDriveFolderSelection, setShowDriveFolderSelection] = useState(false);
 
   const handleCloseAttempt = useCallback((open: boolean) => {
     if (!open && (hasUnsavedChanges || isSubmitting || editingPublication)) {
