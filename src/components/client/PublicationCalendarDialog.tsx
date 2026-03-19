@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { Calendar as CalendarIcon, Download, ChevronDown, FolderOpen, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { Calendar as CalendarIcon, Download, ChevronDown, FolderOpen, Loader2, CheckCircle2, AlertCircle, Link2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -480,7 +480,12 @@ export const PublicationCalendarDialog = ({
                 currentLinksArray = [{ label: "enlace", url: currentPub.links }];
               }
             }
-            currentLinksArray.push({ label: "material", url: pub.urlMaterial });
+            const alreadyHas = currentLinksArray.some(
+              l => l.label === "material" && l.url === pub.urlMaterial
+            );
+            if (!alreadyHas) {
+              currentLinksArray.push({ label: "material", url: pub.urlMaterial });
+            }
             const newLinks = JSON.stringify(currentLinksArray);
             
             await supabase
@@ -503,6 +508,87 @@ export const PublicationCalendarDialog = ({
       setDriveStatus("error");
     }
   }, [clientMaterialUrl, packageName, publications, refetch]);
+
+  const [linkSyncStatus, setLinkSyncStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+
+  const handleSyncDriveLinks = useCallback(async () => {
+    setLinkSyncStatus("loading");
+    try {
+      const scriptUrl = "https://script.google.com/macros/s/AKfycbyahM4qzOdRWIC1Sr3Xh1IArjk0BR1BKfzzFXKVESL1ovEEwV7NA-Wp7C75RP4ygCvovw/exec";
+      const response = await fetch(scriptUrl, {
+        method: "POST",
+        body: JSON.stringify({
+          action: "createCalendarFolders",
+          urlMaterial: clientMaterialUrl || "",
+          nombrePaquete: packageMonth || packageName || "",
+          publicaciones: publications.map(p => ({ id: p.id, nombre: p.name })),
+        }),
+      });
+      const data = await response.json();
+      if (!data.success) {
+        throw new Error(data.error || data.message || "Error al obtener enlaces");
+      }
+
+      let linkedCount = 0;
+      if (data.publicaciones && Array.isArray(data.publicaciones)) {
+        for (const pub of data.publicaciones) {
+          if (pub.id && pub.urlMaterial) {
+            const { data: currentPub } = await supabase
+              .from('publications')
+              .select('links')
+              .eq('id', pub.id)
+              .single();
+
+            let currentLinksArray: Array<{label: string; url: string}> = [];
+            if (currentPub?.links) {
+              try {
+                const parsed = JSON.parse(currentPub.links);
+                if (Array.isArray(parsed)) {
+                  currentLinksArray = parsed;
+                } else {
+                  currentLinksArray = [parsed];
+                }
+              } catch {
+                currentLinksArray = [{ label: "enlace", url: currentPub.links }];
+              }
+            }
+
+            // Check if material link already exists for this URL
+            const alreadyHasMaterialLink = currentLinksArray.some(
+              l => l.label === "material" && l.url === pub.urlMaterial
+            );
+            if (!alreadyHasMaterialLink) {
+              currentLinksArray.push({ label: "material", url: pub.urlMaterial });
+              await supabase
+                .from('publications')
+                .update({ links: JSON.stringify(currentLinksArray) })
+                .eq('id', pub.id);
+              linkedCount++;
+            }
+          }
+        }
+      }
+
+      await refetch();
+      setLinkSyncStatus("success");
+      toast({
+        title: "Enlaces sincronizados",
+        description: linkedCount > 0
+          ? `Se añadieron enlaces de material a ${linkedCount} publicación(es).`
+          : "Todas las publicaciones ya tenían su enlace de material.",
+      });
+      setTimeout(() => setLinkSyncStatus("idle"), 3000);
+    } catch (err: any) {
+      console.error("Error syncing Drive links:", err);
+      setLinkSyncStatus("error");
+      toast({
+        title: "Error",
+        description: err.message || "No se pudieron sincronizar los enlaces.",
+        variant: "destructive",
+      });
+      setTimeout(() => setLinkSyncStatus("idle"), 3000);
+    }
+  }, [clientMaterialUrl, packageMonth, packageName, publications, refetch]);
 
   return <><Dialog open={isOpen} onOpenChange={handleCloseAttempt}>
       <DialogTrigger asChild>
@@ -611,6 +697,21 @@ export const PublicationCalendarDialog = ({
                   </Button>
                 </div>
               )}
+
+              <Button
+                onClick={handleSyncDriveLinks}
+                variant="outline"
+                className="w-full"
+                disabled={isSubmitting || linkSyncStatus === "loading"}
+              >
+                {linkSyncStatus === "loading" ? (
+                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Sincronizando enlaces...</>
+                ) : linkSyncStatus === "success" ? (
+                  <><CheckCircle2 className="h-4 w-4 mr-2" />Enlaces sincronizados ✅</>
+                ) : (
+                  <><Link2 className="h-4 w-4 mr-2" />🔗 Sincronizar enlaces de Drive</>
+                )}
+              </Button>
             </div>
 
             <div className="flex justify-end pt-4">
