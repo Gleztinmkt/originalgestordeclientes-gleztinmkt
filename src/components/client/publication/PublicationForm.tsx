@@ -44,6 +44,7 @@ interface PublicationFormProps {
   onPublicationsChange: () => void;
   onFormChange?: (hasChanges: boolean) => void;
   clientGeneralUrl?: string;
+  totalPublications?: number;
 }
 
 export const PublicationForm = ({ 
