@@ -261,7 +261,6 @@ export function BulkPublicationDialog({ clientId, packageId, existingPublication
 
       const assignedDates: Date[] = [];
       let cursor = tomorrow;
-      let weekdayCount = 0;
 
       for (let i = 0; i < total; i++) {
         // Find next available weekday
