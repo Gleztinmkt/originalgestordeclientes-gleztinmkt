@@ -663,7 +663,7 @@ export const PublicationCalendarDialog = ({
 
             <div className="pt-2 border-t space-y-2">
               {driveStatus === "idle" && (
-                <Button onClick={handleGenerateDriveFolders} variant="outline" className="w-full" disabled={isSubmitting}>
+                <Button onClick={() => setShowDriveFolderSelection(true)} variant="outline" className="w-full" disabled={isSubmitting || publications.length === 0}>
                   <FolderOpen className="h-4 w-4 mr-2" />
                   📁 Generar carpetas del calendario en Drive
                 </Button>
