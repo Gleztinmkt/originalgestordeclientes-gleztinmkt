@@ -521,7 +521,7 @@ export const PublicationCalendarDialog = ({
         method: "POST",
         body: JSON.stringify({
           action: "createCalendarFolders",
-          urlMaterial: clientMaterialUrl || "",
+          urlMaterial: extractDriveFolderId(clientMaterialUrl || ""),
           nombrePaquete: packageMonth || packageName || "",
           publicaciones: publications.map(p => ({ id: p.id, nombre: p.name })),
         }),
