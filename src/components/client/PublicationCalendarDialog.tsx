@@ -441,9 +441,10 @@ export const PublicationCalendarDialog = ({
     }
   };
 
-  const handleGenerateDriveFolders = useCallback(async () => {
+  const handleGenerateDriveFolders = useCallback(async (selectedIds: string[]) => {
     setDriveStatus("loading");
     setDriveError(null);
+    const selectedPubs = publications.filter(p => selectedIds.includes(p.id));
     try {
       const scriptUrl = "https://script.google.com/macros/s/AKfycbyahM4qzOdRWIC1Sr3Xh1IArjk0BR1BKfzzFXKVESL1ovEEwV7NA-Wp7C75RP4ygCvovw/exec";
       const response = await fetch(scriptUrl, {
@@ -452,7 +453,7 @@ export const PublicationCalendarDialog = ({
           action: "createCalendarFolders",
           urlMaterial: extractDriveFolderId(clientMaterialUrl || ""),
           nombrePaquete: packageMonth || packageName || "",
-          publicaciones: publications.map(p => ({ id: p.id, nombre: p.name })),
+          publicaciones: selectedPubs.map(p => ({ id: p.id, nombre: p.name })),
         }),
       });
       const data = await response.json();
@@ -476,11 +477,9 @@ export const PublicationCalendarDialog = ({
                 if (Array.isArray(parsed)) {
                   currentLinksArray = parsed;
                 } else {
-                  // If it was a JSON object but not array, wrap it
                   currentLinksArray = [parsed];
                 }
               } catch {
-                // Plain text link — preserve it as a generic entry
                 currentLinksArray = [{ label: "enlace", url: currentPub.links }];
               }
             }
@@ -505,13 +504,13 @@ export const PublicationCalendarDialog = ({
       if (data.url) {
         setDriveFolderUrl(data.url);
       }
-      toast({ title: "Carpetas creadas", description: "Las carpetas del calendario se crearon correctamente." });
+      toast({ title: "Carpetas creadas", description: `Se crearon ${selectedPubs.length} carpeta(s) y se vincularon los enlaces de material.` });
     } catch (err: any) {
       console.error("Error creating Drive folders for calendar:", err);
       setDriveError(err.message || "Error desconocido");
       setDriveStatus("error");
     }
-  }, [clientMaterialUrl, packageName, publications, refetch]);
+  }, [clientMaterialUrl, packageName, packageMonth, publications, refetch]);
 
   const [linkSyncStatus, setLinkSyncStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
 
