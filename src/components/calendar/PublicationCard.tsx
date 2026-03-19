@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Publication } from "../client/publication/types";
 import { Client } from "../types/client";
+import { getSocialProfileUrl, getDisplayUsername } from "@/utils/socialUtils";
 import { PublicationDialog } from "./PublicationDialog";
 import { cn } from "@/lib/utils";
 import { 

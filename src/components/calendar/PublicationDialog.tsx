@@ -11,6 +11,7 @@ import { Publication } from "../client/publication/types";
 import { Client } from "../types/client";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { getSocialProfileUrl } from "@/utils/socialUtils";
 import { useQuery } from "@tanstack/react-query";
 import { Calendar } from "@/components/ui/calendar";
 import { es } from "date-fns/locale";
