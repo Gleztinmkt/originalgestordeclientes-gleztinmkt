@@ -466,12 +466,19 @@ export const PublicationCalendarDialog = ({
               .single();
             
             let currentLinksArray: Array<{label: string; url: string}> = [];
-            try {
-              if (currentPub?.links) {
-                currentLinksArray = JSON.parse(currentPub.links);
+            if (currentPub?.links) {
+              try {
+                const parsed = JSON.parse(currentPub.links);
+                if (Array.isArray(parsed)) {
+                  currentLinksArray = parsed;
+                } else {
+                  // If it was a JSON object but not array, wrap it
+                  currentLinksArray = [parsed];
+                }
+              } catch {
+                // Plain text link — preserve it as a generic entry
+                currentLinksArray = [{ label: "enlace", url: currentPub.links }];
               }
-            } catch {
-              currentLinksArray = [];
             }
             currentLinksArray.push({ label: "material", url: pub.urlMaterial });
             const newLinks = JSON.stringify(currentLinksArray);
