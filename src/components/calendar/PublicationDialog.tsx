@@ -492,6 +492,17 @@ export const PublicationDialog = ({
                           <Plus className="h-4 w-4" />
                         </Button>
                       </div>}
+                    {!isDesigner && client?.clientInfo?.general && !links.some(l => l.label === "material general") && (
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        className="w-full gap-2"
+                        onClick={() => setLinks([...links, { label: "material general", url: client.clientInfo!.general! }])}
+                      >
+                        <FolderOpen className="h-4 w-4" />
+                        Añadir carpeta general
+                      </Button>
+                    )}
                     <ScrollArea className="h-[100px]">
                       <div className="space-y-2">
                         {links.map((link, index) => <div key={index} className="flex items-center gap-2 bg-secondary p-2 rounded text-sm">
