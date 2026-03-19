@@ -16,6 +16,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Document, Packer, Paragraph, TextRun, AlignmentType, Table, TableRow, TableCell, WidthType } from "docx";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { extractDriveFolderId } from "@/utils/driveUtils";
 export const PublicationCalendarDialog = ({
   clientId,
   clientName,
