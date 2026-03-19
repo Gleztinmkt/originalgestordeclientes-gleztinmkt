@@ -23,7 +23,8 @@ export const PublicationCalendarDialog = ({
   packageName,
   packageMonth,
   clientMaterialUrl,
-  clientGeneralUrl
+  clientGeneralUrl,
+  totalPublications
 }: PublicationCalendarDialogProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
