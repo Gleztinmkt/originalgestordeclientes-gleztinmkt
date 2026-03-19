@@ -656,6 +656,7 @@ export const PublicationCalendarDialog = ({
               onPublicationsChange={refetch}
               onFormChange={setHasUnsavedChanges}
               clientGeneralUrl={clientGeneralUrl}
+              totalPublications={totalPublications}
             />
 
             <div className="pt-2 border-t space-y-2">
