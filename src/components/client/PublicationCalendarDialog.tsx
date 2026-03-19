@@ -480,7 +480,12 @@ export const PublicationCalendarDialog = ({
                 currentLinksArray = [{ label: "enlace", url: currentPub.links }];
               }
             }
-            currentLinksArray.push({ label: "material", url: pub.urlMaterial });
+            const alreadyHas = currentLinksArray.some(
+              l => l.label === "material" && l.url === pub.urlMaterial
+            );
+            if (!alreadyHas) {
+              currentLinksArray.push({ label: "material", url: pub.urlMaterial });
+            }
             const newLinks = JSON.stringify(currentLinksArray);
             
             await supabase
