@@ -692,6 +692,21 @@ export const PublicationCalendarDialog = ({
                   </Button>
                 </div>
               )}
+
+              <Button
+                onClick={handleSyncDriveLinks}
+                variant="outline"
+                className="w-full"
+                disabled={isSubmitting || linkSyncStatus === "loading"}
+              >
+                {linkSyncStatus === "loading" ? (
+                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Sincronizando enlaces...</>
+                ) : linkSyncStatus === "success" ? (
+                  <><CheckCircle2 className="h-4 w-4 mr-2" />Enlaces sincronizados ✅</>
+                ) : (
+                  <><Link2 className="h-4 w-4 mr-2" />🔗 Sincronizar enlaces de Drive</>
+                )}
+              </Button>
             </div>
 
             <div className="flex justify-end pt-4">
