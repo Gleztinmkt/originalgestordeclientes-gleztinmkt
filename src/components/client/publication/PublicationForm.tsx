@@ -264,6 +264,7 @@ export const PublicationForm = ({
           packageId={packageId}
           existingPublications={existingPublications}
           onSuccess={onPublicationsChange}
+          totalPublications={totalPublications}
         />
       </div>
 
