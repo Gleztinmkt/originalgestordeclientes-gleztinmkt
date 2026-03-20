@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Sparkles, Calendar as CalendarIcon, Check, X, Plus, Trash2, ExternalLink, Wand2 } from "lucide-react";
+import { Loader2, Sparkles, Calendar as CalendarIcon, Check, X, Plus, Trash2, ExternalLink, Wand2, FolderOpen } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { useQuery } from "@tanstack/react-query";
