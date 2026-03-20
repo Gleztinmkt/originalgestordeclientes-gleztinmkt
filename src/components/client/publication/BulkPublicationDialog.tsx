@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Sparkles, Calendar as CalendarIcon, Check, X, Plus, Trash2, ExternalLink, Wand2 } from "lucide-react";
+import { Loader2, Sparkles, Calendar as CalendarIcon, Check, X, Plus, Trash2, ExternalLink, Wand2, FolderOpen } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { useQuery } from "@tanstack/react-query";
@@ -35,9 +35,10 @@ interface BulkPublicationDialogProps {
   existingPublications: Array<{ date: string }>;
   onSuccess: () => void;
   totalPublications?: number;
+  clientGeneralUrl?: string;
 }
 
-export function BulkPublicationDialog({ clientId, packageId, existingPublications, onSuccess, totalPublications }: BulkPublicationDialogProps) {
+export function BulkPublicationDialog({ clientId, packageId, existingPublications, onSuccess, totalPublications, clientGeneralUrl }: BulkPublicationDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [content, setContent] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -543,6 +544,20 @@ export function BulkPublicationDialog({ clientId, packageId, existingPublication
                           <Label>Enlaces</Label>
                           <Card className="mt-2">
                             <CardContent className="p-3 space-y-3">
+                              {clientGeneralUrl && !pub.links.some(l => l.label === "material general") && (
+                                <Button
+                                  type="button"
+                                  variant="secondary"
+                                  className="w-full gap-2"
+                                  onClick={() => {
+                                    const currentLinks = publications[index].links || [];
+                                    updatePublication(index, 'links', [...currentLinks, { label: "material general", url: clientGeneralUrl }]);
+                                  }}
+                                >
+                                  <FolderOpen className="h-4 w-4" />
+                                  Añadir carpeta general
+                                </Button>
+                              )}
                               <div className="flex flex-col sm:flex-row gap-2">
                                 <Input
                                   placeholder="Etiqueta"
