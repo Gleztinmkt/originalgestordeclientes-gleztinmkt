@@ -35,6 +35,7 @@ interface BulkPublicationDialogProps {
   existingPublications: Array<{ date: string }>;
   onSuccess: () => void;
   totalPublications?: number;
+  clientGeneralUrl?: string;
 }
 
 export function BulkPublicationDialog({ clientId, packageId, existingPublications, onSuccess, totalPublications }: BulkPublicationDialogProps) {
