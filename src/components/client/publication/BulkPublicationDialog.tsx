@@ -544,6 +544,20 @@ export function BulkPublicationDialog({ clientId, packageId, existingPublication
                           <Label>Enlaces</Label>
                           <Card className="mt-2">
                             <CardContent className="p-3 space-y-3">
+                              {clientGeneralUrl && !pub.links.some(l => l.label === "material general") && (
+                                <Button
+                                  type="button"
+                                  variant="secondary"
+                                  className="w-full gap-2"
+                                  onClick={() => {
+                                    const currentLinks = publications[index].links || [];
+                                    updatePublication(index, 'links', [...currentLinks, { label: "material general", url: clientGeneralUrl }]);
+                                  }}
+                                >
+                                  <FolderOpen className="h-4 w-4" />
+                                  Añadir carpeta general
+                                </Button>
+                              )}
                               <div className="flex flex-col sm:flex-row gap-2">
                                 <Input
                                   placeholder="Etiqueta"
