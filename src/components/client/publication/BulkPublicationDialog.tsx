@@ -38,7 +38,7 @@ interface BulkPublicationDialogProps {
   clientGeneralUrl?: string;
 }
 
-export function BulkPublicationDialog({ clientId, packageId, existingPublications, onSuccess, totalPublications }: BulkPublicationDialogProps) {
+export function BulkPublicationDialog({ clientId, packageId, existingPublications, onSuccess, totalPublications, clientGeneralUrl }: BulkPublicationDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [content, setContent] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
