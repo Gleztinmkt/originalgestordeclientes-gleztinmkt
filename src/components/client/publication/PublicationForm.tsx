@@ -265,6 +265,7 @@ export const PublicationForm = ({
           existingPublications={existingPublications}
           onSuccess={onPublicationsChange}
           totalPublications={totalPublications}
+          clientGeneralUrl={clientGeneralUrl}
         />
       </div>
 
