@@ -27,6 +27,7 @@ interface PlanningEntry {
   status: 'hacer' | 'no_hacer' | 'consultar';
   description?: string;
   completed?: boolean;
+  planner?: string | null;
 }
 
 export const PlanningCalendar = ({
