@@ -85,6 +85,13 @@ async function fetchDesigners() {
   return data ?? [];
 }
 
+async function fetchPlanners() {
+  const sb = getAdminClient();
+  const { data, error } = await sb.from("planners").select("id, name").order("name");
+  if (error) throw error;
+  return data ?? [];
+}
+
 async function fetchPendingPublications(clientIds: string[]) {
   const sb = getAdminClient();
   const { data, error } = await sb
@@ -273,10 +280,9 @@ async function markPublished(pubIds: string[], discountCount?: number | string) 
 }
 
 /* ── Planning management ── */
-async function handleUpdatePlanning(clientId: string, month: number, status?: string, description?: string) {
+async function handleUpdatePlanning(clientId: string, month: number, status?: string, description?: string, planner?: string, completed?: boolean) {
   const sb = getAdminClient();
   const year = argentinaDateParts().year;
-  // Build ISO string for the 1st of the month at midnight Argentina time (UTC-3 → 03:00 UTC)
   const startOfMonth = `${year}-${String(month).padStart(2, '0')}-01T03:00:00.000Z`;
 
   const { data: existing } = await sb
@@ -290,6 +296,8 @@ async function handleUpdatePlanning(clientId: string, month: number, status?: st
   const updateData: Record<string, unknown> = {};
   if (status) updateData.status = status;
   if (description !== undefined) updateData.description = description;
+  if (planner !== undefined) updateData.planner = planner;
+  if (completed !== undefined) updateData.completed = completed;
 
   if (existing) {
     const { error } = await sb
@@ -305,6 +313,8 @@ async function handleUpdatePlanning(clientId: string, month: number, status?: st
         month: startOfMonth,
         status: status || "consultar",
         description: description || "",
+        ...(planner !== undefined ? { planner } : {}),
+        ...(completed !== undefined ? { completed } : {}),
       });
     if (error) throw error;
   }
@@ -318,7 +328,9 @@ async function interpretMessage(mensaje: string) {
   if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY no configurada");
 
   const clients = await fetchAllClients();
+  const planners = await fetchPlanners();
   const clientList = clients.map((c) => `- "${c.name}" (id: ${c.id})`).join("\n");
+  const plannerList = planners.map((p) => `- "${p.name}"`).join("\n");
 
   const todayParts = argentinaDateParts();
   const todayStr = todayArgentinaStr();
@@ -385,6 +397,11 @@ Según el mensaje del usuario, elegí UNA de estas herramientas:
 10. "create_publication" — cuando el usuario quiere crear/agregar/hacer una nueva publicación para un cliente. Ej: "hacé una publicación para 4S Motors para el 17 de marzo".
 11. "create_client" — cuando el usuario quiere crear/agregar un nuevo cliente. Ej: "agregá un cliente nuevo: Juan Pérez, tel 1155667788, paga el 15".
 12. "add_package" — cuando el usuario quiere agregar un paquete/calendario a un cliente existente. Ej: "agregale un paquete básico a Juan para marzo".
+
+PLANIFICADORES disponibles:
+${plannerList || "(ninguno cargado)"}
+Si el usuario menciona asignar un planificador a un cliente, incluí el campo "planner" con el nombre exacto del planificador.
+Si dice "marcar como hecho/completado" la planificación, incluí completed: true. Si dice "desmarcar" o "pendiente", completed: false.
 
 IMPORTANTE: Los nombres pueden estar abreviados, mal escritos o ser apodos. Hacé tu mejor esfuerzo para encontrar coincidencias.
 Cuando el usuario pida cambiar planificación, detectá el mes mencionado (enero=1, febrero=2, etc.) y el estado deseado.
@@ -470,6 +487,8 @@ Si pide agregar descripción, incluí el texto completo en el campo description.
                   month: { type: "number", description: "Número del mes (1=enero, 12=diciembre)" },
                   status: { type: "string", enum: ["hacer", "no_hacer", "consultar"], description: "Nuevo estado de planificación" },
                   description: { type: "string", description: "Descripción de planificación (solo si el usuario la especifica)" },
+                  planner: { type: "string", description: "Nombre del planificador a asignar (solo si el usuario lo especifica)" },
+                  completed: { type: "boolean", description: "Si marcar como completado (true) o pendiente (false)" },
                 },
                 required: ["client_name", "client_id", "month"],
               },
@@ -771,20 +790,24 @@ Si pide agregar descripción, incluí el texto completo en el campo description.
       return { accion: "no_encontrado", mensaje_ia: "No pude identificar qué planificación actualizar." };
     }
 
-    const results = updates.map((u: { client_name: string; client_id: string; month: number; status?: string; description?: string }) => ({
+    const results = updates.map((u: { client_name: string; client_id: string; month: number; status?: string; description?: string; planner?: string; completed?: boolean }) => ({
       cliente: u.client_name,
       client_id: u.client_id,
       mes: u.month,
       status: u.status,
       descripcion: u.description,
+      planner: u.planner,
+      completed: u.completed,
     }));
 
     const monthNames = ["", "enero", "febrero", "marzo", "abril", "mayo", "junio",
       "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 
-    const summary = results.map((r: { cliente: string; mes: number; status?: string; descripcion?: string }) => {
+    const summary = results.map((r: { cliente: string; mes: number; status?: string; descripcion?: string; planner?: string; completed?: boolean }) => {
       const parts = [`${r.cliente} → ${monthNames[r.mes]}`];
       if (r.status) parts.push(`estado: ${r.status}`);
+      if (r.planner) parts.push(`planificador: ${r.planner}`);
+      if (r.completed !== undefined) parts.push(r.completed ? `completado ✓` : `pendiente`);
       if (r.descripcion) parts.push(`con descripción`);
       return parts.join(" ");
     }).join("; ");
@@ -1474,29 +1497,27 @@ async function formatForTelegram(result: any): Promise<{ mensajes: Array<{ text:
       text += `${statusDot} <b>${escHtml(u.cliente)}</b> → ${months[u.mes] || u.mes}`;
       if (u.status) text += ` (${u.status})`;
       text += "\n";
+      if (u.planner) text += `   👤 Planificador: ${escHtml(u.planner)}\n`;
+      if (u.completed !== undefined) text += `   ${u.completed ? "✅ Completado" : "⬜ Pendiente"}\n`;
       if (u.descripcion) text += `   📝 ${escHtml(u.descripcion)}\n`;
 
       if (u.client_id) {
-        if (u.descripcion) {
-          const sessId = await createSession({
-            client_id: u.client_id, mes: u.mes, status: u.status || "hacer",
-            descripcion: u.descripcion, action: "plan_confirm"
-          });
-          buttons.push([
-            { text: `✅ Confirmar ${u.cliente}`, callback_data: `plan_sess:${sessId}` },
-          ]);
-        } else {
-          buttons.push([
-            { text: `✅ Confirmar ${u.cliente}`, callback_data: `plan_confirm:${u.client_id}:${u.mes}:${u.status || ""}` },
-          ]);
-        }
+        // Always use session to support all fields
+        const sessId = await createSession({
+          client_id: u.client_id, mes: u.mes, status: u.status || "hacer",
+          descripcion: u.descripcion, planner: u.planner, completed: u.completed, action: "plan_confirm"
+        });
+        buttons.push([
+          { text: `✅ Confirmar ${u.cliente}`, callback_data: `plan_sess:${sessId}` },
+        ]);
       }
     }
 
     if ((result.actualizaciones || []).length > 1) {
       // deno-lint-ignore no-explicit-any
       const allUpdates = (result.actualizaciones || []).map((u: any) => ({
-        client_id: u.client_id, mes: u.mes, status: u.status || "", descripcion: u.descripcion || ""
+        client_id: u.client_id, mes: u.mes, status: u.status || "", descripcion: u.descripcion || "",
+        planner: u.planner, completed: u.completed
       }));
       const sessId = await createSession({ updates: allUpdates, action: "plan_confirm_all" });
       buttons.push([{ text: "✅ Confirmar todas", callback_data: `plan_sess:${sessId}` }]);
@@ -2152,14 +2173,14 @@ serve(async (req) => {
         const sessId = callbackData.replace("plan_sess:", "");
         const sessData = await resolveSession(sessId) as {
           action?: string;
-          updates?: { client_id: string; mes: number; status: string; descripcion?: string }[];
-          client_id?: string; mes?: number; status?: string; descripcion?: string;
+          updates?: { client_id: string; mes: number; status: string; descripcion?: string; planner?: string; completed?: boolean }[];
+          client_id?: string; mes?: number; status?: string; descripcion?: string; planner?: string; completed?: boolean;
         } | null;
         if (!sessData) return json({ error: "Sesión expirada o inválida. Volvé a consultar." }, 400);
 
         // Single planning confirm with description
         if (sessData.action === "plan_confirm" && sessData.client_id && sessData.mes) {
-          await handleUpdatePlanning(sessData.client_id, sessData.mes, sessData.status || "hacer", sessData.descripcion);
+          await handleUpdatePlanning(sessData.client_id, sessData.mes, sessData.status || "hacer", sessData.descripcion, sessData.planner, sessData.completed);
           result = {
             accion: "planificacion_confirmada",
             mensaje_ia: `Planificación confirmada exitosamente`,
@@ -2171,7 +2192,7 @@ serve(async (req) => {
           let count = 0;
           for (const u of sessData.updates) {
             if (u.client_id && u.mes) {
-              await handleUpdatePlanning(u.client_id, u.mes, u.status || "hacer", u.descripcion);
+              await handleUpdatePlanning(u.client_id, u.mes, u.status || "hacer", u.descripcion, u.planner, u.completed);
               count++;
             }
           }
