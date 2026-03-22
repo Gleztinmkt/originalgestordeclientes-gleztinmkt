@@ -312,39 +312,7 @@ export const PlanningCalendar = ({
       </div>
 
       <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4">
-        {useMemo(() => {
-          let filtered = clients.filter(client => {
-            if (searchQuery && !client.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
-            const entry = planningData[client.id];
-            if (statusFilter !== "all") {
-              const status = entry?.status || 'consultar';
-              if (status !== statusFilter) return false;
-            }
-            if (completionFilter === "done" && !entry?.completed) return false;
-            if (completionFilter === "pending" && entry?.completed) return false;
-            return true;
-          });
-
-          filtered.sort((a, b) => {
-            switch (sortBy) {
-              case 'name_asc': return a.name.localeCompare(b.name);
-              case 'name_desc': return b.name.localeCompare(a.name);
-              case 'date_asc': {
-                const aDate = planningData[a.id]?.month || '';
-                const bDate = planningData[b.id]?.month || '';
-                return aDate.localeCompare(bDate) || a.name.localeCompare(b.name);
-              }
-              case 'date_desc': {
-                const aDate = planningData[a.id]?.month || '';
-                const bDate = planningData[b.id]?.month || '';
-                return bDate.localeCompare(aDate) || a.name.localeCompare(b.name);
-              }
-              default: return 0;
-            }
-          });
-
-          return filtered;
-        }, [clients, planningData, searchQuery, statusFilter, completionFilter, sortBy]).map(client => {
+        {filteredClients.map(client => {
         const planningEntry = planningData[client.id];
         const paymentDay = client.paymentDay || 1;
         const currentMonth = selectedDate.getMonth();
