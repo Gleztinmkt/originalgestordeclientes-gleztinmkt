@@ -79,6 +79,7 @@ export const PlanningCalendar = ({
     return filtered;
   }, [clients, planningData, searchQuery, statusFilter, completionFilter, sortBy]);
 
+  const fetchPlanningData = async () => {
     try {
       const startOfMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
       const {
