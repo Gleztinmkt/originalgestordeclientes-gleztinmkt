@@ -398,6 +398,11 @@ Según el mensaje del usuario, elegí UNA de estas herramientas:
 11. "create_client" — cuando el usuario quiere crear/agregar un nuevo cliente. Ej: "agregá un cliente nuevo: Juan Pérez, tel 1155667788, paga el 15".
 12. "add_package" — cuando el usuario quiere agregar un paquete/calendario a un cliente existente. Ej: "agregale un paquete básico a Juan para marzo".
 
+PLANIFICADORES disponibles:
+${plannerList || "(ninguno cargado)"}
+Si el usuario menciona asignar un planificador a un cliente, incluí el campo "planner" con el nombre exacto del planificador.
+Si dice "marcar como hecho/completado" la planificación, incluí completed: true. Si dice "desmarcar" o "pendiente", completed: false.
+
 IMPORTANTE: Los nombres pueden estar abreviados, mal escritos o ser apodos. Hacé tu mejor esfuerzo para encontrar coincidencias.
 Cuando el usuario pida cambiar planificación, detectá el mes mencionado (enero=1, febrero=2, etc.) y el estado deseado.
 Si NO se menciona un mes específico, usá el mes actual: ${todayParts.month + 1} (${["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"][todayParts.month]}).
