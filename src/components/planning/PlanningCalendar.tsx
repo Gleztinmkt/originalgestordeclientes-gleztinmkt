@@ -45,7 +45,40 @@ export const PlanningCalendar = ({
   const [completionFilter, setCompletionFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("name_asc");
 
-  const fetchPlanningData = async () => {
+  const filteredClients = useMemo(() => {
+    let filtered = clients.filter(client => {
+      if (searchQuery && !client.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+      const entry = planningData[client.id];
+      if (statusFilter !== "all") {
+        const status = entry?.status || 'consultar';
+        if (status !== statusFilter) return false;
+      }
+      if (completionFilter === "done" && !entry?.completed) return false;
+      if (completionFilter === "pending" && entry?.completed) return false;
+      return true;
+    });
+
+    filtered.sort((a, b) => {
+      switch (sortBy) {
+        case 'name_asc': return a.name.localeCompare(b.name);
+        case 'name_desc': return b.name.localeCompare(a.name);
+        case 'date_asc': {
+          const aDate = planningData[a.id]?.month || '';
+          const bDate = planningData[b.id]?.month || '';
+          return aDate.localeCompare(bDate) || a.name.localeCompare(b.name);
+        }
+        case 'date_desc': {
+          const aDate = planningData[a.id]?.month || '';
+          const bDate = planningData[b.id]?.month || '';
+          return bDate.localeCompare(aDate) || a.name.localeCompare(b.name);
+        }
+        default: return 0;
+      }
+    });
+
+    return filtered;
+  }, [clients, planningData, searchQuery, statusFilter, completionFilter, sortBy]);
+
     try {
       const startOfMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
       const {
