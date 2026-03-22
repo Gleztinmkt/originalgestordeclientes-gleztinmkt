@@ -521,7 +521,7 @@ export const PlanningCalendar = ({
       <PlannerDialog 
         open={showPlannerDialog} 
         onOpenChange={setShowPlannerDialog} 
-        onPlannerUpdated={() => {}} 
+        onPlannerUpdated={() => refetchPlanners()} 
       />
     </div>;
 };
