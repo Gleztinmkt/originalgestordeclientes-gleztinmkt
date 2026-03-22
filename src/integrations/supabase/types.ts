@@ -559,6 +559,7 @@ export type Database = {
           description: string | null
           id: string
           month: string
+          planner: string | null
           status: string | null
           updated_at: string
         }
@@ -570,6 +571,7 @@ export type Database = {
           description?: string | null
           id?: string
           month: string
+          planner?: string | null
           status?: string | null
           updated_at?: string
         }
@@ -581,6 +583,7 @@ export type Database = {
           description?: string | null
           id?: string
           month?: string
+          planner?: string | null
           status?: string | null
           updated_at?: string
         }

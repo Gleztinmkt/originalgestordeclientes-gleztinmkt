@@ -5,6 +5,7 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -27,6 +28,7 @@ interface PlanningEntry {
   status: 'hacer' | 'no_hacer' | 'consultar';
   description?: string;
   completed?: boolean;
+  planner?: string | null;
 }
 
 export const PlanningCalendar = ({
@@ -46,6 +48,18 @@ export const PlanningCalendar = ({
   const [completionFilter, setCompletionFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("name_asc");
   const [showPlannerDialog, setShowPlannerDialog] = useState(false);
+
+  const { data: planners = [], refetch: refetchPlanners } = useQuery({
+    queryKey: ['planners'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('planners')
+        .select('*')
+        .order('name', { ascending: true });
+      if (error) throw error;
+      return data;
+    },
+  });
 
   const filteredClients = useMemo(() => {
     let filtered = clients.filter(client => {
@@ -105,7 +119,8 @@ export const PlanningCalendar = ({
           month: entry.month,
           status: (entry.status || 'consultar') as 'hacer' | 'no_hacer' | 'consultar',
           description: entry.description,
-          completed: entry.completed
+          completed: entry.completed,
+          planner: (entry as any).planner || null
         };
       });
       setPlanningData(planningMap);
@@ -295,7 +310,42 @@ export const PlanningCalendar = ({
     }
   };
 
-  return <div className="space-y-6 p-6 bg-gray-50 dark:bg-gray-900 min-h-screen px-0">
+  const handlePlannerChange = async (clientId: string, plannerName: string | null) => {
+    if (isSaving) return;
+    setIsSaving(true);
+    const startOfMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
+    const currentEntry = planningData[clientId];
+    try {
+      const { data: existingData, error: checkError } = await supabase
+        .from('publication_planning').select('id')
+        .eq('client_id', clientId).eq('month', startOfMonth.toISOString())
+        .is('deleted_at', null).maybeSingle();
+      if (checkError) throw checkError;
+      let result;
+      if (existingData) {
+        result = await supabase.from('publication_planning')
+          .update({ planner: plannerName } as any)
+          .eq('id', existingData.id).select().single();
+      } else {
+        result = await supabase.from('publication_planning')
+          .insert({ client_id: clientId, month: startOfMonth.toISOString(), status: currentEntry?.status || 'consultar', planner: plannerName } as any)
+          .select().single();
+      }
+      if (result.error) throw result.error;
+      setPlanningData(prev => ({
+        ...prev,
+        [clientId]: { ...prev[clientId], ...result.data, client_id: clientId, month: startOfMonth.toISOString(), planner: plannerName }
+      }));
+      toast({ title: "Planificador asignado", description: `Se asignó ${plannerName || 'ninguno'} correctamente` });
+    } catch (error) {
+      console.error('Error updating planner:', error);
+      toast({ title: "Error", description: "No se pudo asignar el planificador", variant: "destructive" });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return <div className="space-y-6 p-6 bg-background min-h-screen px-0">
       <div className="flex items-center justify-between gap-4">
         <MonthSelector selectedDate={selectedDate} onDateChange={setSelectedDate} />
         <Button variant="outline" className="gap-2" onClick={() => setShowPlannerDialog(true)}>
@@ -394,15 +444,30 @@ export const PlanningCalendar = ({
                 <div className="flex items-start justify-between">
                   <h3 className="font-semibold text-sm truncate pr-6">{client.name}</h3>
                   <Button variant="ghost" size="icon" className="flex-shrink-0 -mt-1" onClick={() => handleCompletion(client.id, !planningEntry?.completed)}>
-                    {planningEntry?.completed ? <CheckSquare className="h-5 w-5 text-green-500" /> : <Square className="h-5 w-5 text-gray-400" />}
+                    {planningEntry?.completed ? <CheckSquare className="h-5 w-5 text-green-500" /> : <Square className="h-5 w-5 text-muted-foreground" />}
                   </Button>
                 </div>
-                <div className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
                   <CalendarIcon className="h-3 w-3" />
-                  <span>Creación: {format(creationDate, 'd MMM', {
-                  locale: es
-                })}</span>
+                  <span>Creación: {format(creationDate, 'd MMM', { locale: es })}</span>
                 </div>
+                <Select
+                  value={planningEntry?.planner || "sin_asignar"}
+                  onValueChange={(value) => handlePlannerChange(client.id, value === "sin_asignar" ? null : value)}
+                >
+                  <SelectTrigger className="h-7 text-xs">
+                    <div className="flex items-center gap-1.5">
+                      <Users className="h-3 w-3" />
+                      <SelectValue placeholder="Planificador" />
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="sin_asignar">Sin asignar</SelectItem>
+                    {planners.map(p => (
+                      <SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <Button variant="ghost" className="w-full text-left justify-start h-auto py-1 px-2 mt-2 text-xs" onClick={() => {
@@ -456,7 +521,7 @@ export const PlanningCalendar = ({
       <PlannerDialog 
         open={showPlannerDialog} 
         onOpenChange={setShowPlannerDialog} 
-        onPlannerUpdated={() => {}} 
+        onPlannerUpdated={() => refetchPlanners()} 
       />
     </div>;
 };
