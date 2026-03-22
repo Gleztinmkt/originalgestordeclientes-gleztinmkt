@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Client } from "@/components/types/client";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { format } from "date-fns";
@@ -11,7 +11,9 @@ import { Button } from "@/components/ui/button";
 import { MonthSelector } from "./MonthSelector";
 import { StatusLegend } from "./StatusLegend";
 import { Card } from "@/components/ui/card";
-import { CalendarIcon, CheckSquare, Square } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CalendarIcon, CheckSquare, Square, Search, ArrowUpDown } from "lucide-react";
 
 interface PlanningCalendarProps {
   clients: Client[];
