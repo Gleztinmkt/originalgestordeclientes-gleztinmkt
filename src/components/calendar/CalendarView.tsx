@@ -331,7 +331,7 @@ export const CalendarView = ({
             </div>
             <div className="flex items-center gap-2">
               <Badge variant="outline" className="bg-primary/10 mr-1">
-                {filteredPublications.length}
+                {filteredPublications.length} / {totalPublicationsCount}
               </Badge>
               <Sheet>
                 <SheetTrigger asChild>
