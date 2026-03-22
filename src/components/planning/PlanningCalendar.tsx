@@ -39,6 +39,12 @@ export const PlanningCalendar = ({
   const [isSaving, setIsSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
 
+  // Filter & sort state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [completionFilter, setCompletionFilter] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<string>("name_asc");
+
   const fetchPlanningData = async () => {
     try {
       const startOfMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
