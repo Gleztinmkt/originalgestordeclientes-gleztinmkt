@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Client } from "@/components/types/client";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { format } from "date-fns";
@@ -11,7 +11,9 @@ import { Button } from "@/components/ui/button";
 import { MonthSelector } from "./MonthSelector";
 import { StatusLegend } from "./StatusLegend";
 import { Card } from "@/components/ui/card";
-import { CalendarIcon, CheckSquare, Square } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CalendarIcon, CheckSquare, Square, Search, ArrowUpDown } from "lucide-react";
 
 interface PlanningCalendarProps {
   clients: Client[];
@@ -36,6 +38,46 @@ export const PlanningCalendar = ({
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+
+  // Filter & sort state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [completionFilter, setCompletionFilter] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<string>("name_asc");
+
+  const filteredClients = useMemo(() => {
+    let filtered = clients.filter(client => {
+      if (searchQuery && !client.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+      const entry = planningData[client.id];
+      if (statusFilter !== "all") {
+        const status = entry?.status || 'consultar';
+        if (status !== statusFilter) return false;
+      }
+      if (completionFilter === "done" && !entry?.completed) return false;
+      if (completionFilter === "pending" && entry?.completed) return false;
+      return true;
+    });
+
+    filtered.sort((a, b) => {
+      switch (sortBy) {
+        case 'name_asc': return a.name.localeCompare(b.name);
+        case 'name_desc': return b.name.localeCompare(a.name);
+        case 'date_asc': {
+          const aDate = planningData[a.id]?.month || '';
+          const bDate = planningData[b.id]?.month || '';
+          return aDate.localeCompare(bDate) || a.name.localeCompare(b.name);
+        }
+        case 'date_desc': {
+          const aDate = planningData[a.id]?.month || '';
+          const bDate = planningData[b.id]?.month || '';
+          return bDate.localeCompare(aDate) || a.name.localeCompare(b.name);
+        }
+        default: return 0;
+      }
+    });
+
+    return filtered;
+  }, [clients, planningData, searchQuery, statusFilter, completionFilter, sortBy]);
 
   const fetchPlanningData = async () => {
     try {
@@ -255,8 +297,56 @@ export const PlanningCalendar = ({
       <MonthSelector selectedDate={selectedDate} onDateChange={setSelectedDate} />
       <StatusLegend getStatusColor={getStatusColor} />
 
+      {/* Filter & Sort Bar */}
+      <div className="flex flex-col md:flex-row gap-3 bg-card p-4 rounded-lg shadow-sm border border-border">
+        <div className="relative flex-1">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar cliente..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-8"
+          />
+        </div>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-full md:w-[180px]">
+            <SelectValue placeholder="Estado" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos los estados</SelectItem>
+            <SelectItem value="hacer">Hacer</SelectItem>
+            <SelectItem value="no_hacer">No hacer</SelectItem>
+            <SelectItem value="consultar">Consultar</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={completionFilter} onValueChange={setCompletionFilter}>
+          <SelectTrigger className="w-full md:w-[180px]">
+            <SelectValue placeholder="Progreso" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos</SelectItem>
+            <SelectItem value="done">Hechos</SelectItem>
+            <SelectItem value="pending">Faltan hacer</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={sortBy} onValueChange={setSortBy}>
+          <SelectTrigger className="w-full md:w-[200px]">
+            <div className="flex items-center gap-1.5">
+              <ArrowUpDown className="h-3.5 w-3.5" />
+              <SelectValue placeholder="Ordenar" />
+            </div>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="name_asc">Nombre A-Z</SelectItem>
+            <SelectItem value="name_desc">Nombre Z-A</SelectItem>
+            <SelectItem value="date_asc">Fecha más antigua</SelectItem>
+            <SelectItem value="date_desc">Fecha más reciente</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
       <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4">
-        {clients.map(client => {
+        {filteredClients.map(client => {
         const planningEntry = planningData[client.id];
         const paymentDay = client.paymentDay || 1;
         const currentMonth = selectedDate.getMonth();
