@@ -328,7 +328,9 @@ async function interpretMessage(mensaje: string) {
   if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY no configurada");
 
   const clients = await fetchAllClients();
+  const planners = await fetchPlanners();
   const clientList = clients.map((c) => `- "${c.name}" (id: ${c.id})`).join("\n");
+  const plannerList = planners.map((p) => `- "${p.name}"`).join("\n");
 
   const todayParts = argentinaDateParts();
   const todayStr = todayArgentinaStr();
