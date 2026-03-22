@@ -56,49 +56,41 @@ export const CalendarView = ({
     }
   });
 
-  const monthStart = useMemo(() => startOfMonth(selectedDate), [selectedDate]);
-  const monthEnd = useMemo(() => endOfMonth(selectedDate), [selectedDate]);
-
   const {
     data: allPublications = [],
     isLoading: isLoadingPublications,
     refetch
   } = useQuery({
-    queryKey: ['publications', format(monthStart, 'yyyy-MM')],
+    queryKey: ['publications'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('publications')
-        .select('id,client_id,name,type,date,description,package_id,is_published,designer,needs_recording,needs_editing,in_editing,in_review,approved,status,filming_time,links,copywriting,google_calendar_event_id,google_calendar_id,reference_materials')
-        .is('deleted_at', null)
-        .gte('date', monthStart.toISOString())
-        .lte('date', monthEnd.toISOString())
-        .order('date', { ascending: true });
+      let allPublications: Publication[] = [];
+      let from = 0;
+      const limit = 1000;
+      let hasMore = true;
 
-      if (error) {
-        console.error('Error fetching publications:', error);
-        throw error;
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from('publications')
+          .select('*')
+          .is('deleted_at', null)
+          .order('date', { ascending: true })
+          .range(from, from + limit - 1);
+
+        if (error) {
+          console.error('Error fetching publications batch:', error);
+          throw error;
+        }
+
+        if (data && data.length > 0) {
+          allPublications = [...allPublications, ...data as Publication[]];
+          from += limit;
+          hasMore = data.length === limit;
+        } else {
+          hasMore = false;
+        }
       }
 
-      return (data || []) as Publication[];
-    },
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000
-  });
-
-  const {
-    data: totalPublicationsCount = 0
-  } = useQuery({
-    queryKey: ['publications-total-count'],
-    queryFn: async () => {
-      const { count, error } = await supabase
-        .from('publications')
-        .select('*', { count: 'exact', head: true })
-        .is('deleted_at', null);
-      if (error) {
-        console.error('Error fetching total count:', error);
-        return 0;
-      }
-      return count || 0;
+      return allPublications as Publication[];
     },
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000
@@ -331,7 +323,7 @@ export const CalendarView = ({
             </div>
             <div className="flex items-center gap-2">
               <Badge variant="outline" className="bg-primary/10 mr-1">
-                {filteredPublications.length} / {totalPublicationsCount}
+                {filteredPublications.length}
               </Badge>
               <Sheet>
                 <SheetTrigger asChild>
@@ -373,7 +365,7 @@ export const CalendarView = ({
               })}
                 </h2>
                 <Badge variant="outline" className="bg-primary/10 ml-2">
-                  {filteredPublications.length} este mes / {totalPublicationsCount} total
+                  {filteredPublications.length} publicaciones
                 </Badge>
               </div>
             </div>
