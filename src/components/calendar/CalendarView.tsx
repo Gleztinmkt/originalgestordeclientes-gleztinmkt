@@ -68,7 +68,7 @@ export const CalendarView = ({
     queryFn: async () => {
       const { data, error } = await supabase
         .from('publications')
-        .select('id,client_id,name,type,date,description,package_id,is_published,designer,needs_recording,needs_editing,in_editing,in_review,approved,status,filming_time,links,copywriting,google_calendar_event_id,google_calendar_id,in_cloud,reference_materials')
+        .select('id,client_id,name,type,date,description,package_id,is_published,designer,needs_recording,needs_editing,in_editing,in_review,approved,status,filming_time,links,copywriting,google_calendar_event_id,google_calendar_id,reference_materials')
         .is('deleted_at', null)
         .gte('date', monthStart.toISOString())
         .lte('date', monthEnd.toISOString())
