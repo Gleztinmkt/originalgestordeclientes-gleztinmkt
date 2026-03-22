@@ -790,20 +790,24 @@ Si pide agregar descripción, incluí el texto completo en el campo description.
       return { accion: "no_encontrado", mensaje_ia: "No pude identificar qué planificación actualizar." };
     }
 
-    const results = updates.map((u: { client_name: string; client_id: string; month: number; status?: string; description?: string }) => ({
+    const results = updates.map((u: { client_name: string; client_id: string; month: number; status?: string; description?: string; planner?: string; completed?: boolean }) => ({
       cliente: u.client_name,
       client_id: u.client_id,
       mes: u.month,
       status: u.status,
       descripcion: u.description,
+      planner: u.planner,
+      completed: u.completed,
     }));
 
     const monthNames = ["", "enero", "febrero", "marzo", "abril", "mayo", "junio",
       "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 
-    const summary = results.map((r: { cliente: string; mes: number; status?: string; descripcion?: string }) => {
+    const summary = results.map((r: { cliente: string; mes: number; status?: string; descripcion?: string; planner?: string; completed?: boolean }) => {
       const parts = [`${r.cliente} → ${monthNames[r.mes]}`];
       if (r.status) parts.push(`estado: ${r.status}`);
+      if (r.planner) parts.push(`planificador: ${r.planner}`);
+      if (r.completed !== undefined) parts.push(r.completed ? `completado ✓` : `pendiente`);
       if (r.descripcion) parts.push(`con descripción`);
       return parts.join(" ");
     }).join("; ");
