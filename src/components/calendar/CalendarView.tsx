@@ -373,7 +373,7 @@ export const CalendarView = ({
               })}
                 </h2>
                 <Badge variant="outline" className="bg-primary/10 ml-2">
-                  {filteredPublications.length} publicaciones
+                  {filteredPublications.length} este mes / {totalPublicationsCount} total
                 </Badge>
               </div>
             </div>
