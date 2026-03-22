@@ -45,6 +45,7 @@ export const PlanningCalendar = ({
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [completionFilter, setCompletionFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("name_asc");
+  const [showPlannerDialog, setShowPlannerDialog] = useState(false);
 
   const filteredClients = useMemo(() => {
     let filtered = clients.filter(client => {
