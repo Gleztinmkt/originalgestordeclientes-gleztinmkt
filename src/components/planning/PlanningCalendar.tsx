@@ -452,5 +452,11 @@ export const PlanningCalendar = ({
           </div>
         </DialogContent>
       </Dialog>
+
+      <PlannerDialog 
+        open={showPlannerDialog} 
+        onOpenChange={setShowPlannerDialog} 
+        onPlannerUpdated={() => {}} 
+      />
     </div>;
 };
