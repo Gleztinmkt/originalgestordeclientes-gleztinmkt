@@ -329,8 +329,16 @@ export const PlanningCalendar = ({
             switch (sortBy) {
               case 'name_asc': return a.name.localeCompare(b.name);
               case 'name_desc': return b.name.localeCompare(a.name);
-              case 'date_asc': return new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime();
-              case 'date_desc': return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+              case 'date_asc': {
+                const aDate = planningData[a.id]?.month || '';
+                const bDate = planningData[b.id]?.month || '';
+                return aDate.localeCompare(bDate) || a.name.localeCompare(b.name);
+              }
+              case 'date_desc': {
+                const aDate = planningData[a.id]?.month || '';
+                const bDate = planningData[b.id]?.month || '';
+                return bDate.localeCompare(aDate) || a.name.localeCompare(b.name);
+              }
               default: return 0;
             }
           });
