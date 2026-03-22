@@ -22,6 +22,7 @@ import { LogOut, RefreshCw } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 const Index = () => {
+  const [activeTab, setActiveTab] = useState<string | null>(null);
   const {
     tasks,
     loadTasks,
@@ -188,7 +189,11 @@ const Index = () => {
             </p>
           </div>
           
-          <Tabs defaultValue={userRole === 'admin' ? "clients" : "calendar"} className="w-full">
+          <Tabs 
+            value={activeTab || (userRole === 'admin' ? "clients" : "calendar")} 
+            onValueChange={(val) => setActiveTab(val)}
+            className="w-full"
+          >
             <TabsList className={`grid w-full ${userRole === 'admin' ? 'grid-cols-4' : 'grid-cols-1'} rounded-2xl p-1 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm ${isMobile ? 'sticky top-2 z-10' : ''}`}>
               {userRole === 'admin' && <>
                   <TabsTrigger value="clients" className="rounded-xl data-[state=active]:bg-black data-[state=active]:text-white dark:data-[state=active]:bg-white dark:data-[state=active]:text-black">
@@ -220,9 +225,9 @@ const Index = () => {
                     <PlanningCalendar key={`planning-${refreshKey}`} clients={clients} />
                   </TabsContent>
                 </>}
-              <TabsContent value="calendar">
-                <CalendarView key={`calendar-${refreshKey}`} clients={clients} onClientsUpdate={loadClients} />
-              </TabsContent>
+              <div style={{ display: (activeTab || (userRole === 'admin' ? 'clients' : 'calendar')) === 'calendar' ? 'block' : 'none' }}>
+                <CalendarView clients={clients} onClientsUpdate={loadClients} />
+              </div>
             </div>
           </Tabs>
         </div>

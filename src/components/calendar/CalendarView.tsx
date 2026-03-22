@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Publication } from "../client/publication/types";
 import { Client } from "../types/client";
@@ -36,7 +36,6 @@ export const CalendarView = ({
     [key: string]: boolean;
   }>({});
   const [highlightedPublicationId, setHighlightedPublicationId] = useState<string | null>(null);
-  const [loadingProgress, setLoadingProgress] = useState(0);
   const isMobile = useIsMobile();
 
   const {
@@ -58,73 +57,43 @@ export const CalendarView = ({
   });
 
   const {
-    data: publications = [],
+    data: allPublications = [],
+    isLoading: isLoadingPublications,
     refetch
   } = useQuery({
-    queryKey: ['publications', selectedClient],
+    queryKey: ['publications'],
     queryFn: async () => {
-      console.log('Fetching publications - selectedClient:', selectedClient);
-      
-      // Function to fetch all publications without limit
-      const fetchAllPublications = async () => {
-        let allPublications: Publication[] = [];
-        let from = 0;
-        const limit = 1000; // Fetch in batches of 1000
-        let hasMore = true;
+      let allPublications: Publication[] = [];
+      let from = 0;
+      const limit = 1000;
+      let hasMore = true;
 
-        while (hasMore) {
-          let query = supabase
-            .from('publications')
-            .select('*')
-            .is('deleted_at', null)
-            .order('date', { ascending: true })
-            .range(from, from + limit - 1);
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from('publications')
+          .select('*')
+          .is('deleted_at', null)
+          .order('date', { ascending: true })
+          .range(from, from + limit - 1);
 
-          if (selectedClient) {
-            query = query.eq('client_id', selectedClient);
-          }
-
-          const { data, error } = await query;
-
-          if (error) {
-            console.error('Error fetching publications batch:', error);
-            throw error;
-          }
-
-          if (data && data.length > 0) {
-            allPublications = [...allPublications, ...data as Publication[]];
-            from += limit;
-            hasMore = data.length === limit; // Continue if we got a full batch
-          } else {
-            hasMore = false;
-          }
+        if (error) {
+          console.error('Error fetching publications batch:', error);
+          throw error;
         }
 
-        return allPublications;
-      };
-
-      try {
-        const data = await fetchAllPublications();
-        
-        if (selectedClient) {
-          console.log('Applied client filter:', selectedClient);
+        if (data && data.length > 0) {
+          allPublications = [...allPublications, ...data as Publication[]];
+          from += limit;
+          hasMore = data.length === limit;
         } else {
-          console.log('No client filter applied - fetching all publications');
+          hasMore = false;
         }
-        
-        console.log('Publications fetched:', data?.length || 0, 'items');
-        console.log('Date range of publications:', {
-          earliest: data.length > 0 ? data[0]?.date : 'N/A',
-          latest: data.length > 0 ? data[data.length - 1]?.date : 'N/A'
-        });
-        
-        return data as Publication[];
-      } catch (error) {
-        console.error('Error fetching publications:', error);
-        return [];
       }
+
+      return allPublications as Publication[];
     },
-    staleTime: 0 // Ensure fresh data
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000
   });
 
   const {
@@ -159,7 +128,7 @@ export const CalendarView = ({
     if (!result.destination) return;
     const destinationDate = result.destination.droppableId;
     const publicationId = result.draggableId;
-    const publication = publications.find(p => p.id === publicationId);
+    const publication = allPublications.find(p => p.id === publicationId);
     if (!publication) return;
     try {
       const adjustedDate = new Date(destinationDate);
@@ -195,66 +164,59 @@ export const CalendarView = ({
     }
   }, [highlightedPublicationId]);
 
-  useEffect(() => {
-    let progress = 0;
-    const interval = setInterval(() => {
-      progress += 5;
-      if (progress > 100) {
-        clearInterval(interval);
-      } else {
-        setLoadingProgress(progress);
-      }
-    }, 50);
-    return () => clearInterval(interval);
-  }, []);
+  const publications = useMemo(() => {
+    if (!selectedClient) return allPublications;
+    return allPublications.filter(p => p.client_id === selectedClient);
+  }, [allPublications, selectedClient]);
 
-  if (!publications.length && loadingProgress < 100) {
+  const filteredPublications = useMemo(() => {
+    return publications.filter(pub => {
+      if (selectedType && pub.type !== selectedType) return false;
+      if (selectedPackage && pub.package_id !== selectedPackage) return false;
+      if (selectedDesigner && pub.designer !== selectedDesigner) return false;
+      if (selectedStatus) {
+        switch (selectedStatus) {
+          case 'needs_recording':
+            return pub.needs_recording;
+          case 'needs_editing':
+            return pub.needs_editing;
+          case 'in_editing':
+            return pub.in_editing;
+          case 'in_review':
+            return pub.in_review;
+          case 'approved':
+            return pub.approved;
+          case 'published':
+            return pub.is_published;
+          default:
+            return true;
+        }
+      }
+      return true;
+    });
+  }, [publications, selectedType, selectedPackage, selectedDesigner, selectedStatus]);
+
+  const daysInMonth = useMemo(() => eachDayOfInterval({
+    start: startOfMonth(selectedDate),
+    end: endOfMonth(selectedDate)
+  }), [selectedDate]);
+
+  const allDays = useMemo(() => {
+    const startDay = startOfMonth(selectedDate).getDay();
+    const emptyDays = Array(startDay).fill(null);
+    return [...emptyDays, ...daysInMonth];
+  }, [selectedDate, daysInMonth]);
+
+  if (isLoadingPublications) {
     return <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4 p-8">
         <div className="w-full max-w-md space-y-2">
           <h2 className="text-lg font-medium text-center mb-4">
             Cargando publicaciones...
           </h2>
-          <Progress value={loadingProgress} className="w-full" />
-          <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
-            {loadingProgress}%
-          </p>
+          <Progress className="w-full animate-pulse" value={60} />
         </div>
       </div>;
   }
-
-  const filteredPublications = publications.filter(pub => {
-    if (selectedType && pub.type !== selectedType) return false;
-    if (selectedPackage && pub.package_id !== selectedPackage) return false;
-    if (selectedDesigner && pub.designer !== selectedDesigner) return false;
-    if (selectedStatus) {
-      switch (selectedStatus) {
-        case 'needs_recording':
-          return pub.needs_recording;
-        case 'needs_editing':
-          return pub.needs_editing;
-        case 'in_editing':
-          return pub.in_editing;
-        case 'in_review':
-          return pub.in_review;
-        case 'approved':
-          return pub.approved;
-        case 'published':
-          return pub.is_published;
-        default:
-          return true;
-      }
-    }
-    return true;
-  });
-
-  const daysInMonth = eachDayOfInterval({
-    start: startOfMonth(selectedDate),
-    end: endOfMonth(selectedDate)
-  });
-
-  const startDay = startOfMonth(selectedDate).getDay();
-  const emptyDays = Array(startDay).fill(null);
-  const allDays = [...emptyDays, ...daysInMonth];
 
   const toggleDayExpansion = (date: string) => {
     setExpandedDays(prev => ({
