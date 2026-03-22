@@ -375,41 +375,65 @@ export const PlanningCalendar = ({
             className="pl-8"
           />
         </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-full md:w-[180px]">
-            <SelectValue placeholder="Estado" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos los estados</SelectItem>
-            <SelectItem value="hacer">Hacer</SelectItem>
-            <SelectItem value="no_hacer">No hacer</SelectItem>
-            <SelectItem value="consultar">Consultar</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={completionFilter} onValueChange={setCompletionFilter}>
-          <SelectTrigger className="w-full md:w-[180px]">
-            <SelectValue placeholder="Progreso" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos</SelectItem>
-            <SelectItem value="done">Hechos</SelectItem>
-            <SelectItem value="pending">Faltan hacer</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={sortBy} onValueChange={setSortBy}>
-          <SelectTrigger className="w-full md:w-[200px]">
-            <div className="flex items-center gap-1.5">
-              <ArrowUpDown className="h-3.5 w-3.5" />
-              <SelectValue placeholder="Ordenar" />
-            </div>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="name_asc">Nombre A-Z</SelectItem>
-            <SelectItem value="name_desc">Nombre Z-A</SelectItem>
-            <SelectItem value="date_asc">Fecha más antigua</SelectItem>
-            <SelectItem value="date_desc">Fecha más reciente</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex flex-col gap-1">
+          <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Estado</span>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-full md:w-[160px]">
+              <SelectValue placeholder="Estado" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="hacer">Hacer</SelectItem>
+              <SelectItem value="no_hacer">No hacer</SelectItem>
+              <SelectItem value="consultar">Consultar</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex flex-col gap-1">
+          <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Progreso</span>
+          <Select value={completionFilter} onValueChange={setCompletionFilter}>
+            <SelectTrigger className="w-full md:w-[160px]">
+              <SelectValue placeholder="Progreso" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="done">Hechos</SelectItem>
+              <SelectItem value="pending">Faltan hacer</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex flex-col gap-1">
+          <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Planificador</span>
+          <Select value={plannerFilter} onValueChange={setPlannerFilter}>
+            <SelectTrigger className="w-full md:w-[170px]">
+              <SelectValue placeholder="Planificador" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="unassigned">Sin asignar</SelectItem>
+              {planners.map(p => (
+                <SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex flex-col gap-1">
+          <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Ordenar</span>
+          <Select value={sortBy} onValueChange={setSortBy}>
+            <SelectTrigger className="w-full md:w-[180px]">
+              <div className="flex items-center gap-1.5">
+                <ArrowUpDown className="h-3.5 w-3.5" />
+                <SelectValue placeholder="Ordenar" />
+              </div>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="name_asc">Nombre A-Z</SelectItem>
+              <SelectItem value="name_desc">Nombre Z-A</SelectItem>
+              <SelectItem value="date_asc">Fecha más antigua</SelectItem>
+              <SelectItem value="date_desc">Fecha más reciente</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4">
