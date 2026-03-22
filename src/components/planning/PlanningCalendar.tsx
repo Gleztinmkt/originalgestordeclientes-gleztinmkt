@@ -409,15 +409,30 @@ export const PlanningCalendar = ({
                 <div className="flex items-start justify-between">
                   <h3 className="font-semibold text-sm truncate pr-6">{client.name}</h3>
                   <Button variant="ghost" size="icon" className="flex-shrink-0 -mt-1" onClick={() => handleCompletion(client.id, !planningEntry?.completed)}>
-                    {planningEntry?.completed ? <CheckSquare className="h-5 w-5 text-green-500" /> : <Square className="h-5 w-5 text-gray-400" />}
+                    {planningEntry?.completed ? <CheckSquare className="h-5 w-5 text-green-500" /> : <Square className="h-5 w-5 text-muted-foreground" />}
                   </Button>
                 </div>
-                <div className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
                   <CalendarIcon className="h-3 w-3" />
-                  <span>Creación: {format(creationDate, 'd MMM', {
-                  locale: es
-                })}</span>
+                  <span>Creación: {format(creationDate, 'd MMM', { locale: es })}</span>
                 </div>
+                <Select
+                  value={planningEntry?.planner || "sin_asignar"}
+                  onValueChange={(value) => handlePlannerChange(client.id, value === "sin_asignar" ? null : value)}
+                >
+                  <SelectTrigger className="h-7 text-xs">
+                    <div className="flex items-center gap-1.5">
+                      <Users className="h-3 w-3" />
+                      <SelectValue placeholder="Planificador" />
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="sin_asignar">Sin asignar</SelectItem>
+                    {planners.map(p => (
+                      <SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <Button variant="ghost" className="w-full text-left justify-start h-auto py-1 px-2 mt-2 text-xs" onClick={() => {
