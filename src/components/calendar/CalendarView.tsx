@@ -164,66 +164,59 @@ export const CalendarView = ({
     }
   }, [highlightedPublicationId]);
 
-  useEffect(() => {
-    let progress = 0;
-    const interval = setInterval(() => {
-      progress += 5;
-      if (progress > 100) {
-        clearInterval(interval);
-      } else {
-        setLoadingProgress(progress);
-      }
-    }, 50);
-    return () => clearInterval(interval);
-  }, []);
+  const publications = useMemo(() => {
+    if (!selectedClient) return allPublications;
+    return allPublications.filter(p => p.client_id === selectedClient);
+  }, [allPublications, selectedClient]);
 
-  if (!publications.length && loadingProgress < 100) {
+  const filteredPublications = useMemo(() => {
+    return publications.filter(pub => {
+      if (selectedType && pub.type !== selectedType) return false;
+      if (selectedPackage && pub.package_id !== selectedPackage) return false;
+      if (selectedDesigner && pub.designer !== selectedDesigner) return false;
+      if (selectedStatus) {
+        switch (selectedStatus) {
+          case 'needs_recording':
+            return pub.needs_recording;
+          case 'needs_editing':
+            return pub.needs_editing;
+          case 'in_editing':
+            return pub.in_editing;
+          case 'in_review':
+            return pub.in_review;
+          case 'approved':
+            return pub.approved;
+          case 'published':
+            return pub.is_published;
+          default:
+            return true;
+        }
+      }
+      return true;
+    });
+  }, [publications, selectedType, selectedPackage, selectedDesigner, selectedStatus]);
+
+  const daysInMonth = useMemo(() => eachDayOfInterval({
+    start: startOfMonth(selectedDate),
+    end: endOfMonth(selectedDate)
+  }), [selectedDate]);
+
+  const allDays = useMemo(() => {
+    const startDay = startOfMonth(selectedDate).getDay();
+    const emptyDays = Array(startDay).fill(null);
+    return [...emptyDays, ...daysInMonth];
+  }, [selectedDate, daysInMonth]);
+
+  if (isLoadingPublications) {
     return <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4 p-8">
         <div className="w-full max-w-md space-y-2">
           <h2 className="text-lg font-medium text-center mb-4">
             Cargando publicaciones...
           </h2>
-          <Progress value={loadingProgress} className="w-full" />
-          <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
-            {loadingProgress}%
-          </p>
+          <Progress className="w-full animate-pulse" value={60} />
         </div>
       </div>;
   }
-
-  const filteredPublications = publications.filter(pub => {
-    if (selectedType && pub.type !== selectedType) return false;
-    if (selectedPackage && pub.package_id !== selectedPackage) return false;
-    if (selectedDesigner && pub.designer !== selectedDesigner) return false;
-    if (selectedStatus) {
-      switch (selectedStatus) {
-        case 'needs_recording':
-          return pub.needs_recording;
-        case 'needs_editing':
-          return pub.needs_editing;
-        case 'in_editing':
-          return pub.in_editing;
-        case 'in_review':
-          return pub.in_review;
-        case 'approved':
-          return pub.approved;
-        case 'published':
-          return pub.is_published;
-        default:
-          return true;
-      }
-    }
-    return true;
-  });
-
-  const daysInMonth = eachDayOfInterval({
-    start: startOfMonth(selectedDate),
-    end: endOfMonth(selectedDate)
-  });
-
-  const startDay = startOfMonth(selectedDate).getDay();
-  const emptyDays = Array(startDay).fill(null);
-  const allDays = [...emptyDays, ...daysInMonth];
 
   const toggleDayExpansion = (date: string) => {
     setExpandedDays(prev => ({
