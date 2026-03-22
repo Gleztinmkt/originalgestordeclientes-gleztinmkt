@@ -280,10 +280,9 @@ async function markPublished(pubIds: string[], discountCount?: number | string) 
 }
 
 /* ── Planning management ── */
-async function handleUpdatePlanning(clientId: string, month: number, status?: string, description?: string) {
+async function handleUpdatePlanning(clientId: string, month: number, status?: string, description?: string, planner?: string, completed?: boolean) {
   const sb = getAdminClient();
   const year = argentinaDateParts().year;
-  // Build ISO string for the 1st of the month at midnight Argentina time (UTC-3 → 03:00 UTC)
   const startOfMonth = `${year}-${String(month).padStart(2, '0')}-01T03:00:00.000Z`;
 
   const { data: existing } = await sb
@@ -297,6 +296,8 @@ async function handleUpdatePlanning(clientId: string, month: number, status?: st
   const updateData: Record<string, unknown> = {};
   if (status) updateData.status = status;
   if (description !== undefined) updateData.description = description;
+  if (planner !== undefined) updateData.planner = planner;
+  if (completed !== undefined) updateData.completed = completed;
 
   if (existing) {
     const { error } = await sb
@@ -312,6 +313,8 @@ async function handleUpdatePlanning(clientId: string, month: number, status?: st
         month: startOfMonth,
         status: status || "consultar",
         description: description || "",
+        ...(planner !== undefined ? { planner } : {}),
+        ...(completed !== undefined ? { completed } : {}),
       });
     if (error) throw error;
   }
