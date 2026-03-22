@@ -48,6 +48,18 @@ export const PlanningCalendar = ({
   const [sortBy, setSortBy] = useState<string>("name_asc");
   const [showPlannerDialog, setShowPlannerDialog] = useState(false);
 
+  const { data: planners = [], refetch: refetchPlanners } = useQuery({
+    queryKey: ['planners'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('planners')
+        .select('*')
+        .order('name', { ascending: true });
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const filteredClients = useMemo(() => {
     let filtered = clients.filter(client => {
       if (searchQuery && !client.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
