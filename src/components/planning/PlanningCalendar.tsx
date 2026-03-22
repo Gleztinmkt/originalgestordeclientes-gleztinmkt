@@ -296,7 +296,13 @@ export const PlanningCalendar = ({
   };
 
   return <div className="space-y-6 p-6 bg-gray-50 dark:bg-gray-900 min-h-screen px-0">
-      <MonthSelector selectedDate={selectedDate} onDateChange={setSelectedDate} />
+      <div className="flex items-center justify-between gap-4">
+        <MonthSelector selectedDate={selectedDate} onDateChange={setSelectedDate} />
+        <Button variant="outline" className="gap-2" onClick={() => setShowPlannerDialog(true)}>
+          <Users className="h-4 w-4" />
+          Planificadores
+        </Button>
+      </div>
       <StatusLegend getStatusColor={getStatusColor} />
 
       {/* Filter & Sort Bar */}
