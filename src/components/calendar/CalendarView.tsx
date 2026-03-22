@@ -61,70 +61,39 @@ export const CalendarView = ({
     data: publications = [],
     refetch
   } = useQuery({
-    queryKey: ['publications', selectedClient],
+    queryKey: ['publications'],
     queryFn: async () => {
-      console.log('Fetching publications - selectedClient:', selectedClient);
-      
-      // Function to fetch all publications without limit
-      const fetchAllPublications = async () => {
-        let allPublications: Publication[] = [];
-        let from = 0;
-        const limit = 1000; // Fetch in batches of 1000
-        let hasMore = true;
+      let allPublications: Publication[] = [];
+      let from = 0;
+      const limit = 1000;
+      let hasMore = true;
 
-        while (hasMore) {
-          let query = supabase
-            .from('publications')
-            .select('*')
-            .is('deleted_at', null)
-            .order('date', { ascending: true })
-            .range(from, from + limit - 1);
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from('publications')
+          .select('*')
+          .is('deleted_at', null)
+          .order('date', { ascending: true })
+          .range(from, from + limit - 1);
 
-          if (selectedClient) {
-            query = query.eq('client_id', selectedClient);
-          }
-
-          const { data, error } = await query;
-
-          if (error) {
-            console.error('Error fetching publications batch:', error);
-            throw error;
-          }
-
-          if (data && data.length > 0) {
-            allPublications = [...allPublications, ...data as Publication[]];
-            from += limit;
-            hasMore = data.length === limit; // Continue if we got a full batch
-          } else {
-            hasMore = false;
-          }
+        if (error) {
+          console.error('Error fetching publications batch:', error);
+          throw error;
         }
 
-        return allPublications;
-      };
-
-      try {
-        const data = await fetchAllPublications();
-        
-        if (selectedClient) {
-          console.log('Applied client filter:', selectedClient);
+        if (data && data.length > 0) {
+          allPublications = [...allPublications, ...data as Publication[]];
+          from += limit;
+          hasMore = data.length === limit;
         } else {
-          console.log('No client filter applied - fetching all publications');
+          hasMore = false;
         }
-        
-        console.log('Publications fetched:', data?.length || 0, 'items');
-        console.log('Date range of publications:', {
-          earliest: data.length > 0 ? data[0]?.date : 'N/A',
-          latest: data.length > 0 ? data[data.length - 1]?.date : 'N/A'
-        });
-        
-        return data as Publication[];
-      } catch (error) {
-        console.error('Error fetching publications:', error);
-        return [];
       }
+
+      return allPublications as Publication[];
     },
-    staleTime: 0 // Ensure fresh data
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000
   });
 
   const {
