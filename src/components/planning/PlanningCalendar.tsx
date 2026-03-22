@@ -72,6 +72,14 @@ export const PlanningCalendar = ({
       }
       if (completionFilter === "done" && !entry?.completed) return false;
       if (completionFilter === "pending" && entry?.completed) return false;
+      if (plannerFilter !== "all") {
+        const assignedPlanner = entry?.planner || null;
+        if (plannerFilter === "unassigned") {
+          if (assignedPlanner) return false;
+        } else {
+          if (assignedPlanner !== plannerFilter) return false;
+        }
+      }
       return true;
     });
 
@@ -94,7 +102,7 @@ export const PlanningCalendar = ({
     });
 
     return filtered;
-  }, [clients, planningData, searchQuery, statusFilter, completionFilter, sortBy]);
+  }, [clients, planningData, searchQuery, statusFilter, completionFilter, plannerFilter, sortBy]);
 
   const fetchPlanningData = async () => {
     try {
