@@ -2173,14 +2173,14 @@ serve(async (req) => {
         const sessId = callbackData.replace("plan_sess:", "");
         const sessData = await resolveSession(sessId) as {
           action?: string;
-          updates?: { client_id: string; mes: number; status: string; descripcion?: string }[];
-          client_id?: string; mes?: number; status?: string; descripcion?: string;
+          updates?: { client_id: string; mes: number; status: string; descripcion?: string; planner?: string; completed?: boolean }[];
+          client_id?: string; mes?: number; status?: string; descripcion?: string; planner?: string; completed?: boolean;
         } | null;
         if (!sessData) return json({ error: "Sesión expirada o inválida. Volvé a consultar." }, 400);
 
         // Single planning confirm with description
         if (sessData.action === "plan_confirm" && sessData.client_id && sessData.mes) {
-          await handleUpdatePlanning(sessData.client_id, sessData.mes, sessData.status || "hacer", sessData.descripcion);
+          await handleUpdatePlanning(sessData.client_id, sessData.mes, sessData.status || "hacer", sessData.descripcion, sessData.planner, sessData.completed);
           result = {
             accion: "planificacion_confirmada",
             mensaje_ia: `Planificación confirmada exitosamente`,
@@ -2192,7 +2192,7 @@ serve(async (req) => {
           let count = 0;
           for (const u of sessData.updates) {
             if (u.client_id && u.mes) {
-              await handleUpdatePlanning(u.client_id, u.mes, u.status || "hacer", u.descripcion);
+              await handleUpdatePlanning(u.client_id, u.mes, u.status || "hacer", u.descripcion, u.planner, u.completed);
               count++;
             }
           }
