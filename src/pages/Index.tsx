@@ -22,6 +22,7 @@ import { LogOut, RefreshCw } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 const Index = () => {
+  const [activeTab, setActiveTab] = useState<string | null>(null);
   const {
     tasks,
     loadTasks,
