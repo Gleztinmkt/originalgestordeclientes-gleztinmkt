@@ -1497,29 +1497,27 @@ async function formatForTelegram(result: any): Promise<{ mensajes: Array<{ text:
       text += `${statusDot} <b>${escHtml(u.cliente)}</b> → ${months[u.mes] || u.mes}`;
       if (u.status) text += ` (${u.status})`;
       text += "\n";
+      if (u.planner) text += `   👤 Planificador: ${escHtml(u.planner)}\n`;
+      if (u.completed !== undefined) text += `   ${u.completed ? "✅ Completado" : "⬜ Pendiente"}\n`;
       if (u.descripcion) text += `   📝 ${escHtml(u.descripcion)}\n`;
 
       if (u.client_id) {
-        if (u.descripcion) {
-          const sessId = await createSession({
-            client_id: u.client_id, mes: u.mes, status: u.status || "hacer",
-            descripcion: u.descripcion, action: "plan_confirm"
-          });
-          buttons.push([
-            { text: `✅ Confirmar ${u.cliente}`, callback_data: `plan_sess:${sessId}` },
-          ]);
-        } else {
-          buttons.push([
-            { text: `✅ Confirmar ${u.cliente}`, callback_data: `plan_confirm:${u.client_id}:${u.mes}:${u.status || ""}` },
-          ]);
-        }
+        // Always use session to support all fields
+        const sessId = await createSession({
+          client_id: u.client_id, mes: u.mes, status: u.status || "hacer",
+          descripcion: u.descripcion, planner: u.planner, completed: u.completed, action: "plan_confirm"
+        });
+        buttons.push([
+          { text: `✅ Confirmar ${u.cliente}`, callback_data: `plan_sess:${sessId}` },
+        ]);
       }
     }
 
     if ((result.actualizaciones || []).length > 1) {
       // deno-lint-ignore no-explicit-any
       const allUpdates = (result.actualizaciones || []).map((u: any) => ({
-        client_id: u.client_id, mes: u.mes, status: u.status || "", descripcion: u.descripcion || ""
+        client_id: u.client_id, mes: u.mes, status: u.status || "", descripcion: u.descripcion || "",
+        planner: u.planner, completed: u.completed
       }));
       const sessId = await createSession({ updates: allUpdates, action: "plan_confirm_all" });
       buttons.push([{ text: "✅ Confirmar todas", callback_data: `plan_sess:${sessId}` }]);
