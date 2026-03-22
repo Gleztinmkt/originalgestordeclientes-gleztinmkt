@@ -13,7 +13,8 @@ import { StatusLegend } from "./StatusLegend";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CalendarIcon, CheckSquare, Square, Search, ArrowUpDown } from "lucide-react";
+import { CalendarIcon, CheckSquare, Square, Search, ArrowUpDown, Plus, Users } from "lucide-react";
+import { PlannerDialog } from "./PlannerDialog";
 
 interface PlanningCalendarProps {
   clients: Client[];
