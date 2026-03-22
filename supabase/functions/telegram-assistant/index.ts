@@ -487,6 +487,8 @@ Si pide agregar descripción, incluí el texto completo en el campo description.
                   month: { type: "number", description: "Número del mes (1=enero, 12=diciembre)" },
                   status: { type: "string", enum: ["hacer", "no_hacer", "consultar"], description: "Nuevo estado de planificación" },
                   description: { type: "string", description: "Descripción de planificación (solo si el usuario la especifica)" },
+                  planner: { type: "string", description: "Nombre del planificador a asignar (solo si el usuario lo especifica)" },
+                  completed: { type: "boolean", description: "Si marcar como completado (true) o pendiente (false)" },
                 },
                 required: ["client_name", "client_id", "month"],
               },
