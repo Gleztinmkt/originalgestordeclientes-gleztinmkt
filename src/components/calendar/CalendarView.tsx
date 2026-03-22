@@ -36,7 +36,6 @@ export const CalendarView = ({
     [key: string]: boolean;
   }>({});
   const [highlightedPublicationId, setHighlightedPublicationId] = useState<string | null>(null);
-  const [loadingProgress, setLoadingProgress] = useState(0);
   const isMobile = useIsMobile();
 
   const {
