@@ -56,41 +56,30 @@ export const CalendarView = ({
     }
   });
 
+  const monthStart = useMemo(() => startOfMonth(selectedDate), [selectedDate]);
+  const monthEnd = useMemo(() => endOfMonth(selectedDate), [selectedDate]);
+
   const {
     data: allPublications = [],
     isLoading: isLoadingPublications,
     refetch
   } = useQuery({
-    queryKey: ['publications'],
+    queryKey: ['publications', format(monthStart, 'yyyy-MM')],
     queryFn: async () => {
-      let allPublications: Publication[] = [];
-      let from = 0;
-      const limit = 1000;
-      let hasMore = true;
+      const { data, error } = await supabase
+        .from('publications')
+        .select('id,client_id,name,type,date,description,package_id,is_published,designer,needs_recording,needs_editing,in_editing,in_review,approved,status,filming_time,links,copywriting,google_calendar_event_id,google_calendar_id,in_cloud,reference_materials')
+        .is('deleted_at', null)
+        .gte('date', monthStart.toISOString())
+        .lte('date', monthEnd.toISOString())
+        .order('date', { ascending: true });
 
-      while (hasMore) {
-        const { data, error } = await supabase
-          .from('publications')
-          .select('*')
-          .is('deleted_at', null)
-          .order('date', { ascending: true })
-          .range(from, from + limit - 1);
-
-        if (error) {
-          console.error('Error fetching publications batch:', error);
-          throw error;
-        }
-
-        if (data && data.length > 0) {
-          allPublications = [...allPublications, ...data as Publication[]];
-          from += limit;
-          hasMore = data.length === limit;
-        } else {
-          hasMore = false;
-        }
+      if (error) {
+        console.error('Error fetching publications:', error);
+        throw error;
       }
 
-      return allPublications as Publication[];
+      return (data || []) as Publication[];
     },
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000
