@@ -85,6 +85,13 @@ async function fetchDesigners() {
   return data ?? [];
 }
 
+async function fetchPlanners() {
+  const sb = getAdminClient();
+  const { data, error } = await sb.from("planners").select("id, name").order("name");
+  if (error) throw error;
+  return data ?? [];
+}
+
 async function fetchPendingPublications(clientIds: string[]) {
   const sb = getAdminClient();
   const { data, error } = await sb
