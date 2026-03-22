@@ -57,7 +57,8 @@ export const CalendarView = ({
   });
 
   const {
-    data: publications = [],
+    data: allPublications = [],
+    isLoading: isLoadingPublications,
     refetch
   } = useQuery({
     queryKey: ['publications'],
