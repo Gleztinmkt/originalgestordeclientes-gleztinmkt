@@ -128,7 +128,7 @@ export const CalendarView = ({
     if (!result.destination) return;
     const destinationDate = result.destination.droppableId;
     const publicationId = result.draggableId;
-    const publication = publications.find(p => p.id === publicationId);
+    const publication = allPublications.find(p => p.id === publicationId);
     if (!publication) return;
     try {
       const adjustedDate = new Date(destinationDate);
