@@ -46,6 +46,7 @@ export const PlanningCalendar = ({
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [completionFilter, setCompletionFilter] = useState<string>("all");
+  const [plannerFilter, setPlannerFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("name_asc");
   const [showPlannerDialog, setShowPlannerDialog] = useState(false);
 
