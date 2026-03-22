@@ -119,7 +119,8 @@ export const PlanningCalendar = ({
           month: entry.month,
           status: (entry.status || 'consultar') as 'hacer' | 'no_hacer' | 'consultar',
           description: entry.description,
-          completed: entry.completed
+          completed: entry.completed,
+          planner: (entry as any).planner || null
         };
       });
       setPlanningData(planningMap);
