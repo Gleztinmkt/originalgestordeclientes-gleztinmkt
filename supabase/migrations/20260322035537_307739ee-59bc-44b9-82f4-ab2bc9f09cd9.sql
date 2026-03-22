@@ -1,0 +1,1 @@
+ALTER TABLE public.publication_planning ADD COLUMN planner text DEFAULT NULL;
