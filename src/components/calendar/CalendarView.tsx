@@ -86,6 +86,25 @@ export const CalendarView = ({
   });
 
   const {
+    data: totalPublicationsCount = 0
+  } = useQuery({
+    queryKey: ['publications-total-count'],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from('publications')
+        .select('*', { count: 'exact', head: true })
+        .is('deleted_at', null);
+      if (error) {
+        console.error('Error fetching total count:', error);
+        return 0;
+      }
+      return count || 0;
+    },
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000
+  });
+
+  const {
     data: designers = [],
     refetch: refetchDesigners
   } = useQuery({
@@ -312,7 +331,7 @@ export const CalendarView = ({
             </div>
             <div className="flex items-center gap-2">
               <Badge variant="outline" className="bg-primary/10 mr-1">
-                {filteredPublications.length}
+                {filteredPublications.length} / {totalPublicationsCount}
               </Badge>
               <Sheet>
                 <SheetTrigger asChild>
@@ -354,7 +373,7 @@ export const CalendarView = ({
               })}
                 </h2>
                 <Badge variant="outline" className="bg-primary/10 ml-2">
-                  {filteredPublications.length} publicaciones
+                  {filteredPublications.length} este mes / {totalPublicationsCount} total
                 </Badge>
               </div>
             </div>
