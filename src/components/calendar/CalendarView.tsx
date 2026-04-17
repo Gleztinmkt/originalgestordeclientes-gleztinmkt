@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Publication } from "../client/publication/types";
 import { Client } from "../types/client";
@@ -37,6 +38,7 @@ export const CalendarView = ({
   }>({});
   const [highlightedPublicationId, setHighlightedPublicationId] = useState<string | null>(null);
   const isMobile = useIsMobile();
+  const queryClient = useQueryClient();
 
   const {
     data: userRole
@@ -95,6 +97,24 @@ export const CalendarView = ({
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000
   });
+
+  // Sincronización en vivo: cualquier cambio en publications refresca el calendario en todas las sesiones.
+  useEffect(() => {
+    const channel = supabase
+      .channel('calendar-publications-sync')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'publications' },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['publications'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 
   const {
     data: designers = [],
