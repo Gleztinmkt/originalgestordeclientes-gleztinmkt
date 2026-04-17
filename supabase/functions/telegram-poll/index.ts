@@ -9,6 +9,24 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+function extractAssistantMessages(result: any): any[] {
+  const telegramMessages = Array.isArray(result?.telegram?.mensajes)
+    ? result.telegram.mensajes
+    : [];
+  if (telegramMessages.length > 0) return telegramMessages;
+
+  const directMessages = Array.isArray(result?.mensajes) ? result.mensajes : [];
+  if (directMessages.length > 0) return directMessages;
+
+  const fallbackText = result?.respuesta ?? result?.text ?? result?.message ?? result?.mensaje_ia;
+  if (!fallbackText) return [];
+
+  return [{
+    text: fallbackText,
+    reply_markup: result?.reply_markup ?? null,
+  }];
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -100,7 +118,12 @@ Deno.serve(async (req) => {
         if (message?.text) {
           assistantPayload = { mensaje: message.text, chatId, format: "telegram" };
         } else if (callbackQuery?.data) {
-          assistantPayload = { callback_data: callbackQuery.data, chatId, format: "telegram" };
+          assistantPayload = {
+            accion: "telegram_callback",
+            callback_data: callbackQuery.data,
+            chatId,
+            format: "telegram",
+          };
         }
 
         if (!assistantPayload || !chatId) {
@@ -144,11 +167,11 @@ Deno.serve(async (req) => {
             }),
           }).catch(() => {});
         } else if (result) {
-          const mensajes: any[] = Array.isArray(result.mensajes) && result.mensajes.length > 0
-            ? result.mensajes
-            : (result.respuesta || result.text || result.message)
-              ? [{ text: result.respuesta || result.text || result.message, reply_markup: result.reply_markup }]
-              : [];
+          const mensajes: any[] = extractAssistantMessages(result);
+
+          if (mensajes.length === 0) {
+            console.warn(`telegram-assistant returned no sendable messages for update ${update.update_id}`);
+          }
 
           for (let i = 0; i < mensajes.length; i++) {
             const msg = mensajes[i];
