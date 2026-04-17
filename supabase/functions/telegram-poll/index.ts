@@ -92,54 +92,19 @@ Deno.serve(async (req) => {
     // Forward each update to telegram-assistant
     for (const update of updates) {
       try {
-        const assistantRes = await fetch(`${SUPABASE_URL}/functions/v1/telegram-assistant`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-api-key": TELEGRAM_API_KEY_INTERNAL,
-          },
-          body: JSON.stringify({ update, format: "telegram" }),
-        });
+        const message = update.message;
+        const callbackQuery = update.callback_query;
+        const chatId = message?.chat?.id ?? callbackQuery?.message?.chat?.id;
 
-        if (!assistantRes.ok) {
-          const errText = await assistantRes.text();
-          console.error(`telegram-assistant failed for update ${update.update_id}:`, errText);
-        } else {
-          const result = await assistantRes.json().catch(() => null);
-          // Send replies back to Telegram
-          if (result?.mensajes && Array.isArray(result.mensajes)) {
-            const chatId = update.message?.chat?.id ?? update.callback_query?.message?.chat?.id;
-            if (chatId) {
-              for (let i = 0; i < result.mensajes.length; i++) {
-                const msg = result.mensajes[i];
-                const isLast = i === result.mensajes.length - 1;
-                const payload: Record<string, unknown> = {
-                  chat_id: chatId,
-                  text: typeof msg === "string" ? msg : msg.text,
-                  parse_mode: "HTML",
-                };
-                if (isLast && result.reply_markup) {
-                  payload.reply_markup = result.reply_markup;
-                }
-                if (typeof msg === "object" && msg.reply_markup) {
-                  payload.reply_markup = msg.reply_markup;
-                }
+        let assistantPayload: Record<string, unknown> | null = null;
+        if (message?.text) {
+          assistantPayload = { mensaje: message.text, chatId, format: "telegram" };
+        } else if (callbackQuery?.data) {
+          assistantPayload = { callback_data: callbackQuery.data, chatId, format: "telegram" };
+        }
 
-                await fetch(`${GATEWAY_URL}/sendMessage`, {
-                  method: "POST",
-                  headers: {
-                    "Authorization": `Bearer ${LOVABLE_API_KEY}`,
-                    "X-Connection-Api-Key": TELEGRAM_API_KEY,
-                    "Content-Type": "application/json",
-                  },
-                  body: JSON.stringify(payload),
-                }).catch((e) => console.error("sendMessage failed:", e));
-              }
-            }
-          }
-
-          // Acknowledge callback queries
-          if (update.callback_query) {
+        if (!assistantPayload || !chatId) {
+          if (callbackQuery) {
             await fetch(`${GATEWAY_URL}/answerCallbackQuery`, {
               method: "POST",
               headers: {
@@ -147,9 +112,82 @@ Deno.serve(async (req) => {
                 "X-Connection-Api-Key": TELEGRAM_API_KEY,
                 "Content-Type": "application/json",
               },
-              body: JSON.stringify({ callback_query_id: update.callback_query.id }),
-            }).catch((e) => console.error("answerCallbackQuery failed:", e));
+              body: JSON.stringify({ callback_query_id: callbackQuery.id }),
+            }).catch(() => {});
           }
+          continue;
+        }
+
+        const assistantRes = await fetch(`${SUPABASE_URL}/functions/v1/telegram-assistant`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-api-key": TELEGRAM_API_KEY_INTERNAL },
+          body: JSON.stringify(assistantPayload),
+        });
+
+        const resultText = await assistantRes.text();
+        let result: any = null;
+        try { result = resultText ? JSON.parse(resultText) : null; } catch { /* ignore */ }
+
+        if (!assistantRes.ok) {
+          console.error(`telegram-assistant ${assistantRes.status} for update ${update.update_id}:`, resultText);
+          await fetch(`${GATEWAY_URL}/sendMessage`, {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+              "X-Connection-Api-Key": TELEGRAM_API_KEY,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              chat_id: chatId,
+              text: `⚠️ Error procesando tu mensaje:\n<code>${(result?.error ?? resultText).toString().slice(0, 300)}</code>`,
+              parse_mode: "HTML",
+            }),
+          }).catch(() => {});
+        } else if (result) {
+          const mensajes: any[] = Array.isArray(result.mensajes) && result.mensajes.length > 0
+            ? result.mensajes
+            : (result.respuesta || result.text || result.message)
+              ? [{ text: result.respuesta || result.text || result.message, reply_markup: result.reply_markup }]
+              : [];
+
+          for (let i = 0; i < mensajes.length; i++) {
+            const msg = mensajes[i];
+            const isLast = i === mensajes.length - 1;
+            const text = typeof msg === "string" ? msg : msg.text;
+            if (!text) continue;
+
+            const payload: Record<string, unknown> = { chat_id: chatId, text, parse_mode: "HTML" };
+            if (typeof msg === "object" && msg.reply_markup) {
+              payload.reply_markup = msg.reply_markup;
+            } else if (isLast && result.reply_markup) {
+              payload.reply_markup = result.reply_markup;
+            }
+
+            const sendRes = await fetch(`${GATEWAY_URL}/sendMessage`, {
+              method: "POST",
+              headers: {
+                "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+                "X-Connection-Api-Key": TELEGRAM_API_KEY,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(payload),
+            });
+            if (!sendRes.ok) {
+              console.error("sendMessage failed:", sendRes.status, await sendRes.text());
+            }
+          }
+        }
+
+        if (callbackQuery) {
+          await fetch(`${GATEWAY_URL}/answerCallbackQuery`, {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+              "X-Connection-Api-Key": TELEGRAM_API_KEY,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ callback_query_id: callbackQuery.id }),
+          }).catch((e) => console.error("answerCallbackQuery failed:", e));
         }
       } catch (e) {
         console.error(`Error processing update ${update.update_id}:`, e);
