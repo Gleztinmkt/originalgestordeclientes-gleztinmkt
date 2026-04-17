@@ -118,7 +118,12 @@ Deno.serve(async (req) => {
         if (message?.text) {
           assistantPayload = { mensaje: message.text, chatId, format: "telegram" };
         } else if (callbackQuery?.data) {
-          assistantPayload = { callback_data: callbackQuery.data, chatId, format: "telegram" };
+          assistantPayload = {
+            accion: "telegram_callback",
+            callback_data: callbackQuery.data,
+            chatId,
+            format: "telegram",
+          };
         }
 
         if (!assistantPayload || !chatId) {
