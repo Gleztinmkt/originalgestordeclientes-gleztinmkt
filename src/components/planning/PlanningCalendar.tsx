@@ -440,15 +440,24 @@ export const PlanningCalendar = ({
           </Select>
         </div>
         <div className="flex flex-col gap-1">
-          <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Progreso</span>
-          <Select value={completionFilter} onValueChange={setCompletionFilter}>
-            <SelectTrigger className="w-full md:w-[160px]">
-              <SelectValue placeholder="Progreso" />
+          <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Producción</span>
+          <Select value={productionFilter} onValueChange={setProductionFilter}>
+            <SelectTrigger className="w-full md:w-[180px]">
+              <div className="flex items-center gap-1.5">
+                <Activity className="h-3.5 w-3.5" />
+                <SelectValue placeholder="Producción" />
+              </div>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos</SelectItem>
-              <SelectItem value="done">Hechos</SelectItem>
-              <SelectItem value="pending">Faltan hacer</SelectItem>
+              {PRODUCTION_STATES.map(state => (
+                <SelectItem key={state.key} value={state.key}>
+                  <div className="flex items-center gap-2">
+                    <div className={`w-2 h-2 rounded-full ${state.color}`} />
+                    {state.label}
+                  </div>
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
