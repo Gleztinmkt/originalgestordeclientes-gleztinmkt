@@ -119,7 +119,7 @@ export const PlanningCalendar = ({
     });
 
     return filtered;
-  }, [clients, planningData, searchQuery, statusFilter, completionFilter, plannerFilter, sortBy]);
+  }, [clients, planningData, searchQuery, statusFilter, productionFilter, completionFilter, plannerFilter, sortBy]);
 
   const fetchPlanningData = async () => {
     try {
