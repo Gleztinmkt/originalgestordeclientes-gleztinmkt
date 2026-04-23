@@ -227,60 +227,6 @@ export const PlanningCalendar = ({
     }
   };
 
-  const handleCompletion = async (clientId: string, completed: boolean) => {
-    if (isSaving) return;
-    setIsSaving(true);
-    const startOfMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
-    const currentEntry = planningData[clientId];
-    try {
-      const {
-        data: existingData,
-        error: checkError
-      } = await supabase.from('publication_planning').select('id').eq('client_id', clientId).eq('month', startOfMonth.toISOString()).is('deleted_at', null).maybeSingle();
-      if (checkError) throw checkError;
-      let result;
-      if (existingData) {
-        result = await supabase.from('publication_planning').update({
-          completed,
-          status: currentEntry?.status || 'consultar',
-          description: currentEntry?.description || ''
-        }).eq('id', existingData.id).select().single();
-      } else {
-        result = await supabase.from('publication_planning').insert({
-          client_id: clientId,
-          month: startOfMonth.toISOString(),
-          status: currentEntry?.status || 'consultar',
-          description: currentEntry?.description || '',
-          completed
-        }).select().single();
-      }
-      if (result.error) throw result.error;
-
-      setPlanningData(prev => ({
-        ...prev,
-        [clientId]: {
-          ...result.data,
-          id: result.data.id,
-          client_id: clientId,
-          month: startOfMonth.toISOString(),
-          completed: result.data.completed
-        }
-      }));
-      toast({
-        title: completed ? "Tarea marcada como completada" : "Tarea marcada como pendiente",
-        description: "El estado se ha actualizado correctamente"
-      });
-    } catch (error) {
-      console.error('Error updating completion status:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo actualizar el estado",
-        variant: "destructive"
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  };
 
   const handleDescriptionSave = async () => {
     if (!selectedClient || isSaving) return;
