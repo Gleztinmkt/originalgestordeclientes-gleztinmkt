@@ -14,7 +14,7 @@ import { StatusLegend } from "./StatusLegend";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CalendarIcon, CheckSquare, Square, Search, ArrowUpDown, Plus, Users, Activity } from "lucide-react";
+import { CalendarIcon, Search, ArrowUpDown, Plus, Users, Activity } from "lucide-react";
 import { PlannerDialog } from "./PlannerDialog";
 import { PRODUCTION_STATES, type ProductionStatus } from "./StatusLegend";
 
@@ -563,9 +563,6 @@ export const PlanningCalendar = ({
               <div className="space-y-2">
                 <div className="flex items-start justify-between">
                   <h3 className="font-semibold text-sm truncate pr-24">{client.name}</h3>
-                  <Button variant="ghost" size="icon" className="flex-shrink-0 -mt-1" onClick={() => handleCompletion(client.id, !planningEntry?.completed)}>
-                    {planningEntry?.completed ? <CheckSquare className="h-5 w-5 text-green-500" /> : <Square className="h-5 w-5 text-muted-foreground" />}
-                  </Button>
                 </div>
                 <div className="flex items-center gap-1 text-xs text-muted-foreground">
                   <CalendarIcon className="h-3 w-3" />
