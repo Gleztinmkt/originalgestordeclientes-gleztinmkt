@@ -83,6 +83,10 @@ export const PlanningCalendar = ({
         const status = entry?.status || 'consultar';
         if (status !== statusFilter) return false;
       }
+      if (productionFilter !== "all") {
+        const ps = entry?.production_status || 'sin_hacer';
+        if (ps !== productionFilter) return false;
+      }
       if (completionFilter === "done" && !entry?.completed) return false;
       if (completionFilter === "pending" && entry?.completed) return false;
       if (plannerFilter !== "all") {
