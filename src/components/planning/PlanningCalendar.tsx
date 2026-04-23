@@ -146,7 +146,8 @@ export const PlanningCalendar = ({
           status: (entry.status || 'consultar') as 'hacer' | 'no_hacer' | 'consultar',
           description: entry.description,
           completed: entry.completed,
-          planner: (entry as any).planner || null
+          planner: (entry as any).planner || null,
+          production_status: ((entry as any).production_status || 'sin_hacer') as ProductionStatus
         };
       });
       setPlanningData(planningMap);
