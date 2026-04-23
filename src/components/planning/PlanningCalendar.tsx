@@ -556,7 +556,7 @@ export const PlanningCalendar = ({
 
               <div className="space-y-2">
                 <div className="flex items-start justify-between">
-                  <h3 className="font-semibold text-sm truncate pr-6">{client.name}</h3>
+                  <h3 className="font-semibold text-sm truncate pr-24">{client.name}</h3>
                   <Button variant="ghost" size="icon" className="flex-shrink-0 -mt-1" onClick={() => handleCompletion(client.id, !planningEntry?.completed)}>
                     {planningEntry?.completed ? <CheckSquare className="h-5 w-5 text-green-500" /> : <Square className="h-5 w-5 text-muted-foreground" />}
                   </Button>
