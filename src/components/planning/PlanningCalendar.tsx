@@ -14,7 +14,7 @@ import { StatusLegend } from "./StatusLegend";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CalendarIcon, CheckSquare, Square, Search, ArrowUpDown, Plus, Users, Activity } from "lucide-react";
+import { CalendarIcon, Search, ArrowUpDown, Plus, Users, Activity } from "lucide-react";
 import { PlannerDialog } from "./PlannerDialog";
 import { PRODUCTION_STATES, type ProductionStatus } from "./StatusLegend";
 
@@ -38,7 +38,6 @@ interface PlanningEntry {
   month: string;
   status: 'hacer' | 'no_hacer' | 'consultar';
   description?: string;
-  completed?: boolean;
   planner?: string | null;
   production_status?: ProductionStatus;
 }
@@ -58,7 +57,6 @@ export const PlanningCalendar = ({
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [productionFilter, setProductionFilter] = useState<string>("all");
-  const [completionFilter, setCompletionFilter] = useState<string>("all");
   const [plannerFilter, setPlannerFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("name_asc");
   const [showPlannerDialog, setShowPlannerDialog] = useState(false);
@@ -87,8 +85,6 @@ export const PlanningCalendar = ({
         const ps = entry?.production_status || 'sin_hacer';
         if (ps !== productionFilter) return false;
       }
-      if (completionFilter === "done" && !entry?.completed) return false;
-      if (completionFilter === "pending" && entry?.completed) return false;
       if (plannerFilter !== "all") {
         const assignedPlanner = entry?.planner || null;
         if (plannerFilter === "unassigned") {
@@ -119,7 +115,7 @@ export const PlanningCalendar = ({
     });
 
     return filtered;
-  }, [clients, planningData, searchQuery, statusFilter, productionFilter, completionFilter, plannerFilter, sortBy]);
+  }, [clients, planningData, searchQuery, statusFilter, productionFilter, plannerFilter, sortBy]);
 
   const fetchPlanningData = async () => {
     try {
@@ -145,7 +141,6 @@ export const PlanningCalendar = ({
           month: entry.month,
           status: (entry.status || 'consultar') as 'hacer' | 'no_hacer' | 'consultar',
           description: entry.description,
-          completed: entry.completed,
           planner: (entry as any).planner || null,
           production_status: ((entry as any).production_status || 'sin_hacer') as ProductionStatus
         };
@@ -230,60 +225,6 @@ export const PlanningCalendar = ({
     }
   };
 
-  const handleCompletion = async (clientId: string, completed: boolean) => {
-    if (isSaving) return;
-    setIsSaving(true);
-    const startOfMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
-    const currentEntry = planningData[clientId];
-    try {
-      const {
-        data: existingData,
-        error: checkError
-      } = await supabase.from('publication_planning').select('id').eq('client_id', clientId).eq('month', startOfMonth.toISOString()).is('deleted_at', null).maybeSingle();
-      if (checkError) throw checkError;
-      let result;
-      if (existingData) {
-        result = await supabase.from('publication_planning').update({
-          completed,
-          status: currentEntry?.status || 'consultar',
-          description: currentEntry?.description || ''
-        }).eq('id', existingData.id).select().single();
-      } else {
-        result = await supabase.from('publication_planning').insert({
-          client_id: clientId,
-          month: startOfMonth.toISOString(),
-          status: currentEntry?.status || 'consultar',
-          description: currentEntry?.description || '',
-          completed
-        }).select().single();
-      }
-      if (result.error) throw result.error;
-
-      setPlanningData(prev => ({
-        ...prev,
-        [clientId]: {
-          ...result.data,
-          id: result.data.id,
-          client_id: clientId,
-          month: startOfMonth.toISOString(),
-          completed: result.data.completed
-        }
-      }));
-      toast({
-        title: completed ? "Tarea marcada como completada" : "Tarea marcada como pendiente",
-        description: "El estado se ha actualizado correctamente"
-      });
-    } catch (error) {
-      console.error('Error updating completion status:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo actualizar el estado",
-        variant: "destructive"
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  };
 
   const handleDescriptionSave = async () => {
     if (!selectedClient || isSaving) return;
@@ -443,15 +384,24 @@ export const PlanningCalendar = ({
           </Select>
         </div>
         <div className="flex flex-col gap-1">
-          <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Progreso</span>
-          <Select value={completionFilter} onValueChange={setCompletionFilter}>
-            <SelectTrigger className="w-full md:w-[160px]">
-              <SelectValue placeholder="Progreso" />
+          <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Producción</span>
+          <Select value={productionFilter} onValueChange={setProductionFilter}>
+            <SelectTrigger className="w-full md:w-[180px]">
+              <div className="flex items-center gap-1.5">
+                <Activity className="h-3.5 w-3.5" />
+                <SelectValue placeholder="Producción" />
+              </div>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos</SelectItem>
-              <SelectItem value="done">Hechos</SelectItem>
-              <SelectItem value="pending">Faltan hacer</SelectItem>
+              {PRODUCTION_STATES.map(state => (
+                <SelectItem key={state.key} value={state.key}>
+                  <div className="flex items-center gap-2">
+                    <div className={`w-2 h-2 rounded-full ${state.color}`} />
+                    {state.label}
+                  </div>
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -557,9 +507,6 @@ export const PlanningCalendar = ({
               <div className="space-y-2">
                 <div className="flex items-start justify-between">
                   <h3 className="font-semibold text-sm truncate pr-24">{client.name}</h3>
-                  <Button variant="ghost" size="icon" className="flex-shrink-0 -mt-1" onClick={() => handleCompletion(client.id, !planningEntry?.completed)}>
-                    {planningEntry?.completed ? <CheckSquare className="h-5 w-5 text-green-500" /> : <Square className="h-5 w-5 text-muted-foreground" />}
-                  </Button>
                 </div>
                 <div className="flex items-center gap-1 text-xs text-muted-foreground">
                   <CalendarIcon className="h-3 w-3" />
