@@ -14,8 +14,19 @@ import { StatusLegend } from "./StatusLegend";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CalendarIcon, CheckSquare, Square, Search, ArrowUpDown, Plus, Users } from "lucide-react";
+import { CalendarIcon, CheckSquare, Square, Search, ArrowUpDown, Plus, Users, Activity } from "lucide-react";
 import { PlannerDialog } from "./PlannerDialog";
+import { PRODUCTION_STATES, type ProductionStatus } from "./StatusLegend";
+
+const getProductionColor = (status: ProductionStatus) => {
+  return PRODUCTION_STATES.find(s => s.key === status)?.color || 'bg-gray-400';
+};
+const getProductionLabel = (status: ProductionStatus) => {
+  return PRODUCTION_STATES.find(s => s.key === status)?.label || 'Sin hacer';
+};
+const getStatusLabel = (status: 'hacer' | 'no_hacer' | 'consultar') => {
+  return status === 'hacer' ? 'Hacer' : status === 'no_hacer' ? 'No hacer' : 'Consultar';
+};
 
 interface PlanningCalendarProps {
   clients: Client[];
@@ -29,6 +40,7 @@ interface PlanningEntry {
   description?: string;
   completed?: boolean;
   planner?: string | null;
+  production_status?: ProductionStatus;
 }
 
 export const PlanningCalendar = ({
@@ -45,6 +57,7 @@ export const PlanningCalendar = ({
   // Filter & sort state
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [productionFilter, setProductionFilter] = useState<string>("all");
   const [completionFilter, setCompletionFilter] = useState<string>("all");
   const [plannerFilter, setPlannerFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("name_asc");
@@ -69,6 +82,10 @@ export const PlanningCalendar = ({
       if (statusFilter !== "all") {
         const status = entry?.status || 'consultar';
         if (status !== statusFilter) return false;
+      }
+      if (productionFilter !== "all") {
+        const ps = entry?.production_status || 'sin_hacer';
+        if (ps !== productionFilter) return false;
       }
       if (completionFilter === "done" && !entry?.completed) return false;
       if (completionFilter === "pending" && entry?.completed) return false;
@@ -102,7 +119,7 @@ export const PlanningCalendar = ({
     });
 
     return filtered;
-  }, [clients, planningData, searchQuery, statusFilter, completionFilter, plannerFilter, sortBy]);
+  }, [clients, planningData, searchQuery, statusFilter, productionFilter, completionFilter, plannerFilter, sortBy]);
 
   const fetchPlanningData = async () => {
     try {
@@ -129,7 +146,8 @@ export const PlanningCalendar = ({
           status: (entry.status || 'consultar') as 'hacer' | 'no_hacer' | 'consultar',
           description: entry.description,
           completed: entry.completed,
-          planner: (entry as any).planner || null
+          planner: (entry as any).planner || null,
+          production_status: ((entry as any).production_status || 'sin_hacer') as ProductionStatus
         };
       });
       setPlanningData(planningMap);
@@ -354,6 +372,41 @@ export const PlanningCalendar = ({
     }
   };
 
+  const handleProductionStatusChange = async (clientId: string, newStatus: ProductionStatus) => {
+    if (isSaving) return;
+    setIsSaving(true);
+    const startOfMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
+    const currentEntry = planningData[clientId];
+    try {
+      const { data: existingData, error: checkError } = await supabase
+        .from('publication_planning').select('id')
+        .eq('client_id', clientId).eq('month', startOfMonth.toISOString())
+        .is('deleted_at', null).maybeSingle();
+      if (checkError) throw checkError;
+      let result;
+      if (existingData) {
+        result = await supabase.from('publication_planning')
+          .update({ production_status: newStatus } as any)
+          .eq('id', existingData.id).select().single();
+      } else {
+        result = await supabase.from('publication_planning')
+          .insert({ client_id: clientId, month: startOfMonth.toISOString(), status: currentEntry?.status || 'consultar', production_status: newStatus } as any)
+          .select().single();
+      }
+      if (result.error) throw result.error;
+      setPlanningData(prev => ({
+        ...prev,
+        [clientId]: { ...prev[clientId], ...result.data, client_id: clientId, month: startOfMonth.toISOString(), production_status: newStatus }
+      }));
+      toast({ title: "Estado de producción actualizado", description: getProductionLabel(newStatus) });
+    } catch (error) {
+      console.error('Error updating production status:', error);
+      toast({ title: "Error", description: "No se pudo actualizar el estado de producción", variant: "destructive" });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return <div className="space-y-6 p-6 bg-background min-h-screen px-0">
       <div className="flex items-center justify-between gap-4">
         <MonthSelector selectedDate={selectedDate} onDateChange={setSelectedDate} />
@@ -399,6 +452,28 @@ export const PlanningCalendar = ({
               <SelectItem value="all">Todos</SelectItem>
               <SelectItem value="done">Hechos</SelectItem>
               <SelectItem value="pending">Faltan hacer</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex flex-col gap-1">
+          <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Producción</span>
+          <Select value={productionFilter} onValueChange={setProductionFilter}>
+            <SelectTrigger className="w-full md:w-[180px]">
+              <div className="flex items-center gap-1.5">
+                <Activity className="h-3.5 w-3.5" />
+                <SelectValue placeholder="Producción" />
+              </div>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              {PRODUCTION_STATES.map(s => (
+                <SelectItem key={s.key} value={s.key}>
+                  <div className="flex items-center gap-2">
+                    <div className={`w-2.5 h-2.5 rounded-full ${s.color}`} />
+                    {s.label}
+                  </div>
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -454,7 +529,13 @@ export const PlanningCalendar = ({
               <div className="absolute top-2 right-2">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <div className={`w-3 h-3 rounded-full cursor-pointer ${getStatusColor(planningEntry?.status || 'consultar')}`} />
+                    <button
+                      type="button"
+                      className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-semibold text-white cursor-pointer ${getStatusColor(planningEntry?.status || 'consultar')}`}
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-white/90" />
+                      {getStatusLabel(planningEntry?.status || 'consultar')}
+                    </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent>
                     <DropdownMenuItem onClick={() => handleStatusChange(client.id, 'hacer')}>
@@ -475,7 +556,7 @@ export const PlanningCalendar = ({
 
               <div className="space-y-2">
                 <div className="flex items-start justify-between">
-                  <h3 className="font-semibold text-sm truncate pr-6">{client.name}</h3>
+                  <h3 className="font-semibold text-sm truncate pr-24">{client.name}</h3>
                   <Button variant="ghost" size="icon" className="flex-shrink-0 -mt-1" onClick={() => handleCompletion(client.id, !planningEntry?.completed)}>
                     {planningEntry?.completed ? <CheckSquare className="h-5 w-5 text-green-500" /> : <Square className="h-5 w-5 text-muted-foreground" />}
                   </Button>
@@ -498,6 +579,27 @@ export const PlanningCalendar = ({
                     <SelectItem value="sin_asignar">Sin asignar</SelectItem>
                     {planners.map(p => (
                       <SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select
+                  value={planningEntry?.production_status || "sin_hacer"}
+                  onValueChange={(value) => handleProductionStatusChange(client.id, value as ProductionStatus)}
+                >
+                  <SelectTrigger className="h-7 text-xs">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${getProductionColor(planningEntry?.production_status || 'sin_hacer')}`} />
+                      <span className="truncate">{getProductionLabel(planningEntry?.production_status || 'sin_hacer')}</span>
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PRODUCTION_STATES.map(s => (
+                      <SelectItem key={s.key} value={s.key}>
+                        <div className="flex items-center gap-2">
+                          <span className={`w-2.5 h-2.5 rounded-full ${s.color}`} />
+                          {s.label}
+                        </div>
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
