@@ -38,7 +38,6 @@ interface PlanningEntry {
   month: string;
   status: 'hacer' | 'no_hacer' | 'consultar';
   description?: string;
-  completed?: boolean;
   planner?: string | null;
   production_status?: ProductionStatus;
 }
@@ -142,7 +141,6 @@ export const PlanningCalendar = ({
           month: entry.month,
           status: (entry.status || 'consultar') as 'hacer' | 'no_hacer' | 'consultar',
           description: entry.description,
-          completed: entry.completed,
           planner: (entry as any).planner || null,
           production_status: ((entry as any).production_status || 'sin_hacer') as ProductionStatus
         };
