@@ -372,7 +372,40 @@ export const PlanningCalendar = ({
     }
   };
 
-  return <div className="space-y-6 p-6 bg-background min-h-screen px-0">
+  const handleProductionStatusChange = async (clientId: string, newStatus: ProductionStatus) => {
+    if (isSaving) return;
+    setIsSaving(true);
+    const startOfMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
+    const currentEntry = planningData[clientId];
+    try {
+      const { data: existingData, error: checkError } = await supabase
+        .from('publication_planning').select('id')
+        .eq('client_id', clientId).eq('month', startOfMonth.toISOString())
+        .is('deleted_at', null).maybeSingle();
+      if (checkError) throw checkError;
+      let result;
+      if (existingData) {
+        result = await supabase.from('publication_planning')
+          .update({ production_status: newStatus } as any)
+          .eq('id', existingData.id).select().single();
+      } else {
+        result = await supabase.from('publication_planning')
+          .insert({ client_id: clientId, month: startOfMonth.toISOString(), status: currentEntry?.status || 'consultar', production_status: newStatus } as any)
+          .select().single();
+      }
+      if (result.error) throw result.error;
+      setPlanningData(prev => ({
+        ...prev,
+        [clientId]: { ...prev[clientId], ...result.data, client_id: clientId, month: startOfMonth.toISOString(), production_status: newStatus }
+      }));
+      toast({ title: "Estado de producción actualizado", description: getProductionLabel(newStatus) });
+    } catch (error) {
+      console.error('Error updating production status:', error);
+      toast({ title: "Error", description: "No se pudo actualizar el estado de producción", variant: "destructive" });
+    } finally {
+      setIsSaving(false);
+    }
+  };
       <div className="flex items-center justify-between gap-4">
         <MonthSelector selectedDate={selectedDate} onDateChange={setSelectedDate} />
         <Button variant="outline" className="gap-2" onClick={() => setShowPlannerDialog(true)}>
