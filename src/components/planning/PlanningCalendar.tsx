@@ -14,8 +14,19 @@ import { StatusLegend } from "./StatusLegend";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CalendarIcon, CheckSquare, Square, Search, ArrowUpDown, Plus, Users } from "lucide-react";
+import { CalendarIcon, CheckSquare, Square, Search, ArrowUpDown, Plus, Users, Activity } from "lucide-react";
 import { PlannerDialog } from "./PlannerDialog";
+import { PRODUCTION_STATES, type ProductionStatus } from "./StatusLegend";
+
+const getProductionColor = (status: ProductionStatus) => {
+  return PRODUCTION_STATES.find(s => s.key === status)?.color || 'bg-gray-400';
+};
+const getProductionLabel = (status: ProductionStatus) => {
+  return PRODUCTION_STATES.find(s => s.key === status)?.label || 'Sin hacer';
+};
+const getStatusLabel = (status: 'hacer' | 'no_hacer' | 'consultar') => {
+  return status === 'hacer' ? 'Hacer' : status === 'no_hacer' ? 'No hacer' : 'Consultar';
+};
 
 interface PlanningCalendarProps {
   clients: Client[];
