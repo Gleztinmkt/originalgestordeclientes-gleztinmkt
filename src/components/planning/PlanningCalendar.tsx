@@ -40,6 +40,7 @@ interface PlanningEntry {
   description?: string;
   completed?: boolean;
   planner?: string | null;
+  production_status?: ProductionStatus;
 }
 
 export const PlanningCalendar = ({
