@@ -406,6 +406,8 @@ export const PlanningCalendar = ({
       setIsSaving(false);
     }
   };
+
+  return <div className="space-y-6 p-6 bg-background min-h-screen px-0">
       <div className="flex items-center justify-between gap-4">
         <MonthSelector selectedDate={selectedDate} onDateChange={setSelectedDate} />
         <Button variant="outline" className="gap-2" onClick={() => setShowPlannerDialog(true)}>
