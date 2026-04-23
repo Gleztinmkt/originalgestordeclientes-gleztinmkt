@@ -529,7 +529,13 @@ export const PlanningCalendar = ({
               <div className="absolute top-2 right-2">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <div className={`w-3 h-3 rounded-full cursor-pointer ${getStatusColor(planningEntry?.status || 'consultar')}`} />
+                    <button
+                      type="button"
+                      className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-semibold text-white cursor-pointer ${getStatusColor(planningEntry?.status || 'consultar')}`}
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-white/90" />
+                      {getStatusLabel(planningEntry?.status || 'consultar')}
+                    </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent>
                     <DropdownMenuItem onClick={() => handleStatusChange(client.id, 'hacer')}>
