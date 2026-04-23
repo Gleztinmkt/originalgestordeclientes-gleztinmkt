@@ -456,6 +456,28 @@ export const PlanningCalendar = ({
           </Select>
         </div>
         <div className="flex flex-col gap-1">
+          <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Producción</span>
+          <Select value={productionFilter} onValueChange={setProductionFilter}>
+            <SelectTrigger className="w-full md:w-[180px]">
+              <div className="flex items-center gap-1.5">
+                <Activity className="h-3.5 w-3.5" />
+                <SelectValue placeholder="Producción" />
+              </div>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              {PRODUCTION_STATES.map(s => (
+                <SelectItem key={s.key} value={s.key}>
+                  <div className="flex items-center gap-2">
+                    <div className={`w-2.5 h-2.5 rounded-full ${s.color}`} />
+                    {s.label}
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex flex-col gap-1">
           <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Planificador</span>
           <Select value={plannerFilter} onValueChange={setPlannerFilter}>
             <SelectTrigger className="w-full md:w-[170px]">
