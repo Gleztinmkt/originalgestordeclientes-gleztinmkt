@@ -582,6 +582,27 @@ export const PlanningCalendar = ({
                     ))}
                   </SelectContent>
                 </Select>
+                <Select
+                  value={planningEntry?.production_status || "sin_hacer"}
+                  onValueChange={(value) => handleProductionStatusChange(client.id, value as ProductionStatus)}
+                >
+                  <SelectTrigger className="h-7 text-xs">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${getProductionColor(planningEntry?.production_status || 'sin_hacer')}`} />
+                      <span className="truncate">{getProductionLabel(planningEntry?.production_status || 'sin_hacer')}</span>
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PRODUCTION_STATES.map(s => (
+                      <SelectItem key={s.key} value={s.key}>
+                        <div className="flex items-center gap-2">
+                          <span className={`w-2.5 h-2.5 rounded-full ${s.color}`} />
+                          {s.label}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <Button variant="ghost" className="w-full text-left justify-start h-auto py-1 px-2 mt-2 text-xs" onClick={() => {
