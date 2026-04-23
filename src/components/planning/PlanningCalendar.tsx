@@ -58,7 +58,6 @@ export const PlanningCalendar = ({
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [productionFilter, setProductionFilter] = useState<string>("all");
-  const [completionFilter, setCompletionFilter] = useState<string>("all");
   const [plannerFilter, setPlannerFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("name_asc");
   const [showPlannerDialog, setShowPlannerDialog] = useState(false);
@@ -87,8 +86,6 @@ export const PlanningCalendar = ({
         const ps = entry?.production_status || 'sin_hacer';
         if (ps !== productionFilter) return false;
       }
-      if (completionFilter === "done" && !entry?.completed) return false;
-      if (completionFilter === "pending" && entry?.completed) return false;
       if (plannerFilter !== "all") {
         const assignedPlanner = entry?.planner || null;
         if (plannerFilter === "unassigned") {
@@ -119,7 +116,7 @@ export const PlanningCalendar = ({
     });
 
     return filtered;
-  }, [clients, planningData, searchQuery, statusFilter, productionFilter, completionFilter, plannerFilter, sortBy]);
+  }, [clients, planningData, searchQuery, statusFilter, productionFilter, plannerFilter, sortBy]);
 
   const fetchPlanningData = async () => {
     try {
