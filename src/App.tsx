@@ -65,6 +65,9 @@ function App() {
               <Toaster />
               <Sonner />
               <Routes>
+                <Route path="/privacy" element={<Privacy />} />
+                <Route path="/data-deletion" element={<DataDeletion />} />
+                <Route path="/terms" element={<Terms />} />
                 <Route
                   path="/login"
                   element={session ? <Navigate to="/" replace /> : <Login />}
