@@ -10,6 +10,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
+import Privacy from "./pages/Privacy";
+import DataDeletion from "./pages/DataDeletion";
+import Terms from "./pages/Terms";
 
 const queryClient = new QueryClient({
   defaultOptions: {

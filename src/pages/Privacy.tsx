@@ -87,4 +87,27 @@ const Privacy = () => {
         <section className="space-y-4">
           <h2 className="text-xl font-semibold">7. Contacto</h2>
           <p className="text-sm leading-6 text-muted-foreground sm:text-base">
-            Para consultas sobre privacidad o tratamiento de datos, podés escribir a{
+            Para consultas sobre privacidad o tratamiento de datos, podés escribir a{" "}
+            <a className="font-medium text-primary underline underline-offset-4" href="mailto:privacidad@gestoragencia.app">
+              privacidad@gestoragencia.app
+            </a>
+            .
+          </p>
+        </section>
+
+        <footer className="border-t border-border pt-6 text-sm text-muted-foreground">
+          <div className="flex flex-wrap gap-4">
+            <Link className="underline underline-offset-4" to="/data-deletion">
+              Eliminación de datos
+            </Link>
+            <Link className="underline underline-offset-4" to="/terms">
+              Condiciones del servicio
+            </Link>
+          </div>
+        </footer>
+      </section>
+    </main>
+  );
+};
+
+export default Privacy;
