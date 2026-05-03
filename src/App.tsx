@@ -10,6 +10,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
+import Privacy from "./pages/Privacy";
+import DataDeletion from "./pages/DataDeletion";
+import Terms from "./pages/Terms";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -62,6 +65,9 @@ function App() {
               <Toaster />
               <Sonner />
               <Routes>
+                <Route path="/privacy" element={<Privacy />} />
+                <Route path="/data-deletion" element={<DataDeletion />} />
+                <Route path="/terms" element={<Terms />} />
                 <Route
                   path="/login"
                   element={session ? <Navigate to="/" replace /> : <Login />}
