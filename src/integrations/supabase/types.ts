@@ -333,6 +333,27 @@ export type Database = {
         }
         Relationships: []
       }
+      meta_oauth_states: {
+        Row: {
+          client_id: string
+          created_at: string
+          state: string
+          user_id: string | null
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          state: string
+          user_id?: string | null
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          state?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       note_replies: {
         Row: {
           content: string
@@ -603,6 +624,7 @@ export type Database = {
       publications: {
         Row: {
           approved: boolean | null
+          auto_publish_enabled: boolean | null
           client_id: string | null
           copywriting: string | null
           created_at: string
@@ -610,24 +632,38 @@ export type Database = {
           deleted_at: string | null
           description: string | null
           designer: string | null
+          drive_file_id: string | null
+          drive_file_url: string | null
+          facebook_post_id: string | null
           filming_time: string | null
           google_calendar_event_id: string | null
           google_calendar_id: string | null
           id: string
           in_editing: boolean | null
           in_review: boolean | null
+          instagram_media_id: string | null
           is_published: boolean | null
           links: string | null
+          media_storage_path: string | null
+          media_url: string | null
+          meta_caption: string | null
           name: string
           needs_editing: boolean | null
           needs_recording: boolean | null
           package_id: string | null
+          publish_error: string | null
+          publish_status: string | null
+          publish_to_facebook: boolean | null
+          publish_to_instagram: boolean | null
+          published_at: string | null
           reference_materials: Json | null
+          scheduled_publish_at: string | null
           status: string | null
           type: string
         }
         Insert: {
           approved?: boolean | null
+          auto_publish_enabled?: boolean | null
           client_id?: string | null
           copywriting?: string | null
           created_at?: string
@@ -635,24 +671,38 @@ export type Database = {
           deleted_at?: string | null
           description?: string | null
           designer?: string | null
+          drive_file_id?: string | null
+          drive_file_url?: string | null
+          facebook_post_id?: string | null
           filming_time?: string | null
           google_calendar_event_id?: string | null
           google_calendar_id?: string | null
           id?: string
           in_editing?: boolean | null
           in_review?: boolean | null
+          instagram_media_id?: string | null
           is_published?: boolean | null
           links?: string | null
+          media_storage_path?: string | null
+          media_url?: string | null
+          meta_caption?: string | null
           name: string
           needs_editing?: boolean | null
           needs_recording?: boolean | null
           package_id?: string | null
+          publish_error?: string | null
+          publish_status?: string | null
+          publish_to_facebook?: boolean | null
+          publish_to_instagram?: boolean | null
+          published_at?: string | null
           reference_materials?: Json | null
+          scheduled_publish_at?: string | null
           status?: string | null
           type: string
         }
         Update: {
           approved?: boolean | null
+          auto_publish_enabled?: boolean | null
           client_id?: string | null
           copywriting?: string | null
           created_at?: string
@@ -660,25 +710,100 @@ export type Database = {
           deleted_at?: string | null
           description?: string | null
           designer?: string | null
+          drive_file_id?: string | null
+          drive_file_url?: string | null
+          facebook_post_id?: string | null
           filming_time?: string | null
           google_calendar_event_id?: string | null
           google_calendar_id?: string | null
           id?: string
           in_editing?: boolean | null
           in_review?: boolean | null
+          instagram_media_id?: string | null
           is_published?: boolean | null
           links?: string | null
+          media_storage_path?: string | null
+          media_url?: string | null
+          meta_caption?: string | null
           name?: string
           needs_editing?: boolean | null
           needs_recording?: boolean | null
           package_id?: string | null
+          publish_error?: string | null
+          publish_status?: string | null
+          publish_to_facebook?: boolean | null
+          publish_to_instagram?: boolean | null
+          published_at?: string | null
           reference_materials?: Json | null
+          scheduled_publish_at?: string | null
           status?: string | null
           type?: string
         }
         Relationships: [
           {
             foreignKeyName: "publications_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      social_connections: {
+        Row: {
+          client_id: string
+          created_at: string
+          facebook_page_access_token_encrypted: string | null
+          facebook_page_id: string | null
+          facebook_page_name: string | null
+          id: string
+          instagram_business_account_id: string | null
+          instagram_username: string | null
+          last_error: string | null
+          permissions: Json | null
+          provider: string
+          status: string
+          token_expires_at: string | null
+          updated_at: string
+          user_access_token_encrypted: string | null
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          facebook_page_access_token_encrypted?: string | null
+          facebook_page_id?: string | null
+          facebook_page_name?: string | null
+          id?: string
+          instagram_business_account_id?: string | null
+          instagram_username?: string | null
+          last_error?: string | null
+          permissions?: Json | null
+          provider?: string
+          status?: string
+          token_expires_at?: string | null
+          updated_at?: string
+          user_access_token_encrypted?: string | null
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          facebook_page_access_token_encrypted?: string | null
+          facebook_page_id?: string | null
+          facebook_page_name?: string | null
+          id?: string
+          instagram_business_account_id?: string | null
+          instagram_username?: string | null
+          last_error?: string | null
+          permissions?: Json | null
+          provider?: string
+          status?: string
+          token_expires_at?: string | null
+          updated_at?: string
+          user_access_token_encrypted?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_connections_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
