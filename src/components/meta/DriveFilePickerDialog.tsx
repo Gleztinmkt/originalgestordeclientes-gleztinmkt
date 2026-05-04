@@ -25,7 +25,7 @@ interface DriveListResp {
 interface Props {
   open: boolean;
   onOpenChange: (o: boolean) => void;
-  onSelect: (file: DriveFile) => void;
+  onSelect: (file: DriveFile) => void | Promise<void>;
   busy?: boolean;
 }
 
@@ -72,9 +72,15 @@ export const DriveFilePickerDialog = ({ open, onOpenChange, onSelect, busy = fal
     setStack([{ id: null, name: mode === "shared" ? "Compartido conmigo" : "Mi unidad" }]);
   };
 
+  const pickFile = (file: DriveFile) => {
+    if (busy) return;
+    onSelect(file);
+    onOpenChange(false);
+  };
+
   const handlePick = () => {
-    if (!selected || busy) return;
-    onSelect(selected);
+    if (!selected) return;
+    pickFile(selected);
   };
 
   return (
@@ -138,7 +144,7 @@ export const DriveFilePickerDialog = ({ open, onOpenChange, onSelect, busy = fal
                     onClick={() => (isFolder ? enterFolder(f) : setSelected(f))}
                     onDoubleClick={() => {
                       if (isFolder) enterFolder(f);
-                      else { setSelected(f); setTimeout(handlePick, 0); }
+                      else pickFile(f);
                     }}
                     className={`flex flex-col items-center gap-1 p-2 rounded-md border text-xs hover:bg-muted transition ${
                       isSelected ? "border-primary bg-primary/10" : "border-border"
