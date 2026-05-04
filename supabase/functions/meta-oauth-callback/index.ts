@@ -37,7 +37,7 @@ Deno.serve(async (req) => {
 
   try {
     // 1. Exchange code → user access token
-    const tokenUrl = new URL("https://graph.facebook.com/v21.0/oauth/access_token");
+    const tokenUrl = new URL(`https://graph.facebook.com/${FB_VER}/oauth/access_token`);
     tokenUrl.searchParams.set("client_id", APP_ID);
     tokenUrl.searchParams.set("client_secret", APP_SECRET);
     tokenUrl.searchParams.set("redirect_uri", REDIRECT_URI);
