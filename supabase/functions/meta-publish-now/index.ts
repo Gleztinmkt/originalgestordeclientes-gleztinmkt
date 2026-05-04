@@ -99,7 +99,7 @@ Deno.serve(async (req) => {
 
     const isVideo = !!pub.media_url.match(/\.mp4(\?|$)/i) || pub.type === "reel";
     const caption = pub.meta_caption || pub.copywriting || "";
-    const result: any = {};
+    const result: { instagram_media_id?: string; facebook_post_id?: string } = {};
 
     try {
       if (pub.publish_to_instagram) {
