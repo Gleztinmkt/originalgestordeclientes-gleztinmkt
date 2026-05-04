@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
     const userToken = tokenResp.access_token;
 
     // 2. Long-lived token
-    const llUrl = new URL("https://graph.facebook.com/v21.0/oauth/access_token");
+    const llUrl = new URL(`https://graph.facebook.com/${FB_VER}/oauth/access_token`);
     llUrl.searchParams.set("grant_type", "fb_exchange_token");
     llUrl.searchParams.set("client_id", APP_ID);
     llUrl.searchParams.set("client_secret", APP_SECRET);
