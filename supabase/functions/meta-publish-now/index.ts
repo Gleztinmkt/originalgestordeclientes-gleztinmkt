@@ -1,6 +1,8 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders } from "../_shared/cors.ts";
 
+type AdminClient = ReturnType<typeof createClient>;
+
 const FB_VER = "v25.0";
 
 async function publishToInstagram(igUserId: string, pageToken: string, mediaUrl: string, caption: string, isVideo: boolean) {
@@ -60,7 +62,7 @@ async function publishToFacebook(pageId: string, pageToken: string, mediaUrl: st
   }
 }
 
-async function canManageMetaPublishing(admin: any, userId: string) {
+async function canManageMetaPublishing(admin: AdminClient, userId: string) {
   const { data: roleData } = await admin.from("user_roles").select("role").eq("user_id", userId).maybeSingle();
   const role = String(roleData?.role || "");
   return role === "admin";
