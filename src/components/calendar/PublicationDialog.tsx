@@ -19,6 +19,7 @@ import { format } from "date-fns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { PackageSelectionDialog } from "./PackageSelectionDialog";
+import { MetaPublishSection } from "@/components/meta/MetaPublishSection";
 
 interface PublicationDialogProps {
   publication: Publication;
@@ -543,6 +544,20 @@ export const PublicationDialog = ({
                 </div>
                 <Textarea id="description" value={description} onChange={e => setDescription(e.target.value)} disabled={isDesigner} readOnly={isDesigner} className="min-h-[200px] touch-manipulation text-sm sm:text-base py-[192px]" />
               </div>
+
+              {client && !isDesigner && (
+                <MetaPublishSection
+                  publication={publication}
+                  clientId={client.id}
+                  clientName={client.name}
+                  copywriting={copywriting}
+                  onPublishedInCrm={() => {
+                    setStatus('published');
+                    setPendingStatusChange('published');
+                    setShowPackageDialog(true);
+                  }}
+                />
+              )}
 
               <div className="flex flex-col sm:flex-row justify-end gap-2 pt-4">
                 {onDelete && !isDesigner && <Button type="button" variant="destructive" onClick={handleDelete} className="w-full sm:w-auto text-sm">

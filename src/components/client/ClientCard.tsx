@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
+import { MetaConnectionButton } from "@/components/meta/MetaConnectionButton";
 import { PaymentReminder } from "./PaymentReminder";
 import { TaskInput } from "../TaskInput";
 import { TaskList } from "../TaskList";
@@ -185,6 +186,8 @@ export const ClientCard = ({
           onCaptureStart={() => setIsCapturing(true)}
           onCaptureEnd={() => setIsCapturing(false)}
         />
+
+        <MetaConnectionButton clientId={client.id} clientName={client.name} />
 
         <div className="mt-6 space-y-4">
           <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-200">Tareas Pendientes</h3>

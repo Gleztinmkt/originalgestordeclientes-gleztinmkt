@@ -14,3 +14,9 @@ verify_jwt = false
 
 [functions.telegram-poll]
 verify_jwt = false
+
+[functions.meta-oauth-callback]
+verify_jwt = false
+
+[functions.meta-scheduler]
+verify_jwt = false
