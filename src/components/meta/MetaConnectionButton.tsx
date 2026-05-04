@@ -59,6 +59,27 @@ export const MetaConnectionButton = ({ clientId, clientName, compact }: MetaConn
     return () => window.removeEventListener("message", handler);
   }, [clientId]);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("meta_oauth") !== "success" || params.get("client_id") !== clientId) return;
+
+    try {
+      const urlPages = JSON.parse(params.get("pages") || "[]");
+      if (Array.isArray(urlPages) && urlPages.length > 1) {
+        setPages(urlPages);
+        setShowPagePicker(true);
+        toast({ title: "Cuenta Meta autorizada", description: "Seleccioná la página correspondiente." });
+      } else {
+        toast({ title: "Instagram/Facebook conectado" });
+      }
+      refresh();
+    } catch (e) {
+      toast({ title: "Error", description: "No se pudo leer la selección de páginas de Meta.", variant: "destructive" });
+    } finally {
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, [clientId]);
+
   const handleConnect = async () => {
     setLoading(true);
     try {
