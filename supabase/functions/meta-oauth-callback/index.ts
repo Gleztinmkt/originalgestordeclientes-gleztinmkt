@@ -8,6 +8,29 @@ const REDIRECT_URI = Deno.env.get("META_REDIRECT_URI")!;
 const APP_ORIGIN = "https://originalgestordeclientes-gleztinmkt.lovable.app";
 const FB_VER = "v25.0";
 
+const decodeOrigin = (state: string) => {
+  const encoded = state.split(".")[1];
+  if (!encoded) return APP_ORIGIN;
+
+  try {
+    const base64 = encoded.replace(/-/g, "+").replace(/_/g, "/");
+    const origin = atob(base64.padEnd(Math.ceil(base64.length / 4) * 4, "="));
+    const parsed = new URL(origin);
+    const host = parsed.hostname;
+    if (parsed.protocol === "https:" && (
+      host === "originalgestordeclientes-gleztinmkt.lovable.app" ||
+      host.endsWith(".lovable.app") ||
+      host.endsWith(".lovableproject.com")
+    )) {
+      return parsed.origin;
+    }
+  } catch (_) {
+    // Ignore malformed state origin and use production fallback.
+  }
+
+  return APP_ORIGIN;
+};
+
 function html(body: string, status = 200) {
   return new Response(`<!doctype html><html><head><meta charset="utf-8"><title>Meta</title></head><body style="font-family:system-ui;padding:24px">${body}</body></html>`, {
     status, headers: { "Content-Type": "text/html; charset=utf-8" },
@@ -98,43 +121,15 @@ Deno.serve(async (req) => {
       name: p.name,
       ig: p.instagram_business_account?.id || null,
     }));
-    // Safe JSON embed inside <script> tag (avoid </script> breakouts)
-    const safeJson = (v: unknown) =>
-      JSON.stringify(v).replace(/</g, "\\u003c").replace(/>/g, "\\u003e").replace(/&/g, "\\u0026");
     const pagesParam = encodeURIComponent(JSON.stringify(pagesPayload));
-    const redirect = `${APP_ORIGIN}/?meta_oauth=success&client_id=${stateRow.client_id}&pages=${pagesParam}`;
+    const appOrigin = decodeOrigin(state);
+    const redirect = `${appOrigin}/meta-oauth-return?meta_oauth=success&client_id=${stateRow.client_id}&pages=${pagesParam}`;
 
-    const body = `<!doctype html>
-<html lang="es">
-<head>
-<meta charset="utf-8">
-<title>Conectando Meta…</title>
-</head>
-<body style="font-family:system-ui;padding:24px">
-<p>Conectado. Podés cerrar esta ventana.</p>
-<script>
-(function(){
-  var clientId = ${safeJson(stateRow.client_id)};
-  var pages = ${safeJson(pagesPayload)};
-  try {
-    if (window.opener && !window.opener.closed) {
-      window.opener.postMessage({ type: "meta_oauth_success", client_id: clientId, pages: pages }, "*");
-      window.close();
-      return;
-    }
-  } catch (e) {}
-  window.location.href = ${safeJson(redirect)};
-})();
-</script>
-</body>
-</html>`;
-
-    return new Response(body, {
-      status: 200,
+    return new Response(null, {
+      status: 302,
       headers: {
-        "Content-Type": "text/html; charset=utf-8",
+        "Location": redirect,
         "Cache-Control": "no-store",
-        "X-Content-Type-Options": "nosniff",
       },
     });
   } catch (e) {
