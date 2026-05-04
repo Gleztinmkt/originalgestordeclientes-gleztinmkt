@@ -81,9 +81,18 @@ Deno.serve(async (req) => {
     const longUserToken = llResp.access_token || userToken;
     const expiresIn = llResp.expires_in || 0;
 
-    // 3. List pages
-    const pagesResp = await fetch(`https://graph.facebook.com/${FB_VER}/me/accounts?fields=id,name,access_token,instagram_business_account&access_token=${longUserToken}`).then(r => r.json());
-    const pages = pagesResp.data || [];
+    // 3. List pages (paginated)
+    const pages: any[] = [];
+    let nextUrl: string | null = `https://graph.facebook.com/${FB_VER}/me/accounts?fields=id,name,access_token,instagram_business_account&limit=100&access_token=${longUserToken}`;
+    let safety = 0;
+    while (nextUrl && safety < 20) {
+      const resp: any = await fetch(nextUrl).then(r => r.json());
+      if (resp.error) throw new Error("Pages error: " + JSON.stringify(resp.error));
+      if (Array.isArray(resp.data)) pages.push(...resp.data);
+      nextUrl = resp.paging?.next || null;
+      safety++;
+    }
+    console.log(`meta-oauth-callback: fetched ${pages.length} pages`);
 
     // Save user token in a temp record (we'll finalize after page selection)
     const { data: existing } = await admin.from("social_connections")
