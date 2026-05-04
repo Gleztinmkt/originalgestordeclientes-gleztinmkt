@@ -104,37 +104,11 @@ Deno.serve(async (req) => {
     const pagesParam = encodeURIComponent(JSON.stringify(pagesPayload));
     const redirect = `${APP_ORIGIN}/?meta_oauth=success&client_id=${stateRow.client_id}&pages=${pagesParam}`;
 
-    const body = `<!doctype html>
-<html lang="es">
-<head>
-<meta charset="utf-8">
-<title>Conectando Meta…</title>
-</head>
-<body style="font-family:system-ui;padding:24px">
-<p>Conectado. Podés cerrar esta ventana.</p>
-<script>
-(function(){
-  var clientId = ${safeJson(stateRow.client_id)};
-  var pages = ${safeJson(pagesPayload)};
-  try {
-    if (window.opener && !window.opener.closed) {
-      window.opener.postMessage({ type: "meta_oauth_success", client_id: clientId, pages: pages }, "*");
-      window.close();
-      return;
-    }
-  } catch (e) {}
-  window.location.href = ${safeJson(redirect)};
-})();
-</script>
-</body>
-</html>`;
-
-    return new Response(body, {
-      status: 200,
+    return new Response(null, {
+      status: 302,
       headers: {
-        "Content-Type": "text/html; charset=utf-8",
+        "Location": redirect,
         "Cache-Control": "no-store",
-        "X-Content-Type-Options": "nosniff",
       },
     });
   } catch (e) {
