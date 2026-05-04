@@ -1,6 +1,8 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders } from "../_shared/cors.ts";
 
+type AdminClient = ReturnType<typeof createClient>;
+
 const SCOPES = [
   "pages_show_list",
   "pages_read_engagement",
@@ -34,7 +36,7 @@ const getSafeOrigin = (origin: string | null) => {
   return FALLBACK_APP_ORIGIN;
 };
 
-async function canManageMetaPublishing(admin: any, userId: string) {
+async function canManageMetaPublishing(admin: AdminClient, userId: string) {
   const { data: roleData } = await admin.from("user_roles").select("role").eq("user_id", userId).maybeSingle();
   return String(roleData?.role || "") === "admin";
 }
