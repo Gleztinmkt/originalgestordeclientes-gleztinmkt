@@ -10,6 +10,8 @@ const SCOPES = [
   "instagram_content_publish",
 ].join(",");
 
+const FB_VER = "v25.0";
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
