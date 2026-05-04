@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, Send, Calendar as CalendarIcon, RefreshCw, Instagram, Facebook, AlertCircle, Link2, FolderOpen, FileImage, FileVideo, ExternalLink, Trash2 } from "lucide-react";
+import { Loader2, Send, Calendar as CalendarIcon, RefreshCw, Instagram, Facebook, AlertCircle, Link2, FolderOpen, FileImage, FileVideo, ExternalLink, Trash2, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { invokeEdgeFunction } from "@/lib/edge-functions";
 import { toast } from "@/hooks/use-toast";
@@ -61,6 +61,7 @@ export const MetaPublishSection = ({
   const [scheduleAt, setScheduleAt] = useState("");
   const [busy, setBusy] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [manualUrl, setManualUrl] = useState("");
 
@@ -170,13 +171,9 @@ export const MetaPublishSection = ({
       await persistMeta({ meta_caption: caption, publish_to_instagram: toIG, publish_to_facebook: toFB });
       const r = await invokeEdgeFunction<any>("meta-publish-now", { publication_id: publication.id });
       if (r?.error) throw new Error(r.error);
-      toast({ title: "¡Publicado!" });
+      toast({ title: "Post subido" });
       await refresh();
-      setTimeout(() => {
-        if (confirm("¿Querés marcar esta publicación como publicada en el CRM y descontarla del paquete?")) {
-          onPublishedInCrm?.();
-        }
-      }, 200);
+      setExpanded(false);
     } catch (e: any) {
       toast({ title: "Error al publicar", description: e.message || String(e), variant: "destructive" });
       await refresh();
@@ -220,6 +217,13 @@ export const MetaPublishSection = ({
   const hasFile = !!meta.drive_file_id || !!meta.media_url;
   const isImage = meta.drive_file_mime_type?.startsWith("image/");
   const isVideo = meta.drive_file_mime_type?.startsWith("video/");
+  const canMarkCrmPublished = status === "published" && !publication.is_published;
+
+  const handleCrmPublishedClick = () => {
+    if (confirm("¿Querés cambiar el estado a publicado y descontar esta publicación del paquete?")) {
+      onPublishedInCrm?.();
+    }
+  };
 
   return (
     <div className="space-y-3 p-3 border rounded-lg bg-muted/20">
@@ -232,6 +236,28 @@ export const MetaPublishSection = ({
           {status}
         </Badge>
       </div>
+
+      <div className="flex flex-wrap gap-2">
+        <Button
+          type="button"
+          size="sm"
+          variant={canMarkCrmPublished ? "default" : "secondary"}
+          onClick={canMarkCrmPublished ? handleCrmPublishedClick : () => setExpanded((v) => !v)}
+          disabled={busy}
+          className="gap-2"
+        >
+          {canMarkCrmPublished ? <CheckCircle2 className="h-4 w-4" /> : <Send className="h-4 w-4" />}
+          {canMarkCrmPublished ? "Post subido" : expanded ? "Ocultar opciones" : "Subir a Meta"}
+        </Button>
+        {canMarkCrmPublished && (
+          <Button type="button" size="sm" variant="outline" onClick={() => setExpanded((v) => !v)} disabled={busy}>
+            {expanded ? "Ocultar opciones" : "Opciones"}
+          </Button>
+        )}
+      </div>
+
+      {expanded && (
+        <>
 
       {!isConnected ? (
         <Alert>
@@ -385,6 +411,9 @@ export const MetaPublishSection = ({
           {meta.instagram_media_id && <div>IG media id: {meta.instagram_media_id}</div>}
           {meta.facebook_post_id && <div>FB post id: {meta.facebook_post_id}</div>}
         </div>
+      )}
+
+        </>
       )}
 
       <DriveFilePickerDialog
