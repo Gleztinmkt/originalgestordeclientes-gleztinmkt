@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, Send, Calendar as CalendarIcon, RefreshCw, Instagram, Facebook, AlertCircle, Link2, FolderOpen, FileImage, FileVideo, ExternalLink } from "lucide-react";
+import { Loader2, Send, Calendar as CalendarIcon, RefreshCw, Instagram, Facebook, AlertCircle, Link2, FolderOpen, FileImage, FileVideo, ExternalLink, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { invokeEdgeFunction } from "@/lib/edge-functions";
 import { toast } from "@/hooks/use-toast";
@@ -37,6 +37,7 @@ interface PubMeta {
   drive_file_mime_type?: string | null;
   drive_file_size?: number | null;
   media_url?: string | null;
+  media_storage_path?: string | null;
   publish_status?: string | null;
   publish_error?: string | null;
   meta_caption?: string | null;
@@ -66,7 +67,7 @@ export const MetaPublishSection = ({
   const refresh = async () => {
     const [{ data: conn }, { data: pub }] = await Promise.all([
       (supabase as any).from("social_connections").select("*").eq("client_id", clientId).maybeSingle(),
-      (supabase as any).from("publications").select("drive_file_id,drive_file_url,drive_file_name,drive_file_mime_type,drive_file_size,media_url,publish_status,publish_error,meta_caption,publish_to_instagram,publish_to_facebook,scheduled_publish_at,instagram_media_id,facebook_post_id").eq("id", publication.id).maybeSingle(),
+      (supabase as any).from("publications").select("drive_file_id,drive_file_url,drive_file_name,drive_file_mime_type,drive_file_size,media_url,media_storage_path,publish_status,publish_error,meta_caption,publish_to_instagram,publish_to_facebook,scheduled_publish_at,instagram_media_id,facebook_post_id").eq("id", publication.id).maybeSingle(),
     ]);
     setConnection(conn || null);
     if (pub) {
@@ -86,7 +87,8 @@ export const MetaPublishSection = ({
   const isConnected = connection?.status === "connected";
 
   const persistMeta = async (patch: Partial<PubMeta>) => {
-    await (supabase as any).from("publications").update(patch).eq("id", publication.id);
+    const { error } = await (supabase as any).from("publications").update(patch).eq("id", publication.id);
+    if (error) throw error;
   };
 
   const prepareFromDrive = async (opts: { drive_file_id?: string; drive_url?: string }) => {
@@ -101,6 +103,7 @@ export const MetaPublishSection = ({
       toast({ title: "Archivo listo", description: "Subido a Storage para publicar." });
       await refresh();
     } catch (e: any) {
+      await persistMeta({ publish_status: "failed", publish_error: e.message || String(e) } as any).catch(() => null);
       toast({ title: "Error preparando archivo", description: e.message || String(e), variant: "destructive" });
     } finally {
       setBusy(false);
@@ -117,11 +120,39 @@ export const MetaPublishSection = ({
       drive_file_id: f.id,
       drive_file_name: f.name,
       drive_file_mime_type: f.mimeType,
+      drive_file_size: f.size ? Number(f.size) : null,
       drive_file_url: `https://drive.google.com/file/d/${f.id}/view`,
+      media_url: null,
+      media_storage_path: null,
+      publish_error: null,
       publish_status: "preparing",
     } as any);
     await refresh();
     await prepareFromDrive({ drive_file_id: f.id });
+  };
+
+  const handleRemoveFile = async () => {
+    setBusy(true);
+    try {
+      await persistMeta({
+        drive_file_id: null,
+        drive_file_url: null,
+        drive_file_name: null,
+        drive_file_mime_type: null,
+        drive_file_size: null,
+        media_url: null,
+        media_storage_path: null,
+        scheduled_publish_at: null,
+        publish_status: "draft",
+        publish_error: null,
+      } as any);
+      toast({ title: "Archivo eliminado" });
+      await refresh();
+    } catch (e: any) {
+      toast({ title: "Error eliminando archivo", description: e.message || String(e), variant: "destructive" });
+    } finally {
+      setBusy(false);
+    }
   };
 
   const handleManualPrepare = async () => {
@@ -256,9 +287,14 @@ export const MetaPublishSection = ({
                 )}
               </div>
             </div>
-            <Button size="sm" variant="outline" onClick={() => setPickerOpen(true)} disabled={busy}>
-              Cambiar
-            </Button>
+             <div className="flex flex-col gap-2 shrink-0">
+               <Button type="button" size="sm" variant="outline" onClick={() => setPickerOpen(true)} disabled={busy}>
+                 Cambiar
+               </Button>
+               <Button type="button" size="sm" variant="destructive" onClick={handleRemoveFile} disabled={busy} className="gap-1">
+                 <Trash2 className="h-3 w-3" /> Eliminar
+               </Button>
+             </div>
           </div>
         ) : (
           <Button type="button" variant="secondary" size="sm" onClick={() => setPickerOpen(true)} disabled={busy} className="gap-2 w-full">
@@ -267,7 +303,7 @@ export const MetaPublishSection = ({
         )}
 
         {hasFile && !meta.media_url && meta.drive_file_id && (
-          <Button size="sm" variant="outline" onClick={() => prepareFromDrive({ drive_file_id: meta.drive_file_id! })} disabled={busy} className="w-full">
+          <Button type="button" size="sm" variant="outline" onClick={() => prepareFromDrive({ drive_file_id: meta.drive_file_id! })} disabled={busy} className="w-full">
             {busy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
             Preparar archivo
           </Button>
@@ -289,7 +325,7 @@ export const MetaPublishSection = ({
               onChange={(e) => setManualUrl(e.target.value)}
               className="text-xs"
             />
-            <Button size="sm" variant="secondary" onClick={handleManualPrepare} disabled={busy || !manualUrl}>
+            <Button type="button" size="sm" variant="secondary" onClick={handleManualPrepare} disabled={busy || !manualUrl}>
               Preparar
             </Button>
           </div>
@@ -351,7 +387,12 @@ export const MetaPublishSection = ({
         </div>
       )}
 
-      <DriveFilePickerDialog open={pickerOpen} onOpenChange={setPickerOpen} onSelect={handleDrivePick} />
+      <DriveFilePickerDialog
+        open={pickerOpen}
+        onOpenChange={setPickerOpen}
+        onSelect={handleDrivePick}
+        busy={busy}
+      />
     </div>
   );
 };

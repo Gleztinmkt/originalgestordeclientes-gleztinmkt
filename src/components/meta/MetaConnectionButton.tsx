@@ -138,10 +138,10 @@ export const MetaConnectionButton = ({ clientId, clientName, compact }: MetaConn
                   <Facebook className="h-3 w-3" /> {connection.facebook_page_name}
                 </Badge>
               )}
-              <Button size="sm" variant="ghost" onClick={handleConnect} disabled={loading}>
+              <Button type="button" size="sm" variant="ghost" onClick={handleConnect} disabled={loading}>
                 <RefreshCw className="h-3 w-3 mr-1" /> Reconectar
               </Button>
-              <Button size="sm" variant="ghost" onClick={handleDisconnect}>
+              <Button type="button" size="sm" variant="ghost" onClick={handleDisconnect}>
                 <Unlink className="h-3 w-3 mr-1" /> Desconectar
               </Button>
             </>
@@ -149,7 +149,7 @@ export const MetaConnectionButton = ({ clientId, clientName, compact }: MetaConn
           {isPending && (
             <>
               <Badge variant="outline">Pendiente: seleccionar página</Badge>
-              <Button size="sm" variant="outline" onClick={handleConnect} disabled={loading}>
+              <Button type="button" size="sm" variant="outline" onClick={handleConnect} disabled={loading}>
                 Reintentar OAuth
               </Button>
             </>
@@ -157,13 +157,13 @@ export const MetaConnectionButton = ({ clientId, clientName, compact }: MetaConn
           {isError && (
             <>
               <Badge variant="destructive">Error: requiere reconexión</Badge>
-              <Button size="sm" variant="outline" onClick={handleConnect} disabled={loading}>
+              <Button type="button" size="sm" variant="outline" onClick={handleConnect} disabled={loading}>
                 Reconectar
               </Button>
             </>
           )}
           {!connection && (
-            <Button size="sm" variant="outline" onClick={handleConnect} disabled={loading} className="gap-2">
+            <Button type="button" size="sm" variant="outline" onClick={handleConnect} disabled={loading} className="gap-2">
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Link2 className="h-4 w-4" />}
               Conectar Instagram / Facebook
             </Button>
@@ -187,6 +187,7 @@ export const MetaConnectionButton = ({ clientId, clientName, compact }: MetaConn
           <div className="space-y-2">
             {pages?.map((p) => (
               <Button
+                type="button"
                 key={p.id}
                 variant="outline"
                 className="w-full justify-between"

@@ -25,12 +25,13 @@ interface DriveListResp {
 interface Props {
   open: boolean;
   onOpenChange: (o: boolean) => void;
-  onSelect: (file: DriveFile) => void;
+  onSelect: (file: DriveFile) => void | Promise<void>;
+  busy?: boolean;
 }
 
 const FOLDER = "application/vnd.google-apps.folder";
 
-export const DriveFilePickerDialog = ({ open, onOpenChange, onSelect }: Props) => {
+export const DriveFilePickerDialog = ({ open, onOpenChange, onSelect, busy = false }: Props) => {
   const [loading, setLoading] = useState(false);
   const [files, setFiles] = useState<DriveFile[]>([]);
   const [search, setSearch] = useState("");
@@ -71,32 +72,37 @@ export const DriveFilePickerDialog = ({ open, onOpenChange, onSelect }: Props) =
     setStack([{ id: null, name: mode === "shared" ? "Compartido conmigo" : "Mi unidad" }]);
   };
 
-  const handlePick = () => {
-    if (!selected) return;
-    onSelect(selected);
+  const pickFile = (file: DriveFile) => {
+    if (busy) return;
+    onSelect(file);
     onOpenChange(false);
   };
 
+  const handlePick = () => {
+    if (!selected) return;
+    pickFile(selected);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[720px] max-h-[80vh] flex flex-col">
+    <Dialog open={open} onOpenChange={busy ? () => undefined : onOpenChange}>
+      <DialogContent className="sm:max-w-[720px] max-h-[80vh] flex flex-col" onEscapeKeyDown={(e) => busy && e.preventDefault()} onPointerDownOutside={(e) => busy && e.preventDefault()}>
         <DialogHeader>
           <DialogTitle>Elegir archivo de Google Drive</DialogTitle>
           <DialogDescription>Solo se muestran JPG, PNG y MP4 compatibles con Meta.</DialogDescription>
         </DialogHeader>
 
         <div className="flex gap-2 items-center">
-          <Button size="sm" variant={!sharedMode ? "default" : "outline"} onClick={() => goRoot("mine")}>
+          <Button type="button" size="sm" variant={!sharedMode ? "default" : "outline"} onClick={() => goRoot("mine")}>
             Mi unidad
           </Button>
-          <Button size="sm" variant={sharedMode ? "default" : "outline"} onClick={() => goRoot("shared")} className="gap-1">
+          <Button type="button" size="sm" variant={sharedMode ? "default" : "outline"} onClick={() => goRoot("shared")} className="gap-1">
             <Users className="h-3 w-3" /> Compartidos
           </Button>
         </div>
 
         <div className="flex gap-2 items-center">
           {stack.length > 1 && (
-            <Button size="sm" variant="ghost" onClick={goBack}><ChevronLeft className="h-4 w-4" /></Button>
+            <Button type="button" size="sm" variant="ghost" onClick={goBack}><ChevronLeft className="h-4 w-4" /></Button>
           )}
           <div className="text-xs text-muted-foreground truncate flex-1">
             {stack.map((s) => s.name).join(" / ")}
@@ -114,7 +120,7 @@ export const DriveFilePickerDialog = ({ open, onOpenChange, onSelect }: Props) =
               className="pl-7 text-sm"
             />
           </div>
-          <Button size="sm" onClick={load} disabled={loading}>Buscar</Button>
+          <Button type="button" size="sm" onClick={load} disabled={loading}>Buscar</Button>
         </div>
 
         <div className="flex-1 overflow-y-auto border rounded-md min-h-[300px]">
@@ -138,7 +144,7 @@ export const DriveFilePickerDialog = ({ open, onOpenChange, onSelect }: Props) =
                     onClick={() => (isFolder ? enterFolder(f) : setSelected(f))}
                     onDoubleClick={() => {
                       if (isFolder) enterFolder(f);
-                      else { setSelected(f); setTimeout(handlePick, 0); }
+                      else pickFile(f);
                     }}
                     className={`flex flex-col items-center gap-1 p-2 rounded-md border text-xs hover:bg-muted transition ${
                       isSelected ? "border-primary bg-primary/10" : "border-border"
@@ -174,8 +180,11 @@ export const DriveFilePickerDialog = ({ open, onOpenChange, onSelect }: Props) =
             {selected ? <>Seleccionado: <span className="font-medium">{selected.name}</span></> : "Hacé doble click o seleccioná y confirmá."}
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-            <Button onClick={handlePick} disabled={!selected}>Seleccionar</Button>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={busy}>Cancelar</Button>
+            <Button type="button" onClick={handlePick} disabled={!selected || busy}>
+              {busy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Seleccionar
+            </Button>
           </div>
         </div>
       </DialogContent>
