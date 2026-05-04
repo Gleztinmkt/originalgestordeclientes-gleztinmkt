@@ -13,6 +13,7 @@ import Login from "./pages/Login";
 import Privacy from "./pages/Privacy";
 import DataDeletion from "./pages/DataDeletion";
 import Terms from "./pages/Terms";
+import { MetaOAuthReturn } from "./components/meta/MetaOAuthReturn";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -78,7 +79,7 @@ function App() {
                 />
                 <Route
                   path="/meta-oauth-return"
-                  element={session ? <Index /> : <Navigate to="/login" replace />}
+                  element={session ? <MetaOAuthReturn /> : <Navigate to="/login" replace />}
                 />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
