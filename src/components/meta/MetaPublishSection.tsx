@@ -303,7 +303,7 @@ export const MetaPublishSection = ({
         )}
 
         {hasFile && !meta.media_url && meta.drive_file_id && (
-          <Button size="sm" variant="outline" onClick={() => prepareFromDrive({ drive_file_id: meta.drive_file_id! })} disabled={busy} className="w-full">
+          <Button type="button" size="sm" variant="outline" onClick={() => prepareFromDrive({ drive_file_id: meta.drive_file_id! })} disabled={busy} className="w-full">
             {busy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
             Preparar archivo
           </Button>
@@ -325,7 +325,7 @@ export const MetaPublishSection = ({
               onChange={(e) => setManualUrl(e.target.value)}
               className="text-xs"
             />
-            <Button size="sm" variant="secondary" onClick={handleManualPrepare} disabled={busy || !manualUrl}>
+            <Button type="button" size="sm" variant="secondary" onClick={handleManualPrepare} disabled={busy || !manualUrl}>
               Preparar
             </Button>
           </div>
