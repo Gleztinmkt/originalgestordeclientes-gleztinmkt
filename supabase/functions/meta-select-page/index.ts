@@ -1,6 +1,8 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders } from "../_shared/cors.ts";
 
+const FB_VER = "v25.0";
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -25,7 +27,7 @@ Deno.serve(async (req) => {
 
     // Fetch the specific page details
     const pageResp = await fetch(
-      `https://graph.facebook.com/v21.0/${page_id}?fields=id,name,access_token,instagram_business_account&access_token=${conn.user_access_token_encrypted}`,
+      `https://graph.facebook.com/${FB_VER}/${page_id}?fields=id,name,access_token,instagram_business_account&access_token=${conn.user_access_token_encrypted}`,
     ).then(r => r.json());
 
     if (!pageResp.access_token) {
@@ -35,7 +37,7 @@ Deno.serve(async (req) => {
     let igUsername = null;
     if (pageResp.instagram_business_account?.id) {
       const igResp = await fetch(
-        `https://graph.facebook.com/v21.0/${pageResp.instagram_business_account.id}?fields=username&access_token=${pageResp.access_token}`,
+        `https://graph.facebook.com/${FB_VER}/${pageResp.instagram_business_account.id}?fields=username&access_token=${pageResp.access_token}`,
       ).then(r => r.json());
       igUsername = igResp.username || null;
     }

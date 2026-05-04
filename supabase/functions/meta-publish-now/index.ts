@@ -1,7 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders } from "../_shared/cors.ts";
 
-const FB_VER = "v21.0";
+const FB_VER = "v25.0";
 
 async function publishToInstagram(igUserId: string, pageToken: string, mediaUrl: string, caption: string, isVideo: boolean) {
   const createUrl = `https://graph.facebook.com/${FB_VER}/${igUserId}/media`;

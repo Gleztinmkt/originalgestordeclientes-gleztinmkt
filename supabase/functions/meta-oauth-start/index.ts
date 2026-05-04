@@ -10,6 +10,8 @@ const SCOPES = [
   "instagram_content_publish",
 ].join(",");
 
+const FB_VER = "v25.0";
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -47,7 +49,7 @@ Deno.serve(async (req) => {
       state, client_id, user_id: claims.claims.sub,
     });
 
-    const url = new URL("https://www.facebook.com/v21.0/dialog/oauth");
+    const url = new URL(`https://www.facebook.com/${FB_VER}/dialog/oauth`);
     url.searchParams.set("client_id", APP_ID);
     url.searchParams.set("redirect_uri", REDIRECT_URI);
     url.searchParams.set("state", state);

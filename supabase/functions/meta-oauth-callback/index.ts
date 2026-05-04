@@ -6,6 +6,7 @@ const APP_ID = Deno.env.get("META_APP_ID")!;
 const APP_SECRET = Deno.env.get("META_APP_SECRET")!;
 const REDIRECT_URI = Deno.env.get("META_REDIRECT_URI")!;
 const APP_ORIGIN = "https://originalgestordeclientes-gleztinmkt.lovable.app";
+const FB_VER = "v25.0";
 
 function html(body: string, status = 200) {
   return new Response(`<!doctype html><html><head><meta charset="utf-8"><title>Meta</title></head><body style="font-family:system-ui;padding:24px">${body}</body></html>`, {
@@ -36,7 +37,7 @@ Deno.serve(async (req) => {
 
   try {
     // 1. Exchange code → user access token
-    const tokenUrl = new URL("https://graph.facebook.com/v21.0/oauth/access_token");
+    const tokenUrl = new URL(`https://graph.facebook.com/${FB_VER}/oauth/access_token`);
     tokenUrl.searchParams.set("client_id", APP_ID);
     tokenUrl.searchParams.set("client_secret", APP_SECRET);
     tokenUrl.searchParams.set("redirect_uri", REDIRECT_URI);
@@ -48,7 +49,7 @@ Deno.serve(async (req) => {
     const userToken = tokenResp.access_token;
 
     // 2. Long-lived token
-    const llUrl = new URL("https://graph.facebook.com/v21.0/oauth/access_token");
+    const llUrl = new URL(`https://graph.facebook.com/${FB_VER}/oauth/access_token`);
     llUrl.searchParams.set("grant_type", "fb_exchange_token");
     llUrl.searchParams.set("client_id", APP_ID);
     llUrl.searchParams.set("client_secret", APP_SECRET);
@@ -58,7 +59,7 @@ Deno.serve(async (req) => {
     const expiresIn = llResp.expires_in || 0;
 
     // 3. List pages
-    const pagesResp = await fetch(`https://graph.facebook.com/v21.0/me/accounts?fields=id,name,access_token,instagram_business_account&access_token=${longUserToken}`).then(r => r.json());
+    const pagesResp = await fetch(`https://graph.facebook.com/${FB_VER}/me/accounts?fields=id,name,access_token,instagram_business_account&access_token=${longUserToken}`).then(r => r.json());
     const pages = pagesResp.data || [];
 
     // Save user token in a temp record (we'll finalize after page selection)
