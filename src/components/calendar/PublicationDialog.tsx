@@ -177,7 +177,9 @@ export const PublicationDialog = ({
     }
   });
 
-  const isDesigner = userRole === 'designer';
+  const currentRole = String(userRole || "");
+  const isDesigner = currentRole === 'designer';
+  const canManageMetaPublishing = currentRole === 'admin' || currentRole === 'planner' || currentRole === 'planificador';
   
   const hasChanges = useCallback(() => {
     return name !== publication.name || type !== publication.type || description !== (publication.description || "") || copywriting !== (publication.copywriting || "") || designer !== (publication.designer || "no_designer") || status !== (publication.needs_recording ? 'needs_recording' : publication.needs_editing ? 'needs_editing' : publication.in_editing ? 'in_editing' : publication.in_review ? 'in_review' : publication.approved ? 'approved' : publication.is_published ? 'published' : 'needs_recording') || JSON.stringify(links) !== (publication.links || "[]");
@@ -545,7 +547,7 @@ export const PublicationDialog = ({
                 <Textarea id="description" value={description} onChange={e => setDescription(e.target.value)} disabled={isDesigner} readOnly={isDesigner} className="min-h-[200px] touch-manipulation text-sm sm:text-base py-[192px]" />
               </div>
 
-              {client && !isDesigner && (
+              {client && canManageMetaPublishing && (
                 <MetaPublishSection
                   publication={publication}
                   clientId={client.id}
