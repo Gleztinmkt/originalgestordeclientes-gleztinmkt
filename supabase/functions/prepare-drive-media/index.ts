@@ -1,6 +1,8 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders } from "../_shared/cors.ts";
 
+type AdminClient = ReturnType<typeof createClient>;
+
 const GATEWAY_URL = "https://connector-gateway.lovable.dev/google_drive/drive/v3";
 const ALLOWED_MIMES = ["image/jpeg", "image/png", "video/mp4"];
 const EXT_BY_MIME: Record<string, string> = {
@@ -19,7 +21,7 @@ function extractDriveFileId(url: string): string | null {
   return null;
 }
 
-async function canManageMetaPublishing(admin: any, userId: string) {
+async function canManageMetaPublishing(admin: AdminClient, userId: string) {
   const { data: roleData } = await admin.from("user_roles").select("role").eq("user_id", userId).maybeSingle();
   const role = String(roleData?.role || "");
   return role === "admin";
