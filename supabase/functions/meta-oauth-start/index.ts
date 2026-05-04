@@ -62,7 +62,10 @@ Deno.serve(async (req) => {
     url.searchParams.set("scope", SCOPES);
     url.searchParams.set("response_type", "code");
 
-    return new Response(JSON.stringify({ auth_url: url.toString() }), {
+    console.log("META_REDIRECT_URI =", REDIRECT_URI);
+    console.log("auth_url =", url.toString());
+
+    return new Response(JSON.stringify({ auth_url: url.toString(), redirect_uri: REDIRECT_URI }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
