@@ -24,15 +24,19 @@ Deno.serve(async (req) => {
     }
 
     const authHeader = req.headers.get("Authorization") ?? "";
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader } } },
-    );
     const token = authHeader.replace("Bearer ", "");
-    const { data: claims } = await supabase.auth.getClaims(token);
-    if (!claims?.claims) {
+    if (!token) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const admin = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
+    const { data: userData, error: userErr } = await admin.auth.getUser(token);
+    if (userErr || !userData?.user) {
+      return new Response(JSON.stringify({ error: "Unauthorized", details: userErr?.message }), {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -41,13 +45,15 @@ Deno.serve(async (req) => {
     const REDIRECT_URI = Deno.env.get("META_REDIRECT_URI")!;
     const state = crypto.randomUUID();
 
-    const admin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
-    await admin.from("meta_oauth_states").insert({
-      state, client_id, user_id: claims.claims.sub,
+    const { error: insErr } = await admin.from("meta_oauth_states").insert({
+      state, client_id, user_id: userData.user.id,
     });
+    if (insErr) {
+      console.error("insert state error", insErr);
+      return new Response(JSON.stringify({ error: "state insert failed", details: insErr.message }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const url = new URL(`https://www.facebook.com/${FB_VER}/dialog/oauth`);
     url.searchParams.set("client_id", APP_ID);

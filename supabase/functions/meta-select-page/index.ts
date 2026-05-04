@@ -8,18 +8,14 @@ Deno.serve(async (req) => {
 
   try {
     const authHeader = req.headers.get("Authorization") ?? "";
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader } } },
-    );
-    const { data: claims } = await supabase.auth.getClaims(authHeader.replace("Bearer ", ""));
-    if (!claims?.claims) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
+    const token = authHeader.replace("Bearer ", "");
+    const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const { data: userData, error: userErr } = await admin.auth.getUser(token);
+    if (userErr || !userData?.user) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
 
     const { client_id, page_id } = await req.json();
     if (!client_id || !page_id) return new Response(JSON.stringify({ error: "params" }), { status: 400, headers: corsHeaders });
 
-    const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     const { data: conn } = await admin.from("social_connections").select("*").eq("client_id", client_id).maybeSingle();
     if (!conn?.user_access_token_encrypted) {
       return new Response(JSON.stringify({ error: "no token" }), { status: 400, headers: corsHeaders });
