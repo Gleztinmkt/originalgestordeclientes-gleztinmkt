@@ -76,6 +76,10 @@ function App() {
                   path="/"
                   element={session ? <Index /> : <Navigate to="/login" replace />}
                 />
+                <Route
+                  path="/meta-oauth-return"
+                  element={session ? <Index /> : <Navigate to="/login" replace />}
+                />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </GoogleOAuthProvider>
