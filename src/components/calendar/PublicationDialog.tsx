@@ -385,8 +385,8 @@ export const PublicationDialog = ({
 
   return <>
       <Dialog 
-        open={open} 
-        onOpenChange={onOpenChange}
+        open={internalOpen} 
+        onOpenChange={handleRadixOpenChange}
         preventAutoClose={true}
         modal={true}
       >
@@ -566,7 +566,7 @@ export const PublicationDialog = ({
                     <Trash2 className="h-4 w-4 mr-2" />
                     Eliminar
                   </Button>}
-                <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto text-sm">
+                <Button type="button" variant="outline" onClick={handleAuthorizedClose} className="w-full sm:w-auto text-sm">
                   Cerrar
                 </Button>
                 <Button type="submit" className="w-full sm:w-auto text-sm">
