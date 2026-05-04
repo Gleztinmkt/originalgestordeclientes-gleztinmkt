@@ -59,7 +59,7 @@ Deno.serve(async (req) => {
     const expiresIn = llResp.expires_in || 0;
 
     // 3. List pages
-    const pagesResp = await fetch(`https://graph.facebook.com/v21.0/me/accounts?fields=id,name,access_token,instagram_business_account&access_token=${longUserToken}`).then(r => r.json());
+    const pagesResp = await fetch(`https://graph.facebook.com/${FB_VER}/me/accounts?fields=id,name,access_token,instagram_business_account&access_token=${longUserToken}`).then(r => r.json());
     const pages = pagesResp.data || [];
 
     // Save user token in a temp record (we'll finalize after page selection)
