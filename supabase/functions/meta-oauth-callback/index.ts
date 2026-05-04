@@ -98,11 +98,8 @@ Deno.serve(async (req) => {
       name: p.name,
       ig: p.instagram_business_account?.id || null,
     }));
-    // Safe JSON embed inside <script> tag (avoid </script> breakouts)
-    const safeJson = (v: unknown) =>
-      JSON.stringify(v).replace(/</g, "\\u003c").replace(/>/g, "\\u003e").replace(/&/g, "\\u0026");
     const pagesParam = encodeURIComponent(JSON.stringify(pagesPayload));
-    const redirect = `${APP_ORIGIN}/?meta_oauth=success&client_id=${stateRow.client_id}&pages=${pagesParam}`;
+    const redirect = `${APP_ORIGIN}/meta-oauth-return?meta_oauth=success&client_id=${stateRow.client_id}&pages=${pagesParam}`;
 
     return new Response(null, {
       status: 302,
