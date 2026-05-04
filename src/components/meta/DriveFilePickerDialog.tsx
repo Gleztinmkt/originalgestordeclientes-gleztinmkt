@@ -33,6 +33,7 @@ const FOLDER = "application/vnd.google-apps.folder";
 
 export const DriveFilePickerDialog = ({ open, onOpenChange, onSelect, busy = false }: Props) => {
   const [loading, setLoading] = useState(false);
+  const [selecting, setSelecting] = useState(false);
   const [files, setFiles] = useState<DriveFile[]>([]);
   const [search, setSearch] = useState("");
   const [stack, setStack] = useState<{ id: string | null; name: string }[]>([{ id: null, name: "Mi unidad" }]);
@@ -72,10 +73,17 @@ export const DriveFilePickerDialog = ({ open, onOpenChange, onSelect, busy = fal
     setStack([{ id: null, name: mode === "shared" ? "Compartido conmigo" : "Mi unidad" }]);
   };
 
-  const pickFile = (file: DriveFile) => {
-    if (busy) return;
-    onSelect(file);
-    onOpenChange(false);
+  const isBusy = busy || selecting;
+
+  const pickFile = async (file: DriveFile) => {
+    if (isBusy) return;
+    setSelecting(true);
+    try {
+      await onSelect(file);
+      onOpenChange(false);
+    } finally {
+      setSelecting(false);
+    }
   };
 
   const handlePick = () => {
@@ -84,8 +92,8 @@ export const DriveFilePickerDialog = ({ open, onOpenChange, onSelect, busy = fal
   };
 
   return (
-    <Dialog open={open} onOpenChange={busy ? () => undefined : onOpenChange}>
-      <DialogContent className="sm:max-w-[720px] max-h-[80vh] flex flex-col" onEscapeKeyDown={(e) => busy && e.preventDefault()} onPointerDownOutside={(e) => busy && e.preventDefault()}>
+    <Dialog open={open} onOpenChange={isBusy ? () => undefined : onOpenChange}>
+      <DialogContent className="sm:max-w-[720px] max-h-[80vh] flex flex-col" onEscapeKeyDown={(e) => isBusy && e.preventDefault()} onPointerDownOutside={(e) => isBusy && e.preventDefault()}>
         <DialogHeader>
           <DialogTitle>Elegir archivo de Google Drive</DialogTitle>
           <DialogDescription>Solo se muestran JPG, PNG y MP4 compatibles con Meta.</DialogDescription>
@@ -142,7 +150,8 @@ export const DriveFilePickerDialog = ({ open, onOpenChange, onSelect, busy = fal
                     key={f.id}
                     type="button"
                     onClick={() => (isFolder ? enterFolder(f) : setSelected(f))}
-                    onDoubleClick={() => {
+                    onDoubleClick={(e) => {
+                      e.preventDefault();
                       if (isFolder) enterFolder(f);
                       else pickFile(f);
                     }}
@@ -180,10 +189,10 @@ export const DriveFilePickerDialog = ({ open, onOpenChange, onSelect, busy = fal
             {selected ? <>Seleccionado: <span className="font-medium">{selected.name}</span></> : "Hacé doble click o seleccioná y confirmá."}
           </div>
           <div className="flex gap-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={busy}>Cancelar</Button>
-            <Button type="button" onClick={handlePick} disabled={!selected || busy}>
-              {busy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              Seleccionar
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isBusy}>Cancelar</Button>
+            <Button type="button" onClick={handlePick} disabled={!selected || isBusy}>
+              {isBusy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              {isBusy ? "Cargando..." : "Seleccionar"}
             </Button>
           </div>
         </div>

@@ -160,7 +160,7 @@ export const PublicationDialog = ({
   };
 
   const {
-    data: userRole
+    data: currentUserAccess
   } = useQuery({
     queryKey: ['userRole'],
     queryFn: async () => {
@@ -169,15 +169,26 @@ export const PublicationDialog = ({
           user
         }
       } = await supabase.auth.getUser();
-      if (!user) return null;
+      if (!user) return { role: null, isPlanner: false };
       const {
         data: roleData
       } = await supabase.from('user_roles').select('role').eq('user_id', user.id).single();
-      return roleData?.role || null;
+      let isPlanner = false;
+      if (roleData?.role !== 'admin') {
+        const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', user.id).maybeSingle();
+        const fullName = profile?.full_name?.trim();
+        if (fullName) {
+          const { data: planner } = await supabase.from('planners').select('id').ilike('name', fullName).limit(1).maybeSingle();
+          isPlanner = !!planner;
+        }
+      }
+      return { role: roleData?.role || null, isPlanner };
     }
   });
 
-  const isDesigner = userRole === 'designer';
+  const currentRole = String(currentUserAccess?.role || "");
+  const isDesigner = currentRole === 'designer';
+  const canManageMetaPublishing = currentRole === 'admin' || !!currentUserAccess?.isPlanner;
   
   const hasChanges = useCallback(() => {
     return name !== publication.name || type !== publication.type || description !== (publication.description || "") || copywriting !== (publication.copywriting || "") || designer !== (publication.designer || "no_designer") || status !== (publication.needs_recording ? 'needs_recording' : publication.needs_editing ? 'needs_editing' : publication.in_editing ? 'in_editing' : publication.in_review ? 'in_review' : publication.approved ? 'approved' : publication.is_published ? 'published' : 'needs_recording') || JSON.stringify(links) !== (publication.links || "[]");
@@ -383,8 +394,8 @@ export const PublicationDialog = ({
 
   return <>
       <Dialog 
-        open={open} 
-        onOpenChange={onOpenChange}
+        open={internalOpen} 
+        onOpenChange={handleRadixOpenChange}
         preventAutoClose={true}
         modal={true}
       >
@@ -545,7 +556,7 @@ export const PublicationDialog = ({
                 <Textarea id="description" value={description} onChange={e => setDescription(e.target.value)} disabled={isDesigner} readOnly={isDesigner} className="min-h-[200px] touch-manipulation text-sm sm:text-base py-[192px]" />
               </div>
 
-              {client && !isDesigner && (
+              {client && canManageMetaPublishing && (
                 <MetaPublishSection
                   publication={publication}
                   clientId={client.id}
@@ -564,7 +575,7 @@ export const PublicationDialog = ({
                     <Trash2 className="h-4 w-4 mr-2" />
                     Eliminar
                   </Button>}
-                <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto text-sm">
+                <Button type="button" variant="outline" onClick={handleAuthorizedClose} className="w-full sm:w-auto text-sm">
                   Cerrar
                 </Button>
                 <Button type="submit" className="w-full sm:w-auto text-sm">

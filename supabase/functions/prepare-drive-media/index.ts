@@ -19,6 +19,19 @@ function extractDriveFileId(url: string): string | null {
   return null;
 }
 
+async function canManageMetaPublishing(admin: any, userId: string) {
+  const { data: roleData } = await admin.from("user_roles").select("role").eq("user_id", userId).maybeSingle();
+  const role = String(roleData?.role || "");
+  if (role === "admin" || role === "planner" || role === "planificador") return true;
+
+  const { data: profile } = await admin.from("profiles").select("full_name").eq("id", userId).maybeSingle();
+  const fullName = profile?.full_name?.trim();
+  if (!fullName) return false;
+
+  const { data: planner } = await admin.from("planners").select("id").ilike("name", fullName).limit(1).maybeSingle();
+  return !!planner;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -32,6 +45,9 @@ Deno.serve(async (req) => {
     const { data: userData, error: userErr } = await admin.auth.getUser(token);
     if (userErr || !userData?.user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
+    }
+    if (!(await canManageMetaPublishing(admin, userData.user.id))) {
+      return new Response(JSON.stringify({ error: "Solo administradores y planificadores pueden preparar archivos para Meta" }), { status: 403, headers: corsHeaders });
     }
 
     const { publication_id, drive_url, drive_file_id } = await req.json();
