@@ -37,7 +37,7 @@ Deno.serve(async (req) => {
     let igUsername = null;
     if (pageResp.instagram_business_account?.id) {
       const igResp = await fetch(
-        `https://graph.facebook.com/v21.0/${pageResp.instagram_business_account.id}?fields=username&access_token=${pageResp.access_token}`,
+        `https://graph.facebook.com/${FB_VER}/${pageResp.instagram_business_account.id}?fields=username&access_token=${pageResp.access_token}`,
       ).then(r => r.json());
       igUsername = igResp.username || null;
     }
