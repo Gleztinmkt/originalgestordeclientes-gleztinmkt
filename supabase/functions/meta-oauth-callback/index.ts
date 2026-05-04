@@ -93,21 +93,49 @@ Deno.serve(async (req) => {
       }).eq("client_id", stateRow.client_id);
     }
 
-    // Redirect back to app with state info
-    const pagesParam = encodeURIComponent(JSON.stringify(pages.map((p: any) => ({
-      id: p.id, name: p.name, ig: p.instagram_business_account?.id || null,
-    }))));
+    const pagesPayload = pages.map((p: any) => ({
+      id: p.id,
+      name: p.name,
+      ig: p.instagram_business_account?.id || null,
+    }));
+    // Safe JSON embed inside <script> tag (avoid </script> breakouts)
+    const safeJson = (v: unknown) =>
+      JSON.stringify(v).replace(/</g, "\\u003c").replace(/>/g, "\\u003e").replace(/&/g, "\\u0026");
+    const pagesParam = encodeURIComponent(JSON.stringify(pagesPayload));
     const redirect = `${APP_ORIGIN}/?meta_oauth=success&client_id=${stateRow.client_id}&pages=${pagesParam}`;
 
-    return new Response(`<!doctype html><html><body><script>
-      if (window.opener) {
-        window.opener.postMessage({ type: 'meta_oauth_success', client_id: '${stateRow.client_id}', pages: ${JSON.stringify(pages.map((p:any)=>({id:p.id,name:p.name,ig:p.instagram_business_account?.id||null})))} }, '*');
-        window.close();
-      } else {
-        window.location.href = ${JSON.stringify(redirect)};
-      }
-    </script><p>Conectado. Podés cerrar esta ventana.</p></body></html>`, {
-      headers: { "Content-Type": "text/html; charset=utf-8" },
+    const body = `<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Conectando Meta…</title>
+</head>
+<body style="font-family:system-ui;padding:24px">
+<p>Conectado. Podés cerrar esta ventana.</p>
+<script>
+(function(){
+  var clientId = ${safeJson(stateRow.client_id)};
+  var pages = ${safeJson(pagesPayload)};
+  try {
+    if (window.opener && !window.opener.closed) {
+      window.opener.postMessage({ type: "meta_oauth_success", client_id: clientId, pages: pages }, "*");
+      window.close();
+      return;
+    }
+  } catch (e) {}
+  window.location.href = ${safeJson(redirect)};
+})();
+</script>
+</body>
+</html>`;
+
+    return new Response(body, {
+      status: 200,
+      headers: {
+        "Content-Type": "text/html; charset=utf-8",
+        "Cache-Control": "no-store",
+        "X-Content-Type-Options": "nosniff",
+      },
     });
   } catch (e) {
     await admin.from("social_connections").upsert({
