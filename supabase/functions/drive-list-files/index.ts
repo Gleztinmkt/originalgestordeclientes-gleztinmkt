@@ -1,22 +1,17 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders } from "../_shared/cors.ts";
 
+type AdminClient = ReturnType<typeof createClient>;
+
 const GATEWAY_URL = "https://connector-gateway.lovable.dev/google_drive/drive/v3";
 
 const ALLOWED_MIMES = ["image/jpeg", "image/png", "video/mp4"];
 const FOLDER_MIME = "application/vnd.google-apps.folder";
 
-async function canManageMetaPublishing(admin: any, userId: string) {
+async function canManageMetaPublishing(admin: AdminClient, userId: string) {
   const { data: roleData } = await admin.from("user_roles").select("role").eq("user_id", userId).maybeSingle();
   const role = String(roleData?.role || "");
-  if (role === "admin" || role === "planner" || role === "planificador") return true;
-
-  const { data: profile } = await admin.from("profiles").select("full_name").eq("id", userId).maybeSingle();
-  const fullName = profile?.full_name?.trim();
-  if (!fullName) return false;
-
-  const { data: planner } = await admin.from("planners").select("id").ilike("name", fullName).limit(1).maybeSingle();
-  return !!planner;
+  return role === "admin";
 }
 
 Deno.serve(async (req) => {
@@ -37,7 +32,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
     }
     if (!(await canManageMetaPublishing(admin, userData.user.id))) {
-      return new Response(JSON.stringify({ error: "Solo administradores y planificadores pueden usar Drive para Meta" }), { status: 403, headers: corsHeaders });
+      return new Response(JSON.stringify({ error: "Solo administradores pueden usar Drive para Meta" }), { status: 403, headers: corsHeaders });
     }
 
     const body = req.method === "POST" ? await req.json() : {};

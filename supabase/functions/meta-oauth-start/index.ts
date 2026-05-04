@@ -1,6 +1,8 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders } from "../_shared/cors.ts";
 
+type AdminClient = ReturnType<typeof createClient>;
+
 const SCOPES = [
   "pages_show_list",
   "pages_read_engagement",
@@ -34,6 +36,11 @@ const getSafeOrigin = (origin: string | null) => {
   return FALLBACK_APP_ORIGIN;
 };
 
+async function canManageMetaPublishing(admin: AdminClient, userId: string) {
+  const { data: roleData } = await admin.from("user_roles").select("role").eq("user_id", userId).maybeSingle();
+  return String(roleData?.role || "") === "admin";
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -60,6 +67,11 @@ Deno.serve(async (req) => {
     if (userErr || !userData?.user) {
       return new Response(JSON.stringify({ error: "Unauthorized", details: userErr?.message }), {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (!(await canManageMetaPublishing(admin, userData.user.id))) {
+      return new Response(JSON.stringify({ error: "Solo administradores pueden conectar Meta" }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 

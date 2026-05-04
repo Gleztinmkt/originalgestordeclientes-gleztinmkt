@@ -28,7 +28,7 @@ interface PublicationDialogProps {
   onOpenChange: (open: boolean) => void;
   onUpdate: () => void;
   onDelete?: () => void;
-  designers?: any[];
+  designers?: Array<{ id: string; name: string }>;
 }
 
 export const PublicationDialog = ({
@@ -160,35 +160,26 @@ export const PublicationDialog = ({
   };
 
   const {
-    data: currentUserAccess
+    data: currentRole
   } = useQuery({
-    queryKey: ['userRole'],
+    queryKey: ['publicationDialogUserRole'],
     queryFn: async () => {
       const {
         data: {
           user
         }
       } = await supabase.auth.getUser();
-      if (!user) return { role: null, isPlanner: false };
+      if (!user) return null;
       const {
         data: roleData
       } = await supabase.from('user_roles').select('role').eq('user_id', user.id).single();
-      let isPlanner = false;
-      if (roleData?.role !== 'admin') {
-        const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', user.id).maybeSingle();
-        const fullName = profile?.full_name?.trim();
-        if (fullName) {
-          const { data: planner } = await supabase.from('planners').select('id').ilike('name', fullName).limit(1).maybeSingle();
-          isPlanner = !!planner;
-        }
-      }
-      return { role: roleData?.role || null, isPlanner };
+      return roleData?.role || null;
     }
   });
 
-  const currentRole = String(currentUserAccess?.role || "");
-  const isDesigner = currentRole === 'designer';
-  const canManageMetaPublishing = currentRole === 'admin' || !!currentUserAccess?.isPlanner;
+  const normalizedRole = String(currentRole || "");
+  const isDesigner = normalizedRole === 'designer';
+  const canManageMetaPublishing = normalizedRole === 'admin';
   
   const hasChanges = useCallback(() => {
     return name !== publication.name || type !== publication.type || description !== (publication.description || "") || copywriting !== (publication.copywriting || "") || designer !== (publication.designer || "no_designer") || status !== (publication.needs_recording ? 'needs_recording' : publication.needs_editing ? 'needs_editing' : publication.in_editing ? 'in_editing' : publication.in_review ? 'in_review' : publication.approved ? 'approved' : publication.is_published ? 'published' : 'needs_recording') || JSON.stringify(links) !== (publication.links || "[]");
@@ -286,7 +277,7 @@ export const PublicationDialog = ({
 
   const performUpdate = async () => {
     try {
-      const updates: any = {};
+      const updates: Partial<Publication> = {};
       if (isDesigner) {
         updates.needs_recording = status === 'needs_recording';
         updates.needs_editing = status === 'needs_editing';
