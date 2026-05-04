@@ -63,12 +63,7 @@ async function publishToFacebook(pageId: string, pageToken: string, mediaUrl: st
 async function canManageMetaPublishing(admin: any, userId: string) {
   const { data: roleData } = await admin.from("user_roles").select("role").eq("user_id", userId).maybeSingle();
   const role = String(roleData?.role || "");
-  if (role === "admin" || role === "planner" || role === "planificador") return true;
-  const { data: profile } = await admin.from("profiles").select("full_name").eq("id", userId).maybeSingle();
-  const fullName = profile?.full_name?.trim();
-  if (!fullName) return false;
-  const { data: planner } = await admin.from("planners").select("id").ilike("name", fullName).limit(1).maybeSingle();
-  return !!planner;
+  return role === "admin";
 }
 
 Deno.serve(async (req) => {
@@ -80,7 +75,7 @@ Deno.serve(async (req) => {
     const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     const { data: userData, error: userErr } = await admin.auth.getUser(token);
     if (userErr || !userData?.user) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
-    if (!(await canManageMetaPublishing(admin, userData.user.id))) return new Response(JSON.stringify({ error: "Solo administradores y planificadores pueden publicar en Meta" }), { status: 403, headers: corsHeaders });
+    if (!(await canManageMetaPublishing(admin, userData.user.id))) return new Response(JSON.stringify({ error: "Solo administradores pueden publicar en Meta" }), { status: 403, headers: corsHeaders });
 
     const { publication_id } = await req.json();
     if (!publication_id) return new Response(JSON.stringify({ error: "params" }), { status: 400, headers: corsHeaders });
