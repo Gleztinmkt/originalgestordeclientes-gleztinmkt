@@ -28,7 +28,7 @@ interface PublicationDialogProps {
   onOpenChange: (open: boolean) => void;
   onUpdate: () => void;
   onDelete?: () => void;
-  designers?: any[];
+  designers?: Array<{ id: string; name: string }>;
 }
 
 export const PublicationDialog = ({
@@ -277,7 +277,7 @@ export const PublicationDialog = ({
 
   const performUpdate = async () => {
     try {
-      const updates: any = {};
+      const updates: Partial<Publication> = {};
       if (isDesigner) {
         updates.needs_recording = status === 'needs_recording';
         updates.needs_editing = status === 'needs_editing';
