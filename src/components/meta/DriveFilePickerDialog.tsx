@@ -92,17 +92,17 @@ export const DriveFilePickerDialog = ({ open, onOpenChange, onSelect, busy = fal
         </DialogHeader>
 
         <div className="flex gap-2 items-center">
-          <Button size="sm" variant={!sharedMode ? "default" : "outline"} onClick={() => goRoot("mine")}>
+          <Button type="button" size="sm" variant={!sharedMode ? "default" : "outline"} onClick={() => goRoot("mine")}>
             Mi unidad
           </Button>
-          <Button size="sm" variant={sharedMode ? "default" : "outline"} onClick={() => goRoot("shared")} className="gap-1">
+          <Button type="button" size="sm" variant={sharedMode ? "default" : "outline"} onClick={() => goRoot("shared")} className="gap-1">
             <Users className="h-3 w-3" /> Compartidos
           </Button>
         </div>
 
         <div className="flex gap-2 items-center">
           {stack.length > 1 && (
-            <Button size="sm" variant="ghost" onClick={goBack}><ChevronLeft className="h-4 w-4" /></Button>
+            <Button type="button" size="sm" variant="ghost" onClick={goBack}><ChevronLeft className="h-4 w-4" /></Button>
           )}
           <div className="text-xs text-muted-foreground truncate flex-1">
             {stack.map((s) => s.name).join(" / ")}
@@ -120,7 +120,7 @@ export const DriveFilePickerDialog = ({ open, onOpenChange, onSelect, busy = fal
               className="pl-7 text-sm"
             />
           </div>
-          <Button size="sm" onClick={load} disabled={loading}>Buscar</Button>
+          <Button type="button" size="sm" onClick={load} disabled={loading}>Buscar</Button>
         </div>
 
         <div className="flex-1 overflow-y-auto border rounded-md min-h-[300px]">
@@ -180,8 +180,8 @@ export const DriveFilePickerDialog = ({ open, onOpenChange, onSelect, busy = fal
             {selected ? <>Seleccionado: <span className="font-medium">{selected.name}</span></> : "Hacé doble click o seleccioná y confirmá."}
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={busy}>Cancelar</Button>
-            <Button onClick={handlePick} disabled={!selected || busy}>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={busy}>Cancelar</Button>
+            <Button type="button" onClick={handlePick} disabled={!selected || busy}>
               {busy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
               Seleccionar
             </Button>
