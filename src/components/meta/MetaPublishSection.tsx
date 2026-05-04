@@ -67,7 +67,7 @@ export const MetaPublishSection = ({
   const refresh = async () => {
     const [{ data: conn }, { data: pub }] = await Promise.all([
       (supabase as any).from("social_connections").select("*").eq("client_id", clientId).maybeSingle(),
-      (supabase as any).from("publications").select("drive_file_id,drive_file_url,drive_file_name,drive_file_mime_type,drive_file_size,media_url,publish_status,publish_error,meta_caption,publish_to_instagram,publish_to_facebook,scheduled_publish_at,instagram_media_id,facebook_post_id").eq("id", publication.id).maybeSingle(),
+      (supabase as any).from("publications").select("drive_file_id,drive_file_url,drive_file_name,drive_file_mime_type,drive_file_size,media_url,media_storage_path,publish_status,publish_error,meta_caption,publish_to_instagram,publish_to_facebook,scheduled_publish_at,instagram_media_id,facebook_post_id").eq("id", publication.id).maybeSingle(),
     ]);
     setConnection(conn || null);
     if (pub) {
@@ -287,9 +287,14 @@ export const MetaPublishSection = ({
                 )}
               </div>
             </div>
-            <Button size="sm" variant="outline" onClick={() => setPickerOpen(true)} disabled={busy}>
-              Cambiar
-            </Button>
+             <div className="flex flex-col gap-2 shrink-0">
+               <Button type="button" size="sm" variant="outline" onClick={() => setPickerOpen(true)} disabled={busy}>
+                 Cambiar
+               </Button>
+               <Button type="button" size="sm" variant="destructive" onClick={handleRemoveFile} disabled={busy} className="gap-1">
+                 <Trash2 className="h-3 w-3" /> Eliminar
+               </Button>
+             </div>
           </div>
         ) : (
           <Button type="button" variant="secondary" size="sm" onClick={() => setPickerOpen(true)} disabled={busy} className="gap-2 w-full">
@@ -382,7 +387,12 @@ export const MetaPublishSection = ({
         </div>
       )}
 
-      <DriveFilePickerDialog open={pickerOpen} onOpenChange={setPickerOpen} onSelect={handleDrivePick} />
+      <DriveFilePickerDialog
+        open={pickerOpen}
+        onOpenChange={setPickerOpen}
+        onSelect={handleDrivePick}
+        busy={busy}
+      />
     </div>
   );
 };
