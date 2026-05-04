@@ -11,6 +11,28 @@ const SCOPES = [
 ].join(",");
 
 const FB_VER = "v25.0";
+const FALLBACK_APP_ORIGIN = "https://originalgestordeclientes-gleztinmkt.lovable.app";
+
+const encodeOrigin = (origin: string) =>
+  btoa(origin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+
+const getSafeOrigin = (origin: string | null) => {
+  if (!origin) return FALLBACK_APP_ORIGIN;
+  try {
+    const parsed = new URL(origin);
+    const host = parsed.hostname;
+    if (parsed.protocol === "https:" && (
+      host === "originalgestordeclientes-gleztinmkt.lovable.app" ||
+      host.endsWith(".lovable.app") ||
+      host.endsWith(".lovableproject.com")
+    )) {
+      return parsed.origin;
+    }
+  } catch (_) {
+    // Ignore malformed origins and use production fallback.
+  }
+  return FALLBACK_APP_ORIGIN;
+};
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -43,7 +65,8 @@ Deno.serve(async (req) => {
 
     const APP_ID = Deno.env.get("META_APP_ID")!;
     const REDIRECT_URI = Deno.env.get("META_REDIRECT_URI")!;
-    const state = crypto.randomUUID();
+    const appOrigin = getSafeOrigin(req.headers.get("Origin"));
+    const state = `${crypto.randomUUID()}.${encodeOrigin(appOrigin)}`;
 
     const { error: insErr } = await admin.from("meta_oauth_states").insert({
       state, client_id, user_id: userData.user.id,
