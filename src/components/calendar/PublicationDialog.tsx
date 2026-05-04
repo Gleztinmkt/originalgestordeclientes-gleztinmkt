@@ -160,7 +160,7 @@ export const PublicationDialog = ({
   };
 
   const {
-    data: userRole
+    data: currentUserAccess
   } = useQuery({
     queryKey: ['userRole'],
     queryFn: async () => {
@@ -169,17 +169,26 @@ export const PublicationDialog = ({
           user
         }
       } = await supabase.auth.getUser();
-      if (!user) return null;
+      if (!user) return { role: null, isPlanner: false };
       const {
         data: roleData
       } = await supabase.from('user_roles').select('role').eq('user_id', user.id).single();
-      return roleData?.role || null;
+      let isPlanner = false;
+      if (roleData?.role !== 'admin') {
+        const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', user.id).maybeSingle();
+        const fullName = profile?.full_name?.trim();
+        if (fullName) {
+          const { data: planner } = await supabase.from('planners').select('id').ilike('name', fullName).limit(1).maybeSingle();
+          isPlanner = !!planner;
+        }
+      }
+      return { role: roleData?.role || null, isPlanner };
     }
   });
 
-  const currentRole = String(userRole || "");
+  const currentRole = String(currentUserAccess?.role || "");
   const isDesigner = currentRole === 'designer';
-  const canManageMetaPublishing = currentRole === 'admin' || currentRole === 'planner' || currentRole === 'planificador';
+  const canManageMetaPublishing = currentRole === 'admin' || !!currentUserAccess?.isPlanner;
   
   const hasChanges = useCallback(() => {
     return name !== publication.name || type !== publication.type || description !== (publication.description || "") || copywriting !== (publication.copywriting || "") || designer !== (publication.designer || "no_designer") || status !== (publication.needs_recording ? 'needs_recording' : publication.needs_editing ? 'needs_editing' : publication.in_editing ? 'in_editing' : publication.in_review ? 'in_review' : publication.approved ? 'approved' : publication.is_published ? 'published' : 'needs_recording') || JSON.stringify(links) !== (publication.links || "[]");
