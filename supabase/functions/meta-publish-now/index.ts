@@ -94,6 +94,10 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Cliente sin conexión Meta activa" }), { status: 400, headers: corsHeaders });
     }
 
+    if (!conn.facebook_page_access_token_encrypted) {
+      return new Response(JSON.stringify({ error: "Falta token de página de Facebook. Reconectá Meta y elegí la página." }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     await admin.from("publications").update({ publish_status: "publishing", publish_error: null }).eq("id", publication_id);
 
     const isVideo = !!pub.media_url.match(/\.mp4(\?|$)/i) || pub.type === "reel";
@@ -101,14 +105,18 @@ Deno.serve(async (req) => {
     const result: any = {};
 
     try {
-      if (pub.publish_to_instagram && conn.instagram_business_account_id) {
+      if (pub.publish_to_instagram) {
+        if (!conn.instagram_business_account_id) {
+          throw new Error("Esta página no tiene cuenta de Instagram Business vinculada.");
+        }
         result.instagram_media_id = await publishToInstagram(
           conn.instagram_business_account_id,
           conn.facebook_page_access_token_encrypted!,
           pub.media_url, caption, isVideo,
         );
       }
-      if (pub.publish_to_facebook && conn.facebook_page_id) {
+      if (pub.publish_to_facebook) {
+        if (!conn.facebook_page_id) throw new Error("Falta facebook_page_id en la conexión.");
         result.facebook_post_id = await publishToFacebook(
           conn.facebook_page_id,
           conn.facebook_page_access_token_encrypted!,
@@ -128,13 +136,17 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     } catch (e) {
+      const msg = (e as Error)?.message || String(e);
+      console.error("meta-publish-now error:", msg);
       await admin.from("publications").update({
         publish_status: "failed",
-        publish_error: String(e),
+        publish_error: msg,
       }).eq("id", publication_id);
-      throw e;
+      return new Response(JSON.stringify({ error: msg }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
   } catch (e) {
-    return new Response(JSON.stringify({ error: String(e) }), { status: 500, headers: corsHeaders });
+    const msg = (e as Error)?.message || String(e);
+    console.error("meta-publish-now outer:", msg);
+    return new Response(JSON.stringify({ error: msg }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });
