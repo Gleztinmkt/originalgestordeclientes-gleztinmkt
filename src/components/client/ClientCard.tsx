@@ -188,11 +188,6 @@ export const ClientCard = ({
         />
 
         <MetaConnectionButton clientId={client.id} clientName={client.name} />
-          onEditPackage={handleEditPackage}
-          onDeletePackage={handleDeletePackage}
-          onCaptureStart={() => setIsCapturing(true)}
-          onCaptureEnd={() => setIsCapturing(false)}
-        />
 
         <div className="mt-6 space-y-4">
           <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-200">Tareas Pendientes</h3>
