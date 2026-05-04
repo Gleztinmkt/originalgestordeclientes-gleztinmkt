@@ -8,6 +8,29 @@ const REDIRECT_URI = Deno.env.get("META_REDIRECT_URI")!;
 const APP_ORIGIN = "https://originalgestordeclientes-gleztinmkt.lovable.app";
 const FB_VER = "v25.0";
 
+const decodeOrigin = (state: string) => {
+  const encoded = state.split(".")[1];
+  if (!encoded) return APP_ORIGIN;
+
+  try {
+    const base64 = encoded.replace(/-/g, "+").replace(/_/g, "/");
+    const origin = atob(base64.padEnd(Math.ceil(base64.length / 4) * 4, "="));
+    const parsed = new URL(origin);
+    const host = parsed.hostname;
+    if (parsed.protocol === "https:" && (
+      host === "originalgestordeclientes-gleztinmkt.lovable.app" ||
+      host.endsWith(".lovable.app") ||
+      host.endsWith(".lovableproject.com")
+    )) {
+      return parsed.origin;
+    }
+  } catch (_) {
+    // Ignore malformed state origin and use production fallback.
+  }
+
+  return APP_ORIGIN;
+};
+
 function html(body: string, status = 200) {
   return new Response(`<!doctype html><html><head><meta charset="utf-8"><title>Meta</title></head><body style="font-family:system-ui;padding:24px">${body}</body></html>`, {
     status, headers: { "Content-Type": "text/html; charset=utf-8" },
@@ -99,7 +122,8 @@ Deno.serve(async (req) => {
       ig: p.instagram_business_account?.id || null,
     }));
     const pagesParam = encodeURIComponent(JSON.stringify(pagesPayload));
-    const redirect = `${APP_ORIGIN}/meta-oauth-return?meta_oauth=success&client_id=${stateRow.client_id}&pages=${pagesParam}`;
+    const appOrigin = decodeOrigin(state);
+    const redirect = `${appOrigin}/meta-oauth-return?meta_oauth=success&client_id=${stateRow.client_id}&pages=${pagesParam}`;
 
     return new Response(null, {
       status: 302,
