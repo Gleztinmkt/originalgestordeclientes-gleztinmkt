@@ -82,6 +82,22 @@ export async function invokeEdgeFunction<TResponse, TBody = unknown>(
     return data as TResponse;
   }
 
+  // Try to surface the real backend error message (FunctionsHttpError hides body)
+  const ctxResponse = (error as any)?.context?.response as Response | undefined;
+  if (ctxResponse) {
+    try {
+      const text = await ctxResponse.clone().text();
+      if (text) {
+        let parsed: any = null;
+        try { parsed = JSON.parse(text); } catch { parsed = null; }
+        const msg = parsed?.error || parsed?.message || text;
+        throw new Error(typeof msg === "string" ? msg : JSON.stringify(msg));
+      }
+    } catch (e) {
+      if (e instanceof Error && e.message) throw e;
+    }
+  }
+
   if (!isTransportError(error)) {
     throw error;
   }
