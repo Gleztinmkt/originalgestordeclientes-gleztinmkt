@@ -256,6 +256,19 @@ export const MetaPublishSection = ({
         )}
       </div>
 
+      {busy && (
+        <Alert>
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <AlertDescription className="text-xs">
+            {status === "publishing"
+              ? "Publicando en Meta…"
+              : status === "preparing"
+              ? "Descargando archivo de Drive y subiéndolo a Storage…"
+              : "Procesando…"}
+          </AlertDescription>
+        </Alert>
+      )}
+
       {expanded && (
         <>
 
