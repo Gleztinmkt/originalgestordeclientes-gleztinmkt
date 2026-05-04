@@ -26,11 +26,12 @@ interface Props {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   onSelect: (file: DriveFile) => void;
+  busy?: boolean;
 }
 
 const FOLDER = "application/vnd.google-apps.folder";
 
-export const DriveFilePickerDialog = ({ open, onOpenChange, onSelect }: Props) => {
+export const DriveFilePickerDialog = ({ open, onOpenChange, onSelect, busy = false }: Props) => {
   const [loading, setLoading] = useState(false);
   const [files, setFiles] = useState<DriveFile[]>([]);
   const [search, setSearch] = useState("");
@@ -72,14 +73,13 @@ export const DriveFilePickerDialog = ({ open, onOpenChange, onSelect }: Props) =
   };
 
   const handlePick = () => {
-    if (!selected) return;
+    if (!selected || busy) return;
     onSelect(selected);
-    onOpenChange(false);
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[720px] max-h-[80vh] flex flex-col">
+    <Dialog open={open} onOpenChange={busy ? () => undefined : onOpenChange}>
+      <DialogContent className="sm:max-w-[720px] max-h-[80vh] flex flex-col" onEscapeKeyDown={(e) => busy && e.preventDefault()} onPointerDownOutside={(e) => busy && e.preventDefault()}>
         <DialogHeader>
           <DialogTitle>Elegir archivo de Google Drive</DialogTitle>
           <DialogDescription>Solo se muestran JPG, PNG y MP4 compatibles con Meta.</DialogDescription>
@@ -174,8 +174,11 @@ export const DriveFilePickerDialog = ({ open, onOpenChange, onSelect }: Props) =
             {selected ? <>Seleccionado: <span className="font-medium">{selected.name}</span></> : "Hacé doble click o seleccioná y confirmá."}
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-            <Button onClick={handlePick} disabled={!selected}>Seleccionar</Button>
+            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={busy}>Cancelar</Button>
+            <Button onClick={handlePick} disabled={!selected || busy}>
+              {busy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Seleccionar
+            </Button>
           </div>
         </div>
       </DialogContent>
