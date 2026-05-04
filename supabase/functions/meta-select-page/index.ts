@@ -27,7 +27,7 @@ Deno.serve(async (req) => {
 
     // Fetch the specific page details
     const pageResp = await fetch(
-      `https://graph.facebook.com/v21.0/${page_id}?fields=id,name,access_token,instagram_business_account&access_token=${conn.user_access_token_encrypted}`,
+      `https://graph.facebook.com/${FB_VER}/${page_id}?fields=id,name,access_token,instagram_business_account&access_token=${conn.user_access_token_encrypted}`,
     ).then(r => r.json());
 
     if (!pageResp.access_token) {
