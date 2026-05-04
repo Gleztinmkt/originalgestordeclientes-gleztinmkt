@@ -559,6 +559,7 @@ export const PublicationDialog = ({
                 />
               )}
 
+              <div className="flex flex-col sm:flex-row justify-end gap-2 pt-4">
                 {onDelete && !isDesigner && <Button type="button" variant="destructive" onClick={handleDelete} className="w-full sm:w-auto text-sm">
                     <Trash2 className="h-4 w-4 mr-2" />
                     Eliminar
