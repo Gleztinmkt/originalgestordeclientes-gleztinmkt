@@ -633,6 +633,9 @@ export type Database = {
           description: string | null
           designer: string | null
           drive_file_id: string | null
+          drive_file_mime_type: string | null
+          drive_file_name: string | null
+          drive_file_size: number | null
           drive_file_url: string | null
           facebook_post_id: string | null
           filming_time: string | null
@@ -672,6 +675,9 @@ export type Database = {
           description?: string | null
           designer?: string | null
           drive_file_id?: string | null
+          drive_file_mime_type?: string | null
+          drive_file_name?: string | null
+          drive_file_size?: number | null
           drive_file_url?: string | null
           facebook_post_id?: string | null
           filming_time?: string | null
@@ -711,6 +717,9 @@ export type Database = {
           description?: string | null
           designer?: string | null
           drive_file_id?: string | null
+          drive_file_mime_type?: string | null
+          drive_file_name?: string | null
+          drive_file_size?: number | null
           drive_file_url?: string | null
           facebook_post_id?: string | null
           filming_time?: string | null
