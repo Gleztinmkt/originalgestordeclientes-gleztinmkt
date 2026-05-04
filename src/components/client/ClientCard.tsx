@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
+import { MetaConnectionButton } from "@/components/meta/MetaConnectionButton";
 import { PaymentReminder } from "./PaymentReminder";
 import { TaskInput } from "../TaskInput";
 import { TaskList } from "../TaskList";
@@ -180,6 +181,13 @@ export const ClientCard = ({
           isCapturing={isCapturing}
           onUpdatePackage={onUpdatePackage}
           onUpdatePaid={handleUpdatePackagePaid}
+          onEditPackage={handleEditPackage}
+          onDeletePackage={handleDeletePackage}
+          onCaptureStart={() => setIsCapturing(true)}
+          onCaptureEnd={() => setIsCapturing(false)}
+        />
+
+        <MetaConnectionButton clientId={client.id} clientName={client.name} />
           onEditPackage={handleEditPackage}
           onDeletePackage={handleDeletePackage}
           onCaptureStart={() => setIsCapturing(true)}
