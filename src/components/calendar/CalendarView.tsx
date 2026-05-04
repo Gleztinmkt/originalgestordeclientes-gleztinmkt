@@ -43,7 +43,7 @@ export const CalendarView = ({
   const {
     data: userRole
   } = useQuery({
-    queryKey: ['userRole'],
+    queryKey: ['calendarUserRole'],
     queryFn: async () => {
       const {
         data: {
@@ -57,6 +57,8 @@ export const CalendarView = ({
       return roleData?.role || null;
     }
   });
+
+  const normalizedUserRole = typeof userRole === 'string' ? userRole : null;
 
   const {
     data: allPublications = [],
@@ -137,7 +139,7 @@ export const CalendarView = ({
   });
 
   const handleDragEnd = async (result: DropResult) => {
-    if (userRole !== 'admin') {
+    if (normalizedUserRole !== 'admin') {
       toast({
         title: "Acceso denegado",
         description: "Solo los administradores pueden modificar las fechas de las publicaciones.",
@@ -250,7 +252,7 @@ export const CalendarView = ({
         <h3 className="font-medium">Filtros</h3>
         
       </div>
-      <FilterPanel clients={clients} designers={designers} selectedClient={selectedClient} selectedDesigner={selectedDesigner} selectedStatus={selectedStatus} selectedType={selectedType} selectedPackage={selectedPackage} onClientChange={setSelectedClient} onDesignerChange={setSelectedDesigner} onStatusChange={setSelectedStatus} onTypeChange={setSelectedType} onPackageChange={setSelectedPackage} onDesignerAdded={refetchDesigners} isDesigner={userRole === 'designer'} />
+      <FilterPanel clients={clients} designers={designers} selectedClient={selectedClient} selectedDesigner={selectedDesigner} selectedStatus={selectedStatus} selectedType={selectedType} selectedPackage={selectedPackage} onClientChange={setSelectedClient} onDesignerChange={setSelectedDesigner} onStatusChange={setSelectedStatus} onTypeChange={setSelectedType} onPackageChange={setSelectedPackage} onDesignerAdded={refetchDesigners} isDesigner={normalizedUserRole === 'designer'} />
     </div>;
 
   const CalendarContent = () => <DragDropContext onDragEnd={handleDragEnd}>
