@@ -6,19 +6,20 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, Send, Calendar as CalendarIcon, RefreshCw, Instagram, Facebook, AlertCircle, Link2 } from "lucide-react";
+import { Loader2, Send, Calendar as CalendarIcon, RefreshCw, Instagram, Facebook, AlertCircle, Link2, FolderOpen, FileImage, FileVideo, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { invokeEdgeFunction } from "@/lib/edge-functions";
 import { toast } from "@/hooks/use-toast";
 import { Publication } from "../client/publication/types";
 import { MetaConnectionButton } from "./MetaConnectionButton";
+import { DriveFilePickerDialog, DriveFile } from "./DriveFilePickerDialog";
 
 interface MetaPublishSectionProps {
   publication: Publication;
   clientId: string;
   clientName: string;
   copywriting: string;
-  onPublishedInCrm?: () => void; // called when user accepts to mark CRM as published
+  onPublishedInCrm?: () => void;
 }
 
 interface SocialConnection {
@@ -30,7 +31,11 @@ interface SocialConnection {
 }
 
 interface PubMeta {
+  drive_file_id?: string | null;
   drive_file_url?: string | null;
+  drive_file_name?: string | null;
+  drive_file_mime_type?: string | null;
+  drive_file_size?: number | null;
   media_url?: string | null;
   publish_status?: string | null;
   publish_error?: string | null;
@@ -42,31 +47,30 @@ interface PubMeta {
   facebook_post_id?: string | null;
 }
 
+const ALLOWED = ["image/jpeg", "image/png", "video/mp4"];
+
 export const MetaPublishSection = ({
-  publication,
-  clientId,
-  clientName,
-  copywriting,
-  onPublishedInCrm,
+  publication, clientId, clientName, copywriting, onPublishedInCrm,
 }: MetaPublishSectionProps) => {
   const [connection, setConnection] = useState<SocialConnection | null>(null);
   const [meta, setMeta] = useState<PubMeta>({});
-  const [driveUrl, setDriveUrl] = useState("");
   const [caption, setCaption] = useState(copywriting || "");
   const [toIG, setToIG] = useState(true);
   const [toFB, setToFB] = useState(false);
   const [scheduleAt, setScheduleAt] = useState("");
   const [busy, setBusy] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [manualUrl, setManualUrl] = useState("");
 
   const refresh = async () => {
     const [{ data: conn }, { data: pub }] = await Promise.all([
       (supabase as any).from("social_connections").select("*").eq("client_id", clientId).maybeSingle(),
-      (supabase as any).from("publications").select("drive_file_url,media_url,publish_status,publish_error,meta_caption,publish_to_instagram,publish_to_facebook,scheduled_publish_at,instagram_media_id,facebook_post_id").eq("id", publication.id).maybeSingle(),
+      (supabase as any).from("publications").select("drive_file_id,drive_file_url,drive_file_name,drive_file_mime_type,drive_file_size,media_url,publish_status,publish_error,meta_caption,publish_to_instagram,publish_to_facebook,scheduled_publish_at,instagram_media_id,facebook_post_id").eq("id", publication.id).maybeSingle(),
     ]);
     setConnection(conn || null);
     if (pub) {
       setMeta(pub);
-      setDriveUrl(pub.drive_file_url || "");
       setCaption(pub.meta_caption || copywriting || "");
       if (typeof pub.publish_to_instagram === "boolean") setToIG(pub.publish_to_instagram);
       if (typeof pub.publish_to_facebook === "boolean") setToFB(pub.publish_to_facebook);
@@ -85,17 +89,15 @@ export const MetaPublishSection = ({
     await (supabase as any).from("publications").update(patch).eq("id", publication.id);
   };
 
-  const handlePrepareMedia = async () => {
-    if (!driveUrl) {
-      toast({ title: "Falta el link de Drive", variant: "destructive" });
-      return;
-    }
+  const prepareFromDrive = async (opts: { drive_file_id?: string; drive_url?: string }) => {
     setBusy(true);
     try {
-      const r = await invokeEdgeFunction<{ media_url: string }>("prepare-drive-media", {
+      const r = await invokeEdgeFunction<any>("prepare-drive-media", {
         publication_id: publication.id,
-        drive_url: driveUrl,
+        drive_file_id: opts.drive_file_id,
+        drive_url: opts.drive_url,
       });
+      if (r?.error) throw new Error(r.error);
       toast({ title: "Archivo listo", description: "Subido a Storage para publicar." });
       await refresh();
     } catch (e: any) {
@@ -105,24 +107,40 @@ export const MetaPublishSection = ({
     }
   };
 
+  const handleDrivePick = async (f: DriveFile) => {
+    if (!ALLOWED.includes(f.mimeType)) {
+      toast({ title: "Formato no compatible", description: "Usá JPG, PNG o MP4.", variant: "destructive" });
+      return;
+    }
+    // Save lightweight ref and immediately prepare
+    await persistMeta({
+      drive_file_id: f.id,
+      drive_file_name: f.name,
+      drive_file_mime_type: f.mimeType,
+      drive_file_url: `https://drive.google.com/file/d/${f.id}/view`,
+      publish_status: "preparing",
+    } as any);
+    await refresh();
+    await prepareFromDrive({ drive_file_id: f.id });
+  };
+
+  const handleManualPrepare = async () => {
+    if (!manualUrl) return;
+    await prepareFromDrive({ drive_url: manualUrl });
+  };
+
   const handlePublishNow = async () => {
     if (!isConnected) return toast({ title: "Conectá Meta primero", variant: "destructive" });
-    if (!meta.media_url) return toast({ title: "Preparar archivo de Drive primero", variant: "destructive" });
+    if (!meta.media_url) return toast({ title: "Preparar archivo primero", variant: "destructive" });
     if (!toIG && !toFB) return toast({ title: "Elegí al menos una plataforma", variant: "destructive" });
 
     setBusy(true);
     try {
-      await persistMeta({
-        meta_caption: caption,
-        publish_to_instagram: toIG,
-        publish_to_facebook: toFB,
-      });
+      await persistMeta({ meta_caption: caption, publish_to_instagram: toIG, publish_to_facebook: toFB });
       const r = await invokeEdgeFunction<any>("meta-publish-now", { publication_id: publication.id });
       if (r?.error) throw new Error(r.error);
-      toast({ title: "¡Publicado!", description: "Posteado en redes correctamente." });
+      toast({ title: "¡Publicado!" });
       await refresh();
-
-      // Ask CRM mark
       setTimeout(() => {
         if (confirm("¿Querés marcar esta publicación como publicada en el CRM y descontarla del paquete?")) {
           onPublishedInCrm?.();
@@ -141,13 +159,11 @@ export const MetaPublishSection = ({
     setBusy(true);
     try {
       await persistMeta({
-        meta_caption: caption,
-        publish_to_instagram: toIG,
-        publish_to_facebook: toFB,
+        meta_caption: caption, publish_to_instagram: toIG, publish_to_facebook: toFB,
         scheduled_publish_at: new Date(scheduleAt).toISOString(),
         publish_status: "scheduled",
       } as any);
-      toast({ title: "Programada", description: "Se publicará automáticamente cuando esté activo el scheduler." });
+      toast({ title: "Programada" });
       await refresh();
     } catch (e: any) {
       toast({ title: "Error", description: e.message || String(e), variant: "destructive" });
@@ -170,6 +186,9 @@ export const MetaPublishSection = ({
   };
 
   const status = meta.publish_status || "draft";
+  const hasFile = !!meta.drive_file_id || !!meta.media_url;
+  const isImage = meta.drive_file_mime_type?.startsWith("image/");
+  const isVideo = meta.drive_file_mime_type?.startsWith("video/");
 
   return (
     <div className="space-y-3 p-3 border rounded-lg bg-muted/20">
@@ -203,26 +222,81 @@ export const MetaPublishSection = ({
 
       <MetaConnectionButton clientId={clientId} clientName={clientName} compact />
 
+      {/* File picker section */}
       <div className="space-y-2">
-        <Label className="text-xs">Archivo desde Google Drive (URL pública o "cualquiera con el enlace")</Label>
-        <div className="flex gap-2">
-          <Input
-            placeholder="https://drive.google.com/file/d/..."
-            value={driveUrl}
-            onChange={(e) => setDriveUrl(e.target.value)}
-            className="text-xs"
-          />
-          <Button type="button" size="sm" variant="secondary" onClick={handlePrepareMedia} disabled={busy || !driveUrl}>
-            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Preparar"}
+        <Label className="text-xs">Archivo</Label>
+
+        {hasFile ? (
+          <div className="flex items-center gap-3 p-2 border rounded-md bg-background">
+            <div className="w-14 h-14 rounded bg-muted flex items-center justify-center overflow-hidden shrink-0">
+              {isImage && meta.media_url ? (
+                <img src={meta.media_url} alt="preview" className="w-full h-full object-cover" />
+              ) : isVideo ? (
+                <FileVideo className="h-7 w-7 text-muted-foreground" />
+              ) : (
+                <FileImage className="h-7 w-7 text-muted-foreground" />
+              )}
+            </div>
+            <div className="flex-1 min-w-0 text-xs space-y-0.5">
+              <div className="font-medium truncate">{meta.drive_file_name || "Archivo de Drive"}</div>
+              <div className="text-muted-foreground">
+                {meta.drive_file_mime_type || "—"}
+                {meta.drive_file_size ? ` · ${(meta.drive_file_size / 1024 / 1024).toFixed(2)} MB` : ""}
+              </div>
+              <div className="flex gap-3 pt-0.5">
+                {meta.media_url && (
+                  <a href={meta.media_url} target="_blank" rel="noreferrer" className="text-blue-500 inline-flex items-center gap-1">
+                    <Link2 className="h-3 w-3" /> Ver preparado
+                  </a>
+                )}
+                {meta.drive_file_url && (
+                  <a href={meta.drive_file_url} target="_blank" rel="noreferrer" className="text-muted-foreground inline-flex items-center gap-1">
+                    <ExternalLink className="h-3 w-3" /> Drive
+                  </a>
+                )}
+              </div>
+            </div>
+            <Button size="sm" variant="outline" onClick={() => setPickerOpen(true)} disabled={busy}>
+              Cambiar
+            </Button>
+          </div>
+        ) : (
+          <Button type="button" variant="secondary" size="sm" onClick={() => setPickerOpen(true)} disabled={busy} className="gap-2 w-full">
+            <FolderOpen className="h-4 w-4" /> Elegir archivo de Google Drive
           </Button>
-        </div>
-        {meta.media_url && (
-          <a href={meta.media_url} target="_blank" rel="noreferrer" className="text-xs text-blue-500 flex items-center gap-1">
-            <Link2 className="h-3 w-3" /> Archivo listo en Storage
-          </a>
         )}
+
+        {hasFile && !meta.media_url && meta.drive_file_id && (
+          <Button size="sm" variant="outline" onClick={() => prepareFromDrive({ drive_file_id: meta.drive_file_id! })} disabled={busy} className="w-full">
+            {busy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+            Preparar archivo
+          </Button>
+        )}
+
+        <button
+          type="button"
+          className="text-[11px] text-muted-foreground underline"
+          onClick={() => setShowAdvanced((v) => !v)}
+        >
+          {showAdvanced ? "Ocultar" : "Usar enlace manual de Drive (avanzado)"}
+        </button>
+
+        {showAdvanced && (
+          <div className="flex gap-2">
+            <Input
+              placeholder="https://drive.google.com/file/d/..."
+              value={manualUrl}
+              onChange={(e) => setManualUrl(e.target.value)}
+              className="text-xs"
+            />
+            <Button size="sm" variant="secondary" onClick={handleManualPrepare} disabled={busy || !manualUrl}>
+              Preparar
+            </Button>
+          </div>
+        )}
+
         <div className="text-[11px] text-muted-foreground">
-          Recomendado: Reels 9:16 MP4, fotos JPG/PNG buena calidad. Editado y listo para subir.
+          Formatos permitidos: JPG, PNG, MP4. Reels 9:16, fotos buena calidad.
         </div>
       </div>
 
@@ -232,7 +306,7 @@ export const MetaPublishSection = ({
           value={caption}
           onChange={(e) => setCaption(e.target.value)}
           className="min-h-[80px] text-xs"
-          placeholder="Copy a publicar en redes (se autocompleta del copywriting)"
+          placeholder="Copy a publicar en redes"
         />
       </div>
 
@@ -254,7 +328,7 @@ export const MetaPublishSection = ({
       </div>
 
       <div className="space-y-1 pt-2 border-t">
-        <Label className="text-xs flex items-center gap-1"><CalendarIcon className="h-3 w-3" /> Programar (V2 - scheduler aún no activo)</Label>
+        <Label className="text-xs flex items-center gap-1"><CalendarIcon className="h-3 w-3" /> Programar (V2)</Label>
         <div className="flex gap-2">
           <Input type="datetime-local" value={scheduleAt} onChange={(e) => setScheduleAt(e.target.value)} className="text-xs" />
           <Button type="button" size="sm" variant="outline" onClick={handleSchedule} disabled={busy || !meta.media_url}>
@@ -276,6 +350,8 @@ export const MetaPublishSection = ({
           {meta.facebook_post_id && <div>FB post id: {meta.facebook_post_id}</div>}
         </div>
       )}
+
+      <DriveFilePickerDialog open={pickerOpen} onOpenChange={setPickerOpen} onSelect={handleDrivePick} />
     </div>
   );
 };
