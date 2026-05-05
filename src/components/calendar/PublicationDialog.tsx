@@ -70,77 +70,10 @@ export const PublicationDialog = ({
   const [showPackageDialog, setShowPackageDialog] = useState(false);
   const [pendingStatusChange, setPendingStatusChange] = useState<string | null>(null);
   
-  // Refs para control total
-  const dialogRef = useRef<HTMLDivElement>(null);
-  const preventCloseRef = useRef(true);
-
   // Sincronizar estado interno con prop externa
   useEffect(() => {
-    console.log('Syncing internal state with prop:', open);
     setInternalOpen(open);
-    if (open) {
-      preventCloseRef.current = true;
-    }
   }, [open]);
-
-  // Prevenir cierre por cualquier evento del navegador
-  useEffect(() => {
-    if (!internalOpen) return;
-
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      console.log('Before unload prevented');
-      e.preventDefault();
-      return '';
-    };
-
-    const handleVisibilityChange = () => {
-      console.log('Visibility change - keeping dialog open');
-      if (document.hidden) {
-        // El documento se está ocultando, pero mantenemos el diálogo abierto
-        setTimeout(() => {
-          if (preventCloseRef.current && !internalOpen) {
-            console.log('Forcing dialog to reopen after visibility change');
-            setInternalOpen(true);
-          }
-        }, 100);
-      }
-    };
-
-    const handleFocusOut = (e: FocusEvent) => {
-      console.log('Focus out prevented');
-      e.preventDefault();
-    };
-
-    const handleBlur = (e: FocusEvent) => {
-      console.log('Blur prevented');
-      e.preventDefault();
-    };
-
-    // Agregar múltiples listeners para capturar todos los eventos posibles
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('blur', handleBlur);
-    window.addEventListener('focusout', handleFocusOut);
-
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('blur', handleBlur);
-      window.removeEventListener('focusout', handleFocusOut);
-    };
-  }, [internalOpen]);
-
-  // Monitorear cambios no autorizados del estado del diálogo
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (preventCloseRef.current && open && !internalOpen) {
-        console.log('Detected unauthorized dialog close - reopening');
-        setInternalOpen(true);
-      }
-    }, 100);
-
-    return () => clearInterval(interval);
-  }, [open, internalOpen]);
 
   const handleOpenSocialLinks = () => {
     if (!client?.clientInfo?.socialNetworks) {
@@ -185,31 +118,18 @@ export const PublicationDialog = ({
     return name !== publication.name || type !== publication.type || description !== (publication.description || "") || copywriting !== (publication.copywriting || "") || designer !== (publication.designer || "no_designer") || status !== (publication.needs_recording ? 'needs_recording' : publication.needs_editing ? 'needs_editing' : publication.in_editing ? 'in_editing' : publication.in_review ? 'in_review' : publication.approved ? 'approved' : publication.is_published ? 'published' : 'needs_recording') || JSON.stringify(links) !== (publication.links || "[]");
   }, [name, type, description, copywriting, designer, status, links, publication]);
 
-  // CONTROL ABSOLUTO - Bloquear TODAS las formas de cierre automático
+  // Solo permitimos cerrar el dialog cuando el usuario clickea explícitamente
+  // (Cerrar / Guardar / Eliminar). preventAutoClose en DialogContent bloquea
+  // outside-click y Escape, así no se cierra al abrir picker anidado.
   const handleRadixOpenChange = (requestedOpen: boolean) => {
-    console.log('Radix requested open change:', requestedOpen, 'prevented:', preventCloseRef.current);
-    
-    // Solo permitir si hemos autorizado explícitamente el cierre
-    if (!requestedOpen && preventCloseRef.current) {
-      console.log('BLOCKING Radix close request');
-      // No hacer nada - mantener abierto forzosamente
-      return;
-    }
-    
-    if (!requestedOpen && !preventCloseRef.current) {
-      console.log('Allowing authorized close');
-      setInternalOpen(false);
-      onOpenChange(false);
-    }
+    if (!requestedOpen) return; // ignorar peticiones de cierre automático
+    setInternalOpen(true);
   };
 
   const handleAuthorizedClose = () => {
-    console.log('Authorized close initiated');
     if (hasChanges()) {
       setShowConfirmDialog(true);
     } else {
-      console.log('No changes - proceeding with authorized close');
-      preventCloseRef.current = false;
       setInternalOpen(false);
       onOpenChange(false);
     }
