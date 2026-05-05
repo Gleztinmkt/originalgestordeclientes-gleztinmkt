@@ -647,6 +647,7 @@ export type Database = {
           instagram_media_id: string | null
           is_published: boolean | null
           links: string | null
+          media_items: Json | null
           media_storage_path: string | null
           media_url: string | null
           meta_caption: string | null
@@ -689,6 +690,7 @@ export type Database = {
           instagram_media_id?: string | null
           is_published?: boolean | null
           links?: string | null
+          media_items?: Json | null
           media_storage_path?: string | null
           media_url?: string | null
           meta_caption?: string | null
@@ -731,6 +733,7 @@ export type Database = {
           instagram_media_id?: string | null
           is_published?: boolean | null
           links?: string | null
+          media_items?: Json | null
           media_storage_path?: string | null
           media_url?: string | null
           meta_caption?: string | null
