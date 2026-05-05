@@ -42,6 +42,27 @@ const DialogContent = React.forwardRef<
     preventAutoClose?: boolean;
   }
 >(({ className, children, preventAutoClose, ...props }, ref) => {
+  // When preventAutoClose is true, we block ALL automatic close paths so the
+  // dialog can only be closed by an explicit user action (close button, save,
+  // delete, etc). This includes:
+  //  - clicking outside (pointerDownOutside / interactOutside)
+  //  - pressing Escape (escapeKeyDown)
+  //  - focus moving outside the dialog because the user switched browser tab
+  //    or another window stole focus (focusOutside / window blur)
+  const userHandlers = {
+    onPointerDownOutside: props.onPointerDownOutside,
+    onInteractOutside: props.onInteractOutside,
+    onEscapeKeyDown: props.onEscapeKeyDown,
+    onFocusOutside: props.onFocusOutside,
+  };
+  const {
+    onPointerDownOutside: _a,
+    onInteractOutside: _b,
+    onEscapeKeyDown: _c,
+    onFocusOutside: _d,
+    ...restProps
+  } = props;
+
   return (
     <DialogPortal>
       <DialogOverlay />
@@ -51,11 +72,23 @@ const DialogContent = React.forwardRef<
           "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg max-h-[90vh] overflow-y-auto",
           className
         )}
-        onPointerDownOutside={preventAutoClose ? (e) => e.preventDefault() : props.onPointerDownOutside}
-        onInteractOutside={preventAutoClose ? (e) => e.preventDefault() : props.onInteractOutside}
-        onEscapeKeyDown={preventAutoClose ? (e) => e.preventDefault() : props.onEscapeKeyDown}
-        onFocusOutside={preventAutoClose ? (e) => e.preventDefault() : props.onFocusOutside}
-        {...props}
+        {...restProps}
+        onPointerDownOutside={(e) => {
+          if (preventAutoClose) e.preventDefault();
+          userHandlers.onPointerDownOutside?.(e);
+        }}
+        onInteractOutside={(e) => {
+          if (preventAutoClose) e.preventDefault();
+          userHandlers.onInteractOutside?.(e);
+        }}
+        onEscapeKeyDown={(e) => {
+          if (preventAutoClose) e.preventDefault();
+          userHandlers.onEscapeKeyDown?.(e);
+        }}
+        onFocusOutside={(e) => {
+          if (preventAutoClose) e.preventDefault();
+          userHandlers.onFocusOutside?.(e);
+        }}
       >
         {children}
         <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
