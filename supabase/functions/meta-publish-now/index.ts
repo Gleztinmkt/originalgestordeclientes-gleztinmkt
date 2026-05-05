@@ -5,39 +5,71 @@ type AdminClient = ReturnType<typeof createClient>;
 
 const FB_VER = "v25.0";
 
-async function publishToInstagram(igUserId: string, pageToken: string, mediaUrl: string, caption: string, isVideo: boolean) {
-  const createUrl = `https://graph.facebook.com/${FB_VER}/${igUserId}/media`;
+// Crea un container IG (item)
+async function igCreateContainer(igUserId: string, pageToken: string, opts: {
+  mediaUrl: string;
+  isVideo: boolean;
+  caption?: string;
+  isCarouselItem?: boolean;
+}) {
+  const url = `https://graph.facebook.com/${FB_VER}/${igUserId}/media`;
   const params = new URLSearchParams();
-  if (isVideo) {
-    params.set("media_type", "REELS");
-    params.set("video_url", mediaUrl);
+  if (opts.isVideo) {
+    params.set("media_type", opts.isCarouselItem ? "VIDEO" : "REELS");
+    params.set("video_url", opts.mediaUrl);
   } else {
-    params.set("image_url", mediaUrl);
+    params.set("image_url", opts.mediaUrl);
   }
-  params.set("caption", caption || "");
+  if (opts.isCarouselItem) params.set("is_carousel_item", "true");
+  if (opts.caption !== undefined) params.set("caption", opts.caption);
   params.set("access_token", pageToken);
+  const r = await fetch(url, { method: "POST", body: params }).then((x) => x.json());
+  if (!r.id) throw new Error("IG create container failed: " + JSON.stringify(r));
+  return r.id as string;
+}
 
-  const createResp = await fetch(createUrl, { method: "POST", body: params }).then(r => r.json());
-  if (!createResp.id) throw new Error("IG create container failed: " + JSON.stringify(createResp));
-  const containerId = createResp.id;
-
-  // For videos/reels, poll until ready
-  if (isVideo) {
-    for (let i = 0; i < 30; i++) {
-      await new Promise(r => setTimeout(r, 3000));
-      const status = await fetch(`https://graph.facebook.com/${FB_VER}/${containerId}?fields=status_code&access_token=${pageToken}`).then(r => r.json());
-      if (status.status_code === "FINISHED") break;
-      if (status.status_code === "ERROR") throw new Error("IG video processing error: " + JSON.stringify(status));
-    }
+async function igWaitReady(containerId: string, pageToken: string) {
+  for (let i = 0; i < 30; i++) {
+    await new Promise((r) => setTimeout(r, 3000));
+    const s = await fetch(`https://graph.facebook.com/${FB_VER}/${containerId}?fields=status_code&access_token=${pageToken}`).then((r) => r.json());
+    if (s.status_code === "FINISHED") return;
+    if (s.status_code === "ERROR") throw new Error("IG processing error: " + JSON.stringify(s));
   }
+}
 
-  const publishUrl = `https://graph.facebook.com/${FB_VER}/${igUserId}/media_publish`;
-  const pubParams = new URLSearchParams();
-  pubParams.set("creation_id", containerId);
-  pubParams.set("access_token", pageToken);
-  const pubResp = await fetch(publishUrl, { method: "POST", body: pubParams }).then(r => r.json());
-  if (!pubResp.id) throw new Error("IG publish failed: " + JSON.stringify(pubResp));
-  return pubResp.id;
+async function igPublish(igUserId: string, pageToken: string, containerId: string) {
+  const url = `https://graph.facebook.com/${FB_VER}/${igUserId}/media_publish`;
+  const p = new URLSearchParams();
+  p.set("creation_id", containerId);
+  p.set("access_token", pageToken);
+  const r = await fetch(url, { method: "POST", body: p }).then((x) => x.json());
+  if (!r.id) throw new Error("IG publish failed: " + JSON.stringify(r));
+  return r.id as string;
+}
+
+async function publishToInstagramSingle(igUserId: string, pageToken: string, mediaUrl: string, caption: string, isVideo: boolean) {
+  const containerId = await igCreateContainer(igUserId, pageToken, { mediaUrl, isVideo, caption });
+  if (isVideo) await igWaitReady(containerId, pageToken);
+  return await igPublish(igUserId, pageToken, containerId);
+}
+
+async function publishToInstagramCarousel(igUserId: string, pageToken: string, items: Array<{ mediaUrl: string; isVideo: boolean }>, caption: string) {
+  const childIds: string[] = [];
+  for (const it of items) {
+    const cid = await igCreateContainer(igUserId, pageToken, { mediaUrl: it.mediaUrl, isVideo: it.isVideo, isCarouselItem: true });
+    if (it.isVideo) await igWaitReady(cid, pageToken);
+    childIds.push(cid);
+  }
+  // Crear el container CAROUSEL
+  const url = `https://graph.facebook.com/${FB_VER}/${igUserId}/media`;
+  const p = new URLSearchParams();
+  p.set("media_type", "CAROUSEL");
+  p.set("children", childIds.join(","));
+  p.set("caption", caption || "");
+  p.set("access_token", pageToken);
+  const r = await fetch(url, { method: "POST", body: p }).then((x) => x.json());
+  if (!r.id) throw new Error("IG carousel container failed: " + JSON.stringify(r));
+  return await igPublish(igUserId, pageToken, r.id);
 }
 
 async function publishToFacebook(pageId: string, pageToken: string, mediaUrl: string, caption: string, isVideo: boolean) {
@@ -47,7 +79,7 @@ async function publishToFacebook(pageId: string, pageToken: string, mediaUrl: st
     p.set("file_url", mediaUrl);
     p.set("description", caption || "");
     p.set("access_token", pageToken);
-    const r = await fetch(u, { method: "POST", body: p }).then(r => r.json());
+    const r = await fetch(u, { method: "POST", body: p }).then((r) => r.json());
     if (!r.id) throw new Error("FB video failed: " + JSON.stringify(r));
     return r.id;
   } else {
@@ -56,7 +88,7 @@ async function publishToFacebook(pageId: string, pageToken: string, mediaUrl: st
     p.set("url", mediaUrl);
     p.set("caption", caption || "");
     p.set("access_token", pageToken);
-    const r = await fetch(u, { method: "POST", body: p }).then(r => r.json());
+    const r = await fetch(u, { method: "POST", body: p }).then((r) => r.json());
     if (!r.id) throw new Error("FB photo failed: " + JSON.stringify(r));
     return r.post_id || r.id;
   }
@@ -72,52 +104,85 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
+    const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+
     const authHeader = req.headers.get("Authorization") ?? "";
     const token = authHeader.replace("Bearer ", "");
-    const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-    const { data: userData, error: userErr } = await admin.auth.getUser(token);
-    if (userErr || !userData?.user) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
-    if (!(await canManageMetaPublishing(admin, userData.user.id))) return new Response(JSON.stringify({ error: "Solo administradores pueden publicar en Meta" }), { status: 403, headers: corsHeaders });
+
+    // Permitir invocación desde el cron interno con la service role key (no hay user JWT)
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const isInternalCron = token === serviceKey;
+
+    if (!isInternalCron) {
+      const { data: userData, error: userErr } = await admin.auth.getUser(token);
+      if (userErr || !userData?.user) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      if (!(await canManageMetaPublishing(admin, userData.user.id))) {
+        return new Response(JSON.stringify({ error: "Solo administradores pueden publicar en Meta" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+    }
 
     const { publication_id } = await req.json();
-    if (!publication_id) return new Response(JSON.stringify({ error: "params" }), { status: 400, headers: corsHeaders });
+    if (!publication_id) return new Response(JSON.stringify({ error: "params" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
     const { data: pub } = await admin.from("publications").select("*").eq("id", publication_id).maybeSingle();
-    if (!pub) return new Response(JSON.stringify({ error: "publication not found" }), { status: 404, headers: corsHeaders });
-    if (!pub.media_url) return new Response(JSON.stringify({ error: "media_url missing. Run prepare-drive-media first." }), { status: 400, headers: corsHeaders });
+    if (!pub) return new Response(JSON.stringify({ error: "publication not found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+
+    const mediaItems: Array<{ media_url: string; drive_file_mime_type: string }> = Array.isArray(pub.media_items) && pub.media_items.length > 0
+      ? pub.media_items
+      : (pub.media_url ? [{ media_url: pub.media_url, drive_file_mime_type: pub.drive_file_mime_type || "" }] : []);
+
+    if (mediaItems.length === 0) {
+      return new Response(JSON.stringify({ error: "No hay archivo preparado. Subí uno desde Drive primero." }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
 
     const { data: conn } = await admin.from("social_connections").select("*").eq("client_id", pub.client_id).maybeSingle();
     if (!conn || conn.status !== "connected") {
-      return new Response(JSON.stringify({ error: "Cliente sin conexión Meta activa" }), { status: 400, headers: corsHeaders });
+      return new Response(JSON.stringify({ error: "Cliente sin conexión Meta activa" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
-
     if (!conn.facebook_page_access_token_encrypted) {
       return new Response(JSON.stringify({ error: "Falta token de página de Facebook. Reconectá Meta y elegí la página." }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     await admin.from("publications").update({ publish_status: "publishing", publish_error: null }).eq("id", publication_id);
 
-    const isVideo = !!pub.media_url.match(/\.mp4(\?|$)/i) || pub.type === "reel";
     const caption = pub.meta_caption || pub.copywriting || "";
     const result: { instagram_media_id?: string; facebook_post_id?: string } = {};
+    const isCarousel = mediaItems.length > 1;
 
     try {
       if (pub.publish_to_instagram) {
-        if (!conn.instagram_business_account_id) {
-          throw new Error("Esta página no tiene cuenta de Instagram Business vinculada.");
+        if (!conn.instagram_business_account_id) throw new Error("Esta página no tiene cuenta de Instagram Business vinculada.");
+        if (isCarousel) {
+          result.instagram_media_id = await publishToInstagramCarousel(
+            conn.instagram_business_account_id,
+            conn.facebook_page_access_token_encrypted!,
+            mediaItems.map((m) => ({
+              mediaUrl: m.media_url,
+              isVideo: (m.drive_file_mime_type || "").startsWith("video/") || /\.mp4(\?|$)/i.test(m.media_url),
+            })),
+            caption,
+          );
+        } else {
+          const m = mediaItems[0];
+          const isVideo = (m.drive_file_mime_type || "").startsWith("video/") || /\.mp4(\?|$)/i.test(m.media_url) || pub.type === "reel";
+          result.instagram_media_id = await publishToInstagramSingle(
+            conn.instagram_business_account_id,
+            conn.facebook_page_access_token_encrypted!,
+            m.media_url, caption, isVideo,
+          );
         }
-        result.instagram_media_id = await publishToInstagram(
-          conn.instagram_business_account_id,
-          conn.facebook_page_access_token_encrypted!,
-          pub.media_url, caption, isVideo,
-        );
       }
       if (pub.publish_to_facebook) {
         if (!conn.facebook_page_id) throw new Error("Falta facebook_page_id en la conexión.");
+        // FB simple: publicar el primer archivo. (Carruseles FB requieren flujo separado)
+        const m = mediaItems[0];
+        const isVideo = (m.drive_file_mime_type || "").startsWith("video/") || /\.mp4(\?|$)/i.test(m.media_url);
         result.facebook_post_id = await publishToFacebook(
           conn.facebook_page_id,
           conn.facebook_page_access_token_encrypted!,
-          pub.media_url, caption, isVideo,
+          m.media_url, caption, isVideo,
         );
       }
 
@@ -135,10 +200,7 @@ Deno.serve(async (req) => {
     } catch (e) {
       const msg = (e as Error)?.message || String(e);
       console.error("meta-publish-now error:", msg);
-      await admin.from("publications").update({
-        publish_status: "failed",
-        publish_error: msg,
-      }).eq("id", publication_id);
+      await admin.from("publications").update({ publish_status: "failed", publish_error: msg }).eq("id", publication_id);
       return new Response(JSON.stringify({ error: msg }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
   } catch (e) {
