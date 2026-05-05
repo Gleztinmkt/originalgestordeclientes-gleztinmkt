@@ -159,7 +159,6 @@ export const PublicationDialog = ({
     });
     
     setShowConfirmDialog(false);
-    preventCloseRef.current = false;
     setInternalOpen(false);
     onOpenChange(false);
   };
@@ -516,7 +515,6 @@ export const PublicationDialog = ({
             <AlertDialogAction onClick={() => {
             handleSubmit();
             setShowConfirmDialog(false);
-            preventCloseRef.current = false;
             setInternalOpen(false);
             onOpenChange(false);
           }} className="bg-primary hover:bg-primary/90">
