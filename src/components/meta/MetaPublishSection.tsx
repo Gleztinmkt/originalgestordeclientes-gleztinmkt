@@ -93,6 +93,9 @@ export const MetaPublishSection = ({
   const [expanded, setExpanded] = useState(false);
   const [scheduledList, setScheduledList] = useState<ScheduledRow[]>([]);
   const [showScheduled, setShowScheduled] = useState(false);
+  const [coverOffset, setCoverOffset] = useState<string>("");
+  const [videoDuration, setVideoDuration] = useState<number>(0);
+  const videoRef = React.useRef<HTMLVideoElement | null>(null);
 
   const items: MediaItem[] = useMemo(() => {
     if (Array.isArray(meta.media_items) && meta.media_items.length > 0) return meta.media_items;
