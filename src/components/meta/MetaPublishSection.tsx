@@ -64,6 +64,7 @@ interface PubMeta {
   auto_publish_enabled?: boolean | null;
   instagram_media_id?: string | null;
   facebook_post_id?: string | null;
+  cover_thumb_offset?: number | null;
 }
 
 interface ScheduledRow {
