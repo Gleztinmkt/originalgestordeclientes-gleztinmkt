@@ -185,6 +185,9 @@ Deno.serve(async (req) => {
     const caption = pub.meta_caption || pub.copywriting || "";
     const result: { instagram_media_id?: string; facebook_post_id?: string } = {};
     const isCarousel = mediaItems.length > 1;
+    const thumbOffset = typeof pub.cover_thumb_offset === "number" && pub.cover_thumb_offset >= 0
+      ? pub.cover_thumb_offset
+      : null;
 
     try {
       if (pub.publish_to_instagram) {
@@ -206,6 +209,7 @@ Deno.serve(async (req) => {
             conn.instagram_business_account_id,
             conn.facebook_page_access_token_encrypted!,
             m.media_url, caption, isVideo,
+            isVideo ? thumbOffset : null,
           );
         }
       }
@@ -218,6 +222,7 @@ Deno.serve(async (req) => {
           conn.facebook_page_id,
           conn.facebook_page_access_token_encrypted!,
           m.media_url, caption, isVideo,
+          isVideo ? thumbOffset : null,
         );
       }
 
