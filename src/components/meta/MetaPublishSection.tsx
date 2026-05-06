@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -64,6 +64,7 @@ interface PubMeta {
   auto_publish_enabled?: boolean | null;
   instagram_media_id?: string | null;
   facebook_post_id?: string | null;
+  cover_thumb_offset?: number | null;
 }
 
 interface ScheduledRow {
@@ -92,6 +93,9 @@ export const MetaPublishSection = ({
   const [expanded, setExpanded] = useState(false);
   const [scheduledList, setScheduledList] = useState<ScheduledRow[]>([]);
   const [showScheduled, setShowScheduled] = useState(false);
+  const [coverOffset, setCoverOffset] = useState<string>("");
+  const [videoDuration, setVideoDuration] = useState<number>(0);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
 
   const items: MediaItem[] = useMemo(() => {
     if (Array.isArray(meta.media_items) && meta.media_items.length > 0) return meta.media_items;
@@ -112,7 +116,7 @@ export const MetaPublishSection = ({
     const [{ data: conn }, { data: pub }] = await Promise.all([
       (supabase as any).from("social_connections").select("*").eq("client_id", clientId).maybeSingle(),
       (supabase as any).from("publications")
-        .select("drive_file_id,drive_file_url,drive_file_name,drive_file_mime_type,drive_file_size,media_url,media_storage_path,media_items,publish_status,publish_error,meta_caption,publish_to_instagram,publish_to_facebook,scheduled_publish_at,auto_publish_enabled,instagram_media_id,facebook_post_id")
+        .select("drive_file_id,drive_file_url,drive_file_name,drive_file_mime_type,drive_file_size,media_url,media_storage_path,media_items,publish_status,publish_error,meta_caption,publish_to_instagram,publish_to_facebook,scheduled_publish_at,auto_publish_enabled,instagram_media_id,facebook_post_id,cover_thumb_offset")
         .eq("id", publication.id).maybeSingle(),
     ]);
     setConnection(conn || null);
@@ -122,6 +126,7 @@ export const MetaPublishSection = ({
       if (typeof pub.publish_to_instagram === "boolean") setToIG(pub.publish_to_instagram);
       if (typeof pub.publish_to_facebook === "boolean") setToFB(pub.publish_to_facebook);
       if (pub.scheduled_publish_at) setScheduleAt(pub.scheduled_publish_at.slice(0, 16));
+      setCoverOffset(typeof pub.cover_thumb_offset === "number" ? String(pub.cover_thumb_offset) : "");
     }
   };
 
@@ -222,14 +227,32 @@ export const MetaPublishSection = ({
     }
   };
 
+  const parseCoverOffset = (): number | null => {
+    const trimmed = coverOffset.trim();
+    if (trimmed === "") return null;
+    const n = Number(trimmed);
+    if (!Number.isFinite(n) || n < 0) return NaN as unknown as number; // sentinel inválido
+    return Math.floor(n);
+  };
+
   const handlePublishNow = async () => {
     if (!isConnected) return toast({ title: "Conectá Meta primero", variant: "destructive" });
     if (items.length === 0) return toast({ title: "Preparar archivo primero", variant: "destructive" });
     if (!toIG && !toFB) return toast({ title: "Elegí al menos una plataforma", variant: "destructive" });
 
+    const offsetParsed = parseCoverOffset();
+    if (Number.isNaN(offsetParsed)) {
+      return toast({ title: "Segundo de portada inválido", description: "Debe ser un número mayor o igual a 0", variant: "destructive" });
+    }
+
     setBusy(true);
     try {
-      await persistMeta({ meta_caption: caption, publish_to_instagram: toIG, publish_to_facebook: toFB });
+      await persistMeta({
+        meta_caption: caption,
+        publish_to_instagram: toIG,
+        publish_to_facebook: toFB,
+        cover_thumb_offset: offsetParsed,
+      } as any);
       const r = await runWithProgress("Publicando en Meta…", 90, () =>
         invokeEdgeFunction<any>("meta-publish-now", { publication_id: publication.id }),
       );
@@ -254,6 +277,10 @@ export const MetaPublishSection = ({
     if (when.getTime() < Date.now() + 60_000) {
       return toast({ title: "La fecha debe ser al menos en 1 minuto", variant: "destructive" });
     }
+    const offsetParsed = parseCoverOffset();
+    if (Number.isNaN(offsetParsed)) {
+      return toast({ title: "Segundo de portada inválido", description: "Debe ser un número mayor o igual a 0", variant: "destructive" });
+    }
     setBusy(true);
     try {
       await runWithProgress("Programando…", 95, async () => {
@@ -265,6 +292,7 @@ export const MetaPublishSection = ({
           auto_publish_enabled: true,
           publish_status: "scheduled",
           publish_error: null,
+          cover_thumb_offset: offsetParsed,
         } as any);
       });
       setProgress(100);
@@ -477,6 +505,72 @@ export const MetaPublishSection = ({
               Formatos: JPG, PNG, MP4. Carruseles hasta 10 archivos.
             </div>
           </div>
+
+          {/* Portada del Reel/Video — solo videos individuales */}
+          {hasFile && !isCarousel && isVideo && firstItem.media_url && (
+            <div className="space-y-2 p-3 border rounded-md bg-background">
+              <Label className="text-xs font-semibold">Portada del Reel / Video</Label>
+              <div className="text-[11px] text-muted-foreground">
+                Elegí el segundo del video que querés usar como portada. Si lo dejás vacío, Meta usará portada automática.
+              </div>
+              <video
+                ref={videoRef}
+                src={firstItem.media_url}
+                className="w-full max-h-[260px] rounded bg-black object-contain"
+                controls
+                preload="metadata"
+                onLoadedMetadata={(e) => {
+                  const d = (e.target as HTMLVideoElement).duration;
+                  if (Number.isFinite(d) && d > 0) setVideoDuration(Math.floor(d));
+                }}
+              />
+              <div className="flex items-center gap-2">
+                <Input
+                  type="number"
+                  min={0}
+                  max={videoDuration || undefined}
+                  step={1}
+                  placeholder="Ej: 2"
+                  value={coverOffset}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setCoverOffset(v);
+                    const n = Number(v);
+                    if (videoRef.current && Number.isFinite(n) && n >= 0) {
+                      try { videoRef.current.currentTime = n; } catch { /* ignore */ }
+                    }
+                  }}
+                  className="w-28 text-xs"
+                />
+                <span className="text-[11px] text-muted-foreground shrink-0">
+                  Segundo {videoDuration ? `(0 – ${videoDuration})` : ""}
+                </span>
+                {coverOffset !== "" && (
+                  <Button type="button" variant="ghost" size="sm" onClick={() => setCoverOffset("")} className="h-7 text-xs">
+                    Quitar
+                  </Button>
+                )}
+              </div>
+              {videoDuration > 0 && (
+                <input
+                  type="range"
+                  min={0}
+                  max={videoDuration}
+                  step={1}
+                  value={coverOffset === "" ? 0 : Math.min(Number(coverOffset) || 0, videoDuration)}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setCoverOffset(v);
+                    if (videoRef.current) {
+                      try { videoRef.current.currentTime = Number(v); } catch { /* ignore */ }
+                    }
+                  }}
+                  className="w-full accent-primary"
+                  aria-label="Slider de segundo de portada"
+                />
+              )}
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label className="text-xs">Caption (Meta)</Label>
