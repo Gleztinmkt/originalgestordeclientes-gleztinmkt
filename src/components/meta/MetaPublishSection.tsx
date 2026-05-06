@@ -116,7 +116,7 @@ export const MetaPublishSection = ({
     const [{ data: conn }, { data: pub }] = await Promise.all([
       (supabase as any).from("social_connections").select("*").eq("client_id", clientId).maybeSingle(),
       (supabase as any).from("publications")
-        .select("drive_file_id,drive_file_url,drive_file_name,drive_file_mime_type,drive_file_size,media_url,media_storage_path,media_items,publish_status,publish_error,meta_caption,publish_to_instagram,publish_to_facebook,scheduled_publish_at,auto_publish_enabled,instagram_media_id,facebook_post_id")
+        .select("drive_file_id,drive_file_url,drive_file_name,drive_file_mime_type,drive_file_size,media_url,media_storage_path,media_items,publish_status,publish_error,meta_caption,publish_to_instagram,publish_to_facebook,scheduled_publish_at,auto_publish_enabled,instagram_media_id,facebook_post_id,cover_thumb_offset")
         .eq("id", publication.id).maybeSingle(),
     ]);
     setConnection(conn || null);
@@ -126,6 +126,7 @@ export const MetaPublishSection = ({
       if (typeof pub.publish_to_instagram === "boolean") setToIG(pub.publish_to_instagram);
       if (typeof pub.publish_to_facebook === "boolean") setToFB(pub.publish_to_facebook);
       if (pub.scheduled_publish_at) setScheduleAt(pub.scheduled_publish_at.slice(0, 16));
+      setCoverOffset(typeof pub.cover_thumb_offset === "number" ? String(pub.cover_thumb_offset) : "");
     }
   };
 
