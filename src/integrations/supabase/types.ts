@@ -627,6 +627,7 @@ export type Database = {
           auto_publish_enabled: boolean | null
           client_id: string | null
           copywriting: string | null
+          cover_thumb_offset: number | null
           created_at: string
           date: string
           deleted_at: string | null
@@ -670,6 +671,7 @@ export type Database = {
           auto_publish_enabled?: boolean | null
           client_id?: string | null
           copywriting?: string | null
+          cover_thumb_offset?: number | null
           created_at?: string
           date: string
           deleted_at?: string | null
@@ -713,6 +715,7 @@ export type Database = {
           auto_publish_enabled?: boolean | null
           client_id?: string | null
           copywriting?: string | null
+          cover_thumb_offset?: number | null
           created_at?: string
           date?: string
           deleted_at?: string | null

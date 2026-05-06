@@ -4,17 +4,38 @@ import { X } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
-// Standard shadcn Dialog with optional `preventAutoClose` that just blocks
-// outside-click / escape / focus-out close behaviour. NO global listeners,
-// NO setInterval — those broke nested dialogs.
-const Dialog = React.forwardRef<
-  React.ElementRef<typeof DialogPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Root> & {
-    preventAutoClose?: boolean;
-  }
->(({ preventAutoClose, ...props }, _ref) => {
-  return <DialogPrimitive.Root {...props} modal={props.modal ?? true} />;
-});
+// Standard shadcn Dialog with optional `preventAutoClose`.
+// When preventAutoClose is set, ANY onOpenChange(false) coming from Radix
+// (focus loss, tab switch, escape, outside click, browser blur, etc.) is
+// IGNORED. The dialog can only close when an explicit close action is taken
+// (the Close button, or programmatic onOpenChange via Cerrar/Guardar/Eliminar
+// in the parent — those parents call onOpenChange themselves, bypassing this
+// guard, since they call the prop they received, not Radix internals).
+const Dialog = ({
+  preventAutoClose,
+  onOpenChange,
+  ...props
+}: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Root> & {
+  preventAutoClose?: boolean;
+}) => {
+  const handleOpenChange = React.useCallback(
+    (next: boolean) => {
+      if (preventAutoClose && !next) {
+        // Block every automatic close attempt. Parent must close via its own logic.
+        return;
+      }
+      onOpenChange?.(next);
+    },
+    [preventAutoClose, onOpenChange],
+  );
+  return (
+    <DialogPrimitive.Root
+      {...props}
+      modal={props.modal ?? true}
+      onOpenChange={handleOpenChange}
+    />
+  );
+};
 Dialog.displayName = "Dialog";
 
 const DialogTrigger = DialogPrimitive.Trigger
