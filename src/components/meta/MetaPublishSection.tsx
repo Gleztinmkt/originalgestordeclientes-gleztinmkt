@@ -227,14 +227,32 @@ export const MetaPublishSection = ({
     }
   };
 
+  const parseCoverOffset = (): number | null => {
+    const trimmed = coverOffset.trim();
+    if (trimmed === "") return null;
+    const n = Number(trimmed);
+    if (!Number.isFinite(n) || n < 0) return NaN as unknown as number; // sentinel inválido
+    return Math.floor(n);
+  };
+
   const handlePublishNow = async () => {
     if (!isConnected) return toast({ title: "Conectá Meta primero", variant: "destructive" });
     if (items.length === 0) return toast({ title: "Preparar archivo primero", variant: "destructive" });
     if (!toIG && !toFB) return toast({ title: "Elegí al menos una plataforma", variant: "destructive" });
 
+    const offsetParsed = parseCoverOffset();
+    if (Number.isNaN(offsetParsed)) {
+      return toast({ title: "Segundo de portada inválido", description: "Debe ser un número mayor o igual a 0", variant: "destructive" });
+    }
+
     setBusy(true);
     try {
-      await persistMeta({ meta_caption: caption, publish_to_instagram: toIG, publish_to_facebook: toFB });
+      await persistMeta({
+        meta_caption: caption,
+        publish_to_instagram: toIG,
+        publish_to_facebook: toFB,
+        cover_thumb_offset: offsetParsed,
+      } as any);
       const r = await runWithProgress("Publicando en Meta…", 90, () =>
         invokeEdgeFunction<any>("meta-publish-now", { publication_id: publication.id }),
       );
