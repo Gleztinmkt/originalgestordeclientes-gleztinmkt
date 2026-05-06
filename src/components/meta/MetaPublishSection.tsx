@@ -506,6 +506,72 @@ export const MetaPublishSection = ({
             </div>
           </div>
 
+          {/* Portada del Reel/Video — solo videos individuales */}
+          {hasFile && !isCarousel && isVideo && firstItem.media_url && (
+            <div className="space-y-2 p-3 border rounded-md bg-background">
+              <Label className="text-xs font-semibold">Portada del Reel / Video</Label>
+              <div className="text-[11px] text-muted-foreground">
+                Elegí el segundo del video que querés usar como portada. Si lo dejás vacío, Meta usará portada automática.
+              </div>
+              <video
+                ref={videoRef}
+                src={firstItem.media_url}
+                className="w-full max-h-[260px] rounded bg-black object-contain"
+                controls
+                preload="metadata"
+                onLoadedMetadata={(e) => {
+                  const d = (e.target as HTMLVideoElement).duration;
+                  if (Number.isFinite(d) && d > 0) setVideoDuration(Math.floor(d));
+                }}
+              />
+              <div className="flex items-center gap-2">
+                <Input
+                  type="number"
+                  min={0}
+                  max={videoDuration || undefined}
+                  step={1}
+                  placeholder="Ej: 2"
+                  value={coverOffset}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setCoverOffset(v);
+                    const n = Number(v);
+                    if (videoRef.current && Number.isFinite(n) && n >= 0) {
+                      try { videoRef.current.currentTime = n; } catch { /* ignore */ }
+                    }
+                  }}
+                  className="w-28 text-xs"
+                />
+                <span className="text-[11px] text-muted-foreground shrink-0">
+                  Segundo {videoDuration ? `(0 – ${videoDuration})` : ""}
+                </span>
+                {coverOffset !== "" && (
+                  <Button type="button" variant="ghost" size="sm" onClick={() => setCoverOffset("")} className="h-7 text-xs">
+                    Quitar
+                  </Button>
+                )}
+              </div>
+              {videoDuration > 0 && (
+                <input
+                  type="range"
+                  min={0}
+                  max={videoDuration}
+                  step={1}
+                  value={coverOffset === "" ? 0 : Math.min(Number(coverOffset) || 0, videoDuration)}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setCoverOffset(v);
+                    if (videoRef.current) {
+                      try { videoRef.current.currentTime = Number(v); } catch { /* ignore */ }
+                    }
+                  }}
+                  className="w-full accent-primary"
+                  aria-label="Slider de segundo de portada"
+                />
+              )}
+            </div>
+          )}
+
           <div className="space-y-2">
             <Label className="text-xs">Caption (Meta)</Label>
             <Textarea
