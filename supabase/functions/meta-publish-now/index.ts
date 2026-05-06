@@ -11,12 +11,17 @@ async function igCreateContainer(igUserId: string, pageToken: string, opts: {
   isVideo: boolean;
   caption?: string;
   isCarouselItem?: boolean;
+  thumbOffset?: number | null;
 }) {
   const url = `https://graph.facebook.com/${FB_VER}/${igUserId}/media`;
   const params = new URLSearchParams();
   if (opts.isVideo) {
     params.set("media_type", opts.isCarouselItem ? "VIDEO" : "REELS");
     params.set("video_url", opts.mediaUrl);
+    if (typeof opts.thumbOffset === "number" && opts.thumbOffset >= 0) {
+      // Meta espera milisegundos para thumb_offset
+      params.set("thumb_offset", String(Math.floor(opts.thumbOffset) * 1000));
+    }
   } else {
     params.set("image_url", opts.mediaUrl);
   }
