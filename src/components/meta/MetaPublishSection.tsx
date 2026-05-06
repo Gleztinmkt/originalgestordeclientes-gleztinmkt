@@ -277,6 +277,10 @@ export const MetaPublishSection = ({
     if (when.getTime() < Date.now() + 60_000) {
       return toast({ title: "La fecha debe ser al menos en 1 minuto", variant: "destructive" });
     }
+    const offsetParsed = parseCoverOffset();
+    if (Number.isNaN(offsetParsed)) {
+      return toast({ title: "Segundo de portada inválido", description: "Debe ser un número mayor o igual a 0", variant: "destructive" });
+    }
     setBusy(true);
     try {
       await runWithProgress("Programando…", 95, async () => {
@@ -288,6 +292,7 @@ export const MetaPublishSection = ({
           auto_publish_enabled: true,
           publish_status: "scheduled",
           publish_error: null,
+          cover_thumb_offset: offsetParsed,
         } as any);
       });
       setProgress(100);
