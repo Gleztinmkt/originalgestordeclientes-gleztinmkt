@@ -52,10 +52,29 @@ async function igPublish(igUserId: string, pageToken: string, containerId: strin
   return r.id as string;
 }
 
-async function publishToInstagramSingle(igUserId: string, pageToken: string, mediaUrl: string, caption: string, isVideo: boolean) {
-  const containerId = await igCreateContainer(igUserId, pageToken, { mediaUrl, isVideo, caption });
-  if (isVideo) await igWaitReady(containerId, pageToken);
-  return await igPublish(igUserId, pageToken, containerId);
+async function publishToInstagramSingle(
+  igUserId: string,
+  pageToken: string,
+  mediaUrl: string,
+  caption: string,
+  isVideo: boolean,
+  thumbOffset?: number | null,
+) {
+  // Intento 1: con thumb_offset si fue provisto. Si Meta lo rechaza, reintento sin.
+  try {
+    const containerId = await igCreateContainer(igUserId, pageToken, { mediaUrl, isVideo, caption, thumbOffset });
+    if (isVideo) await igWaitReady(containerId, pageToken);
+    return await igPublish(igUserId, pageToken, containerId);
+  } catch (e) {
+    const msg = (e as Error)?.message || "";
+    if (isVideo && typeof thumbOffset === "number" && /thumb/i.test(msg)) {
+      console.warn("IG rechazó thumb_offset, reintentando sin él:", msg);
+      const containerId = await igCreateContainer(igUserId, pageToken, { mediaUrl, isVideo, caption });
+      await igWaitReady(containerId, pageToken);
+      return await igPublish(igUserId, pageToken, containerId);
+    }
+    throw e;
+  }
 }
 
 async function publishToInstagramCarousel(igUserId: string, pageToken: string, items: Array<{ mediaUrl: string; isVideo: boolean }>, caption: string) {
@@ -77,12 +96,23 @@ async function publishToInstagramCarousel(igUserId: string, pageToken: string, i
   return await igPublish(igUserId, pageToken, r.id);
 }
 
-async function publishToFacebook(pageId: string, pageToken: string, mediaUrl: string, caption: string, isVideo: boolean) {
+async function publishToFacebook(
+  pageId: string,
+  pageToken: string,
+  mediaUrl: string,
+  caption: string,
+  isVideo: boolean,
+  thumbOffset?: number | null,
+) {
   if (isVideo) {
     const u = `https://graph.facebook.com/${FB_VER}/${pageId}/videos`;
     const p = new URLSearchParams();
     p.set("file_url", mediaUrl);
     p.set("description", caption || "");
+    if (typeof thumbOffset === "number" && thumbOffset >= 0) {
+      // FB Graph admite thumb_offset en milisegundos para /videos
+      p.set("thumb_offset", String(Math.floor(thumbOffset) * 1000));
+    }
     p.set("access_token", pageToken);
     const r = await fetch(u, { method: "POST", body: p }).then((r) => r.json());
     if (!r.id) throw new Error("FB video failed: " + JSON.stringify(r));
