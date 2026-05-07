@@ -22,6 +22,10 @@ export interface Publication {
   filming_time?: string | null;
   links?: string | null;
   copywriting?: string | null;
+  publish_status?: string | null;
+  publish_error?: string | null;
+  scheduled_publish_at?: string | null;
+  auto_publish_enabled?: boolean | null;
 }
 
 export interface PublicationNote {

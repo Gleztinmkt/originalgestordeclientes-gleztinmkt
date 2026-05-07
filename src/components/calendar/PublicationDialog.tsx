@@ -72,7 +72,7 @@ export const PublicationDialog = ({
   
   // Sincronizar estado interno con prop externa
   useEffect(() => {
-    setInternalOpen(open);
+    if (open) setInternalOpen(true);
   }, [open]);
 
   const handleOpenSocialLinks = () => {
@@ -125,6 +125,27 @@ export const PublicationDialog = ({
     if (!requestedOpen) return; // ignorar peticiones de cierre automático
     setInternalOpen(true);
   };
+
+  const forceKeepOpen = useCallback((event?: Event) => {
+    if (!internalOpen) return;
+    setInternalOpen(true);
+    if (!open) onOpenChange(true);
+  }, [internalOpen, onOpenChange, open]);
+
+  useEffect(() => {
+    if (!internalOpen) return;
+    const keepOpen = (event: Event) => forceKeepOpen(event);
+    window.addEventListener("blur", keepOpen, true);
+    window.addEventListener("focus", keepOpen, true);
+    document.addEventListener("visibilitychange", keepOpen, true);
+    document.addEventListener("pointerdown", keepOpen, true);
+    return () => {
+      window.removeEventListener("blur", keepOpen, true);
+      window.removeEventListener("focus", keepOpen, true);
+      document.removeEventListener("visibilitychange", keepOpen, true);
+      document.removeEventListener("pointerdown", keepOpen, true);
+    };
+  }, [forceKeepOpen, internalOpen]);
 
   const handleAuthorizedClose = () => {
     if (hasChanges()) {

@@ -133,7 +133,7 @@ export const DriveFilePickerDialog = ({ open, onOpenChange, onSelect, busy = fal
   };
 
   return (
-    <Dialog open={open} onOpenChange={isBusy ? () => undefined : onOpenChange}>
+    <Dialog open={open} onOpenChange={isBusy ? () => undefined : onOpenChange} preventAutoClose>
       <DialogContent
         className="sm:max-w-[760px] max-h-[85vh] flex flex-col"
         preventAutoClose
