@@ -128,7 +128,6 @@ export const PublicationDialog = ({
 
   const forceKeepOpen = useCallback((event?: Event) => {
     if (!internalOpen) return;
-    event?.preventDefault?.();
     setInternalOpen(true);
     if (!open) onOpenChange(true);
   }, [internalOpen, onOpenChange, open]);
