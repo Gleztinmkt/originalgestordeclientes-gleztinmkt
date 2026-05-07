@@ -97,6 +97,16 @@ export const PublicationCard = ({
   });
 
   const hasNotes = noteData && noteData.length > 0;
+  const metaPublishStatus = publication.publish_status || null;
+  const showMetaReadyIndicator = ["ready_to_publish", "scheduled", "published"].includes(metaPublishStatus || "");
+  const showMetaFailedIndicator = metaPublishStatus === "failed";
+  const metaIndicatorTitle = showMetaFailedIndicator
+    ? "Falló la publicación programada"
+    : metaPublishStatus === "scheduled"
+      ? "Programado en Meta"
+      : metaPublishStatus === "published"
+        ? "Subido a Meta"
+        : "Listo para subir a Meta";
   
   const latestNoteStatus = hasNotes ? noteData[0]?.status : null;
 
@@ -352,9 +362,17 @@ export const PublicationCard = ({
                   )}>
                     {displayTitle}
                   </p>
-                  {isAdmin && hasNotes && (
-                    <div className="flex-shrink-0 ml-auto">
-                      <StickyNote className={`h-3 w-3 ${getNoteStatusColor()}`} />
+                  {(showMetaReadyIndicator || showMetaFailedIndicator || (isAdmin && hasNotes)) && (
+                    <div className="flex-shrink-0 ml-auto flex items-center gap-1">
+                      {(showMetaReadyIndicator || showMetaFailedIndicator) && (
+                        <CheckCircle2
+                          className={cn("h-3 w-3", showMetaFailedIndicator ? "text-destructive" : "text-primary")}
+                          aria-label={metaIndicatorTitle}
+                        />
+                      )}
+                      {isAdmin && hasNotes && (
+                        <StickyNote className={`h-3 w-3 ${getNoteStatusColor()}`} />
+                      )}
                     </div>
                   )}
                 </div>
