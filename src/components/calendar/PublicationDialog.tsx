@@ -72,7 +72,7 @@ export const PublicationDialog = ({
   
   // Sincronizar estado interno con prop externa
   useEffect(() => {
-    setInternalOpen(open);
+    if (open) setInternalOpen(true);
   }, [open]);
 
   const handleOpenSocialLinks = () => {
