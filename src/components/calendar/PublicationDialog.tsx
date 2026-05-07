@@ -126,6 +126,28 @@ export const PublicationDialog = ({
     setInternalOpen(true);
   };
 
+  const forceKeepOpen = useCallback((event?: Event) => {
+    if (!internalOpen) return;
+    event?.preventDefault?.();
+    setInternalOpen(true);
+    if (!open) onOpenChange(true);
+  }, [internalOpen, onOpenChange, open]);
+
+  useEffect(() => {
+    if (!internalOpen) return;
+    const keepOpen = (event: Event) => forceKeepOpen(event);
+    window.addEventListener("blur", keepOpen, true);
+    window.addEventListener("focus", keepOpen, true);
+    document.addEventListener("visibilitychange", keepOpen, true);
+    document.addEventListener("pointerdown", keepOpen, true);
+    return () => {
+      window.removeEventListener("blur", keepOpen, true);
+      window.removeEventListener("focus", keepOpen, true);
+      document.removeEventListener("visibilitychange", keepOpen, true);
+      document.removeEventListener("pointerdown", keepOpen, true);
+    };
+  }, [forceKeepOpen, internalOpen]);
+
   const handleAuthorizedClose = () => {
     if (hasChanges()) {
       setShowConfirmDialog(true);
