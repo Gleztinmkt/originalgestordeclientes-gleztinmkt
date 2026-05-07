@@ -255,7 +255,7 @@ export const CalendarView = ({
       <FilterPanel clients={clients} designers={designers} selectedClient={selectedClient} selectedDesigner={selectedDesigner} selectedStatus={selectedStatus} selectedType={selectedType} selectedPackage={selectedPackage} onClientChange={setSelectedClient} onDesignerChange={setSelectedDesigner} onStatusChange={setSelectedStatus} onTypeChange={setSelectedType} onPackageChange={setSelectedPackage} onDesignerAdded={refetchDesigners} isDesigner={normalizedUserRole === 'designer'} />
     </div>;
 
-  const CalendarContent = () => <DragDropContext onDragEnd={handleDragEnd}>
+  const calendarContent = <DragDropContext onDragEnd={handleDragEnd}>
       {isMobile ? <div className="calendar-mobile-view">
           {daysInMonth.map(date => {
         const dateStr = format(date, 'yyyy-MM-dd');
@@ -360,7 +360,7 @@ export const CalendarView = ({
             </div>
           </div>
           <div className="flex-1 overflow-auto">
-            <CalendarContent />
+            {calendarContent}
           </div>
         </> : <>
           <div className="p-4 border-b space-y-4">
@@ -394,7 +394,7 @@ export const CalendarView = ({
             <FilterContent />
           </div>
           <div className="flex-1 p-4 overflow-auto">
-            <CalendarContent />
+            {calendarContent}
           </div>
         </>}
     </div>;
