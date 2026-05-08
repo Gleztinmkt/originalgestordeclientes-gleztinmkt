@@ -4,6 +4,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Publication } from "../client/publication/types";
 import { Client } from "../types/client";
 import { PublicationCard } from "./PublicationCard";
+import { PublicationDialog } from "./PublicationDialog";
 import { FilterPanel } from "./FilterPanel";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -37,6 +38,7 @@ export const CalendarView = ({
     [key: string]: boolean;
   }>({});
   const [highlightedPublicationId, setHighlightedPublicationId] = useState<string | null>(null);
+  const [selectedPublicationId, setSelectedPublicationId] = useState<string | null>(null);
   const isMobile = useIsMobile();
   const queryClient = useQueryClient();
 
@@ -229,6 +231,30 @@ export const CalendarView = ({
     return [...emptyDays, ...daysInMonth];
   }, [selectedDate, daysInMonth]);
 
+  const selectedPublication = useMemo(
+    () => allPublications.find((publication) => publication.id === selectedPublicationId) || null,
+    [allPublications, selectedPublicationId]
+  );
+
+  const selectedPublicationClient = selectedPublication
+    ? clients.find((client) => client.id === selectedPublication.client_id)
+    : undefined;
+
+  const handleSelectedPublicationDelete = async () => {
+    if (!selectedPublication) return;
+    const { error } = await supabase
+      .from('publications')
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('id', selectedPublication.id);
+    if (error) {
+      toast({ title: "Error", description: "No se pudo eliminar la publicación.", variant: "destructive" });
+      return;
+    }
+    toast({ title: "Publicación eliminada", description: "La publicación ha sido eliminada correctamente." });
+    setSelectedPublicationId(null);
+    refetch();
+  };
+
   if (isLoadingPublications) {
     return <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4 p-8">
         <div className="w-full max-w-md space-y-2">
@@ -277,7 +303,7 @@ export const CalendarView = ({
                     <div className="calendar-publications">
                         {dayPublications.map((publication, pubIndex) => <Draggable key={publication.id} draggableId={publication.id} index={pubIndex}>
                           {(provided, snapshot) => <div ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps} className={`draggable-item ${snapshot.isDragging ? 'dragging' : ''} ${highlightedPublicationId === publication.id ? 'animate-pulse bg-blue-100 dark:bg-blue-900' : ''}`}>
-                              <PublicationCard publication={publication} client={clients.find(c => c.id === publication.client_id)} onUpdate={() => { refetch(); onClientsUpdate(); }} displayTitle={`${clients.find(c => c.id === publication.client_id)?.name || ''} - ${publication.type === 'reel' ? 'R' : publication.type === 'carousel' ? 'C' : 'I'} - ${publication.name}`} designers={designers} isMobile={isMobile} />
+                              <PublicationCard publication={publication} client={clients.find(c => c.id === publication.client_id)} onUpdate={() => { refetch(); onClientsUpdate(); }} displayTitle={`${clients.find(c => c.id === publication.client_id)?.name || ''} - ${publication.type === 'reel' ? 'R' : publication.type === 'carousel' ? 'C' : 'I'} - ${publication.name}`} designers={designers} isMobile={isMobile} onOpenDetails={() => setSelectedPublicationId(publication.id)} />
                             </div>}
                         </Draggable>)}
                       {provided.placeholder}
@@ -306,7 +332,7 @@ export const CalendarView = ({
                       <div className="space-y-1">
                         {dayPublications.map((publication, pubIndex) => <Draggable key={publication.id} draggableId={publication.id} index={pubIndex}>
                             {(provided, snapshot) => <div ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps} className={`draggable-item ${snapshot.isDragging ? 'dragging' : ''} ${highlightedPublicationId === publication.id ? 'animate-pulse bg-blue-100 dark:bg-blue-900' : ''}`}>
-                                <PublicationCard publication={publication} client={clients.find(c => c.id === publication.client_id)} onUpdate={() => { refetch(); onClientsUpdate(); }} displayTitle={`${clients.find(c => c.id === publication.client_id)?.name || ''} - ${publication.type === 'reel' ? 'R' : publication.type === 'carousel' ? 'C' : 'I'} - ${publication.name}`} designers={designers} isMobile={isMobile} />
+                                <PublicationCard publication={publication} client={clients.find(c => c.id === publication.client_id)} onUpdate={() => { refetch(); onClientsUpdate(); }} displayTitle={`${clients.find(c => c.id === publication.client_id)?.name || ''} - ${publication.type === 'reel' ? 'R' : publication.type === 'carousel' ? 'C' : 'I'} - ${publication.name}`} designers={designers} isMobile={isMobile} onOpenDetails={() => setSelectedPublicationId(publication.id)} />
                               </div>}
                           </Draggable>)}
                         {provided.placeholder}
@@ -318,7 +344,8 @@ export const CalendarView = ({
         </div>}
     </DragDropContext>;
 
-  return <div className="h-screen flex flex-col">
+  return <>
+    <div className="h-screen flex flex-col">
       {isMobile ? <>
           <div className="flex items-center justify-between p-4 border-b">
             <div className="flex items-center space-x-2">
@@ -397,5 +424,19 @@ export const CalendarView = ({
             {calendarContent}
           </div>
         </>}
-    </div>;
+    </div>
+    {selectedPublication && (
+      <PublicationDialog
+        open={true}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen) setSelectedPublicationId(null);
+        }}
+        publication={selectedPublication}
+        client={selectedPublicationClient}
+        onUpdate={() => { refetch(); onClientsUpdate(); }}
+        onDelete={handleSelectedPublicationDelete}
+        designers={designers}
+      />
+    )}
+  </>;
 };

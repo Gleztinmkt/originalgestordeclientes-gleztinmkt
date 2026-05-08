@@ -271,6 +271,7 @@ export const MetaPublishSection = ({
   };
 
   const handleSchedule = async () => {
+    if (!isConnected) return toast({ title: "Conectá Meta primero", variant: "destructive" });
     if (!scheduleAt) return toast({ title: "Elegí fecha y hora", variant: "destructive" });
     if (items.length === 0) return toast({ title: "Preparar archivo primero", variant: "destructive" });
     const when = new Date(scheduleAt);
@@ -341,7 +342,7 @@ export const MetaPublishSection = ({
   const firstItem = items[0];
   const isImage = firstItem?.drive_file_mime_type?.startsWith("image/");
   const isVideo = firstItem?.drive_file_mime_type?.startsWith("video/");
-  const canMarkCrmPublished = (status === "published" || status === "scheduled") && !publication.is_published;
+  const canMarkCrmPublished = (status === "published" || (status === "scheduled" && isConnected)) && !publication.is_published;
 
   const handleCrmPublishedClick = () => {
     if (confirm("¿Querés cambiar el estado a publicado y descontar esta publicación del paquete?")) {
@@ -390,10 +391,12 @@ export const MetaPublishSection = ({
           disabled={busy}
           className="gap-2"
         >
-          {canMarkCrmPublished ? <CheckCircle2 className="h-4 w-4" /> : <Send className="h-4 w-4" />}
+          {!isConnected ? <Link2 className="h-4 w-4" /> : canMarkCrmPublished ? <CheckCircle2 className="h-4 w-4" /> : <Send className="h-4 w-4" />}
           {canMarkCrmPublished
             ? (status === "scheduled" ? "Marcar publicado" : "Post subido")
-            : (expanded ? "Ocultar opciones" : "Subir a Meta")}
+            : !isConnected
+              ? (expanded ? "Ocultar conexión" : "Conectar Meta")
+              : (expanded ? "Ocultar opciones" : "Subir a Meta")}
         </Button>
         {canMarkCrmPublished && (
           <Button type="button" size="sm" variant="outline" onClick={() => setExpanded((v) => !v)} disabled={busy}>
@@ -418,7 +421,7 @@ export const MetaPublishSection = ({
             <Alert>
               <AlertCircle className="h-4 w-4" />
               <AlertDescription className="text-xs">
-                Este cliente no tiene Instagram/Facebook conectado.
+                Este cliente no tiene Meta conectado. Conectalo para poder preparar, subir o programar publicaciones.
               </AlertDescription>
             </Alert>
           ) : (
@@ -432,7 +435,10 @@ export const MetaPublishSection = ({
             </div>
           )}
 
-          <MetaConnectionButton clientId={clientId} clientName={clientName} compact />
+          <MetaConnectionButton clientId={clientId} clientName={clientName} compact onConnectionChange={setConnection} />
+
+          {!isConnected ? null : (
+          <>
 
           {/* File picker section */}
           <div className="space-y-2">
@@ -662,6 +668,8 @@ export const MetaPublishSection = ({
               {meta.instagram_media_id && <div>IG media id: {meta.instagram_media_id}</div>}
               {meta.facebook_post_id && <div>FB post id: {meta.facebook_post_id}</div>}
             </div>
+          )}
+          </>
           )}
         </>
       )}

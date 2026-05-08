@@ -40,8 +40,9 @@ interface PublicationCardProps {
   client?: Client;
   onUpdate: () => void;
   displayTitle: string;
-  designers?: any[];
+  designers?: Array<{ id: string; name: string }>;
   isMobile?: boolean;
+  onOpenDetails?: () => void;
 }
 
 export const PublicationCard = ({ 
@@ -50,7 +51,8 @@ export const PublicationCard = ({
   onUpdate,
   displayTitle,
   designers = [],
-  isMobile = false
+  isMobile = false,
+  onOpenDetails
 }: PublicationCardProps) => {
   const [showDialog, setShowDialog] = useState(false);
   const [touchCount, setTouchCount] = useState(0);
@@ -122,6 +124,11 @@ export const PublicationCard = ({
     }
   };
 
+  const openPublicationDialog = () => {
+    if (onOpenDetails) onOpenDetails();
+    else setShowDialog(true);
+  };
+
   const handleTouch = () => {
     if (isMobile) {
       setTouchCount(prev => prev + 1);
@@ -137,7 +144,7 @@ export const PublicationCard = ({
       setTouchTimer(timer);
       
       if (touchCount === 1) {
-        setShowDialog(true);
+        openPublicationDialog();
         setTouchCount(0);
         if (touchTimer) clearTimeout(touchTimer);
       }
@@ -178,7 +185,7 @@ export const PublicationCard = ({
 
   const executeStatusChange = async (status: string) => {
     try {
-      const updates: any = {
+      const updates: Record<string, boolean> = {
         needs_recording: false,
         needs_editing: false,
         in_editing: false,
@@ -348,7 +355,7 @@ export const PublicationCard = ({
               "mb-1 hover:shadow-md transition-shadow cursor-pointer group",
               getStatusColor()
             )}
-            onClick={isMobile ? handleTouch : () => setShowDialog(true)}
+            onClick={isMobile ? handleTouch : openPublicationDialog}
           >
             <CardContent className="p-2">
               <div className="flex flex-col gap-1">
@@ -466,15 +473,17 @@ export const PublicationCard = ({
         </ContextMenuContent>
       </ContextMenu>
 
-      <PublicationDialog
-        open={showDialog}
-        onOpenChange={setShowDialog}
-        publication={publication}
-        client={client}
-        onUpdate={onUpdate}
-        onDelete={handleDelete}
-        designers={designers}
-      />
+      {!onOpenDetails && (
+        <PublicationDialog
+          open={showDialog}
+          onOpenChange={setShowDialog}
+          publication={publication}
+          client={client}
+          onUpdate={onUpdate}
+          onDelete={handleDelete}
+          designers={designers}
+        />
+      )}
 
       {isAdmin && (
         <>
