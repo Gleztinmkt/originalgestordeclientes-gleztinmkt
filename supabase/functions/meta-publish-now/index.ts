@@ -164,20 +164,25 @@ Deno.serve(async (req) => {
     const { data: pub } = await admin.from("publications").select("*").eq("id", publication_id).maybeSingle();
     if (!pub) return new Response(JSON.stringify({ error: "publication not found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
+    const failPublication = async (message: string, status = 400) => {
+      await admin.from("publications").update({ publish_status: "failed", publish_error: message }).eq("id", publication_id);
+      return new Response(JSON.stringify({ error: message }), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    };
+
     const mediaItems: Array<{ media_url: string; drive_file_mime_type: string }> = Array.isArray(pub.media_items) && pub.media_items.length > 0
       ? pub.media_items
       : (pub.media_url ? [{ media_url: pub.media_url, drive_file_mime_type: pub.drive_file_mime_type || "" }] : []);
 
     if (mediaItems.length === 0) {
-      return new Response(JSON.stringify({ error: "No hay archivo preparado. Subí uno desde Drive primero." }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return await failPublication("No hay archivo preparado. Subí uno desde Drive primero.");
     }
 
     const { data: conn } = await admin.from("social_connections").select("*").eq("client_id", pub.client_id).maybeSingle();
     if (!conn || conn.status !== "connected") {
-      return new Response(JSON.stringify({ error: "Cliente sin conexión Meta activa" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return await failPublication("Cliente sin conexión Meta activa");
     }
     if (!conn.facebook_page_access_token_encrypted) {
-      return new Response(JSON.stringify({ error: "Falta token de página de Facebook. Reconectá Meta y elegí la página." }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return await failPublication("Falta token de página de Facebook. Reconectá Meta y elegí la página.");
     }
 
     await admin.from("publications").update({ publish_status: "publishing", publish_error: null }).eq("id", publication_id);
