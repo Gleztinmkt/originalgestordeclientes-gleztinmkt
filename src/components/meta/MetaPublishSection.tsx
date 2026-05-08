@@ -342,7 +342,7 @@ export const MetaPublishSection = ({
   const firstItem = items[0];
   const isImage = firstItem?.drive_file_mime_type?.startsWith("image/");
   const isVideo = firstItem?.drive_file_mime_type?.startsWith("video/");
-  const canMarkCrmPublished = (status === "published" || status === "scheduled") && !publication.is_published;
+  const canMarkCrmPublished = (status === "published" || (status === "scheduled" && isConnected)) && !publication.is_published;
 
   const handleCrmPublishedClick = () => {
     if (confirm("¿Querés cambiar el estado a publicado y descontar esta publicación del paquete?")) {
