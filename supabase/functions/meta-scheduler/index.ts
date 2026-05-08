@@ -25,8 +25,18 @@ Deno.serve(async (req) => {
         },
         body: JSON.stringify({ publication_id: p.id }),
       }).then(r => r.json());
+      if (r.error) {
+        await admin.from("publications").update({
+          publish_status: "failed",
+          publish_error: r.error,
+        }).eq("id", p.id);
+      }
       results.push({ id: p.id, ok: !r.error, ...r });
     } catch (e) {
+      await admin.from("publications").update({
+        publish_status: "failed",
+        publish_error: String(e),
+      }).eq("id", p.id);
       results.push({ id: p.id, error: String(e) });
     }
   }
