@@ -4,6 +4,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Publication } from "../client/publication/types";
 import { Client } from "../types/client";
 import { PublicationCard } from "./PublicationCard";
+import { PublicationDialog } from "./PublicationDialog";
 import { FilterPanel } from "./FilterPanel";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -37,6 +38,7 @@ export const CalendarView = ({
     [key: string]: boolean;
   }>({});
   const [highlightedPublicationId, setHighlightedPublicationId] = useState<string | null>(null);
+  const [selectedPublicationId, setSelectedPublicationId] = useState<string | null>(null);
   const isMobile = useIsMobile();
   const queryClient = useQueryClient();
 
@@ -228,6 +230,30 @@ export const CalendarView = ({
     const emptyDays = Array(startDay).fill(null);
     return [...emptyDays, ...daysInMonth];
   }, [selectedDate, daysInMonth]);
+
+  const selectedPublication = useMemo(
+    () => allPublications.find((publication) => publication.id === selectedPublicationId) || null,
+    [allPublications, selectedPublicationId]
+  );
+
+  const selectedPublicationClient = selectedPublication
+    ? clients.find((client) => client.id === selectedPublication.client_id)
+    : undefined;
+
+  const handleSelectedPublicationDelete = async () => {
+    if (!selectedPublication) return;
+    const { error } = await supabase
+      .from('publications')
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('id', selectedPublication.id);
+    if (error) {
+      toast({ title: "Error", description: "No se pudo eliminar la publicación.", variant: "destructive" });
+      return;
+    }
+    toast({ title: "Publicación eliminada", description: "La publicación ha sido eliminada correctamente." });
+    setSelectedPublicationId(null);
+    refetch();
+  };
 
   if (isLoadingPublications) {
     return <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4 p-8">
