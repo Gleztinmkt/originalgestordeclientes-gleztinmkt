@@ -40,7 +40,7 @@ interface PublicationCardProps {
   client?: Client;
   onUpdate: () => void;
   displayTitle: string;
-  designers?: any[];
+  designers?: Array<{ id: string; name: string }>;
   isMobile?: boolean;
   onOpenDetails?: () => void;
 }
@@ -185,7 +185,7 @@ export const PublicationCard = ({
 
   const executeStatusChange = async (status: string) => {
     try {
-      const updates: any = {
+      const updates: Record<string, boolean> = {
         needs_recording: false,
         needs_editing: false,
         in_editing: false,
