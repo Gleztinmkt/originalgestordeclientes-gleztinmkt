@@ -14,7 +14,7 @@ Deno.serve(async (req) => {
     .lte("scheduled_publish_at", new Date().toISOString())
     .limit(20);
 
-  const results: any[] = [];
+  const results: Array<Record<string, unknown>> = [];
   for (const p of due ?? []) {
     try {
       const r = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/meta-publish-now`, {
