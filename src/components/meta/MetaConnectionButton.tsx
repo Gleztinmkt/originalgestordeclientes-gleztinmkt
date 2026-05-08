@@ -11,6 +11,7 @@ interface MetaConnectionButtonProps {
   clientId: string;
   clientName: string;
   compact?: boolean;
+  onConnectionChange?: (connection: SocialConnection | null) => void;
 }
 
 interface SocialConnection {
@@ -24,7 +25,7 @@ interface SocialConnection {
   token_expires_at: string | null;
 }
 
-export const MetaConnectionButton = ({ clientId, clientName, compact }: MetaConnectionButtonProps) => {
+export const MetaConnectionButton = ({ clientId, clientName, compact, onConnectionChange }: MetaConnectionButtonProps) => {
   const [connection, setConnection] = useState<SocialConnection | null>(null);
   const [loading, setLoading] = useState(false);
   const [pages, setPages] = useState<Array<{ id: string; name: string; ig: string | null }> | null>(null);
@@ -36,7 +37,9 @@ export const MetaConnectionButton = ({ clientId, clientName, compact }: MetaConn
       .select("*")
       .eq("client_id", clientId)
       .maybeSingle();
-    setConnection(data || null);
+    const nextConnection = data || null;
+    setConnection(nextConnection);
+    onConnectionChange?.(nextConnection);
   };
 
   useEffect(() => {
@@ -112,6 +115,7 @@ export const MetaConnectionButton = ({ clientId, clientName, compact }: MetaConn
     if (!confirm(`¿Desconectar Meta de ${clientName}?`)) return;
     await (supabase as any).from("social_connections").delete().eq("client_id", clientId);
     setConnection(null);
+    onConnectionChange?.(null);
     toast({ title: "Cuenta desconectada" });
   };
 
