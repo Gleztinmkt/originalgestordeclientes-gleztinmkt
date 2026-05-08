@@ -303,7 +303,7 @@ export const CalendarView = ({
                     <div className="calendar-publications">
                         {dayPublications.map((publication, pubIndex) => <Draggable key={publication.id} draggableId={publication.id} index={pubIndex}>
                           {(provided, snapshot) => <div ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps} className={`draggable-item ${snapshot.isDragging ? 'dragging' : ''} ${highlightedPublicationId === publication.id ? 'animate-pulse bg-blue-100 dark:bg-blue-900' : ''}`}>
-                              <PublicationCard publication={publication} client={clients.find(c => c.id === publication.client_id)} onUpdate={() => { refetch(); onClientsUpdate(); }} displayTitle={`${clients.find(c => c.id === publication.client_id)?.name || ''} - ${publication.type === 'reel' ? 'R' : publication.type === 'carousel' ? 'C' : 'I'} - ${publication.name}`} designers={designers} isMobile={isMobile} />
+                              <PublicationCard publication={publication} client={clients.find(c => c.id === publication.client_id)} onUpdate={() => { refetch(); onClientsUpdate(); }} displayTitle={`${clients.find(c => c.id === publication.client_id)?.name || ''} - ${publication.type === 'reel' ? 'R' : publication.type === 'carousel' ? 'C' : 'I'} - ${publication.name}`} designers={designers} isMobile={isMobile} onOpenDetails={() => setSelectedPublicationId(publication.id)} />
                             </div>}
                         </Draggable>)}
                       {provided.placeholder}
@@ -332,7 +332,7 @@ export const CalendarView = ({
                       <div className="space-y-1">
                         {dayPublications.map((publication, pubIndex) => <Draggable key={publication.id} draggableId={publication.id} index={pubIndex}>
                             {(provided, snapshot) => <div ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps} className={`draggable-item ${snapshot.isDragging ? 'dragging' : ''} ${highlightedPublicationId === publication.id ? 'animate-pulse bg-blue-100 dark:bg-blue-900' : ''}`}>
-                                <PublicationCard publication={publication} client={clients.find(c => c.id === publication.client_id)} onUpdate={() => { refetch(); onClientsUpdate(); }} displayTitle={`${clients.find(c => c.id === publication.client_id)?.name || ''} - ${publication.type === 'reel' ? 'R' : publication.type === 'carousel' ? 'C' : 'I'} - ${publication.name}`} designers={designers} isMobile={isMobile} />
+                                <PublicationCard publication={publication} client={clients.find(c => c.id === publication.client_id)} onUpdate={() => { refetch(); onClientsUpdate(); }} displayTitle={`${clients.find(c => c.id === publication.client_id)?.name || ''} - ${publication.type === 'reel' ? 'R' : publication.type === 'carousel' ? 'C' : 'I'} - ${publication.name}`} designers={designers} isMobile={isMobile} onOpenDetails={() => setSelectedPublicationId(publication.id)} />
                               </div>}
                           </Draggable>)}
                         {provided.placeholder}
