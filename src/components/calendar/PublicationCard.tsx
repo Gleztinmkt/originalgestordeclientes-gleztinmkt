@@ -375,7 +375,6 @@ export const PublicationCard = ({
                         <CheckCircle2
                           className={cn("h-3 w-3", showMetaFailedIndicator ? "text-destructive" : "text-primary")}
                           aria-label={metaIndicatorTitle}
-                          title={metaIndicatorTitle}
                         />
                       )}
                       {isAdmin && hasNotes && (
