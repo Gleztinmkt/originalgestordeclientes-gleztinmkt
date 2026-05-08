@@ -391,10 +391,12 @@ export const MetaPublishSection = ({
           disabled={busy}
           className="gap-2"
         >
-          {canMarkCrmPublished ? <CheckCircle2 className="h-4 w-4" /> : <Send className="h-4 w-4" />}
+          {!isConnected ? <Link2 className="h-4 w-4" /> : canMarkCrmPublished ? <CheckCircle2 className="h-4 w-4" /> : <Send className="h-4 w-4" />}
           {canMarkCrmPublished
             ? (status === "scheduled" ? "Marcar publicado" : "Post subido")
-            : (expanded ? "Ocultar opciones" : "Subir a Meta")}
+            : !isConnected
+              ? (expanded ? "Ocultar conexión" : "Conectar Meta")
+              : (expanded ? "Ocultar opciones" : "Subir a Meta")}
         </Button>
         {canMarkCrmPublished && (
           <Button type="button" size="sm" variant="outline" onClick={() => setExpanded((v) => !v)} disabled={busy}>
