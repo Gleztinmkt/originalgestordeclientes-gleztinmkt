@@ -607,10 +607,17 @@ export const MetaPublishSection = ({
           </div>
 
           {/* Programación interna en CRM */}
-          <div className="space-y-1 pt-2 border-t">
+          <div className="space-y-2 pt-2 border-t">
             <Label className="text-xs flex items-center gap-1">
               <CalendarIcon className="h-3 w-3" /> Programar (auto en CRM)
             </Label>
+
+            <AudienceActivityCard
+              clientId={clientId}
+              isConnected={isConnected}
+              onPickDateTime={(v) => setScheduleAt(v)}
+            />
+
             <div className="flex gap-2">
               <Input type="datetime-local" value={scheduleAt} onChange={(e) => setScheduleAt(e.target.value)} className="text-xs" />
               <Button type="button" size="sm" variant="outline" onClick={handleSchedule} disabled={busy || !hasFile}>
