@@ -250,6 +250,33 @@ export type Database = {
         }
         Relationships: []
       }
+      instagram_activity_insights: {
+        Row: {
+          client_id: string
+          created_at: string
+          data: Json
+          fetched_at: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          data?: Json
+          fetched_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          data?: Json
+          fetched_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       invoices: {
         Row: {
           amount: number
