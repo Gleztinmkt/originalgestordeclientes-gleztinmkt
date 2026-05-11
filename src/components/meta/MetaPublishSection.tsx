@@ -18,6 +18,7 @@ import { toast } from "@/hooks/use-toast";
 import { Publication } from "../client/publication/types";
 import { MetaConnectionButton } from "./MetaConnectionButton";
 import { DriveFilePickerDialog, DriveFile } from "./DriveFilePickerDialog";
+import { AudienceActivityCard } from "./AudienceActivityCard";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
