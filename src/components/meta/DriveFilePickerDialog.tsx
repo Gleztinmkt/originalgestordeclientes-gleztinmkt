@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, Folder, FileImage, FileVideo, ChevronLeft, Search, Users, Home, X, Check } from "lucide-react";
+import { Loader2, Folder, FileImage, FileVideo, ChevronLeft, Search, Users, Home, X, Check, Zap } from "lucide-react";
 import { invokeEdgeFunction } from "@/lib/edge-functions";
 import { toast } from "@/hooks/use-toast";
 
@@ -14,12 +14,19 @@ export interface DriveFile {
   thumbnailLink?: string;
   iconLink?: string;
   modifiedTime?: string;
+  parents?: string[];
 }
 
 interface DriveListResp {
   files: DriveFile[];
   nextPageToken?: string;
   error?: string;
+}
+
+interface Suggestion {
+  folder: DriveFile;
+  parentId: string;
+  parentName: string;
 }
 
 interface Props {
@@ -29,11 +36,13 @@ interface Props {
   busy?: boolean;
   /** Permite elegir varios (carrusel). Default false. */
   multiple?: boolean;
+  /** Nombre del cliente para sugerir carpeta recomendada. */
+  clientName?: string;
 }
 
 const FOLDER = "application/vnd.google-apps.folder";
 
-export const DriveFilePickerDialog = ({ open, onOpenChange, onSelect, busy = false, multiple = false }: Props) => {
+export const DriveFilePickerDialog = ({ open, onOpenChange, onSelect, busy = false, multiple = false, clientName }: Props) => {
   const [loading, setLoading] = useState(false);
   const [selecting, setSelecting] = useState(false);
   const [files, setFiles] = useState<DriveFile[]>([]);
@@ -42,6 +51,8 @@ export const DriveFilePickerDialog = ({ open, onOpenChange, onSelect, busy = fal
   const [stack, setStack] = useState<{ id: string | null; name: string }[]>([{ id: null, name: "Mi unidad" }]);
   const [sharedMode, setSharedMode] = useState(false);
   const [selected, setSelected] = useState<DriveFile[]>([]);
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
 
   const current = stack[stack.length - 1];
   const isInsideFolder = stack.length > 1;
@@ -56,9 +67,6 @@ export const DriveFilePickerDialog = ({ open, onOpenChange, onSelect, busy = fal
   const load = async () => {
     setLoading(true);
     try {
-      // Si estamos dentro de una carpeta, NO usamos search del lado servidor:
-      // pedimos todos los hijos y filtramos en cliente. Así no se "ocultan" archivos
-      // que no contienen la palabra que buscamos para entrar a la carpeta.
       const useServerSearch = !isInsideFolder && appliedSearch.trim().length > 0;
       const r = await invokeEdgeFunction<DriveListResp>("drive-list-files", {
         folderId: current.id,
@@ -75,8 +83,42 @@ export const DriveFilePickerDialog = ({ open, onOpenChange, onSelect, busy = fal
     }
   };
 
+  const findSuggestions = async () => {
+    if (!clientName) return;
+    setLoadingSuggestions(true);
+    try {
+      const matResp = await invokeEdgeFunction<DriveListResp>("drive-list-files", {
+        search: "Material Clientes",
+      });
+      const matFolders = (matResp?.files || []).filter(
+        (f) => f.mimeType === FOLDER && f.name.toLowerCase().trim() === "material clientes"
+      );
+
+      const allSuggestions: Suggestion[] = [];
+      for (const mat of matFolders) {
+        const clientResp = await invokeEdgeFunction<DriveListResp>("drive-list-files", {
+          folderId: mat.id,
+          search: clientName,
+        });
+        const clientFolders = (clientResp?.files || []).filter((f) => f.mimeType === FOLDER);
+        for (const cf of clientFolders) {
+          allSuggestions.push({ folder: cf, parentId: mat.id, parentName: mat.name });
+        }
+      }
+      setSuggestions(allSuggestions);
+    } catch {
+      // Silencioso: es un extra de conveniencia
+      setSuggestions([]);
+    } finally {
+      setLoadingSuggestions(false);
+    }
+  };
+
   useEffect(() => {
-    if (open) load();
+    if (open) {
+      load();
+      findSuggestions();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, stack, sharedMode, appliedSearch]);
 
@@ -121,7 +163,6 @@ export const DriveFilePickerDialog = ({ open, onOpenChange, onSelect, busy = fal
   const handleSearchKey = (e: React.KeyboardEvent) => {
     if (e.key !== "Enter") return;
     if (isInsideFolder) {
-      // dentro de carpeta el filtrado es local en vivo, Enter no hace nada
       return;
     }
     setAppliedSearch(searchInput.trim());
@@ -130,6 +171,15 @@ export const DriveFilePickerDialog = ({ open, onOpenChange, onSelect, busy = fal
   const clearSearch = () => {
     setSearchInput("");
     if (!isInsideFolder) setAppliedSearch("");
+  };
+
+  const navigateToSuggestion = (s: Suggestion) => {
+    setSharedMode(false);
+    setStack([
+      { id: null, name: "Mi unidad" },
+      { id: s.parentId, name: s.parentName },
+      { id: s.folder.id, name: s.folder.name },
+    ]);
   };
 
   return (
@@ -155,6 +205,41 @@ export const DriveFilePickerDialog = ({ open, onOpenChange, onSelect, busy = fal
             <Users className="h-3 w-3" /> Compartidos conmigo
           </Button>
         </div>
+
+        {clientName && (
+          <div className="space-y-1.5 rounded-md border bg-muted/30 p-2.5">
+            <div className="flex items-center gap-1.5 text-xs font-medium text-primary">
+              <Zap className="h-3.5 w-3.5" />
+              Recomendado para <span className="font-semibold">{clientName}</span>
+            </div>
+            {loadingSuggestions ? (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                Buscando carpeta…
+              </div>
+            ) : suggestions.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {suggestions.map((s) => (
+                  <Button
+                    key={s.folder.id}
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="h-auto py-1.5 px-2.5 text-xs gap-1.5 justify-start"
+                    onClick={() => navigateToSuggestion(s)}
+                  >
+                    <Folder className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                    <span className="truncate max-w-[200px]">{s.parentName} / <span className="font-medium">{s.folder.name}</span></span>
+                  </Button>
+                ))}
+              </div>
+            ) : (
+              <div className="text-xs text-muted-foreground">
+                No se encontró carpeta recomendada en <span className="font-medium">Material Clientes</span>.
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="flex gap-2 items-center text-xs text-muted-foreground">
           {isInsideFolder && (
