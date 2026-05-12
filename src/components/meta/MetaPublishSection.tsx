@@ -689,6 +689,8 @@ export const MetaPublishSection = ({
         busy={busy}
         multiple={pickerMultiple}
         clientName={clientName}
+        publicationName={publication?.name}
+        publicationDate={publication?.date}
       />
     </div>
   );
