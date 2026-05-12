@@ -102,6 +102,39 @@ export const DriveFilePickerDialog = ({ open, onOpenChange, onSelect, busy = fal
         (f) => f.mimeType === FOLDER && f.name.toLowerCase().trim() === "material clientes"
       );
 
+      const months = [
+        "enero", "febrero", "marzo", "abril", "mayo", "junio",
+        "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
+      ];
+      let pubDateInfo: { monthName: string; day: string; pretty: string } | null = null;
+      if (publicationDate) {
+        const d = new Date(publicationDate);
+        if (!isNaN(d.getTime())) {
+          pubDateInfo = {
+            monthName: months[d.getMonth()],
+            day: String(d.getDate()),
+            pretty: `${months[d.getMonth()]} ${d.getDate()}`,
+          };
+        }
+      }
+
+      const norm = (s: string) => s.toLowerCase().trim().replace(/\s+/g, " ");
+      const findChild = async (parentId: string, name: string): Promise<DriveFile | null> => {
+        const r = await invokeEdgeFunction<DriveListResp>("drive-list-files", {
+          folderId: parentId,
+          search: name,
+        });
+        const target = norm(name);
+        const exact = (r?.files || []).find(
+          (f) => f.mimeType === FOLDER && norm(f.name) === target
+        );
+        if (exact) return exact;
+        // Fallback: contiene
+        return (r?.files || []).find(
+          (f) => f.mimeType === FOLDER && norm(f.name).includes(target)
+        ) || null;
+      };
+
       const allSuggestions: Suggestion[] = [];
       for (const mat of matFolders) {
         const clientResp = await invokeEdgeFunction<DriveListResp>("drive-list-files", {
@@ -111,6 +144,34 @@ export const DriveFilePickerDialog = ({ open, onOpenChange, onSelect, busy = fal
         const clientFolders = (clientResp?.files || []).filter((f) => f.mimeType === FOLDER);
         for (const cf of clientFolders) {
           allSuggestions.push({ folder: cf, parentId: mat.id, parentName: mat.name });
+
+          // Intentar resolver post finalizados / mes / día
+          if (pubDateInfo) {
+            try {
+              const finalizados = await findChild(cf.id, "post finalizados");
+              if (!finalizados) continue;
+              const monthFolder = await findChild(finalizados.id, pubDateInfo.monthName);
+              if (!monthFolder) continue;
+              const dayFolder = await findChild(monthFolder.id, pubDateInfo.day);
+              if (!dayFolder) continue;
+              allSuggestions.push({
+                folder: dayFolder,
+                parentId: monthFolder.id,
+                parentName: monthFolder.name,
+                dateLabel: pubDateInfo.pretty,
+                navStack: [
+                  { id: null, name: "Mi unidad" },
+                  { id: mat.id, name: mat.name },
+                  { id: cf.id, name: cf.name },
+                  { id: finalizados.id, name: finalizados.name },
+                  { id: monthFolder.id, name: monthFolder.name },
+                  { id: dayFolder.id, name: dayFolder.name },
+                ],
+              });
+            } catch {
+              // ignorar y seguir
+            }
+          }
         }
       }
       setSuggestions(allSuggestions);
