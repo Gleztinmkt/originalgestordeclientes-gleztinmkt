@@ -294,15 +294,21 @@ export const DriveFilePickerDialog = ({ open, onOpenChange, onSelect, busy = fal
               <div className="flex flex-wrap gap-2">
                 {suggestions.map((s) => (
                   <Button
-                    key={s.folder.id}
+                    key={(s.dateLabel ? "date-" : "client-") + s.folder.id}
                     type="button"
                     size="sm"
-                    variant="outline"
+                    variant={s.dateLabel ? "default" : "outline"}
                     className="h-auto py-1.5 px-2.5 text-xs gap-1.5 justify-start"
                     onClick={() => navigateToSuggestion(s)}
                   >
-                    <Folder className="h-3.5 w-3.5 text-amber-500 shrink-0" />
-                    <span className="truncate max-w-[200px]">{s.parentName} / <span className="font-medium">{s.folder.name}</span></span>
+                    <Folder className="h-3.5 w-3.5 shrink-0" />
+                    {s.dateLabel ? (
+                      <span className="truncate max-w-[260px]">
+                        Contenido del <span className="font-semibold">{s.dateLabel}</span>
+                      </span>
+                    ) : (
+                      <span className="truncate max-w-[200px]">{s.parentName} / <span className="font-medium">{s.folder.name}</span></span>
+                    )}
                   </Button>
                 ))}
               </div>
