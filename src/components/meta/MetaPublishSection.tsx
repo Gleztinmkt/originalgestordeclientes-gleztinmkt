@@ -688,6 +688,7 @@ export const MetaPublishSection = ({
         onSelect={handleDrivePick}
         busy={busy}
         multiple={pickerMultiple}
+        clientName={clientName}
       />
     </div>
   );
