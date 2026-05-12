@@ -27,6 +27,10 @@ interface Suggestion {
   folder: DriveFile;
   parentId: string;
   parentName: string;
+  /** Si está presente, este botón es la "carpeta del día" (post finalizados/mes/día). */
+  dateLabel?: string;
+  /** Stack a usar al click para navegar derecho hasta esta carpeta. */
+  navStack?: { id: string | null; name: string }[];
 }
 
 interface Props {
@@ -38,11 +42,15 @@ interface Props {
   multiple?: boolean;
   /** Nombre del cliente para sugerir carpeta recomendada. */
   clientName?: string;
+  /** Nombre de la publicación (para futuras sugerencias por título). */
+  publicationName?: string;
+  /** Fecha ISO de la publicación (para sugerir post finalizados/mes/día). */
+  publicationDate?: string;
 }
 
 const FOLDER = "application/vnd.google-apps.folder";
 
-export const DriveFilePickerDialog = ({ open, onOpenChange, onSelect, busy = false, multiple = false, clientName }: Props) => {
+export const DriveFilePickerDialog = ({ open, onOpenChange, onSelect, busy = false, multiple = false, clientName, publicationName, publicationDate }: Props) => {
   const [loading, setLoading] = useState(false);
   const [selecting, setSelecting] = useState(false);
   const [files, setFiles] = useState<DriveFile[]>([]);
@@ -94,6 +102,39 @@ export const DriveFilePickerDialog = ({ open, onOpenChange, onSelect, busy = fal
         (f) => f.mimeType === FOLDER && f.name.toLowerCase().trim() === "material clientes"
       );
 
+      const months = [
+        "enero", "febrero", "marzo", "abril", "mayo", "junio",
+        "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
+      ];
+      let pubDateInfo: { monthName: string; day: string; pretty: string } | null = null;
+      if (publicationDate) {
+        const d = new Date(publicationDate);
+        if (!isNaN(d.getTime())) {
+          pubDateInfo = {
+            monthName: months[d.getMonth()],
+            day: String(d.getDate()),
+            pretty: `${months[d.getMonth()]} ${d.getDate()}`,
+          };
+        }
+      }
+
+      const norm = (s: string) => s.toLowerCase().trim().replace(/\s+/g, " ");
+      const findChild = async (parentId: string, name: string): Promise<DriveFile | null> => {
+        const r = await invokeEdgeFunction<DriveListResp>("drive-list-files", {
+          folderId: parentId,
+          search: name,
+        });
+        const target = norm(name);
+        const exact = (r?.files || []).find(
+          (f) => f.mimeType === FOLDER && norm(f.name) === target
+        );
+        if (exact) return exact;
+        // Fallback: contiene
+        return (r?.files || []).find(
+          (f) => f.mimeType === FOLDER && norm(f.name).includes(target)
+        ) || null;
+      };
+
       const allSuggestions: Suggestion[] = [];
       for (const mat of matFolders) {
         const clientResp = await invokeEdgeFunction<DriveListResp>("drive-list-files", {
@@ -103,6 +144,34 @@ export const DriveFilePickerDialog = ({ open, onOpenChange, onSelect, busy = fal
         const clientFolders = (clientResp?.files || []).filter((f) => f.mimeType === FOLDER);
         for (const cf of clientFolders) {
           allSuggestions.push({ folder: cf, parentId: mat.id, parentName: mat.name });
+
+          // Intentar resolver post finalizados / mes / día
+          if (pubDateInfo) {
+            try {
+              const finalizados = await findChild(cf.id, "post finalizados");
+              if (!finalizados) continue;
+              const monthFolder = await findChild(finalizados.id, pubDateInfo.monthName);
+              if (!monthFolder) continue;
+              const dayFolder = await findChild(monthFolder.id, pubDateInfo.day);
+              if (!dayFolder) continue;
+              allSuggestions.push({
+                folder: dayFolder,
+                parentId: monthFolder.id,
+                parentName: monthFolder.name,
+                dateLabel: pubDateInfo.pretty,
+                navStack: [
+                  { id: null, name: "Mi unidad" },
+                  { id: mat.id, name: mat.name },
+                  { id: cf.id, name: cf.name },
+                  { id: finalizados.id, name: finalizados.name },
+                  { id: monthFolder.id, name: monthFolder.name },
+                  { id: dayFolder.id, name: dayFolder.name },
+                ],
+              });
+            } catch {
+              // ignorar y seguir
+            }
+          }
         }
       }
       setSuggestions(allSuggestions);
@@ -175,6 +244,10 @@ export const DriveFilePickerDialog = ({ open, onOpenChange, onSelect, busy = fal
 
   const navigateToSuggestion = (s: Suggestion) => {
     setSharedMode(false);
+    if (s.navStack && s.navStack.length > 0) {
+      setStack(s.navStack);
+      return;
+    }
     setStack([
       { id: null, name: "Mi unidad" },
       { id: s.parentId, name: s.parentName },
@@ -221,15 +294,21 @@ export const DriveFilePickerDialog = ({ open, onOpenChange, onSelect, busy = fal
               <div className="flex flex-wrap gap-2">
                 {suggestions.map((s) => (
                   <Button
-                    key={s.folder.id}
+                    key={(s.dateLabel ? "date-" : "client-") + s.folder.id}
                     type="button"
                     size="sm"
-                    variant="outline"
+                    variant={s.dateLabel ? "default" : "outline"}
                     className="h-auto py-1.5 px-2.5 text-xs gap-1.5 justify-start"
                     onClick={() => navigateToSuggestion(s)}
                   >
-                    <Folder className="h-3.5 w-3.5 text-amber-500 shrink-0" />
-                    <span className="truncate max-w-[200px]">{s.parentName} / <span className="font-medium">{s.folder.name}</span></span>
+                    <Folder className="h-3.5 w-3.5 shrink-0" />
+                    {s.dateLabel ? (
+                      <span className="truncate max-w-[260px]">
+                        Contenido del <span className="font-semibold">{s.dateLabel}</span>
+                      </span>
+                    ) : (
+                      <span className="truncate max-w-[200px]">{s.parentName} / <span className="font-medium">{s.folder.name}</span></span>
+                    )}
                   </Button>
                 ))}
               </div>
