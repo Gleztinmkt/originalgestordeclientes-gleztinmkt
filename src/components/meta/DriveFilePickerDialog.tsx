@@ -27,6 +27,10 @@ interface Suggestion {
   folder: DriveFile;
   parentId: string;
   parentName: string;
+  /** Si está presente, este botón es la "carpeta del día" (post finalizados/mes/día). */
+  dateLabel?: string;
+  /** Stack a usar al click para navegar derecho hasta esta carpeta. */
+  navStack?: { id: string | null; name: string }[];
 }
 
 interface Props {
@@ -38,6 +42,10 @@ interface Props {
   multiple?: boolean;
   /** Nombre del cliente para sugerir carpeta recomendada. */
   clientName?: string;
+  /** Nombre de la publicación (para futuras sugerencias por título). */
+  publicationName?: string;
+  /** Fecha ISO de la publicación (para sugerir post finalizados/mes/día). */
+  publicationDate?: string;
 }
 
 const FOLDER = "application/vnd.google-apps.folder";
