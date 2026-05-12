@@ -50,7 +50,7 @@ interface Props {
 
 const FOLDER = "application/vnd.google-apps.folder";
 
-export const DriveFilePickerDialog = ({ open, onOpenChange, onSelect, busy = false, multiple = false, clientName }: Props) => {
+export const DriveFilePickerDialog = ({ open, onOpenChange, onSelect, busy = false, multiple = false, clientName, publicationName, publicationDate }: Props) => {
   const [loading, setLoading] = useState(false);
   const [selecting, setSelecting] = useState(false);
   const [files, setFiles] = useState<DriveFile[]>([]);
