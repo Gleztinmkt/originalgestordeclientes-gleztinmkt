@@ -244,6 +244,10 @@ export const DriveFilePickerDialog = ({ open, onOpenChange, onSelect, busy = fal
 
   const navigateToSuggestion = (s: Suggestion) => {
     setSharedMode(false);
+    if (s.navStack && s.navStack.length > 0) {
+      setStack(s.navStack);
+      return;
+    }
     setStack([
       { id: null, name: "Mi unidad" },
       { id: s.parentId, name: s.parentName },
