@@ -24,11 +24,16 @@ interface DriveListResp {
 }
 
 interface Suggestion {
-  folder: DriveFile;
+  /** Carpeta sugerida (modo carpeta). */
+  folder?: DriveFile;
+  /** Archivo sugerido (modo archivo, click directo selecciona). */
+  file?: DriveFile;
   parentId: string;
   parentName: string;
   /** Si está presente, este botón es la "carpeta del día" (post finalizados/mes/día). */
   dateLabel?: string;
+  /** Etiqueta para sugerencias por título de publicación. */
+  titleLabel?: string;
   /** Stack a usar al click para navegar derecho hasta esta carpeta. */
   navStack?: { id: string | null; name: string }[];
 }
