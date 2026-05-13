@@ -24,18 +24,9 @@ interface DriveListResp {
 }
 
 interface Suggestion {
-  /** Carpeta sugerida (modo carpeta). */
-  folder?: DriveFile;
-  /** Archivo sugerido (modo archivo, click directo selecciona). */
-  file?: DriveFile;
+  folder: DriveFile;
   parentId: string;
   parentName: string;
-  /** Si está presente, este botón es la "carpeta del día" (post finalizados/mes/día). */
-  dateLabel?: string;
-  /** Etiqueta para sugerencias por título de publicación. */
-  titleLabel?: string;
-  /** Stack a usar al click para navegar derecho hasta esta carpeta. */
-  navStack?: { id: string | null; name: string }[];
 }
 
 interface Props {
@@ -47,15 +38,11 @@ interface Props {
   multiple?: boolean;
   /** Nombre del cliente para sugerir carpeta recomendada. */
   clientName?: string;
-  /** Nombre de la publicación (para futuras sugerencias por título). */
-  publicationName?: string;
-  /** Fecha ISO de la publicación (para sugerir post finalizados/mes/día). */
-  publicationDate?: string;
 }
 
 const FOLDER = "application/vnd.google-apps.folder";
 
-export const DriveFilePickerDialog = ({ open, onOpenChange, onSelect, busy = false, multiple = false, clientName, publicationName, publicationDate }: Props) => {
+export const DriveFilePickerDialog = ({ open, onOpenChange, onSelect, busy = false, multiple = false, clientName }: Props) => {
   const [loading, setLoading] = useState(false);
   const [selecting, setSelecting] = useState(false);
   const [files, setFiles] = useState<DriveFile[]>([]);
@@ -107,58 +94,7 @@ export const DriveFilePickerDialog = ({ open, onOpenChange, onSelect, busy = fal
         (f) => f.mimeType === FOLDER && f.name.toLowerCase().trim() === "material clientes"
       );
 
-      const months = [
-        "enero", "febrero", "marzo", "abril", "mayo", "junio",
-        "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
-      ];
-      let pubDateInfo: { monthName: string; day: string; pretty: string } | null = null;
-      if (publicationDate) {
-        const d = new Date(publicationDate);
-        if (!isNaN(d.getTime())) {
-          pubDateInfo = {
-            monthName: months[d.getMonth()],
-            day: String(d.getDate()),
-            pretty: `${months[d.getMonth()]} ${d.getDate()}`,
-          };
-        }
-      }
-
-      const norm = (s: string) => s.toLowerCase().trim().replace(/\s+/g, " ");
-      const listChildren = async (parentId: string, search?: string): Promise<DriveFile[]> => {
-        const r = await invokeEdgeFunction<DriveListResp>("drive-list-files", {
-          folderId: parentId,
-          ...(search ? { search } : {}),
-        });
-        return r?.files || [];
-      };
-      // Busca subcarpetas que matcheen ALGUNA de las keywords (contiene)
-      const findFolderByKeywords = async (parentId: string, keywords: string[]): Promise<DriveFile[]> => {
-        const all = await listChildren(parentId);
-        const folders = all.filter((f) => f.mimeType === FOLDER);
-        const kws = keywords.map(norm);
-        const matches = folders.filter((f) => {
-          const n = norm(f.name);
-          return kws.some((k) => n.includes(k));
-        });
-        // Priorizar las que contengan más keywords
-        matches.sort((a, b) => {
-          const score = (x: DriveFile) => kws.reduce((acc, k) => acc + (norm(x.name).includes(k) ? 1 : 0), 0);
-          return score(b) - score(a);
-        });
-        return matches;
-      };
-      const findChildExact = async (parentId: string, name: string): Promise<DriveFile | null> => {
-        const r = await listChildren(parentId, name);
-        const target = norm(name);
-        return (
-          r.find((f) => f.mimeType === FOLDER && norm(f.name) === target) ||
-          r.find((f) => f.mimeType === FOLDER && norm(f.name).includes(target)) ||
-          null
-        );
-      };
-
       const allSuggestions: Suggestion[] = [];
-      const seen = new Set<string>();
       for (const mat of matFolders) {
         const clientResp = await invokeEdgeFunction<DriveListResp>("drive-list-files", {
           folderId: mat.id,
@@ -166,123 +102,7 @@ export const DriveFilePickerDialog = ({ open, onOpenChange, onSelect, busy = fal
         });
         const clientFolders = (clientResp?.files || []).filter((f) => f.mimeType === FOLDER);
         for (const cf of clientFolders) {
-          if (!seen.has(cf.id)) {
-            seen.add(cf.id);
-            allSuggestions.push({ folder: cf, parentId: mat.id, parentName: mat.name });
-          }
-
-          // ---- Sugerencias de ARCHIVOS por título de publicación ----
-          // BFS limitada dentro de la carpeta del cliente buscando archivos cuyo nombre
-          // contenga el título (o palabras clave del título).
-          if (publicationName && publicationName.trim().length > 0) {
-            try {
-              const cleanTitle = publicationName
-                .toLowerCase()
-                .replace(/\(.*?\)/g, " ")
-                .replace(/[^\p{L}\p{N}\s]/gu, " ")
-                .replace(/\s+/g, " ")
-                .trim();
-              const stop = new Set(["de","la","el","los","las","y","o","u","del","en","con","para","por","a","un","una","al","mi","tu"]);
-              const tokens = cleanTitle
-                .split(" ")
-                .filter((w) => w.length >= 4 && !stop.has(w))
-                .slice(0, 3);
-              const queries = Array.from(new Set([cleanTitle, ...tokens])).filter(Boolean);
-
-              // Carpetas a inspeccionar: cliente + sus subcarpetas finalizad/post/reel/video y un nivel más.
-              const visitFolders: { folder: DriveFile; parents: { id: string; name: string }[] }[] = [];
-              const cfParents = [
-                { id: null as any, name: "Mi unidad" },
-                { id: mat.id, name: mat.name },
-              ];
-              visitFolders.push({ folder: cf, parents: cfParents });
-              const subs = await findFolderByKeywords(cf.id, ["finalizad", "post", "reel", "video"]);
-              for (const sf of subs.slice(0, 5)) {
-                visitFolders.push({ folder: sf, parents: [...cfParents, { id: cf.id, name: cf.name }] });
-                // Un nivel más (ej. mes)
-                try {
-                  const grand = (await listChildren(sf.id)).filter((x) => x.mimeType === FOLDER).slice(0, 12);
-                  for (const gf of grand) {
-                    visitFolders.push({ folder: gf, parents: [...cfParents, { id: cf.id, name: cf.name }, { id: sf.id, name: sf.name }] });
-                  }
-                } catch {}
-              }
-
-              const titleNorm = norm(cleanTitle);
-              const fileMatches: { file: DriveFile; parents: { id: string; name: string }[]; folder: DriveFile }[] = [];
-              for (const v of visitFolders.slice(0, 40)) {
-                for (const q of queries.slice(0, 3)) {
-                  let children: DriveFile[] = [];
-                  try { children = await listChildren(v.folder.id, q); } catch { continue; }
-                  for (const ch of children) {
-                    if (ch.mimeType === FOLDER) continue;
-                    const nName = norm(ch.name).replace(/\.[a-z0-9]+$/i, "");
-                    const matchesFull = titleNorm && nName.includes(titleNorm);
-                    const matchesAnyToken = tokens.some((t) => nName.includes(t));
-                    if (matchesFull || matchesAnyToken) {
-                      if (!seen.has(ch.id)) {
-                        seen.add(ch.id);
-                        fileMatches.push({ file: ch, parents: v.parents, folder: v.folder });
-                      }
-                    }
-                  }
-                  if (fileMatches.length >= 6) break;
-                }
-                if (fileMatches.length >= 6) break;
-              }
-
-              for (const fm of fileMatches.slice(0, 6)) {
-                allSuggestions.push({
-                  file: fm.file,
-                  parentId: fm.folder.id,
-                  parentName: fm.folder.name,
-                  titleLabel: fm.file.name,
-                  navStack: [...fm.parents, { id: fm.folder.id, name: fm.folder.name }],
-                });
-              }
-            } catch {
-              // ignorar errores de búsqueda por título
-            }
-          }
-
-          if (!pubDateInfo) continue;
-
-          // Buscar subcarpetas "finalizadas" dentro del cliente: post, reels, videos, finalizados...
-          try {
-            const finalizadasFolders = await findFolderByKeywords(cf.id, [
-              "finalizad", // matchea finalizados/finalizadas
-              "post",
-              "reel",
-              "video",
-            ]);
-            // Dedupe by id
-            const uniqFinal = Array.from(new Map(finalizadasFolders.map((f) => [f.id, f])).values());
-
-            for (const finalFolder of uniqFinal.slice(0, 4)) {
-              const monthFolder = await findChildExact(finalFolder.id, pubDateInfo.monthName);
-              if (!monthFolder) continue;
-              const dayFolder = await findChildExact(monthFolder.id, pubDateInfo.day);
-              if (!dayFolder) continue;
-              if (seen.has(dayFolder.id)) continue;
-              seen.add(dayFolder.id);
-              allSuggestions.push({
-                folder: dayFolder,
-                parentId: monthFolder.id,
-                parentName: monthFolder.name,
-                dateLabel: `${pubDateInfo.pretty} · ${finalFolder.name}`,
-                navStack: [
-                  { id: null, name: "Mi unidad" },
-                  { id: mat.id, name: mat.name },
-                  { id: cf.id, name: cf.name },
-                  { id: finalFolder.id, name: finalFolder.name },
-                  { id: monthFolder.id, name: monthFolder.name },
-                  { id: dayFolder.id, name: dayFolder.name },
-                ],
-              });
-            }
-          } catch {
-            // ignorar
-          }
+          allSuggestions.push({ folder: cf, parentId: mat.id, parentName: mat.name });
         }
       }
       setSuggestions(allSuggestions);
@@ -355,26 +175,11 @@ export const DriveFilePickerDialog = ({ open, onOpenChange, onSelect, busy = fal
 
   const navigateToSuggestion = (s: Suggestion) => {
     setSharedMode(false);
-    if (s.navStack && s.navStack.length > 0) {
-      setStack(s.navStack);
-      return;
-    }
-    if (s.folder) {
-      setStack([
-        { id: null, name: "Mi unidad" },
-        { id: s.parentId, name: s.parentName },
-        { id: s.folder.id, name: s.folder.name },
-      ]);
-    }
-  };
-
-  const handleSuggestionClick = (s: Suggestion) => {
-    if (s.file) {
-      // Selección directa del archivo recomendado
-      triggerSelect([s.file]);
-      return;
-    }
-    navigateToSuggestion(s);
+    setStack([
+      { id: null, name: "Mi unidad" },
+      { id: s.parentId, name: s.parentName },
+      { id: s.folder.id, name: s.folder.name },
+    ]);
   };
 
   return (
@@ -414,42 +219,19 @@ export const DriveFilePickerDialog = ({ open, onOpenChange, onSelect, busy = fal
               </div>
             ) : suggestions.length > 0 ? (
               <div className="flex flex-wrap gap-2">
-                {suggestions.map((s) => {
-                  const isFile = !!s.file;
-                  const key = (isFile ? "file-" : s.dateLabel ? "date-" : "client-") + (s.file?.id || s.folder?.id);
-                  return (
-                    <Button
-                      key={key}
-                      type="button"
-                      size="sm"
-                      variant={isFile ? "default" : s.dateLabel ? "default" : "outline"}
-                      className="h-auto py-1.5 px-2.5 text-xs gap-1.5 justify-start"
-                      onClick={() => handleSuggestionClick(s)}
-                      disabled={isBusy}
-                    >
-                      {isFile ? (
-                        s.file?.mimeType === "video/mp4" ? (
-                          <FileVideo className="h-3.5 w-3.5 shrink-0" />
-                        ) : (
-                          <FileImage className="h-3.5 w-3.5 shrink-0" />
-                        )
-                      ) : (
-                        <Folder className="h-3.5 w-3.5 shrink-0" />
-                      )}
-                      {isFile ? (
-                        <span className="truncate max-w-[260px]">
-                          Usar <span className="font-semibold">{s.titleLabel || s.file?.name}</span>
-                        </span>
-                      ) : s.dateLabel ? (
-                        <span className="truncate max-w-[260px]">
-                          Contenido del <span className="font-semibold">{s.dateLabel}</span>
-                        </span>
-                      ) : (
-                        <span className="truncate max-w-[200px]">{s.parentName} / <span className="font-medium">{s.folder?.name}</span></span>
-                      )}
-                    </Button>
-                  );
-                })}
+                {suggestions.map((s) => (
+                  <Button
+                    key={s.folder.id}
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="h-auto py-1.5 px-2.5 text-xs gap-1.5 justify-start"
+                    onClick={() => navigateToSuggestion(s)}
+                  >
+                    <Folder className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                    <span className="truncate max-w-[200px]">{s.parentName} / <span className="font-medium">{s.folder.name}</span></span>
+                  </Button>
+                ))}
               </div>
             ) : (
               <div className="text-xs text-muted-foreground">
