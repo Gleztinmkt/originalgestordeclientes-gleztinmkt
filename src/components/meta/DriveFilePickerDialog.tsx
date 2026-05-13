@@ -414,25 +414,42 @@ export const DriveFilePickerDialog = ({ open, onOpenChange, onSelect, busy = fal
               </div>
             ) : suggestions.length > 0 ? (
               <div className="flex flex-wrap gap-2">
-                {suggestions.map((s) => (
-                  <Button
-                    key={(s.dateLabel ? "date-" : "client-") + s.folder.id}
-                    type="button"
-                    size="sm"
-                    variant={s.dateLabel ? "default" : "outline"}
-                    className="h-auto py-1.5 px-2.5 text-xs gap-1.5 justify-start"
-                    onClick={() => navigateToSuggestion(s)}
-                  >
-                    <Folder className="h-3.5 w-3.5 shrink-0" />
-                    {s.dateLabel ? (
-                      <span className="truncate max-w-[260px]">
-                        Contenido del <span className="font-semibold">{s.dateLabel}</span>
-                      </span>
-                    ) : (
-                      <span className="truncate max-w-[200px]">{s.parentName} / <span className="font-medium">{s.folder.name}</span></span>
-                    )}
-                  </Button>
-                ))}
+                {suggestions.map((s) => {
+                  const isFile = !!s.file;
+                  const key = (isFile ? "file-" : s.dateLabel ? "date-" : "client-") + (s.file?.id || s.folder?.id);
+                  return (
+                    <Button
+                      key={key}
+                      type="button"
+                      size="sm"
+                      variant={isFile ? "default" : s.dateLabel ? "default" : "outline"}
+                      className="h-auto py-1.5 px-2.5 text-xs gap-1.5 justify-start"
+                      onClick={() => handleSuggestionClick(s)}
+                      disabled={isBusy}
+                    >
+                      {isFile ? (
+                        s.file?.mimeType === "video/mp4" ? (
+                          <FileVideo className="h-3.5 w-3.5 shrink-0" />
+                        ) : (
+                          <FileImage className="h-3.5 w-3.5 shrink-0" />
+                        )
+                      ) : (
+                        <Folder className="h-3.5 w-3.5 shrink-0" />
+                      )}
+                      {isFile ? (
+                        <span className="truncate max-w-[260px]">
+                          Usar <span className="font-semibold">{s.titleLabel || s.file?.name}</span>
+                        </span>
+                      ) : s.dateLabel ? (
+                        <span className="truncate max-w-[260px]">
+                          Contenido del <span className="font-semibold">{s.dateLabel}</span>
+                        </span>
+                      ) : (
+                        <span className="truncate max-w-[200px]">{s.parentName} / <span className="font-medium">{s.folder?.name}</span></span>
+                      )}
+                    </Button>
+                  );
+                })}
               </div>
             ) : (
               <div className="text-xs text-muted-foreground">
