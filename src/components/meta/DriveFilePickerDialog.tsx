@@ -119,23 +119,41 @@ export const DriveFilePickerDialog = ({ open, onOpenChange, onSelect, busy = fal
       }
 
       const norm = (s: string) => s.toLowerCase().trim().replace(/\s+/g, " ");
-      const findChild = async (parentId: string, name: string): Promise<DriveFile | null> => {
+      const listChildren = async (parentId: string, search?: string): Promise<DriveFile[]> => {
         const r = await invokeEdgeFunction<DriveListResp>("drive-list-files", {
           folderId: parentId,
-          search: name,
+          ...(search ? { search } : {}),
         });
+        return r?.files || [];
+      };
+      // Busca subcarpetas que matcheen ALGUNA de las keywords (contiene)
+      const findFolderByKeywords = async (parentId: string, keywords: string[]): Promise<DriveFile[]> => {
+        const all = await listChildren(parentId);
+        const folders = all.filter((f) => f.mimeType === FOLDER);
+        const kws = keywords.map(norm);
+        const matches = folders.filter((f) => {
+          const n = norm(f.name);
+          return kws.some((k) => n.includes(k));
+        });
+        // Priorizar las que contengan más keywords
+        matches.sort((a, b) => {
+          const score = (x: DriveFile) => kws.reduce((acc, k) => acc + (norm(x.name).includes(k) ? 1 : 0), 0);
+          return score(b) - score(a);
+        });
+        return matches;
+      };
+      const findChildExact = async (parentId: string, name: string): Promise<DriveFile | null> => {
+        const r = await listChildren(parentId, name);
         const target = norm(name);
-        const exact = (r?.files || []).find(
-          (f) => f.mimeType === FOLDER && norm(f.name) === target
+        return (
+          r.find((f) => f.mimeType === FOLDER && norm(f.name) === target) ||
+          r.find((f) => f.mimeType === FOLDER && norm(f.name).includes(target)) ||
+          null
         );
-        if (exact) return exact;
-        // Fallback: contiene
-        return (r?.files || []).find(
-          (f) => f.mimeType === FOLDER && norm(f.name).includes(target)
-        ) || null;
       };
 
       const allSuggestions: Suggestion[] = [];
+      const seen = new Set<string>();
       for (const mat of matFolders) {
         const clientResp = await invokeEdgeFunction<DriveListResp>("drive-list-files", {
           folderId: mat.id,
@@ -143,34 +161,48 @@ export const DriveFilePickerDialog = ({ open, onOpenChange, onSelect, busy = fal
         });
         const clientFolders = (clientResp?.files || []).filter((f) => f.mimeType === FOLDER);
         for (const cf of clientFolders) {
-          allSuggestions.push({ folder: cf, parentId: mat.id, parentName: mat.name });
+          if (!seen.has(cf.id)) {
+            seen.add(cf.id);
+            allSuggestions.push({ folder: cf, parentId: mat.id, parentName: mat.name });
+          }
 
-          // Intentar resolver post finalizados / mes / día
-          if (pubDateInfo) {
-            try {
-              const finalizados = await findChild(cf.id, "post finalizados");
-              if (!finalizados) continue;
-              const monthFolder = await findChild(finalizados.id, pubDateInfo.monthName);
+          if (!pubDateInfo) continue;
+
+          // Buscar subcarpetas "finalizadas" dentro del cliente: post, reels, videos, finalizados...
+          try {
+            const finalizadasFolders = await findFolderByKeywords(cf.id, [
+              "finalizad", // matchea finalizados/finalizadas
+              "post",
+              "reel",
+              "video",
+            ]);
+            // Dedupe by id
+            const uniqFinal = Array.from(new Map(finalizadasFolders.map((f) => [f.id, f])).values());
+
+            for (const finalFolder of uniqFinal.slice(0, 4)) {
+              const monthFolder = await findChildExact(finalFolder.id, pubDateInfo.monthName);
               if (!monthFolder) continue;
-              const dayFolder = await findChild(monthFolder.id, pubDateInfo.day);
+              const dayFolder = await findChildExact(monthFolder.id, pubDateInfo.day);
               if (!dayFolder) continue;
+              if (seen.has(dayFolder.id)) continue;
+              seen.add(dayFolder.id);
               allSuggestions.push({
                 folder: dayFolder,
                 parentId: monthFolder.id,
                 parentName: monthFolder.name,
-                dateLabel: pubDateInfo.pretty,
+                dateLabel: `${pubDateInfo.pretty} · ${finalFolder.name}`,
                 navStack: [
                   { id: null, name: "Mi unidad" },
                   { id: mat.id, name: mat.name },
                   { id: cf.id, name: cf.name },
-                  { id: finalizados.id, name: finalizados.name },
+                  { id: finalFolder.id, name: finalFolder.name },
                   { id: monthFolder.id, name: monthFolder.name },
                   { id: dayFolder.id, name: dayFolder.name },
                 ],
               });
-            } catch {
-              // ignorar y seguir
             }
+          } catch {
+            // ignorar
           }
         }
       }
