@@ -359,11 +359,22 @@ export const DriveFilePickerDialog = ({ open, onOpenChange, onSelect, busy = fal
       setStack(s.navStack);
       return;
     }
-    setStack([
-      { id: null, name: "Mi unidad" },
-      { id: s.parentId, name: s.parentName },
-      { id: s.folder.id, name: s.folder.name },
-    ]);
+    if (s.folder) {
+      setStack([
+        { id: null, name: "Mi unidad" },
+        { id: s.parentId, name: s.parentName },
+        { id: s.folder.id, name: s.folder.name },
+      ]);
+    }
+  };
+
+  const handleSuggestionClick = (s: Suggestion) => {
+    if (s.file) {
+      // Selección directa del archivo recomendado
+      triggerSelect([s.file]);
+      return;
+    }
+    navigateToSuggestion(s);
   };
 
   return (
