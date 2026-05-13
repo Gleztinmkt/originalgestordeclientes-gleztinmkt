@@ -24,11 +24,16 @@ interface DriveListResp {
 }
 
 interface Suggestion {
-  folder: DriveFile;
+  /** Carpeta sugerida (modo carpeta). */
+  folder?: DriveFile;
+  /** Archivo sugerido (modo archivo, click directo selecciona). */
+  file?: DriveFile;
   parentId: string;
   parentName: string;
   /** Si está presente, este botón es la "carpeta del día" (post finalizados/mes/día). */
   dateLabel?: string;
+  /** Etiqueta para sugerencias por título de publicación. */
+  titleLabel?: string;
   /** Stack a usar al click para navegar derecho hasta esta carpeta. */
   navStack?: { id: string | null; name: string }[];
 }
@@ -166,6 +171,80 @@ export const DriveFilePickerDialog = ({ open, onOpenChange, onSelect, busy = fal
             allSuggestions.push({ folder: cf, parentId: mat.id, parentName: mat.name });
           }
 
+          // ---- Sugerencias de ARCHIVOS por título de publicación ----
+          // BFS limitada dentro de la carpeta del cliente buscando archivos cuyo nombre
+          // contenga el título (o palabras clave del título).
+          if (publicationName && publicationName.trim().length > 0) {
+            try {
+              const cleanTitle = publicationName
+                .toLowerCase()
+                .replace(/\(.*?\)/g, " ")
+                .replace(/[^\p{L}\p{N}\s]/gu, " ")
+                .replace(/\s+/g, " ")
+                .trim();
+              const stop = new Set(["de","la","el","los","las","y","o","u","del","en","con","para","por","a","un","una","al","mi","tu"]);
+              const tokens = cleanTitle
+                .split(" ")
+                .filter((w) => w.length >= 4 && !stop.has(w))
+                .slice(0, 3);
+              const queries = Array.from(new Set([cleanTitle, ...tokens])).filter(Boolean);
+
+              // Carpetas a inspeccionar: cliente + sus subcarpetas finalizad/post/reel/video y un nivel más.
+              const visitFolders: { folder: DriveFile; parents: { id: string; name: string }[] }[] = [];
+              const cfParents = [
+                { id: null as any, name: "Mi unidad" },
+                { id: mat.id, name: mat.name },
+              ];
+              visitFolders.push({ folder: cf, parents: cfParents });
+              const subs = await findFolderByKeywords(cf.id, ["finalizad", "post", "reel", "video"]);
+              for (const sf of subs.slice(0, 5)) {
+                visitFolders.push({ folder: sf, parents: [...cfParents, { id: cf.id, name: cf.name }] });
+                // Un nivel más (ej. mes)
+                try {
+                  const grand = (await listChildren(sf.id)).filter((x) => x.mimeType === FOLDER).slice(0, 12);
+                  for (const gf of grand) {
+                    visitFolders.push({ folder: gf, parents: [...cfParents, { id: cf.id, name: cf.name }, { id: sf.id, name: sf.name }] });
+                  }
+                } catch {}
+              }
+
+              const titleNorm = norm(cleanTitle);
+              const fileMatches: { file: DriveFile; parents: { id: string; name: string }[]; folder: DriveFile }[] = [];
+              for (const v of visitFolders.slice(0, 40)) {
+                for (const q of queries.slice(0, 3)) {
+                  let children: DriveFile[] = [];
+                  try { children = await listChildren(v.folder.id, q); } catch { continue; }
+                  for (const ch of children) {
+                    if (ch.mimeType === FOLDER) continue;
+                    const nName = norm(ch.name).replace(/\.[a-z0-9]+$/i, "");
+                    const matchesFull = titleNorm && nName.includes(titleNorm);
+                    const matchesAnyToken = tokens.some((t) => nName.includes(t));
+                    if (matchesFull || matchesAnyToken) {
+                      if (!seen.has(ch.id)) {
+                        seen.add(ch.id);
+                        fileMatches.push({ file: ch, parents: v.parents, folder: v.folder });
+                      }
+                    }
+                  }
+                  if (fileMatches.length >= 6) break;
+                }
+                if (fileMatches.length >= 6) break;
+              }
+
+              for (const fm of fileMatches.slice(0, 6)) {
+                allSuggestions.push({
+                  file: fm.file,
+                  parentId: fm.folder.id,
+                  parentName: fm.folder.name,
+                  titleLabel: fm.file.name,
+                  navStack: [...fm.parents, { id: fm.folder.id, name: fm.folder.name }],
+                });
+              }
+            } catch {
+              // ignorar errores de búsqueda por título
+            }
+          }
+
           if (!pubDateInfo) continue;
 
           // Buscar subcarpetas "finalizadas" dentro del cliente: post, reels, videos, finalizados...
@@ -280,11 +359,22 @@ export const DriveFilePickerDialog = ({ open, onOpenChange, onSelect, busy = fal
       setStack(s.navStack);
       return;
     }
-    setStack([
-      { id: null, name: "Mi unidad" },
-      { id: s.parentId, name: s.parentName },
-      { id: s.folder.id, name: s.folder.name },
-    ]);
+    if (s.folder) {
+      setStack([
+        { id: null, name: "Mi unidad" },
+        { id: s.parentId, name: s.parentName },
+        { id: s.folder.id, name: s.folder.name },
+      ]);
+    }
+  };
+
+  const handleSuggestionClick = (s: Suggestion) => {
+    if (s.file) {
+      // Selección directa del archivo recomendado
+      triggerSelect([s.file]);
+      return;
+    }
+    navigateToSuggestion(s);
   };
 
   return (
@@ -324,25 +414,42 @@ export const DriveFilePickerDialog = ({ open, onOpenChange, onSelect, busy = fal
               </div>
             ) : suggestions.length > 0 ? (
               <div className="flex flex-wrap gap-2">
-                {suggestions.map((s) => (
-                  <Button
-                    key={(s.dateLabel ? "date-" : "client-") + s.folder.id}
-                    type="button"
-                    size="sm"
-                    variant={s.dateLabel ? "default" : "outline"}
-                    className="h-auto py-1.5 px-2.5 text-xs gap-1.5 justify-start"
-                    onClick={() => navigateToSuggestion(s)}
-                  >
-                    <Folder className="h-3.5 w-3.5 shrink-0" />
-                    {s.dateLabel ? (
-                      <span className="truncate max-w-[260px]">
-                        Contenido del <span className="font-semibold">{s.dateLabel}</span>
-                      </span>
-                    ) : (
-                      <span className="truncate max-w-[200px]">{s.parentName} / <span className="font-medium">{s.folder.name}</span></span>
-                    )}
-                  </Button>
-                ))}
+                {suggestions.map((s) => {
+                  const isFile = !!s.file;
+                  const key = (isFile ? "file-" : s.dateLabel ? "date-" : "client-") + (s.file?.id || s.folder?.id);
+                  return (
+                    <Button
+                      key={key}
+                      type="button"
+                      size="sm"
+                      variant={isFile ? "default" : s.dateLabel ? "default" : "outline"}
+                      className="h-auto py-1.5 px-2.5 text-xs gap-1.5 justify-start"
+                      onClick={() => handleSuggestionClick(s)}
+                      disabled={isBusy}
+                    >
+                      {isFile ? (
+                        s.file?.mimeType === "video/mp4" ? (
+                          <FileVideo className="h-3.5 w-3.5 shrink-0" />
+                        ) : (
+                          <FileImage className="h-3.5 w-3.5 shrink-0" />
+                        )
+                      ) : (
+                        <Folder className="h-3.5 w-3.5 shrink-0" />
+                      )}
+                      {isFile ? (
+                        <span className="truncate max-w-[260px]">
+                          Usar <span className="font-semibold">{s.titleLabel || s.file?.name}</span>
+                        </span>
+                      ) : s.dateLabel ? (
+                        <span className="truncate max-w-[260px]">
+                          Contenido del <span className="font-semibold">{s.dateLabel}</span>
+                        </span>
+                      ) : (
+                        <span className="truncate max-w-[200px]">{s.parentName} / <span className="font-medium">{s.folder?.name}</span></span>
+                      )}
+                    </Button>
+                  );
+                })}
               </div>
             ) : (
               <div className="text-xs text-muted-foreground">
