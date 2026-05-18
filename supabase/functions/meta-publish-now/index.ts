@@ -185,7 +185,33 @@ Deno.serve(async (req) => {
       return await failPublication("Falta token de página de Facebook. Reconectá Meta y elegí la página.");
     }
 
-    await admin.from("publications").update({ publish_status: "publishing", publish_error: null }).eq("id", publication_id);
+    // Idempotencia: evitar publicaciones duplicadas si ya está publicada o publicándose
+    if (pub.publish_status === "published" || pub.instagram_media_id || pub.facebook_post_id) {
+      return new Response(JSON.stringify({
+        success: true,
+        already_published: true,
+        instagram_media_id: pub.instagram_media_id || null,
+        facebook_post_id: pub.facebook_post_id || null,
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    // Claim atómico: sólo procedemos si pudimos cambiar el estado desde algo que NO sea "publishing"/"published"
+    const { data: claimed, error: claimErr } = await admin
+      .from("publications")
+      .update({ publish_status: "publishing", publish_error: null })
+      .eq("id", publication_id)
+      .not("publish_status", "in", "(publishing,published)")
+      .select("id")
+      .maybeSingle();
+    if (claimErr) {
+      return await failPublication("No se pudo iniciar publicación: " + claimErr.message, 500);
+    }
+    if (!claimed) {
+      return new Response(JSON.stringify({
+        success: true,
+        already_publishing: true,
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
 
     const caption = pub.meta_caption || pub.copywriting || "";
     const result: { instagram_media_id?: string; facebook_post_id?: string } = {};

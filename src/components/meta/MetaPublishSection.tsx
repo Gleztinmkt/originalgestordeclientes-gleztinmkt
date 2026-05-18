@@ -237,9 +237,13 @@ export const MetaPublishSection = ({
   };
 
   const handlePublishNow = async () => {
+    if (busy) return;
     if (!isConnected) return toast({ title: "Conectá Meta primero", variant: "destructive" });
     if (items.length === 0) return toast({ title: "Preparar archivo primero", variant: "destructive" });
     if (!toIG && !toFB) return toast({ title: "Elegí al menos una plataforma", variant: "destructive" });
+    if (meta.publish_status === "publishing" || meta.publish_status === "published" || meta.instagram_media_id || meta.facebook_post_id) {
+      return toast({ title: "Ya fue publicada", description: "Esta publicación ya está publicada o en proceso." });
+    }
 
     const offsetParsed = parseCoverOffset();
     if (Number.isNaN(offsetParsed)) {
