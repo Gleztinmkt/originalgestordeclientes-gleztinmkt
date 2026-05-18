@@ -72,6 +72,11 @@ export const normalizeAiLinks = (links: unknown): Array<{ label: string; url: st
 const isTransportError = (error: { message?: string } | null) =>
   Boolean(error?.message?.toLowerCase().includes("failed to send a request to the edge function"));
 
+const isHiddenFunctionError = (error: { message?: string } | null) => {
+  const message = error?.message?.toLowerCase() || "";
+  return message.includes("edge function returned a non-2xx status code") || message.includes("functionshttperror");
+};
+
 export async function invokeEdgeFunction<TResponse, TBody = unknown>(
   functionName: string,
   body: TBody,
@@ -98,7 +103,7 @@ export async function invokeEdgeFunction<TResponse, TBody = unknown>(
     }
   }
 
-  if (!isTransportError(error)) {
+  if (!isTransportError(error) && !isHiddenFunctionError(error)) {
     throw error;
   }
 
