@@ -5,11 +5,85 @@ type AdminClient = ReturnType<typeof createClient>;
 
 const GATEWAY_URL = "https://connector-gateway.lovable.dev/google_drive/drive/v3";
 const ALLOWED_MIMES = ["image/jpeg", "image/png", "video/mp4"];
+const STANDARD_UPLOAD_SAFE_LIMIT = 45 * 1024 * 1024;
+const RESUMABLE_CHUNK_SIZE = 6 * 1024 * 1024;
 const EXT_BY_MIME: Record<string, string> = {
   "image/jpeg": "jpg",
   "image/png": "png",
   "video/mp4": "mp4",
 };
+
+function toBase64(value: string) {
+  const bytes = new TextEncoder().encode(value);
+  let binary = "";
+  for (const b of bytes) binary += String.fromCharCode(b);
+  return btoa(binary);
+}
+
+function encodeTusMetadata(metadata: Record<string, string>) {
+  return Object.entries(metadata)
+    .map(([key, value]) => `${key} ${toBase64(value)}`)
+    .join(",");
+}
+
+async function uploadResumableToStorage(params: {
+  supabaseUrl: string;
+  serviceRoleKey: string;
+  bucket: string;
+  path: string;
+  blob: Blob;
+  contentType: string;
+}) {
+  const headers = {
+    Authorization: `Bearer ${params.serviceRoleKey}`,
+    apikey: params.serviceRoleKey,
+    "tus-resumable": "1.0.0",
+  };
+
+  const createRes = await fetch(`${params.supabaseUrl}/storage/v1/upload/resumable`, {
+    method: "POST",
+    headers: {
+      ...headers,
+      "upload-length": String(params.blob.size),
+      "upload-metadata": encodeTusMetadata({
+        bucketName: params.bucket,
+        objectName: params.path,
+        contentType: params.contentType,
+        cacheControl: "3600",
+      }),
+      "x-upsert": "true",
+    },
+  });
+
+  if (!createRes.ok) {
+    const text = await createRes.text();
+    throw new Error(`Storage resumable init ${createRes.status}: ${text.slice(0, 300)}`);
+  }
+
+  const uploadUrl = createRes.headers.get("location");
+  if (!uploadUrl) throw new Error("Storage resumable init: no devolvió URL de carga");
+
+  let offset = 0;
+  while (offset < params.blob.size) {
+    const chunk = params.blob.slice(offset, Math.min(offset + RESUMABLE_CHUNK_SIZE, params.blob.size));
+    const patchRes = await fetch(uploadUrl, {
+      method: "PATCH",
+      headers: {
+        ...headers,
+        "content-type": "application/offset+octet-stream",
+        "upload-offset": String(offset),
+      },
+      body: chunk,
+    });
+
+    if (!patchRes.ok) {
+      const text = await patchRes.text();
+      throw new Error(`Storage resumable chunk ${patchRes.status}: ${text.slice(0, 300)}`);
+    }
+
+    offset = Number(patchRes.headers.get("upload-offset") || offset + chunk.size);
+  }
+}
 
 async function canManageMetaPublishing(admin: AdminClient, userId: string) {
   const { data: roleData } = await admin.from("user_roles").select("role").eq("user_id", userId).maybeSingle();
@@ -96,16 +170,28 @@ Deno.serve(async (req) => {
 
       const ext = EXT_BY_MIME[contentType] || "bin";
       const path = `${publication_id}/${Date.now()}_${items.length}.${ext}`;
-      const { error: upErr } = await admin.storage.from("meta-publications").upload(path, blob, {
-        contentType, upsert: true,
-      });
-      if (upErr) {
-        console.error(`[prepare-drive-media-batch] storage upload failed`, upErr);
-        const msg = (upErr as any)?.message || String(upErr);
-        const hint = /payload|too large|size/i.test(msg)
-          ? ` (el archivo pesa ${(actualSize / 1024 / 1024).toFixed(1)} MB; revisa el límite del bucket)`
-          : "";
-        throw new Error(`Storage upload: ${msg}${hint}`);
+      if (actualSize > STANDARD_UPLOAD_SAFE_LIMIT) {
+        console.log(`[prepare-drive-media-batch] using resumable storage upload for ${(actualSize / 1024 / 1024).toFixed(1)} MB`);
+        await uploadResumableToStorage({
+          supabaseUrl: Deno.env.get("SUPABASE_URL")!,
+          serviceRoleKey: Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+          bucket: "meta-publications",
+          path,
+          blob,
+          contentType,
+        });
+      } else {
+        const { error: upErr } = await admin.storage.from("meta-publications").upload(path, blob, {
+          contentType, upsert: true,
+        });
+        if (upErr) {
+          console.error(`[prepare-drive-media-batch] storage upload failed`, upErr);
+          const msg = (upErr as any)?.message || String(upErr);
+          const hint = /payload|too large|size/i.test(msg)
+            ? ` (el archivo pesa ${(actualSize / 1024 / 1024).toFixed(1)} MB; se intentará con carga resumible)`
+            : "";
+          throw new Error(`Storage upload: ${msg}${hint}`);
+        }
       }
 
       const { data: pub } = admin.storage.from("meta-publications").getPublicUrl(path);
