@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.meta-scheduler]
 verify_jwt = false
+
+[functions.meta-drive-media]
+verify_jwt = false

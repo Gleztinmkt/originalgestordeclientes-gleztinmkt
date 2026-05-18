@@ -6,83 +6,47 @@ type AdminClient = ReturnType<typeof createClient>;
 const GATEWAY_URL = "https://connector-gateway.lovable.dev/google_drive/drive/v3";
 const ALLOWED_MIMES = ["image/jpeg", "image/png", "video/mp4"];
 const STANDARD_UPLOAD_SAFE_LIMIT = 45 * 1024 * 1024;
-const RESUMABLE_CHUNK_SIZE = 6 * 1024 * 1024;
+const LARGE_FILE_PROXY_TTL_SECONDS = 180 * 24 * 60 * 60;
 const EXT_BY_MIME: Record<string, string> = {
   "image/jpeg": "jpg",
   "image/png": "png",
   "video/mp4": "mp4",
 };
 
-function toBase64(value: string) {
-  const bytes = new TextEncoder().encode(value);
+function base64UrlEncode(value: string | Uint8Array) {
+  const bytes = typeof value === "string" ? new TextEncoder().encode(value) : value;
   let binary = "";
   for (const b of bytes) binary += String.fromCharCode(b);
-  return btoa(binary);
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
 
-function encodeTusMetadata(metadata: Record<string, string>) {
-  return Object.entries(metadata)
-    .map(([key, value]) => `${key} ${toBase64(value)}`)
-    .join(",");
+async function signPayload(payloadBase64: string, secret: string) {
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const signature = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(payloadBase64));
+  return base64UrlEncode(new Uint8Array(signature));
 }
 
-async function uploadResumableToStorage(params: {
-  supabaseUrl: string;
-  serviceRoleKey: string;
-  bucket: string;
-  path: string;
-  blob: Blob;
-  contentType: string;
-}) {
-  const headers = {
-    Authorization: `Bearer ${params.serviceRoleKey}`,
-    apikey: params.serviceRoleKey,
-    "tus-resumable": "1.0.0",
-  };
+function safeProxyFilename(fileName: string, ext: string) {
+  const cleaned = fileName.replace(/[^\p{L}\p{N}._ -]+/gu, "").trim();
+  return cleaned || `media.${ext}`;
+}
 
-  const createRes = await fetch(`${params.supabaseUrl}/storage/v1/upload/resumable`, {
-    method: "POST",
-    headers: {
-      ...headers,
-      "upload-length": String(params.blob.size),
-      "upload-metadata": encodeTusMetadata({
-        bucketName: params.bucket,
-        objectName: params.path,
-        contentType: params.contentType,
-        cacheControl: "3600",
-      }),
-      "x-upsert": "true",
-    },
-  });
-
-  if (!createRes.ok) {
-    const text = await createRes.text();
-    throw new Error(`Storage resumable init ${createRes.status}: ${text.slice(0, 300)}`);
-  }
-
-  const uploadUrl = createRes.headers.get("location");
-  if (!uploadUrl) throw new Error("Storage resumable init: no devolvió URL de carga");
-
-  let offset = 0;
-  while (offset < params.blob.size) {
-    const chunk = params.blob.slice(offset, Math.min(offset + RESUMABLE_CHUNK_SIZE, params.blob.size));
-    const patchRes = await fetch(uploadUrl, {
-      method: "PATCH",
-      headers: {
-        ...headers,
-        "content-type": "application/offset+octet-stream",
-        "upload-offset": String(offset),
-      },
-      body: chunk,
-    });
-
-    if (!patchRes.ok) {
-      const text = await patchRes.text();
-      throw new Error(`Storage resumable chunk ${patchRes.status}: ${text.slice(0, 300)}`);
-    }
-
-    offset = Number(patchRes.headers.get("upload-offset") || offset + chunk.size);
-  }
+async function createSignedDriveProxyUrl(fileId: string, fileName: string, contentType: string, ext: string) {
+  const payloadBase64 = base64UrlEncode(JSON.stringify({
+    fileId,
+    fileName,
+    contentType,
+    exp: Math.floor(Date.now() / 1000) + LARGE_FILE_PROXY_TTL_SECONDS,
+  }));
+  const secret = Deno.env.get("META_APP_SECRET") || Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const signature = await signPayload(payloadBase64, secret);
+  return `${Deno.env.get("SUPABASE_URL")}/functions/v1/meta-drive-media/${encodeURIComponent(safeProxyFilename(fileName, ext))}?token=${payloadBase64}.${signature}`;
 }
 
 async function canManageMetaPublishing(admin: AdminClient, userId: string) {
@@ -154,33 +118,30 @@ Deno.serve(async (req) => {
         throw new Error(`Formato no compatible (${contentType}) para "${fileName}". Usá JPG, PNG o MP4.`);
       }
 
-      const dlRes = await fetch(
-        `${GATEWAY_URL}/files/${fileId}?alt=media&supportsAllDrives=true`,
-        { headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "X-Connection-Api-Key": GOOGLE_DRIVE_API_KEY } },
-      );
-      if (!dlRes.ok) {
-        const t = await dlRes.text();
-        console.error(`[prepare-drive-media-batch] download failed`, dlRes.status, t.slice(0, 500));
-        throw new Error(`Drive download ${dlRes.status}: ${t.slice(0, 200)}`);
-      }
-      // Use Blob to avoid copying into a Uint8Array (saves memory for large mp4)
-      const blob = await dlRes.blob();
-      const actualSize = blob.size;
-      console.log(`[prepare-drive-media-batch] downloaded ${actualSize}b, uploading to storage…`);
-
       const ext = EXT_BY_MIME[contentType] || "bin";
       const path = `${publication_id}/${Date.now()}_${items.length}.${ext}`;
-      if (actualSize > STANDARD_UPLOAD_SAFE_LIMIT) {
-        console.log(`[prepare-drive-media-batch] using resumable storage upload for ${(actualSize / 1024 / 1024).toFixed(1)} MB`);
-        await uploadResumableToStorage({
-          supabaseUrl: Deno.env.get("SUPABASE_URL")!,
-          serviceRoleKey: Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-          bucket: "meta-publications",
-          path,
-          blob,
-          contentType,
-        });
+      let mediaUrl = "";
+      let storagePath = path;
+      let actualSize = fileSize;
+
+      if (fileSize > STANDARD_UPLOAD_SAFE_LIMIT) {
+        mediaUrl = await createSignedDriveProxyUrl(fileId, fileName, contentType, ext);
+        storagePath = `drive-proxy:${fileId}`;
+        console.log(`[prepare-drive-media-batch] using signed Drive proxy for ${(fileSize / 1024 / 1024).toFixed(1)} MB`);
       } else {
+        const dlRes = await fetch(
+          `${GATEWAY_URL}/files/${fileId}?alt=media&supportsAllDrives=true`,
+          { headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "X-Connection-Api-Key": GOOGLE_DRIVE_API_KEY } },
+        );
+        if (!dlRes.ok) {
+          const t = await dlRes.text();
+          console.error(`[prepare-drive-media-batch] download failed`, dlRes.status, t.slice(0, 500));
+          throw new Error(`Drive download ${dlRes.status}: ${t.slice(0, 200)}`);
+        }
+        const blob = await dlRes.blob();
+        actualSize = blob.size;
+        console.log(`[prepare-drive-media-batch] downloaded ${actualSize}b, uploading to storage…`);
+
         const { error: upErr } = await admin.storage.from("meta-publications").upload(path, blob, {
           contentType, upsert: true,
         });
@@ -192,16 +153,17 @@ Deno.serve(async (req) => {
             : "";
           throw new Error(`Storage upload: ${msg}${hint}`);
         }
+        const { data: pub } = admin.storage.from("meta-publications").getPublicUrl(path);
+        mediaUrl = pub.publicUrl;
       }
 
-      const { data: pub } = admin.storage.from("meta-publications").getPublicUrl(path);
       items.push({
         drive_file_id: fileId,
         drive_file_name: fileName,
         drive_file_mime_type: contentType,
         drive_file_size: fileSize || actualSize,
-        media_url: pub.publicUrl,
-        media_storage_path: path,
+        media_url: mediaUrl,
+        media_storage_path: storagePath,
       });
       console.log(`[prepare-drive-media-batch] uploaded -> ${path}`);
     }
@@ -219,6 +181,8 @@ Deno.serve(async (req) => {
       media_storage_path: first.media_storage_path,
       publish_status: "ready_to_publish",
       publish_error: null,
+      auto_publish_enabled: false,
+      scheduled_publish_at: null,
     }).eq("id", publication_id);
     if (updErr) {
       console.error(`[prepare-drive-media-batch] db update failed`, updErr);
