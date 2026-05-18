@@ -262,6 +262,9 @@ export const MetaPublishSection = ({
       setProgressLabel("Post subido");
       toast({ title: "Post subido a Meta ✅" });
       await refresh();
+      if (!publication.is_published) {
+        setTimeout(() => handleCrmPublishedClick(), 400);
+      }
     } catch (e: any) {
       toast({ title: "Error al publicar", description: e.message || String(e), variant: "destructive" });
       await refresh();
@@ -301,6 +304,9 @@ export const MetaPublishSection = ({
       setProgressLabel("Programada en CRM");
       toast({ title: "Programada", description: `Se publicará automáticamente el ${format(when, "PPpp", { locale: es })}` });
       await refresh();
+      if (!publication.is_published) {
+        setTimeout(() => handleCrmPublishedClick(), 400);
+      }
     } catch (e: any) {
       toast({ title: "Error", description: e.message || String(e), variant: "destructive" });
     } finally {
