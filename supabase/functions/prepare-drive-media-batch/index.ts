@@ -181,6 +181,8 @@ Deno.serve(async (req) => {
       media_storage_path: first.media_storage_path,
       publish_status: "ready_to_publish",
       publish_error: null,
+      auto_publish_enabled: false,
+      scheduled_publish_at: null,
     }).eq("id", publication_id);
     if (updErr) {
       console.error(`[prepare-drive-media-batch] db update failed`, updErr);
