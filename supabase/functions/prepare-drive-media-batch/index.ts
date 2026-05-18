@@ -59,6 +59,7 @@ Deno.serve(async (req) => {
 
     for (const f of files as Array<{ id: string; name?: string }>) {
       const fileId = f.id;
+      console.log(`[prepare-drive-media-batch] processing file ${fileId} (${f.name || "?"})`);
 
       const metaRes = await fetch(
         `${GATEWAY_URL}/files/${fileId}?fields=id,name,mimeType,size&supportsAllDrives=true`,
@@ -66,12 +67,14 @@ Deno.serve(async (req) => {
       );
       if (!metaRes.ok) {
         const t = await metaRes.text();
+        console.error(`[prepare-drive-media-batch] meta failed`, metaRes.status, t.slice(0, 500));
         throw new Error(`Drive meta ${metaRes.status}: ${t.slice(0, 200)}`);
       }
       const meta = await metaRes.json();
       const contentType = meta.mimeType || "";
       const fileName = meta.name || f.name || "file";
       const fileSize = parseInt(meta.size || "0", 10);
+      console.log(`[prepare-drive-media-batch] meta ok: ${fileName} ${contentType} ${fileSize}b`);
 
       if (!ALLOWED_MIMES.includes(contentType)) {
         throw new Error(`Formato no compatible (${contentType}) para "${fileName}". Usá JPG, PNG o MP4.`);
@@ -83,30 +86,42 @@ Deno.serve(async (req) => {
       );
       if (!dlRes.ok) {
         const t = await dlRes.text();
+        console.error(`[prepare-drive-media-batch] download failed`, dlRes.status, t.slice(0, 500));
         throw new Error(`Drive download ${dlRes.status}: ${t.slice(0, 200)}`);
       }
-      const bytes = new Uint8Array(await dlRes.arrayBuffer());
+      // Use Blob to avoid copying into a Uint8Array (saves memory for large mp4)
+      const blob = await dlRes.blob();
+      const actualSize = blob.size;
+      console.log(`[prepare-drive-media-batch] downloaded ${actualSize}b, uploading to storage…`);
 
       const ext = EXT_BY_MIME[contentType] || "bin";
       const path = `${publication_id}/${Date.now()}_${items.length}.${ext}`;
-      const { error: upErr } = await admin.storage.from("meta-publications").upload(path, bytes, {
+      const { error: upErr } = await admin.storage.from("meta-publications").upload(path, blob, {
         contentType, upsert: true,
       });
-      if (upErr) throw upErr;
+      if (upErr) {
+        console.error(`[prepare-drive-media-batch] storage upload failed`, upErr);
+        const msg = (upErr as any)?.message || String(upErr);
+        const hint = /payload|too large|size/i.test(msg)
+          ? ` (el archivo pesa ${(actualSize / 1024 / 1024).toFixed(1)} MB; revisa el límite del bucket)`
+          : "";
+        throw new Error(`Storage upload: ${msg}${hint}`);
+      }
 
       const { data: pub } = admin.storage.from("meta-publications").getPublicUrl(path);
       items.push({
         drive_file_id: fileId,
         drive_file_name: fileName,
         drive_file_mime_type: contentType,
-        drive_file_size: fileSize || bytes.length,
+        drive_file_size: fileSize || actualSize,
         media_url: pub.publicUrl,
         media_storage_path: path,
       });
+      console.log(`[prepare-drive-media-batch] uploaded -> ${path}`);
     }
 
     const first = items[0];
-    await admin.from("publications").update({
+    const { error: updErr } = await admin.from("publications").update({
       media_items: items,
       // Mantenemos el primer archivo en los campos legacy para compatibilidad UI / publish actual
       drive_file_id: first.drive_file_id,
@@ -119,11 +134,16 @@ Deno.serve(async (req) => {
       publish_status: "ready_to_publish",
       publish_error: null,
     }).eq("id", publication_id);
+    if (updErr) {
+      console.error(`[prepare-drive-media-batch] db update failed`, updErr);
+      throw new Error(`DB update: ${updErr.message}`);
+    }
 
     return new Response(JSON.stringify({ success: true, items }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
+    console.error(`[prepare-drive-media-batch] fatal`, e);
     return new Response(JSON.stringify({ error: String((e as Error)?.message || e) }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
