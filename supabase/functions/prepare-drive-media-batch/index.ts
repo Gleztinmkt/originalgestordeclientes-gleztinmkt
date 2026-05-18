@@ -6,83 +6,47 @@ type AdminClient = ReturnType<typeof createClient>;
 const GATEWAY_URL = "https://connector-gateway.lovable.dev/google_drive/drive/v3";
 const ALLOWED_MIMES = ["image/jpeg", "image/png", "video/mp4"];
 const STANDARD_UPLOAD_SAFE_LIMIT = 45 * 1024 * 1024;
-const RESUMABLE_CHUNK_SIZE = 6 * 1024 * 1024;
+const LARGE_FILE_PROXY_TTL_SECONDS = 180 * 24 * 60 * 60;
 const EXT_BY_MIME: Record<string, string> = {
   "image/jpeg": "jpg",
   "image/png": "png",
   "video/mp4": "mp4",
 };
 
-function toBase64(value: string) {
-  const bytes = new TextEncoder().encode(value);
+function base64UrlEncode(value: string | Uint8Array) {
+  const bytes = typeof value === "string" ? new TextEncoder().encode(value) : value;
   let binary = "";
   for (const b of bytes) binary += String.fromCharCode(b);
-  return btoa(binary);
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
 
-function encodeTusMetadata(metadata: Record<string, string>) {
-  return Object.entries(metadata)
-    .map(([key, value]) => `${key} ${toBase64(value)}`)
-    .join(",");
+async function signPayload(payloadBase64: string, secret: string) {
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const signature = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(payloadBase64));
+  return base64UrlEncode(new Uint8Array(signature));
 }
 
-async function uploadResumableToStorage(params: {
-  supabaseUrl: string;
-  serviceRoleKey: string;
-  bucket: string;
-  path: string;
-  blob: Blob;
-  contentType: string;
-}) {
-  const headers = {
-    Authorization: `Bearer ${params.serviceRoleKey}`,
-    apikey: params.serviceRoleKey,
-    "tus-resumable": "1.0.0",
-  };
+function safeProxyFilename(fileName: string, ext: string) {
+  const cleaned = fileName.replace(/[^\p{L}\p{N}._ -]+/gu, "").trim();
+  return cleaned || `media.${ext}`;
+}
 
-  const createRes = await fetch(`${params.supabaseUrl}/storage/v1/upload/resumable`, {
-    method: "POST",
-    headers: {
-      ...headers,
-      "upload-length": String(params.blob.size),
-      "upload-metadata": encodeTusMetadata({
-        bucketName: params.bucket,
-        objectName: params.path,
-        contentType: params.contentType,
-        cacheControl: "3600",
-      }),
-      "x-upsert": "true",
-    },
-  });
-
-  if (!createRes.ok) {
-    const text = await createRes.text();
-    throw new Error(`Storage resumable init ${createRes.status}: ${text.slice(0, 300)}`);
-  }
-
-  const uploadUrl = createRes.headers.get("location");
-  if (!uploadUrl) throw new Error("Storage resumable init: no devolvió URL de carga");
-
-  let offset = 0;
-  while (offset < params.blob.size) {
-    const chunk = params.blob.slice(offset, Math.min(offset + RESUMABLE_CHUNK_SIZE, params.blob.size));
-    const patchRes = await fetch(uploadUrl, {
-      method: "PATCH",
-      headers: {
-        ...headers,
-        "content-type": "application/offset+octet-stream",
-        "upload-offset": String(offset),
-      },
-      body: chunk,
-    });
-
-    if (!patchRes.ok) {
-      const text = await patchRes.text();
-      throw new Error(`Storage resumable chunk ${patchRes.status}: ${text.slice(0, 300)}`);
-    }
-
-    offset = Number(patchRes.headers.get("upload-offset") || offset + chunk.size);
-  }
+async function createSignedDriveProxyUrl(fileId: string, fileName: string, contentType: string, ext: string) {
+  const payloadBase64 = base64UrlEncode(JSON.stringify({
+    fileId,
+    fileName,
+    contentType,
+    exp: Math.floor(Date.now() / 1000) + LARGE_FILE_PROXY_TTL_SECONDS,
+  }));
+  const secret = Deno.env.get("META_APP_SECRET") || Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const signature = await signPayload(payloadBase64, secret);
+  return `${Deno.env.get("SUPABASE_URL")}/functions/v1/meta-drive-media/${encodeURIComponent(safeProxyFilename(fileName, ext))}?token=${payloadBase64}.${signature}`;
 }
 
 async function canManageMetaPublishing(admin: AdminClient, userId: string) {
