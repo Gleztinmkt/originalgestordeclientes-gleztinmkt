@@ -124,8 +124,9 @@ export const MetaPublishSection = ({
     if (pub) {
       setMeta(pub);
       setCaption(pub.meta_caption || copywriting || "");
-      if (typeof pub.publish_to_instagram === "boolean") setToIG(pub.publish_to_instagram);
-      if (typeof pub.publish_to_facebook === "boolean") setToFB(pub.publish_to_facebook);
+      // Siempre marcar ambas por defecto al abrir
+      setToIG(true);
+      setToFB(true);
       if (pub.scheduled_publish_at) setScheduleAt(pub.scheduled_publish_at.slice(0, 16));
       setCoverOffset(typeof pub.cover_thumb_offset === "number" ? String(pub.cover_thumb_offset) : "");
     }
