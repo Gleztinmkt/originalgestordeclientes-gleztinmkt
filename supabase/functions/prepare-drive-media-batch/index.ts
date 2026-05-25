@@ -143,7 +143,7 @@ Deno.serve(async (req) => {
         console.log(`[prepare-drive-media-batch] downloaded ${actualSize}b, uploading to storage…`);
 
         const { error: upErr } = await admin.storage.from("meta-publications").upload(path, blob, {
-          contentType, upsert: true,
+          contentType, upsert: true, cacheControl: "604800",
         });
         if (upErr) {
           console.error(`[prepare-drive-media-batch] storage upload failed`, upErr);
