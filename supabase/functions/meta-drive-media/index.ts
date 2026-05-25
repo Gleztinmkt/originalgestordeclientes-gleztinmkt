@@ -62,7 +62,7 @@ Deno.serve(async (req) => {
 
     const headers = new Headers(corsHeaders);
     headers.set("Content-Type", payload.contentType || driveRes.headers.get("content-type") || "application/octet-stream");
-    headers.set("Cache-Control", "public, max-age=3600");
+    headers.set("Cache-Control", "public, max-age=604800, immutable");
     for (const key of ["content-length", "content-range", "accept-ranges"] as const) {
       const value = driveRes.headers.get(key);
       if (value) headers.set(key, value);
