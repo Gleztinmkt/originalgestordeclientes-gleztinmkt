@@ -141,7 +141,7 @@ Deno.serve(async (req) => {
     const ext = EXT_BY_MIME[contentType] || "bin";
     const path = `${publication_id}/${Date.now()}.${ext}`;
     const { error: upErr } = await admin.storage.from("meta-publications").upload(path, bytes, {
-      contentType, upsert: true,
+      contentType, upsert: true, cacheControl: "604800",
     });
     if (upErr) throw upErr;
 
