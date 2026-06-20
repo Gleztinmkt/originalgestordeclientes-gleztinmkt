@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { invokeEdgeFunction } from "@/lib/edge-functions";
 import { toast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 
 interface MetaConnectionButtonProps {
   clientId: string;
