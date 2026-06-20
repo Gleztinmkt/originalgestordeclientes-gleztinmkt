@@ -31,6 +31,16 @@ export const MetaConnectionButton = ({ clientId, clientName, compact, onConnecti
   const [loading, setLoading] = useState(false);
   const [pages, setPages] = useState<Array<{ id: string; name: string; ig: string | null }> | null>(null);
   const [showPagePicker, setShowPagePicker] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredPages = pages?.filter((p) =>
+    p.name.toLowerCase().includes(searchQuery.trim().toLowerCase())
+  ) ?? [];
+
+  const handleOpenChange = (open: boolean) => {
+    setShowPagePicker(open);
+    if (!open) setSearchQuery("");
+  };
 
   const refresh = async () => {
     const { data } = await (supabase as any)
