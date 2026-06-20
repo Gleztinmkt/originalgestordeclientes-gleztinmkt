@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Instagram, Facebook, Link2, Loader2, RefreshCw, Unlink } from "lucide-react";
+import { Instagram, Facebook, Link2, Loader2, RefreshCw, Unlink, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { invokeEdgeFunction } from "@/lib/edge-functions";
 import { toast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 
 interface MetaConnectionButtonProps {
   clientId: string;
@@ -30,6 +31,16 @@ export const MetaConnectionButton = ({ clientId, clientName, compact, onConnecti
   const [loading, setLoading] = useState(false);
   const [pages, setPages] = useState<Array<{ id: string; name: string; ig: string | null }> | null>(null);
   const [showPagePicker, setShowPagePicker] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredPages = pages?.filter((p) =>
+    p.name.toLowerCase().includes(searchQuery.trim().toLowerCase())
+  ) ?? [];
+
+  const handleOpenChange = (open: boolean) => {
+    setShowPagePicker(open);
+    if (!open) setSearchQuery("");
+  };
 
   const refresh = async () => {
     const { data } = await (supabase as any)
@@ -180,7 +191,7 @@ export const MetaConnectionButton = ({ clientId, clientName, compact, onConnecti
         )}
       </div>
 
-      <Dialog open={showPagePicker} onOpenChange={setShowPagePicker}>
+      <Dialog open={showPagePicker} onOpenChange={handleOpenChange}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Seleccionar página de Facebook</DialogTitle>
@@ -188,8 +199,22 @@ export const MetaConnectionButton = ({ clientId, clientName, compact, onConnecti
               Elegí la página correspondiente a {clientName}. Si tiene Instagram Business vinculado, se conectará automáticamente.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-2">
-            {pages?.map((p) => (
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar página..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <div className="space-y-2 max-h-[300px] overflow-y-auto">
+            {filteredPages.length === 0 && (
+              <div className="text-sm text-muted-foreground text-center py-4">
+                No se encontraron páginas
+              </div>
+            )}
+            {filteredPages.map((p) => (
               <Button
                 type="button"
                 key={p.id}
