@@ -18,26 +18,45 @@ Deno.serve(async (req) => {
 
     let daysOld = DEFAULT_DAYS_OLD;
     let dryRun = false;
+    let includeOrphans = true;
     try {
       const body = await req.json().catch(() => ({}));
-      if (typeof body?.days_old === "number" && body.days_old > 0) daysOld = body.days_old;
+      if (typeof body?.days_old === "number" && body.days_old >= 0) daysOld = body.days_old;
       if (body?.dry_run === true) dryRun = true;
+      if (body?.include_orphans === false) includeOrphans = false;
     } catch { /* sin body, ok */ }
 
     const cutoff = new Date(Date.now() - daysOld * 24 * 60 * 60 * 1000).toISOString();
 
-    // 1) publicaciones publicadas hace más de N días
-    const { data: pubs, error: pubErr } = await admin
+    // 1) publicaciones publicadas hace más de N días (o todas si days_old=0)
+    let query = admin
       .from("publications")
-      .select("id, publish_completed_at, updated_at")
-      .eq("publish_status", "published")
-      .lt("updated_at", cutoff);
+      .select("id, published_at, created_at")
+      .eq("publish_status", "published");
+    if (daysOld > 0) query = query.lt("created_at", cutoff);
+    const { data: pubs, error: pubErr } = await query;
 
     if (pubErr) throw new Error(`query publications: ${pubErr.message}`);
 
-    const candidateIds = (pubs ?? []).map((p) => String(p.id));
-    if (candidateIds.length === 0) {
-      return new Response(JSON.stringify({ success: true, deleted: 0, scanned: 0 }), {
+    const publishedIds = new Set((pubs ?? []).map((p) => String(p.id)));
+    const candidateIds = new Set(publishedIds);
+
+    // 2) huérfanos: carpetas en el bucket cuyo publication_id ya no existe en la tabla
+    if (includeOrphans) {
+      const { data: rootFolders } = await admin.storage.from("meta-publications").list("", { limit: 1000 });
+      const folderIds = (rootFolders ?? []).filter((f) => f.id === null || !f.metadata).map((f) => f.name);
+      if (folderIds.length > 0) {
+        const { data: existing } = await admin
+          .from("publications")
+          .select("id")
+          .in("id", folderIds);
+        const existingSet = new Set((existing ?? []).map((p) => String(p.id)));
+        for (const id of folderIds) if (!existingSet.has(id)) candidateIds.add(id);
+      }
+    }
+
+    if (candidateIds.size === 0) {
+      return new Response(JSON.stringify({ success: true, deleted: 0, scanned: 0, published: publishedIds.size }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -72,11 +91,19 @@ Deno.serve(async (req) => {
         continue;
       }
       totalDeleted += paths.length;
+
+      // limpiar referencias en publications (solo si la fila aún existe)
+      if (publishedIds.has(pubId)) {
+        await admin.from("publications").update({
+          media_url: null,
+          media_storage_path: null,
+        }).eq("id", pubId);
+      }
       console.log(`[cleanup] deleted ${paths.length} files from ${pubId}`);
     }
 
     return new Response(
-      JSON.stringify({ success: true, dry_run: dryRun, publications: candidateIds.length, scanned: totalScanned, deleted: totalDeleted, cutoff }),
+      JSON.stringify({ success: true, dry_run: dryRun, publications: candidateIds.size, published: publishedIds.size, orphans: candidateIds.size - publishedIds.size, scanned: totalScanned, deleted: totalDeleted, cutoff }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (e) {
